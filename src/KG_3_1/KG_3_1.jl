@@ -4,6 +4,9 @@ using Jecco
 using Vivi
 using Parameters
 
+export Param
+export System
+
 @with_kw struct Param
     A0x         :: Float64
     A0y         :: Float64
@@ -56,5 +59,6 @@ function System(p::Param)
     System{typeof(coords), typeof(derivs)}(coords, derivs)
 end
 
+include("initial_data.jl")
 
 end

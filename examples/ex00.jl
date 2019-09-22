@@ -2,7 +2,7 @@
 using Jecco
 using Jecco.KG_3_1
 
-p = Jecco.KG_3_1.Param(
+p = Param(
     A0x         = 1.0,
     A0y         = 1.0,
 
@@ -24,4 +24,10 @@ p = Jecco.KG_3_1.Param(
     folder      = "./data",
 )
 
-sys = Jecco.KG_3_1.System(p)
+initial_data = Jecco.KG_3_1.cosine2D
+
+sys = System(p)
+
+phif = initial_data(sys, p)
+
+nothing
