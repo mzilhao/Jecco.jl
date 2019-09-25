@@ -31,4 +31,12 @@ sys = System(p)
 
 phif = initial_data(sys, p)
 
-nothing
+# FIXME
+phifd = copy(phif)
+Af    = -ones(size(phif))
+
+dphif = similar(phif)
+
+bulk = BulkVars(phif, phifd, Af)
+
+Jecco.KG_3_1.rhs!(dphif, bulk, sys)

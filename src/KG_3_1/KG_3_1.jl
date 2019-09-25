@@ -6,6 +6,7 @@ using Parameters
 
 export Param
 export System
+export BulkVars
 
 @with_kw struct Param
     A0x         :: Float64
@@ -59,6 +60,15 @@ function System(p::Param)
     System{typeof(coords), typeof(derivs)}(coords, derivs)
 end
 
+struct BulkVars{A}
+    phi  :: A
+    phid :: A
+    A    :: A
+end
+BulkVars(phi, phid, A) =  BulkVars{typeof(phi)}(phi, phid, A)
+
+
 include("initial_data.jl")
+include("dphidt.jl")
 
 end
