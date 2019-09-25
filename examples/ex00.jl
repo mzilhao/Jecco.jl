@@ -24,7 +24,8 @@ p = Param(
     folder      = "./data",
 )
 
-initial_data = Jecco.KG_3_1.cosine2D
+
+initial_data = Jecco.KG_3_1.sine2D
 
 sys = System(p)
 

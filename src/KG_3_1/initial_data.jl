@@ -1,5 +1,8 @@
 
-function cosine2D(sys::System, p::Param)
+sine2D(x, y, Lx::Real, Ly::Real, kx::Integer, ky::Integer) =
+             sin( 2*π * kx / Lx * x ) * sin( 2*π * ky / Ly * y )
+
+function sine2D(sys::System, p::Param)
     coords = sys.coords
     derivs = sys.derivs
 
@@ -9,19 +12,18 @@ function cosine2D(sys::System, p::Param)
     Ny = length(yy)
     phif  = zeros(Nu, Nx, Ny)
 
-    Lx    = xx[end] - xx[1]
-    Ly    = yy[end] - yy[1]
-    xmid  = 0.5 * (xx[1] + xx[end])
-    ymid  = 0.5 * (yy[1] + yy[end])
+    Lx    = p.xmax - p.xmin
+    Ly    = p.ymax - p.ymin
 
-    kx = 2.0
-    ky = 4.0
+    kx = 2
+    ky = 4
 
     for j in eachindex(yy)
         for i in eachindex(xx)
             for a in eachindex(uu)
-                phif[a,i,j] = cos( 2*π * kx / Lx * (xx[i] - xmid) ) *
-                    cos( 2*π * ky / Ly * (yy[j] - ymid) )
+                x = xx[i]
+                y = yy[j]
+                phif[a,i,j] = sine2D(x, y, Lx, Ly, kx, ky)
             end
         end
     end
