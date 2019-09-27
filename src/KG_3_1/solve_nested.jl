@@ -1,8 +1,6 @@
 
 using LinearAlgebra
 
-# FIXME: need to set Sd and also A
-
 function solve_nested_g1!(bulk::BulkVars, boundary::BoundaryVars, sys)
     coords = sys.coords
     derivs = sys.derivs
@@ -15,6 +13,18 @@ function solve_nested_g1!(bulk::BulkVars, boundary::BoundaryVars, sys)
     Dxx_phi   = Vivi.D2(bulk.phi, derivs[2], 2)
     Dyy_phi   = Vivi.D2(bulk.phi, derivs[3], 3)
 
+
+    # set Sd
+    @fastmath @inbounds for j in eachindex(yy)
+        @fastmath @inbounds for i in eachindex(xx)
+            @fastmath @inbounds @simd for a in eachindex(uu)
+                bulk.Sd[a,i,j] = 0.5 * boundary.a4[i,j]
+            end
+        end
+    end
+
+
+    # solve for phifd
 
     # TODO: parallelize here
     @fastmath @inbounds for j in eachindex(yy)
@@ -50,6 +60,16 @@ function solve_nested_g1!(bulk::BulkVars, boundary::BoundaryVars, sys)
 
             sol = view(bulk.phid, :, i, j)
             solve_lin_system!(sol, A_mat, b_vec)
+        end
+    end
+
+
+    # set A
+    @fastmath @inbounds for j in eachindex(yy)
+        @fastmath @inbounds for i in eachindex(xx)
+            @fastmath @inbounds @simd for a in eachindex(uu)
+                bulk.A[a,i,j] = boundary.a4[i,j]
+            end
         end
     end
 
