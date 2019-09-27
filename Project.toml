@@ -3,6 +3,11 @@ uuid = "d482222a-c68e-11e9-0e26-5971d46cc137"
 authors = ["Miguel Zilhao <miguel.zilhao.nogueira@tecnico.ulisboa.pt>"]
 version = "0.1.0"
 
+[deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+Vivi = "78fdadff-d2d3-50cb-85fa-556f83b62715"
+
 [compat]
 julia = "1"
 
@@ -11,7 +16,3 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test"]
-
-[deps]
-Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
-Vivi = "78fdadff-d2d3-50cb-85fa-556f83b62715"
