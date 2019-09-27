@@ -31,12 +31,11 @@ sys = System(p)
 
 phif = initial_data(sys, p)
 
-# FIXME
-phifd = copy(phif)
-Af    = -ones(size(phif))
+bulk = BulkVars(phif)
 
-dphif = similar(phif)
 
-bulk = BulkVars(phif, phifd, Af)
+Jecco.KG_3_1.Vf(phif)  = 1.0 + 0.5 * phif*phif
+Jecco.KG_3_1.Vfp(phif) = phif
 
-Jecco.KG_3_1.rhs!(dphif, bulk, sys)
+Jecco.KG_3_1.solve_phidg1!(bulk, sys)
+

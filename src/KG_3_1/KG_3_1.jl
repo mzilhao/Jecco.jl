@@ -6,7 +6,7 @@ using Parameters
 
 export Param
 export System
-export BulkVars
+export BulkVars, AllVars
 
 @with_kw struct Param
     A0x         :: Float64
@@ -62,13 +62,50 @@ end
 
 struct BulkVars{A}
     phi  :: A
+    S    :: A
+    Sd   :: A
     phid :: A
     A    :: A
 end
-BulkVars(phi, phid, A) =  BulkVars{typeof(phi)}(phi, phid, A)
+BulkVars(phi, S, Sd, phid, A) =  BulkVars{typeof(phi)}(phi, S, Sd, phid, A)
+function BulkVars(phi::Array)
+    S    = similar(phi)
+    Sd   = similar(phi)
+    phid = similar(phi)
+    A    = similar(phi)
+    BulkVars{typeof(phi)}(phi, S, Sd, phid, A)
+end
+
+# mutable struct Derivs{A}
+#     d0   :: A
+#     du   :: A
+#     dxx  :: A
+#     dyy  :: A
+#     dzz  :: A
+# end
+# Derivs(f::T) where T <: AbstractFloat = Derivs{T}(f, NaN, NaN, NaN, NaN)
+
+
+mutable struct AllVars{T}
+    u        :: T
+
+    phi_d0   :: T
+    phi_du   :: T
+    phi_dxx  :: T
+    phi_dyy  :: T
+
+    Sd_d0    :: T
+end
+function AllVars{T}() where {T<:Real}
+    N = 1 + 4 + 1
+    zero_array = zeros(N)
+    AllVars{T}(zero_array...)
+end
+# TODO: initialize to NaNs ?
 
 
 include("initial_data.jl")
 include("dphidt.jl")
+include("equation_coeff.jl")
 
 end
