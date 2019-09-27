@@ -3,7 +3,7 @@ using LinearAlgebra
 
 # FIXME: need to set Sd and also A
 
-function solve_phidg1!(bulk::BulkVars, sys)
+function solve_nested_g1!(bulk::BulkVars, boundary::BoundaryVars, sys)
     coords = sys.coords
     derivs = sys.derivs
     uderiv = derivs[1]

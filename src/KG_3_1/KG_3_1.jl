@@ -6,7 +6,7 @@ using Parameters
 
 export Param
 export System
-export BulkVars, AllVars
+export BulkVars, BoundaryVars, AllVars
 
 @with_kw struct Param
     A0x         :: Float64
@@ -74,6 +74,10 @@ function BulkVars(phi::Array)
     phid = similar(phi) * NaN
     A    = similar(phi) * NaN
     BulkVars{typeof(phi)}(phi, S, Sd, phid, A)
+end
+
+struct BoundaryVars{A}
+    a4   :: A
 end
 
 # mutable struct Derivs{A}

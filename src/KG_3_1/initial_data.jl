@@ -30,3 +30,15 @@ function sine2D(sys::System, p::Param)
 
     phif
 end
+
+function ones2D(sys::System, p::Param)
+    coords = sys.coords
+    derivs = sys.derivs
+
+    uu, xx, yy = Vivi.xx(coords)
+    Nu = length(uu)
+    Nx = length(xx)
+    Ny = length(yy)
+
+    ones(Nx, Ny)
+end

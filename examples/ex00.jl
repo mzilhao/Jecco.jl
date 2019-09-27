@@ -33,9 +33,11 @@ phif = initial_data(sys, p)
 
 bulk = BulkVars(phif)
 
+a4 = -Jecco.KG_3_1.ones2D(sys, p)
+
+boundary = BoundaryVars(a4)
 
 Jecco.KG_3_1.Vf(phif)  = 1.0 + 0.5 * phif*phif
 Jecco.KG_3_1.Vfp(phif) = phif
 
-Jecco.KG_3_1.solve_phidg1!(bulk, sys)
-
+Jecco.KG_3_1.solve_nested_g1!(bulk, boundary, sys)
