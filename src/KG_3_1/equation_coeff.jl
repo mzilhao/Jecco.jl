@@ -4,14 +4,6 @@
 function Vf end
 function Vfp end
 
-function solve_lin_system!(sol, A_mat, b_vec)
-    A_fact = lu!(A_mat)
-    ldiv!(A_fact, b_vec)
-    sol .= b_vec
-    nothing
-end
-
-
 # assuming
 # (A d_uu + B d_u + C Id) f = -S
 
