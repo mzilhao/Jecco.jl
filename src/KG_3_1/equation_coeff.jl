@@ -15,7 +15,7 @@ end
 
 
 # assuming
-# (A d_uu + B d_u + C Id) f = S
+# (A d_uu + B d_u + C Id) f = -S
 function phig1_eq_coeff!(ABCS::Vector, vars::AllVars)
     u  = vars.u
     u2 = u * u
@@ -33,10 +33,10 @@ function phig1_eq_coeff!(ABCS::Vector, vars::AllVars)
     ABCS[2] = 9.0 * u
     ABCS[3] = 4.5
 
-    ABCS[4] = 4.5 * phi + 27 * u4 * phi * vars.Sd_d0 +
-        4 * u6 * phi3 * Vf(phi) + u9 * phi4 * Vfp(phi) -
-        3 * u2 * (vars.phi_dxx + vars.phi_dyy) +
-        4.5 * u * vars.phi_du + 9 * u5 * vars.Sd_d0 * vars.phi_du
+    ABCS[4] = -4.5 * phi - 27 * u4 * phi * vars.Sd_d0 -
+        4 * u6 * phi3 * Vf(phi) - u9 * phi4 * Vfp(phi) +
+        3 * u2 * (vars.phi_dxx + vars.phi_dyy) -
+        4.5 * u * vars.phi_du - 9 * u5 * vars.Sd_d0 * vars.phi_du
 
     nothing
 end
@@ -76,7 +76,7 @@ function solve_phidg1!(bulk::BulkVars, sys)
 
                 phig1_eq_coeff!(ABCS, vars)
 
-                b_vec[a]     = ABCS[4]
+                b_vec[a]     = -ABCS[4]
 
                 @inbounds @simd for aa in eachindex(uu)
                     A_mat[a,aa] = ABCS[1] * uderiv.D2[a,aa] + ABCS[2] * uderiv.D[a,aa]
