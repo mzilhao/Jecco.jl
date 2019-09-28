@@ -99,9 +99,14 @@ mutable struct AllVars{T}
     phi_dyy  :: T
 
     Sd_d0    :: T
+
+    phid_d0  :: T
+    phid_du  :: T
+
+    A_d0     :: T
 end
 function AllVars{T}() where {T<:AbstractFloat}
-    N = 1 + 4 + 1
+    N = 1 + 4 + 1 + 2 + 1
     NaN_array = NaN * ones(N)
     AllVars{T}(NaN_array...)
 end
