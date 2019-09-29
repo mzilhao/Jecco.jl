@@ -10,15 +10,16 @@ end
 
 function solve_nested_g1!(bulk::BulkVars, boundary::BoundaryVars, sys)
     coords = sys.coords
-    derivs = sys.derivs
-    uderiv = derivs[1]
+    uderiv = sys.uderiv
+    xderiv = sys.xderiv
+    yderiv = sys.yderiv
 
     uu, xx, yy = Vivi.xx(coords)
     Nu = length(uu)
 
-    Du_phi    = Vivi.D(bulk.phi, derivs[1], 1)
-    Dxx_phi   = Vivi.D2(bulk.phi, derivs[2], 2)
-    Dyy_phi   = Vivi.D2(bulk.phi, derivs[3], 3)
+    Du_phi    = Vivi.D(bulk.phi, uderiv, 1)
+    Dxx_phi   = Vivi.D2(bulk.phi, xderiv, 2)
+    Dyy_phi   = Vivi.D2(bulk.phi, yderiv, 3)
 
 
     # set Sd

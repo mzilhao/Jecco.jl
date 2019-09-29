@@ -31,9 +31,11 @@ export BulkVars, BoundaryVars, AllVars
 end
 
 
-struct System{C,D} <: Vivi.System
+struct System{C,D,E} <: Vivi.System
     coords :: C
-    derivs :: D
+    uderiv :: D
+    xderiv :: E
+    yderiv :: E
     # _dt    :: Float64
     # param  :: Param
 end
@@ -55,9 +57,11 @@ function System(p::Param)
     # dt0    = p.dtfac * min(dx, dy)
 
     derivs = Vivi.Deriv(coords, (nothing, ord, ord), (nothing, BC, BC))
+    uderiv = derivs[1]
+    xderiv = derivs[2]
+    yderiv = derivs[3]
 
-    # System{typeof(coords), typeof(derivs)}(coords, derivs, dt0, p)
-    System{typeof(coords), typeof(derivs)}(coords, derivs)
+    System{typeof(coords), typeof(uderiv), typeof(xderiv)}(coords, uderiv, xderiv, yderiv)
 end
 
 struct BulkVars{A}

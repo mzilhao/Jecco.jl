@@ -4,7 +4,6 @@ sine2D(x, y, Lx::Real, Ly::Real, kx::Integer, ky::Integer) =
 
 function sine2D(sys::System, p::Param)
     coords = sys.coords
-    derivs = sys.derivs
 
     uu, xx, yy = Vivi.xx(coords)
     Nu = length(uu)
@@ -33,7 +32,6 @@ end
 
 function ones2D(sys::System, p::Param)
     coords = sys.coords
-    derivs = sys.derivs
 
     uu, xx, yy = Vivi.xx(coords)
     Nu = length(uu)
