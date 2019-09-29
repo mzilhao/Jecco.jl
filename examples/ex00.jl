@@ -41,6 +41,11 @@ Jecco.KG_3_1.Vf(phi)  = -1.0 + 0.5 * phi*phi
 Jecco.KG_3_1.Vfp(phi) = phi
 
 
-solve_nested_g1! = Jecco.KG_3_1.nested_g1(sys)
+# solve_nested_g1! = Jecco.KG_3_1.nested_g1(sys)
+# solve_nested_g1!(bulk, boundary)
 
-solve_nested_g1!(bulk, boundary)
+rhs! = Jecco.KG_3_1.setup_rhs(phi, sys)
+dphidt = similar(phi)
+
+
+rhs!(dphidt, phi, sys, 0.0)

@@ -120,5 +120,6 @@ include("initial_data.jl")
 include("dphidt.jl")
 include("equation_coeff.jl")
 include("solve_nested.jl")
+include("rhs.jl")
 
 end
