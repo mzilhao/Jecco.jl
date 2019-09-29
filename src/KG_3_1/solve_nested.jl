@@ -31,7 +31,7 @@ function solve_nested_g1!(bulk::BulkVars, boundary::BoundaryVars, sys)
     end
 
 
-    # solve for phifd
+    # solve for phidg1
 
     # TODO: parallelize here
     @fastmath @inbounds for j in eachindex(yy)
@@ -71,7 +71,7 @@ function solve_nested_g1!(bulk::BulkVars, boundary::BoundaryVars, sys)
     end
 
 
-    # set A
+    # set Ag1
     @fastmath @inbounds for j in eachindex(yy)
         @fastmath @inbounds for i in eachindex(xx)
             @fastmath @inbounds @simd for a in eachindex(uu)
