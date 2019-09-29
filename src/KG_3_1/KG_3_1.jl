@@ -73,10 +73,10 @@ struct BulkVars{A}
 end
 BulkVars(phi, S, Sd, phid, A) =  BulkVars{typeof(phi)}(phi, S, Sd, phid, A)
 function BulkVars(phi::Array)
-    S    = similar(phi) * NaN
-    Sd   = similar(phi) * NaN
-    phid = similar(phi) * NaN
-    A    = similar(phi) * NaN
+    S    = similar(phi)
+    Sd   = similar(phi)
+    phid = similar(phi)
+    A    = similar(phi)
     BulkVars{typeof(phi)}(phi, S, Sd, phid, A)
 end
 
@@ -111,8 +111,8 @@ mutable struct AllVars{T}
 end
 function AllVars{T}() where {T<:AbstractFloat}
     N = 1 + 4 + 1 + 2 + 1
-    NaN_array = NaN * ones(N)
-    AllVars{T}(NaN_array...)
+    array = zeros(N)
+    AllVars{T}(array...)
 end
 
 
