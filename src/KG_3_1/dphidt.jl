@@ -18,15 +18,15 @@ end
 end
 
 
-function rhs_g1!(dphif::Array, bulk::BulkVars, sys)
+function rhs_g1!(dphi::Array, bulk::BulkVars, sys)
     coords = sys.coords
-    derivs = sys.derivs
+    uderiv = sys.uderiv
 
     uu, xx, yy = Vivi.xx(coords)
     Nu = length(uu)
 
-    Du_phi  = Vivi.D(bulk.phi, derivs[1], 1)
-    Du_phid = Vivi.D(bulk.phid, derivs[1], 1)
+    Du_phi  = Vivi.D(bulk.phi, uderiv, 1)
+    Du_phid = Vivi.D(bulk.phid, uderiv, 1)
 
     vars  = AllVars{Float64}()
 
@@ -43,7 +43,7 @@ function rhs_g1!(dphif::Array, bulk::BulkVars, sys)
             vars.phi_du  = Du_phi[1,i,j]
             vars.phid_du = Du_phid[1,i,j]
 
-            dphif[a,i,j] = dphig1dt_u0(vars)
+            dphi[1,i,j]  = dphig1dt_u0(vars)
         end
     end
 
@@ -60,7 +60,7 @@ function rhs_g1!(dphif::Array, bulk::BulkVars, sys)
                 vars.phi_du  = Du_phi[a,i,j]
                 vars.phid_du = Du_phid[a,i,j]
 
-                dphif[a,i,j] = dphig1dt(vars)
+                dphi[a,i,j]  = dphig1dt(vars)
             end
         end
     end
