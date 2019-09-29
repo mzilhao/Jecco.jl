@@ -8,7 +8,7 @@ function solve_lin_system!(sol, A_mat, b_vec)
     nothing
 end
 
-function nested_g1(bulk::BulkVars, boundary::BoundaryVars, sys)
+function nested_g1(sys)
     coords = sys.coords
     uderiv = sys.uderiv
     xderiv = sys.xderiv
@@ -16,10 +16,12 @@ function nested_g1(bulk::BulkVars, boundary::BoundaryVars, sys)
 
     uu, xx, yy = Vivi.xx(coords)
     Nu = length(uu)
+    Nx = length(xx)
+    Ny = length(yy)
 
-    Du_phi    = similar(bulk.phi)
-    Dxx_phi   = similar(bulk.phi)
-    Dyy_phi   = similar(bulk.phi)
+    Du_phi    = zeros(Nu, Nx, Ny)
+    Dxx_phi   = zeros(Nu, Nx, Ny)
+    Dyy_phi   = zeros(Nu, Nx, Ny)
 
     A_mat = zeros(Nu, Nu)
     b_vec = zeros(Nu)

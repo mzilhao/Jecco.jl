@@ -41,6 +41,6 @@ Jecco.KG_3_1.Vf(phif)  = -1.0 + 0.5 * phif*phif
 Jecco.KG_3_1.Vfp(phif) = phif
 
 
-solve_nested_g1! = Jecco.KG_3_1.nested_g1(bulk, boundary, sys)
+solve_nested_g1! = Jecco.KG_3_1.nested_g1(sys)
 
 solve_nested_g1!(bulk, boundary)
