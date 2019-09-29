@@ -30,7 +30,7 @@ function sine2D(sys::System, p::Param)
     phif
 end
 
-function ones2D(sys::System, p::Param)
+function ones2D(sys::System)
     coords = sys.coords
 
     uu, xx, yy = Vivi.xx(coords)

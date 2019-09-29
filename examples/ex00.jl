@@ -29,16 +29,16 @@ initial_data = Jecco.KG_3_1.sine2D
 
 sys = System(p)
 
-phif = initial_data(sys, p)
+phi = initial_data(sys, p)
 
-bulk = BulkVars(phif)
+bulk = BulkVars(phi)
 
-a4 = -Jecco.KG_3_1.ones2D(sys, p)
+a4 = -Jecco.KG_3_1.ones2D(sys)
 
 boundary = BoundaryVars(a4)
 
-Jecco.KG_3_1.Vf(phif)  = -1.0 + 0.5 * phif*phif
-Jecco.KG_3_1.Vfp(phif) = phif
+Jecco.KG_3_1.Vf(phi)  = -1.0 + 0.5 * phi*phi
+Jecco.KG_3_1.Vfp(phi) = phi
 
 
 solve_nested_g1! = Jecco.KG_3_1.nested_g1(sys)
