@@ -9,7 +9,6 @@ function setup_rhs(phi::Array, sys)
     solve_nested_g1! = nested_g1(sys)
 
     function (df, f, sys, t)
-        # TODO: check if it's better to use "=" with a mutable struct
         bulk.phi .= f
         solve_nested_g1!(bulk, boundary)
 
