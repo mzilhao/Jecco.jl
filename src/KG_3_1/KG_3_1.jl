@@ -25,7 +25,8 @@ export BulkVars, BoundaryVars, AllVars
     umax        :: Float64
     unodes      :: Int
 
-    dtfac       :: Float64    = 0.5
+    # dtfac       :: Float64    = 0.5
+    dt          :: Float64
 
     folder      :: String  = "./data"
 end
@@ -36,7 +37,7 @@ struct System{C,D,E} <: Vivi.System
     uderiv :: D
     xderiv :: E
     yderiv :: E
-    # _dt    :: Float64
+    _dt    :: Float64
     # param  :: Param
 end
 
@@ -56,13 +57,22 @@ function System(p::Param)
     # dy     = ycoord.delta
     # dt0    = p.dtfac * min(dx, dy)
 
+    dt0    = p.dt
+
     derivs = Vivi.Deriv(coords, (nothing, ord, ord), (nothing, BC, BC))
     uderiv = derivs[1]
     xderiv = derivs[2]
     yderiv = derivs[3]
 
-    System{typeof(coords), typeof(uderiv), typeof(xderiv)}(coords, uderiv, xderiv, yderiv)
+    System{typeof(coords), typeof(uderiv), typeof(xderiv)}(coords, uderiv, xderiv, yderiv,
+                                                           dt0)
 end
+
+# TODO: determine it using the metric
+function timestep(sys::System, f)
+    sys._dt
+end
+
 
 struct BulkVars{A}
     phi  :: A
