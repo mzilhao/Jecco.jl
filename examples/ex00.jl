@@ -1,4 +1,5 @@
 
+using Vivi
 using Jecco
 using Jecco.KG_3_1
 
@@ -8,8 +9,9 @@ p = Param(
     A0x         = 1.0,
     A0y         = 1.0,
 
-    tmax        = 2.0,
-    out_every_t = 1,
+    # tmax        = 2.0,
+    tmax        = 0.5,
+    out_every   = 1,
 
     xmin        = -5.0,
     xmax        =  5.0,
@@ -64,17 +66,20 @@ prob  = ODEProblem(rhs!, phi0, tspan, sys)
 integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
 # integrator = init(prob, AB3(), save_everystep=false, dt=dt0, adaptive=false)
 
-# TODO: fix offset between it=0 and t=0...
+
+out    = Vivi.Output(p.folder, p.prefix, p.out_every)
+
 it = 0
+# write initial data
+Jecco.out_info(it, 0, phi0, "phi", 1, 200)
+Vivi.output(out, Dict("phi" => (phi0, sys.coords)), it, 0, 0)
+
 for (u,t) in tuples(integrator)
+    # it += 1
+    global it += 1
 
     dt = integrator.dt
 
     Jecco.out_info(it, t, u, "phi", 1, 200)
-
-
-    # Vivi.output(out, Dict("psi" => ψGF, "pi"=>  πGF),
-                # it, t, dt)
-    # it += 1
-    global it += 1
+    Vivi.output(out, Dict("phi" => (u, sys.coords)), it, t, dt)
 end

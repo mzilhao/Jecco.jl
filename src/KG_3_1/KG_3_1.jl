@@ -13,7 +13,7 @@ export BulkVars, BoundaryVars, AllVars
     A0y         :: Float64
 
     tmax        :: Float64
-    out_every_t :: Float64
+    out_every   :: Int
 
     xmin        :: Float64
     xmax        :: Float64
@@ -29,6 +29,7 @@ export BulkVars, BoundaryVars, AllVars
     dt          :: Float64
 
     folder      :: String  = "./data"
+    prefix      :: String  = "phi"
 end
 
 
