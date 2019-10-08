@@ -6,7 +6,7 @@ p = Param(
     A0x         = 1.0,
     A0y         = 1.0,
 
-    tmax        = 2.0,
+    tmax        = 8.0,
     out_every   = 1,
 
     xmin        = -5.0,
@@ -21,7 +21,7 @@ p = Param(
 
     # dtfac       = 0.5,
 
-    dt          = 0.06, # for RK4
+    dt          = 0.04, # for RK4
     # dt          = 0.01,   # for AB3
 
     folder      = "./data",
