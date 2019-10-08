@@ -95,16 +95,6 @@ struct BoundaryVars{A}
     a4   :: A
 end
 
-# mutable struct Derivs{A}
-#     d0   :: A
-#     du   :: A
-#     dxx  :: A
-#     dyy  :: A
-#     dzz  :: A
-# end
-# Derivs(f::T) where T <: AbstractFloat = Derivs{T}(f, NaN, NaN, NaN, NaN)
-
-
 mutable struct AllVars{T}
     u        :: T
 
