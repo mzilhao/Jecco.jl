@@ -12,7 +12,7 @@ function out_info(it::Integer, t::Real, f, label::String, info_every::Integer,
     end
 
     if it % info_every == 0
-        @printf "%9d %9.3f | %9.4f    %9.4f\n" it t minimum(f) maximum(f)
+        @printf "%9d %9.3f | %9.4g    %9.4g\n" it t minimum(f) maximum(f)
     end
 
     nothing
