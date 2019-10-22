@@ -30,27 +30,10 @@ function rhs_g1!(dphi::Array, bulk::BulkVars, sys)
 
     vars  = AllVars{Float64}()
 
-    # u = 0
     # TODO: parallelize here
     @fastmath @inbounds for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
-            vars.u       = uu[1]
-
-            vars.phi_d0  = bulk.phi[1,i,j]
-            vars.phid_d0 = bulk.phid[1,i,j]
-            vars.A_d0    = bulk.A[1,i,j]
-
-            vars.phi_du  = Du_phi[1,i,j]
-            vars.phid_du = Du_phid[1,i,j]
-
-            dphi[1,i,j]  = dphig1dt_u0(vars)
-        end
-    end
-
-    # TODO: parallelize here
-    @fastmath @inbounds for j in eachindex(yy)
-        @inbounds for i in eachindex(xx)
-            @inbounds @simd for a in 2:Nu
+            @inbounds @simd for a in eachindex(uu)
                 vars.u       = uu[a]
 
                 vars.phi_d0  = bulk.phi[a,i,j]
@@ -60,7 +43,11 @@ function rhs_g1!(dphi::Array, bulk::BulkVars, sys)
                 vars.phi_du  = Du_phi[a,i,j]
                 vars.phid_du = Du_phid[a,i,j]
 
-                dphi[a,i,j]  = dphig1dt(vars)
+                if vars.u > 1.e-9
+                    dphi[a,i,j]  = dphig1dt(vars)
+                else
+                    dphi[a,i,j]  = dphig1dt_u0(vars)
+                end
             end
         end
     end
