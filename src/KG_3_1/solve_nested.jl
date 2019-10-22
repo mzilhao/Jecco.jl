@@ -28,7 +28,7 @@ function nested_g1(sys)
     ABCS  = zeros(4)
     vars  = AllVars{Float64}()
 
-    function (bulk::BulkVars, boundary::BoundaryVars)
+    function (bulk::BulkVars, boundary::BulkVars)
 
         Vivi.D!(Du_phi, bulk.phi, uderiv, 1)
         Vivi.D2!(Dxx_phi, bulk.phi, xderiv, 2)
@@ -38,7 +38,7 @@ function nested_g1(sys)
         @fastmath @inbounds for j in eachindex(yy)
             @fastmath @inbounds for i in eachindex(xx)
                 @fastmath @inbounds @simd for a in eachindex(uu)
-                    bulk.Sd[a,i,j] = 0.5 * boundary.a4[i,j]
+                    bulk.Sd[a,i,j] = boundary.Sd[i,j]
                 end
             end
         end
@@ -69,7 +69,7 @@ function nested_g1(sys)
                 end
 
                 # boundary condition
-                b_vec[1]    = bulk.phi[1,i,j]  # phi2[i,j]
+                b_vec[1]    = boundary.phid[i,j]
                 A_mat[1,:] .= 0.0
                 A_mat[1,1]  = 1.0
 
@@ -83,7 +83,7 @@ function nested_g1(sys)
         @fastmath @inbounds for j in eachindex(yy)
             @fastmath @inbounds for i in eachindex(xx)
                 @fastmath @inbounds @simd for a in eachindex(uu)
-                    bulk.A[a,i,j] = boundary.a4[i,j]
+                    bulk.A[a,i,j] = boundary.A[i,j]
                 end
             end
         end
