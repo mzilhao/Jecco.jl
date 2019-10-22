@@ -1,4 +1,28 @@
 
+function uniform2D(sys::System, p::Param)
+    coords = sys.coords
+
+    uu, xx, yy = Vivi.xx(coords)
+    Nu = length(uu)
+    Nx = length(xx)
+    Ny = length(yy)
+    phif  = zeros(Nu, Nx, Ny)
+
+    # TODO: make parameter
+    phi2 = 1.0
+
+    for j in eachindex(yy)
+        for i in eachindex(xx)
+            for a in eachindex(uu)
+                phif[a,i,j] = phi2
+            end
+        end
+    end
+
+    phif
+end
+
+
 sine2D(x, y, Lx::Real, Ly::Real, kx::Integer, ky::Integer) =
              sin( 2*π * kx / Lx * x ) * sin( 2*π * ky / Ly * y )
 

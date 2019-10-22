@@ -5,7 +5,8 @@ using Vivi
 function ibvp(p::Param)
 
     # TODO: make parameter?
-    initial_data = Jecco.KG_3_1.sine2D
+    # initial_data = Jecco.KG_3_1.sine2D
+    initial_data = Jecco.KG_3_1.uniform2D
 
     sys = System(p)
 
