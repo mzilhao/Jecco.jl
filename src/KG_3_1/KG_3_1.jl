@@ -91,6 +91,43 @@ function BulkVars(phi::Array)
     BulkVars{typeof(phi)}(phi, S, Sd, phid, A)
 end
 
+function Base.getindex(bulk::BulkVars, i::Int)
+    phi   = bulk.phi[i]
+    S     = bulk.S[i]
+    Sd    = bulk.Sd[i]
+    phid  = bulk.phid[i]
+    A     = bulk.A[i]
+    BulkVars{typeof(phi)}(phi, S, Sd, phid, A)
+end
+
+function Base.getindex(bulk::BulkVars, kr::AbstractRange)
+    phi   = bulk.phi[kr]
+    S     = bulk.S[kr]
+    Sd    = bulk.Sd[kr]
+    phid  = bulk.phid[kr]
+    A     = bulk.A[kr]
+    BulkVars{typeof(phi)}(phi, S, Sd, phid, A)
+end
+
+function Base.getindex(bulk::BulkVars, I::Vararg)
+    phi   = bulk.phi[I...]
+    S     = bulk.S[I...]
+    Sd    = bulk.Sd[I...]
+    phid  = bulk.phid[I...]
+    A     = bulk.A[I...]
+    BulkVars{typeof(phi)}(phi, S, Sd, phid, A)
+end
+
+function Base.getindex(bulk::BulkVars, ::Colon)
+    phi   = bulk.phi[:]
+    S     = bulk.S[:]
+    Sd    = bulk.Sd[:]
+    phid  = bulk.phid[:]
+    A     = bulk.A[:]
+    BulkVars{typeof(phi)}(phi, S, Sd, phid, A)
+end
+
+
 struct BoundaryVars{A}
     a4   :: A
 end
