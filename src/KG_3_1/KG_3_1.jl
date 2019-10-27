@@ -32,24 +32,14 @@ export BulkVars, BoundaryVars, AllVars
     prefix      :: String  = "phi"
 end
 
-
 struct System{C,D,E} <: Vivi.System
     coords :: C
     uderiv :: D
     xderiv :: E
     yderiv :: E
-    _dt    :: Float64
-    # param  :: Param
 end
 
-function System(p::Param)
-    ucoord  = Vivi.SpectralCoord("u", p.umin, p.umax, p.unodes)
-
-    xcoord  = Vivi.CartCoord("x", p.xmin, p.xmax, p.xnodes, endpoint=false)
-    ycoord  = Vivi.CartCoord("y", p.ymin, p.ymax, p.ynodes, endpoint=false)
-
-    coords = Vivi.CoordSystem{Float64}("uxy", [ucoord, xcoord, ycoord])
-
+function System(coords::CoordSystem)
     # FIXME
     ord    = 4
     BC     = :periodic
@@ -58,20 +48,22 @@ function System(p::Param)
     # dy     = ycoord.delta
     # dt0    = p.dtfac * min(dx, dy)
 
-    dt0    = p.dt
-
     derivs = Vivi.Deriv(coords, (nothing, ord, ord), (nothing, BC, BC))
     uderiv = derivs[1]
     xderiv = derivs[2]
     yderiv = derivs[3]
 
-    System{typeof(coords), typeof(uderiv), typeof(xderiv)}(coords, uderiv, xderiv, yderiv,
-                                                           dt0)
+    System{typeof(coords), typeof(uderiv), typeof(xderiv)}(coords, uderiv, xderiv, yderiv)
 end
+
+function System(ucoord::SpectralCoord, xcoord::CartCoord, ycoord::CartCoord)
+    coords = Vivi.CoordSystem{Float64}("uxy", [ucoord, xcoord, ycoord])
+    System(coords)
+end
+
 
 # TODO: determine it using the metric
 function timestep(sys::System, f)
-    sys._dt
 end
 
 

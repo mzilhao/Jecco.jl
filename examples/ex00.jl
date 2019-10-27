@@ -9,8 +9,8 @@ p = Param(
     A0x         = 1.0,
     A0y         = 1.0,
 
-    # tmax        = 2.0,
-    tmax        = 0.5,
+    tmax        = 2.0,
+#    tmax        = 8.0,
     out_every   = 1,
 
     xmin        = -5.0,
@@ -34,30 +34,30 @@ p = Param(
 
 initial_data = Jecco.KG_3_1.sine2D
 
-sys = System(p)
+ucoord  = Vivi.SpectralCoord("u", p.umin, p.umax, p.unodes)
+xcoord  = Vivi.CartCoord("x", p.xmin, p.xmax, p.xnodes, endpoint=false)
+ycoord  = Vivi.CartCoord("y", p.ymin, p.ymax, p.ynodes, endpoint=false)
+
+
+sys = System(ucoord, xcoord, ycoord)
 
 phi0 = initial_data(sys, p)
 
 bulk = BulkVars(phi0)
 
-a4 = -Jecco.KG_3_1.ones2D(sys)
-
-boundary = BoundaryVars(a4)
 
 Jecco.KG_3_1.Vf(phi)  = -1.0 + 0.5 * phi*phi
 Jecco.KG_3_1.Vfp(phi) = phi
 
-
-# solve_nested_g1! = Jecco.KG_3_1.nested_g1(sys)
-# solve_nested_g1!(bulk, boundary)
-
 rhs! = Jecco.KG_3_1.setup_rhs(phi0, sys)
-timestep = Jecco.KG_3_1.timestep
+# timestep = Jecco.KG_3_1.timestep
+# timestep = p.dt
 
 # dphidt = similar(phi)
 # rhs!(dphidt, phi, sys, 0.0)
 
-dt0 = timestep(sys, phi0)
+# dt0 = timestep(sys, phi0)
+dt0 = p.dt
 
 tspan = (0.0, p.tmax)
 
