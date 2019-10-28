@@ -75,13 +75,15 @@ struct BulkVars{A}
     A    :: A
 end
 BulkVars(phi, S, Sd, phid, A) =  BulkVars{typeof(phi)}(phi, S, Sd, phid, A)
-function BulkVars(phi::Array)
+function BulkVars(phi::Array{<:Number,3})
     S    = similar(phi)
     Sd   = similar(phi)
     phid = similar(phi)
     A    = similar(phi)
     BulkVars{typeof(phi)}(phi, S, Sd, phid, A)
 end
+
+BulkVars(phis::Vector) = [BulkVars(phi) for phi in phis]
 
 function Base.getindex(bulk::BulkVars, i::Int)
     phi   = bulk.phi[i]
