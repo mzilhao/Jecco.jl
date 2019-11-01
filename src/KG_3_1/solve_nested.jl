@@ -16,6 +16,7 @@ struct Nested{S,D,T<:Real}
     Du_phi  :: D
     Dxx_phi :: D
     Dyy_phi :: D
+    Du_phid :: D
     A_mat   :: Matrix{T}
     b_vec   :: Vector{T}
     vars    :: AllVars{T}
@@ -31,13 +32,15 @@ function Nested(sys::System)
     Du_phi    = zeros(Nu, Nx, Ny)
     Dxx_phi   = zeros(Nu, Nx, Ny)
     Dyy_phi   = zeros(Nu, Nx, Ny)
+    Du_phid   = zeros(Nu, Nx, Ny)
 
     A_mat = zeros(Nu, Nu)
     b_vec = zeros(Nu)
     vars  = AllVars{eltype(A_mat)}()
 
     Nested{typeof(sys), typeof(Du_phi),
-           eltype(A_mat)}(sys, uu, xx, yy, Du_phi, Dxx_phi, Dyy_phi, A_mat, b_vec, vars)
+           eltype(A_mat)}(sys, uu, xx, yy, Du_phi, Dxx_phi, Dyy_phi, Du_phid,
+                          A_mat, b_vec, vars)
 end
 
 Nested(systems::Vector) = [Nested(sys) for sys in systems]
@@ -52,6 +55,7 @@ function nested_g1!(nested::Nested, bulk::BulkVars, boundary::BulkVars)
     Du_phi  = nested.Du_phi
     Dxx_phi = nested.Dxx_phi
     Dyy_phi = nested.Dyy_phi
+    Du_phid = nested.Du_phid
 
     A_mat   = nested.A_mat
     b_vec   = nested.b_vec
@@ -117,6 +121,33 @@ function nested_g1!(nested::Nested, bulk::BulkVars, boundary::BulkVars)
         @fastmath @inbounds for i in eachindex(xx)
             @fastmath @inbounds @simd for a in eachindex(uu)
                 bulk.A[a,i,j] = boundary.A[i,j]
+            end
+        end
+    end
+
+
+    # finally compute dphidt_g1
+
+    Vivi.D!(Du_phid, bulk.phid, uderiv, 1)
+
+    # TODO: parallelize here
+    @fastmath @inbounds for j in eachindex(yy)
+        @inbounds for i in eachindex(xx)
+            @inbounds @simd for a in eachindex(uu)
+                vars.u       = uu[a]
+
+                vars.phi_d0  = bulk.phi[a,i,j]
+                vars.phid_d0 = bulk.phid[a,i,j]
+                vars.A_d0    = bulk.A[a,i,j]
+
+                vars.phi_du  = Du_phi[a,i,j]
+                vars.phid_du = Du_phid[a,i,j]
+
+                if vars.u > 1.e-9
+                    bulk.dphidt[a,i,j]  = dphig1dt(vars)
+                else
+                    bulk.dphidt[a,i,j]  = dphig1dt_u0(vars)
+                end
             end
         end
     end
