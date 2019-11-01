@@ -75,7 +75,7 @@ struct BulkVars{A}
     A    :: A
 end
 BulkVars(phi, S, Sd, phid, A) =  BulkVars{typeof(phi)}(phi, S, Sd, phid, A)
-function BulkVars(phi::Array{<:Number,3})
+function BulkVars(phi::Array{<:Number,N}) where {N}
     S    = similar(phi)
     Sd   = similar(phi)
     phid = similar(phi)
@@ -120,6 +120,10 @@ function Base.getindex(bulk::BulkVars, ::Colon)
     A     = bulk.A[:]
     BulkVars{typeof(phi)}(phi, S, Sd, phid, A)
 end
+
+Base.lastindex(bulk::BulkVars) = lastindex(bulk.phi)
+Base.lastindex(bulk::BulkVars, i::Int) = lastindex(bulk.phi, i)
+
 
 
 struct BoundaryVars{A}
