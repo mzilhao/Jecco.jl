@@ -35,7 +35,7 @@ function setup_rhs(phis::Vector, systems::Vector)
     Nsys    = length(systems)
     nesteds = Nested(systems)
 
-    function (df::ArrayPartition, f::ArrayPartition, sys, t)
+    function (df::ArrayPartition, f::ArrayPartition, systems, t)
         for i in 1:Nsys
             bulks[i].phi .= f.x[i]
         end
@@ -51,7 +51,12 @@ function setup_rhs(phis::Vector, systems::Vector)
         end
         nested_g1!(nesteds[Nsys], bulks[Nsys], boundaries[Nsys])
 
-        # FIXME: sync boundary points
+        # sync boundary points. note: in a more general situation we may need to
+        # check the characteristic speeds (in this case we just know where the
+        # horizon is)
+        for i in 1:Nsys-1
+            bulks[i].dphidt[end,:,:] .= bulks[i+1].dphidt[1,:,:]
+        end
 
         for i in 1:Nsys
             df.x[i] .= bulks[i].dphidt
