@@ -24,7 +24,8 @@ export BulkVars, BoundaryVars, AllVars
     ynodes      :: Int
     umin        :: Float64
     umax        :: Float64
-    unodes      :: Int
+    udomains    :: Int     = 1
+    unodes      :: Int # number of points per domain
 
     # dtfac       :: Float64    = 0.5
     dt          :: Float64
