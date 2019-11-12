@@ -9,7 +9,7 @@ p = Param(
     A0x         = 1.0,
     A0y         = 1.0,
 
-    tmax        = 2.0,
+    tmax        = 1.2,
 #    tmax        = 8.0,
     out_every   = 1,
 
@@ -21,11 +21,12 @@ p = Param(
     ynodes      =  128,
     umin        =  0.0,
     umax        =  1.0,
-    unodes      =  32,
+    unodes      =  64,
 
     # dtfac       = 0.5,
 
-    dt          = 0.06, # for RK4
+    # dt          = 0.015, # for RK4
+    dt          = 0.02, # for RK4
     # dt          = 0.01,   # for AB3
 
     folder      = "./data",
@@ -67,19 +68,18 @@ integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
 # integrator = init(prob, AB3(), save_everystep=false, dt=dt0, adaptive=false)
 
 
-out    = Vivi.Output(p.folder, p.prefix, p.out_every)
+tinfo  = Vivi.TimeInfo()
+out    = Vivi.Output(p.folder, p.prefix, p.out_every, tinfo)
 
-it = 0
 # write initial data
-Jecco.out_info(it, 0, phi0, "phi", 1, 200)
-Vivi.output(out, Dict("phi" => (phi0, sys.coords)), it, 0, 0)
+Jecco.out_info(tinfo.it, tinfo.t, phi0, "phi", 1, 200)
+Vivi.output(out, Dict("phi" => (phi0, sys.coords)))
 
 for (u,t) in tuples(integrator)
-    # it += 1
-    global it += 1
+    tinfo.it += 1
+    tinfo.dt  = integrator.dt
+    tinfo.t   = t
 
-    dt = integrator.dt
-
-    Jecco.out_info(it, t, u, "phi", 1, 200)
-    Vivi.output(out, Dict("phi" => (u, sys.coords)), it, t, dt)
+    Jecco.out_info(tinfo.it, tinfo.t, u, "phi", 1, 200)
+    Vivi.output(out, Dict("phi" => (u, sys.coords)))
 end

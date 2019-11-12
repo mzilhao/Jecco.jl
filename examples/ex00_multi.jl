@@ -78,30 +78,28 @@ prob  = ODEProblem(rhs!, ID, tspan, systems)
 integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
 # integrator = init(prob, AB3(), save_everystep=false, dt=dt0, adaptive=false)
 
+tinfo  = Vivi.TimeInfo()
+out    = Vivi.Output(p.folder, p.prefix, p.out_every, tinfo)
 
-out    = Vivi.Output(p.folder, p.prefix, p.out_every)
-
-it = 0
 # write initial data
-Jecco.out_info(it, 0, phi0s[1], "phi c=1", 1, 200)
+Jecco.out_info(tinfo.it, tinfo.t, phi0s[1], "phi c=1", 1, 200)
 vars_dict = Dict("phi c=1" => (phi0s[1], systems[1].coords) )
 for i in 2:Nsys
     vars_dict["phi c=$i"] = (phi0s[i], systems[i].coords)
 end
-Vivi.output(out, vars_dict, it, 0, 0)
+Vivi.output(out, vars_dict)
 
 for (u,t) in tuples(integrator)
-    # it += 1
-    global it += 1
+    tinfo.it += 1
+    tinfo.dt  = integrator.dt
+    tinfo.t   = t
 
     phis = [u.x[i] for i in 1:Nsys]
 
-    dt = integrator.dt
-
-    Jecco.out_info(it, t, phis[1], "phi c=1", 1, 200)
+    Jecco.out_info(tinfo.it, tinfo.t, phis[1], "phi c=1", 1, 200)
 
     for i in 1:Nsys
         vars_dict["phi c=$i"] = (phis[i], systems[i].coords)
     end
-    Vivi.output(out, vars_dict, it, t, dt)
+    Vivi.output(out, vars_dict)
 end

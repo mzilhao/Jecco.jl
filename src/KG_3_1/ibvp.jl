@@ -8,7 +8,11 @@ function ibvp(p::Param)
     initial_data = Jecco.KG_3_1.sine2D
     # initial_data = Jecco.KG_3_1.uniform2D
 
-    sys = System(p)
+    ucoord  = Vivi.SpectralCoord("u", p.umin, p.umax, p.unodes)
+    xcoord  = Vivi.CartCoord("x", p.xmin, p.xmax, p.xnodes, endpoint=false)
+    ycoord  = Vivi.CartCoord("y", p.ymin, p.ymax, p.ynodes, endpoint=false)
+
+    sys = System(ucoord, xcoord, ycoord)
 
     phi0 = initial_data(sys, p)
     bulk = BulkVars(phi0)
@@ -17,9 +21,11 @@ function ibvp(p::Param)
     boundary = BoundaryVars(a4)
 
     rhs! = Jecco.KG_3_1.setup_rhs(phi0, sys)
-    timestep = Jecco.KG_3_1.timestep
 
-    dt0 = timestep(sys, phi0)
+    # timestep = Jecco.KG_3_1.timestep
+    # dt0 = timestep(sys, phi0)
+
+    dt0 = p.dt
 
     tspan = (0.0, p.tmax)
 
@@ -28,20 +34,20 @@ function ibvp(p::Param)
     integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
     # integrator = init(prob, AB3(), save_everystep=false, dt=dt0, adaptive=false)
 
-    out    = Vivi.Output(p.folder, p.prefix, p.out_every)
+    tinfo  = Vivi.TimeInfo()
+    out    = Vivi.Output(p.folder, p.prefix, p.out_every, tinfo)
 
-    it = 0
     # write initial data
-    Jecco.out_info(it, 0, phi0, "phi", 1, 200)
-    Vivi.output(out, Dict("phi" => (phi0, sys.coords)), it, 0, 0)
+    Jecco.out_info(tinfo.it, tinfo.t, phi0, "phi", 1, 200)
+    Vivi.output(out, Dict("phi" => (phi0, sys.coords)))
 
     for (u,t) in tuples(integrator)
-        it += 1
+        tinfo.it += 1
+        tinfo.dt  = integrator.dt
+        tinfo.t   = t
 
-        dt = integrator.dt
-
-        Jecco.out_info(it, t, u, "phi", 1, 200)
-        Vivi.output(out, Dict("phi" => (u, sys.coords)), it, t, dt)
+        Jecco.out_info(tinfo.it, tinfo.t, u, "phi", 1, 200)
+        Vivi.output(out, Dict("phi" => (u, sys.coords)))
     end
 
     nothing
