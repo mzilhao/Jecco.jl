@@ -39,7 +39,7 @@ function ibvp(p::Param)
 
     # write initial data
     Jecco.out_info(tinfo.it, tinfo.t, phi0, "phi", 1, 200)
-    Vivi.output(out, Dict("phi" => (phi0, sys.coords)))
+    Vivi.output(out, "phi", phi0, sys.coords)
 
     for (u,t) in tuples(integrator)
         tinfo.it += 1
@@ -47,7 +47,7 @@ function ibvp(p::Param)
         tinfo.t   = t
 
         Jecco.out_info(tinfo.it, tinfo.t, u, "phi", 1, 200)
-        Vivi.output(out, Dict("phi" => (u, sys.coords)))
+        Vivi.output(out, "phi", u, sys.coords)
     end
 
     nothing
