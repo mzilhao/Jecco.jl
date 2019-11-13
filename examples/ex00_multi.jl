@@ -5,6 +5,17 @@ using Jecco.KG_3_1
 
 using DifferentialEquations
 
+
+function write_out(out, fieldnames, coordss)
+    Nsys = length(fieldnames)
+    function (u)
+        phis = [u.x[i] for i in 1:Nsys]
+        Vivi.output(out, fieldnames, phis, coordss)
+        nothing
+    end
+end
+
+
 p = Param(
     A0x         = 1.0,
     A0y         = 1.0,
@@ -79,26 +90,27 @@ integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
 # integrator = init(prob, AB3(), save_everystep=false, dt=dt0, adaptive=false)
 
 tinfo  = Vivi.TimeInfo()
-out    = Vivi.Output(p.folder, p.prefix, p.out_every, tinfo)
 
 # write initial data
-Jecco.out_info(tinfo.it, tinfo.t, phi0s[1], "phi c=1", 1, 200)
+Jecco.out_info(tinfo.it, tinfo.t, ID, "phi", 1, 200)
 
 fieldnames = ["phi c=$i" for i in 1:Nsys]
 fields     = phi0s
 coordss    = [systems[i].coords for i in 1:Nsys]
 vars_dict = Dict("phi c=1" => (phi0s[1], systems[1].coords) )
-Vivi.output(out, fieldnames, fields, coordss)
+
+out    = Vivi.Output(p.folder, p.prefix, p.out_every, tinfo)
+output = write_out(out, fieldnames, coordss)
+output(ID)
 
 for (u,t) in tuples(integrator)
     tinfo.it += 1
     tinfo.dt  = integrator.dt
     tinfo.t   = t
 
-    phis = [u.x[i] for i in 1:Nsys]
+    # phis = [u.x[i] for i in 1:Nsys]
 
-    Jecco.out_info(tinfo.it, tinfo.t, phis[1], "phi c=1", 1, 200)
-
-    fields = phis
-    Vivi.output(out, fieldnames, fields, coordss)
+    # Jecco.out_info(tinfo.it, tinfo.t, phis[1], "phi c=1", 1, 200)
+    Jecco.out_info(tinfo.it, tinfo.t, u, "phi", 1, 200)
+    output(u)
 end
