@@ -9,9 +9,9 @@ p = Param(
     A0x         = 1.0,
     A0y         = 1.0,
 
-    tmax        = 1.2,
+    tmax        = 4.0,
 #    tmax        = 8.0,
-    out_every   = 1,
+    out_every   = 4,
 
     xmin        = -5.0,
     xmax        =  5.0,
