@@ -97,7 +97,6 @@ Jecco.out_info(tinfo.it, tinfo.t, ID, "phi", 1, 200)
 fieldnames = ["phi c=$i" for i in 1:Nsys]
 fields     = phi0s
 coordss    = [systems[i].coords for i in 1:Nsys]
-vars_dict = Dict("phi c=1" => (phi0s[1], systems[1].coords) )
 
 out    = Vivi.Output(p.folder, p.prefix, p.out_every, tinfo)
 output = write_out(out, fieldnames, coordss)
