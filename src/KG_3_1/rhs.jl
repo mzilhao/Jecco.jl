@@ -2,7 +2,7 @@
 function setup_rhs(phi::Array{<:Number,N}, sys::System) where {N}
 
     a4 = -ones2D(sys)
-    # boundary = BoundaryVars(a4)
+    boundary = BoundaryVars(a4)
 
     bulk = BulkVars(phi)
     BC = bulk[1,:,:]
@@ -13,9 +13,9 @@ function setup_rhs(phi::Array{<:Number,N}, sys::System) where {N}
         bulk.phi .= f
 
         # u=0 boundary
-        BC.Sd   .= 0.5 * a4
+        BC.Sd   .= 0.5 * boundary.a4
         BC.phid .= bulk.phi[1,:,:] # phi2
-        BC.A    .= a4
+        BC.A    .= boundary.a4
 
         nested_g1!(nested, bulk, BC)
 
@@ -27,6 +27,7 @@ end
 function setup_rhs(phis::Vector, systems::Vector)
 
     a4 = -ones2D(systems[1])
+    boundary = BoundaryVars(a4)
 
     bulks = BulkVars(phis)
     phis_slice  = [phi[1,:,:] for phi in phis]
@@ -41,9 +42,9 @@ function setup_rhs(phis::Vector, systems::Vector)
         end
 
         # u=0 boundary
-        BCs[1].Sd   .= 0.5 * a4
+        BCs[1].Sd   .= 0.5 * boundary.a4
         BCs[1].phid .= bulks[1].phi[1,:,:] # phi2
-        BCs[1].A    .= a4
+        BCs[1].A    .= boundary.a4
 
         for i in 1:Nsys-1
             nested_g1!(nesteds[i], bulks[i], BCs[i])
