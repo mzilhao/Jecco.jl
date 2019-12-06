@@ -46,7 +46,7 @@ end
 Nested(systems::Vector) = [Nested(sys) for sys in systems]
 
 
-function nested_g1!(bulk::BulkVars, BC::BulkVars, nested::Nested)
+function solve_nested_g1!(bulk::BulkVars, BC::BulkVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -150,6 +150,44 @@ function nested_g1!(bulk::BulkVars, BC::BulkVars, nested::Nested)
                 end
             end
         end
+    end
+
+    nothing
+end
+
+
+function solve_nested_g1!(bulk::BulkVars, BC::BulkVars, boundary::BoundaryVars,
+                          nested::Nested)
+    # u=0 boundary
+    BC.Sd   .= 0.5 * boundary.a4
+    BC.phid .= bulk.phi[1,:,:] # phi2
+    BC.A    .= boundary.a4
+
+    solve_nested_g1!(bulk, BC, nested)
+
+    nothing
+end
+
+function solve_nested_g1!(bulks::Vector, BCs::Vector, boundary::BoundaryVars,
+                          nesteds::Vector)
+    Nsys = length(nesteds)
+
+    # u=0 boundary
+    BCs[1].Sd   .= 0.5 * boundary.a4
+    BCs[1].phid .= bulks[1].phi[1,:,:] # phi2
+    BCs[1].A    .= boundary.a4
+
+    for i in 1:Nsys-1
+        solve_nested_g1!(bulks[i], BCs[i], nesteds[i])
+        BCs[i+1] = bulks[i][end,:,:]
+    end
+    solve_nested_g1!(bulks[Nsys], BCs[Nsys], nesteds[Nsys])
+
+    # sync boundary points. note: in a more general situation we may need to
+    # check the characteristic speeds (in this case we just know where the
+    # horizon is)
+    for i in 1:Nsys-1
+        bulks[i].dphidt[end,:,:] .= bulks[i+1].dphidt[1,:,:]
     end
 
     nothing
