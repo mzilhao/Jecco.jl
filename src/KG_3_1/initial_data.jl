@@ -22,6 +22,7 @@ function uniform2D(sys::System, p::Param)
     phif
 end
 
+uniform2D(systems::Array, p::Param) = [uniform2D(sys, p) for sys in systems]
 
 sine2D(x, y, Lx::Real, Ly::Real, kx::Integer, ky::Integer) =
              sin( 2*π * kx / Lx * x ) * sin( 2*π * ky / Ly * y )
@@ -53,6 +54,8 @@ function sine2D(sys::System, p::Param)
 
     phif
 end
+
+sine2D(systems::Array, p::Param) = [sine2D(sys, p) for sys in systems]
 
 function ones2D(sys::System)
     coords = sys.coords
