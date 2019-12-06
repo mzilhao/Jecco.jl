@@ -46,7 +46,7 @@ end
 Nested(systems::Vector) = [Nested(sys) for sys in systems]
 
 
-function nested_g1!(nested::Nested, bulk::BulkVars, boundary::BulkVars)
+function nested_g1!(nested::Nested, bulk::BulkVars, BC::BulkVars)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -75,7 +75,7 @@ function nested_g1!(nested::Nested, bulk::BulkVars, boundary::BulkVars)
     @fastmath @inbounds for j in eachindex(yy)
         @fastmath @inbounds for i in eachindex(xx)
             @fastmath @inbounds @simd for a in eachindex(uu)
-                bulk.Sd[a,i,j] = boundary.Sd[i,j]
+                bulk.Sd[a,i,j] = BC.Sd[i,j]
             end
         end
     end
@@ -106,7 +106,7 @@ function nested_g1!(nested::Nested, bulk::BulkVars, boundary::BulkVars)
             end
 
             # boundary condition
-            b_vec[1]    = boundary.phid[i,j]
+            b_vec[1]    = BC.phid[i,j]
             A_mat[1,:] .= 0.0
             A_mat[1,1]  = 1.0
 
@@ -120,7 +120,7 @@ function nested_g1!(nested::Nested, bulk::BulkVars, boundary::BulkVars)
     @fastmath @inbounds for j in eachindex(yy)
         @fastmath @inbounds for i in eachindex(xx)
             @fastmath @inbounds @simd for a in eachindex(uu)
-                bulk.A[a,i,j] = boundary.A[i,j]
+                bulk.A[a,i,j] = BC.A[i,j]
             end
         end
     end
