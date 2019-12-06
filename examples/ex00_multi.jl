@@ -15,6 +15,20 @@ function write_out(out, fieldnames, coordss)
     end
 end
 
+function unpack_dom(ucoord)
+    Nsys = length(ucoord)
+    Nus  = [ucoord[i].nodes for i in 1:Nsys]
+
+    Nu_lims = zeros(typeof(Nsys), Nsys + 1)
+    for i in 1:Nsys
+        Nu_lims[i+1] = Nu_lims[i] + Nus[i]
+    end
+
+    function (f)
+        [f[Nu_lims[i]+1:Nu_lims[i+1],:,:] for i in 1:Nsys]
+    end
+end
+
 
 p = Param(
     A0x         = 1.0,
