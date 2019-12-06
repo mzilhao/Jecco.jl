@@ -192,3 +192,32 @@ function solve_nested_g1!(bulks::Vector, BCs::Vector, boundary::BoundaryVars,
 
     nothing
 end
+
+
+function solve_nested_g1(phi::Array{<:Number,N}, sys::System) where {N}
+    a4 = -ones2D(sys)
+    boundary = BoundaryVars(a4)
+
+    bulk = BulkVars(phi)
+    BC = bulk[1,:,:]
+
+    nested = Nested(sys)
+
+    solve_nested_g1!(bulk, BC, boundary, nested)
+    bulk
+end
+
+function solve_nested_g1(phis::Vector, systems::Vector)
+    a4 = -ones2D(systems[1])
+    boundary = BoundaryVars(a4)
+
+    bulks = BulkVars(phis)
+    phis_slice  = [phi[1,:,:] for phi in phis]
+    BCs  = BulkVars(phis_slice)
+
+    Nsys    = length(systems)
+    nesteds = Nested(systems)
+
+    solve_nested_g1!(bulks, BCs, boundary, nesteds)
+    bulks
+end
