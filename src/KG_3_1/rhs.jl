@@ -17,7 +17,7 @@ function setup_rhs(phi::Array{<:Number,N}, sys::System) where {N}
         BC.phid .= bulk.phi[1,:,:] # phi2
         BC.A    .= boundary.a4
 
-        nested_g1!(nested, bulk, BC)
+        nested_g1!(bulk, BC, nested)
 
         df .= bulk.dphidt
         nothing
@@ -47,10 +47,10 @@ function setup_rhs(phis::Vector, systems::Vector)
         BCs[1].A    .= boundary.a4
 
         for i in 1:Nsys-1
-            nested_g1!(nesteds[i], bulks[i], BCs[i])
+            nested_g1!(bulks[i], BCs[i], nesteds[i])
             BCs[i+1] = bulks[i][end,:,:]
         end
-        nested_g1!(nesteds[Nsys], bulks[Nsys], BCs[Nsys])
+        nested_g1!(bulks[Nsys], BCs[Nsys], nesteds[Nsys])
 
         # sync boundary points. note: in a more general situation we may need to
         # check the characteristic speeds (in this case we just know where the

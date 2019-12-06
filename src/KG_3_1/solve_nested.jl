@@ -46,7 +46,7 @@ end
 Nested(systems::Vector) = [Nested(sys) for sys in systems]
 
 
-function nested_g1!(nested::Nested, bulk::BulkVars, BC::BulkVars)
+function nested_g1!(bulk::BulkVars, BC::BulkVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
