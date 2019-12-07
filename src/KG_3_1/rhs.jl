@@ -19,7 +19,7 @@ function setup_rhs(phi::Array{<:Number,N}, sys::System) where {N}
     end
 end
 
-function setup_rhs(phis::Vector, systems::Vector)
+function setup_rhs(phis::Vector, systems::Vector, unpack::Function)
 
     a4 = -ones2D(systems[1])
     boundary = BoundaryVars(a4)
@@ -31,16 +31,16 @@ function setup_rhs(phis::Vector, systems::Vector)
     Nsys    = length(systems)
     nesteds = Nested(systems)
 
-    function (df::ArrayPartition, f::ArrayPartition, systems, t)
+    function (df, f, systems, t)
+        phis = unpack(f)
         for i in 1:Nsys
-            bulks[i].phi .= f.x[i]
+            bulks[i].phi .= phis[i]
         end
 
         solve_nested_g1!(bulks, BCs, boundary, nesteds)
 
-        for i in 1:Nsys
-            df.x[i] .= bulks[i].dphidt
-        end
+        tmp  = [bulks[i].dphidt for i in 1:Nsys]
+        df  .= vcat(tmp...)
 
         nothing
     end

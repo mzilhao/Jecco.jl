@@ -10,7 +10,6 @@ p = Param(
     A0y         = 1.0,
 
     tmax        = 4.0,
-#    tmax        = 8.0,
     out_every   = 4,
 
     xmin        = -5.0,
