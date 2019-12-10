@@ -78,9 +78,10 @@ Jecco.KG_3_1.Vf(phi)  = -1.0 + 0.5 * phi*phi
 Jecco.KG_3_1.Vfp(phi) = phi
 
 
+unpack = unpack_dom(ucoord)
+
 rhs! = Jecco.KG_3_1.setup_rhs(phi0s, systems, unpack)
 
-unpack = unpack_dom(ucoord)
 
 # timestep = Jecco.KG_3_1.timestep
 # timestep = p.dt
