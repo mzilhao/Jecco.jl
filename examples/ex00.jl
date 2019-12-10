@@ -10,7 +10,6 @@ p = Param(
     A0y         = 1.0,
 
     tmax        = 4.0,
-#    tmax        = 8.0,
     out_every   = 4,
 
     xmin        = -5.0,
@@ -44,18 +43,14 @@ sys = System(ucoord, xcoord, ycoord)
 
 phi0 = initial_data(sys, p)
 
-bulk = BulkVars(phi0)
-
 
 Jecco.KG_3_1.Vf(phi)  = -1.0 + 0.5 * phi*phi
 Jecco.KG_3_1.Vfp(phi) = phi
 
 rhs! = Jecco.KG_3_1.setup_rhs(phi0, sys)
+
 # timestep = Jecco.KG_3_1.timestep
 # timestep = p.dt
-
-# dphidt = similar(phi)
-# rhs!(dphidt, phi, sys, 0.0)
 
 # dt0 = timestep(sys, phi0)
 dt0 = p.dt

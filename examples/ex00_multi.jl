@@ -5,23 +5,37 @@ using Jecco.KG_3_1
 
 using DifferentialEquations
 
+function unpack_dom(ucoord)
+    Nsys = length(ucoord)
+    Nus  = [ucoord[i].nodes for i in 1:Nsys]
+
+    Nu_lims = zeros(typeof(Nsys), Nsys + 1)
+    for i in 1:Nsys
+        Nu_lims[i+1] = Nu_lims[i] + Nus[i]
+    end
+
+    function (f)
+        [f[Nu_lims[i]+1:Nu_lims[i+1],:,:] for i in 1:Nsys]
+    end
+end
 
 function write_out(out, fieldnames, coordss)
-    Nsys = length(fieldnames)
+    Nsys   = length(fieldnames)
+    ucoord = [coordss[i][1] for i in 1:Nsys]
+    unpack = unpack_dom(ucoord)
+
     function (u)
-        phis = [u.x[i] for i in 1:Nsys]
+        phis = unpack(u)
         Vivi.output(out, fieldnames, phis, coordss)
         nothing
     end
 end
-
 
 p = Param(
     A0x         = 1.0,
     A0y         = 1.0,
 
     tmax        = 4.0,
-#    tmax        = 8.0,
     out_every   = 4,
 
     xmin        = -5.0,
@@ -57,32 +71,27 @@ ycoord  = Vivi.CartCoord("y", p.ymin, p.ymax, p.ynodes, endpoint=false)
 systems = [System(ucoord[i], xcoord, ycoord) for i in 1:Nsys]
 
 phi0s = initial_data(systems, p)
-
-bulks = BulkVars(phi0s)
-
-phi0s_slice  = [phi0[1,:,:] for phi0 in phi0s]
-
-boundaries = BulkVars(phi0s_slice)
+ID    = vcat(phi0s...)
 
 
 Jecco.KG_3_1.Vf(phi)  = -1.0 + 0.5 * phi*phi
 Jecco.KG_3_1.Vfp(phi) = phi
 
 
-rhs! = Jecco.KG_3_1.setup_rhs(phi0s, systems)
+unpack = unpack_dom(ucoord)
+
+rhs! = Jecco.KG_3_1.setup_rhs(phi0s, systems, unpack)
+
 
 # timestep = Jecco.KG_3_1.timestep
 # timestep = p.dt
 
-# dphidt = similar(phi)
-# rhs!(dphidt, phi, sys, 0.0)
 
 # dt0 = timestep(sys, phi0)
 dt0 = p.dt
 
 tspan = (0.0, p.tmax)
 
-ID = ArrayPartition(phi0s...)
 
 prob  = ODEProblem(rhs!, ID, tspan, systems)
 # http://docs.juliadiffeq.org/latest/basics/integrator.html
@@ -107,9 +116,6 @@ for (u,t) in tuples(integrator)
     tinfo.dt  = integrator.dt
     tinfo.t   = t
 
-    # phis = [u.x[i] for i in 1:Nsys]
-
-    # Jecco.out_info(tinfo.it, tinfo.t, phis[1], "phi c=1", 1, 200)
     Jecco.out_info(tinfo.it, tinfo.t, u, "phi", 1, 200)
     output(u)
 end

@@ -46,7 +46,7 @@ end
 Nested(systems::Vector) = [Nested(sys) for sys in systems]
 
 
-function nested_g1!(nested::Nested, bulk::BulkVars, boundary::BulkVars)
+function solve_nested_g1!(bulk::BulkVars, BC::BulkVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -75,7 +75,7 @@ function nested_g1!(nested::Nested, bulk::BulkVars, boundary::BulkVars)
     @fastmath @inbounds for j in eachindex(yy)
         @fastmath @inbounds for i in eachindex(xx)
             @fastmath @inbounds @simd for a in eachindex(uu)
-                bulk.Sd[a,i,j] = boundary.Sd[i,j]
+                bulk.Sd[a,i,j] = BC.Sd[i,j]
             end
         end
     end
@@ -106,7 +106,7 @@ function nested_g1!(nested::Nested, bulk::BulkVars, boundary::BulkVars)
             end
 
             # boundary condition
-            b_vec[1]    = boundary.phid[i,j]
+            b_vec[1]    = BC.phid[i,j]
             A_mat[1,:] .= 0.0
             A_mat[1,1]  = 1.0
 
@@ -120,7 +120,7 @@ function nested_g1!(nested::Nested, bulk::BulkVars, boundary::BulkVars)
     @fastmath @inbounds for j in eachindex(yy)
         @fastmath @inbounds for i in eachindex(xx)
             @fastmath @inbounds @simd for a in eachindex(uu)
-                bulk.A[a,i,j] = boundary.A[i,j]
+                bulk.A[a,i,j] = BC.A[i,j]
             end
         end
     end
@@ -153,4 +153,71 @@ function nested_g1!(nested::Nested, bulk::BulkVars, boundary::BulkVars)
     end
 
     nothing
+end
+
+
+function solve_nested_g1!(bulk::BulkVars, BC::BulkVars, boundary::BoundaryVars,
+                          nested::Nested)
+    # u=0 boundary
+    BC.Sd   .= 0.5 * boundary.a4
+    BC.phid .= bulk.phi[1,:,:] # phi2
+    BC.A    .= boundary.a4
+
+    solve_nested_g1!(bulk, BC, nested)
+
+    nothing
+end
+
+function solve_nested_g1!(bulks::Vector, BCs::Vector, boundary::BoundaryVars,
+                          nesteds::Vector)
+    Nsys = length(nesteds)
+
+    # u=0 boundary
+    BCs[1].Sd   .= 0.5 * boundary.a4
+    BCs[1].phid .= bulks[1].phi[1,:,:] # phi2
+    BCs[1].A    .= boundary.a4
+
+    for i in 1:Nsys-1
+        solve_nested_g1!(bulks[i], BCs[i], nesteds[i])
+        BCs[i+1] = bulks[i][end,:,:]
+    end
+    solve_nested_g1!(bulks[Nsys], BCs[Nsys], nesteds[Nsys])
+
+    # sync boundary points. note: in a more general situation we may need to
+    # check the characteristic speeds (in this case we just know where the
+    # horizon is)
+    for i in 1:Nsys-1
+        bulks[i].dphidt[end,:,:] .= bulks[i+1].dphidt[1,:,:]
+    end
+
+    nothing
+end
+
+
+function solve_nested_g1(phi::Array{<:Number,N}, sys::System) where {N}
+    a4 = -ones2D(sys)
+    boundary = BoundaryVars(a4)
+
+    bulk = BulkVars(phi)
+    BC = bulk[1,:,:]
+
+    nested = Nested(sys)
+
+    solve_nested_g1!(bulk, BC, boundary, nested)
+    bulk
+end
+
+function solve_nested_g1(phis::Vector, systems::Vector)
+    a4 = -ones2D(systems[1])
+    boundary = BoundaryVars(a4)
+
+    bulks = BulkVars(phis)
+    phis_slice  = [phi[1,:,:] for phi in phis]
+    BCs  = BulkVars(phis_slice)
+
+    Nsys    = length(systems)
+    nesteds = Nested(systems)
+
+    solve_nested_g1!(bulks, BCs, boundary, nesteds)
+    bulks
 end
