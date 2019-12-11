@@ -5,7 +5,7 @@ using Vivi
 using Parameters
 
 export Param
-export GridParam
+export GridParam, IDParam
 export System
 export BulkVars, BoundaryVars, AllVars
 

@@ -28,7 +28,7 @@ function write_out(out, fieldnames, coordss)
     end
 end
 
-function ibvp(p::Param, gpar::GridParam)
+function ibvp(p::Param, gpar::GridParam, idpar::IDParam)
 
     # TODO: make parameter
     initial_data = Jecco.KG_3_1.sine2D
@@ -40,7 +40,7 @@ function ibvp(p::Param, gpar::GridParam)
     ucoords = [systems[i].coords[1] for i in 1:Nsys]
     unpack  = unpack_dom(ucoords)
 
-    phi0s = initial_data(systems, p)
+    phi0s = initial_data(systems, idpar)
     ID    = vcat(phi0s...)
 
     rhs! = Jecco.KG_3_1.setup_rhs(phi0s, systems, unpack)
