@@ -5,6 +5,7 @@ using Vivi
 using Parameters
 
 export Param
+export GridParam
 export System
 export BulkVars, BoundaryVars, AllVars
 
@@ -32,41 +33,6 @@ export BulkVars, BoundaryVars, AllVars
     folder      :: String  = "./data"
     prefix      :: String  = "phi"
 end
-
-struct System{C,D,E} <: Vivi.System
-    coords :: C
-    uderiv :: D
-    xderiv :: E
-    yderiv :: E
-end
-
-function System(coords::CoordSystem)
-    # FIXME
-    ord    = 4
-    BC     = :periodic
-
-    # dx     = xcoord.delta
-    # dy     = ycoord.delta
-    # dt0    = p.dtfac * min(dx, dy)
-
-    derivs = Vivi.Deriv(coords, (nothing, ord, ord), (nothing, BC, BC))
-    uderiv = derivs[1]
-    xderiv = derivs[2]
-    yderiv = derivs[3]
-
-    System{typeof(coords), typeof(uderiv), typeof(xderiv)}(coords, uderiv, xderiv, yderiv)
-end
-
-function System(ucoord::SpectralCoord, xcoord::CartCoord, ycoord::CartCoord)
-    coords = Vivi.CoordSystem{Float64}("uxy", [ucoord, xcoord, ycoord])
-    System(coords)
-end
-
-
-# TODO: determine it using the metric
-function timestep(sys::System, f)
-end
-
 
 struct BulkVars{A}
     phi    :: A
@@ -159,6 +125,7 @@ function AllVars{T}() where {T<:AbstractFloat}
 end
 
 
+include("system.jl")
 include("initial_data.jl")
 include("dphidt.jl")
 include("equation_coeff.jl")

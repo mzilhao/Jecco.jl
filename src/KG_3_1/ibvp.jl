@@ -28,21 +28,17 @@ function write_out(out, fieldnames, coordss)
     end
 end
 
-function ibvp(p::Param)
+function ibvp(p::Param, gpar::GridParam)
 
     # TODO: make parameter
     initial_data = Jecco.KG_3_1.sine2D
 
-    Nsys = p.udomains
-    delta_udom = (p.umax - p.umin) / Nsys
 
-    ucoord = [Vivi.SpectralCoord("u", p.umin + (i-1)*delta_udom, p.umin + i*delta_udom,
-                                 p.unodes) for i in 1:Nsys]
-    xcoord  = Vivi.CartCoord("x", p.xmin, p.xmax, p.xnodes, endpoint=false)
-    ycoord  = Vivi.CartCoord("y", p.ymin, p.ymax, p.ynodes, endpoint=false)
+    systems = Jecco.KG_3_1.create_sys(gpar)
+    Nsys    = length(systems)
 
-    systems = [System(ucoord[i], xcoord, ycoord) for i in 1:Nsys]
-    unpack  = unpack_dom(ucoord)
+    ucoords = [systems[i].coords[1] for i in 1:Nsys]
+    unpack  = unpack_dom(ucoords)
 
     phi0s = initial_data(systems, p)
     ID    = vcat(phi0s...)
