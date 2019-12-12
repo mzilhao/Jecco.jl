@@ -1,12 +1,4 @@
 
-@with_kw struct ParamID
-    ID_type      :: String
-    A0x          :: Float64
-    A0y          :: Float64
-    Lx           :: Float64
-    Ly           :: Float64
-end
-
 function initial_data(sys, p::ParamID)
     if p.ID_type == "sine2D"
         return sine2D(sys, p)

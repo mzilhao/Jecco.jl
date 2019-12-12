@@ -5,7 +5,7 @@ using Vivi
 using Parameters
 
 export Param
-export ParamGrid, ParamID
+export ParamBase, ParamGrid, ParamID, ParamEvol
 export System
 export BulkVars, BoundaryVars, AllVars
 
@@ -126,6 +126,7 @@ function AllVars{T}() where {T<:AbstractFloat}
 end
 
 
+include("param.jl")
 include("system.jl")
 include("initial_data.jl")
 include("dphidt.jl")

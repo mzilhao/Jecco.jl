@@ -1,17 +1,4 @@
 
-@with_kw struct ParamGrid
-    xmin        :: Float64
-    xmax        :: Float64
-    xnodes      :: Int
-    ymin        :: Float64
-    ymax        :: Float64
-    ynodes      :: Int
-    umin        :: Float64
-    umax        :: Float64
-    udomains    :: Int     = 1
-    unodes      :: Int # number of points per domain
-end
-
 struct System{C,D,E} <: Vivi.System
     coords :: C
     uderiv :: D
