@@ -1,10 +1,18 @@
 
 @with_kw struct IDParam
-    initial_data :: String
+    ID_type      :: String
     A0x          :: Float64
     A0y          :: Float64
     Lx           :: Float64
     Ly           :: Float64
+end
+
+function initial_data(sys, p::IDParam)
+    if p.ID_type == "sine2D"
+        return sine2D(sys, p)
+    else
+        error("Unknown initial data type.")
+    end
 end
 
 function uniform2D(sys::System, p::IDParam)

@@ -30,10 +30,6 @@ end
 
 function ibvp(p::Param, gpar::GridParam, idpar::IDParam)
 
-    # TODO: make parameter
-    initial_data = Jecco.KG_3_1.sine2D
-
-
     systems = Jecco.KG_3_1.create_sys(gpar)
     Nsys    = length(systems)
 
