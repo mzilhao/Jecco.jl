@@ -5,10 +5,11 @@ using Vivi
 using Parameters
 
 export Param
-export GridParam, IDParam
+export ParamGrid, ParamID
 export System
 export BulkVars, BoundaryVars, AllVars
 
+# TODO: to remove...
 @with_kw struct Param
     A0x         :: Float64
     A0y         :: Float64

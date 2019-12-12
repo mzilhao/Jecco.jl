@@ -28,7 +28,7 @@ function write_out(out, fieldnames, coordss)
     end
 end
 
-function ibvp(p::Param, gpar::GridParam, idpar::IDParam)
+function ibvp(p::Param, gpar::ParamGrid, idpar::ParamID)
 
     systems = Jecco.KG_3_1.create_sys(gpar)
     Nsys    = length(systems)

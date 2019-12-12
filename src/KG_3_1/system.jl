@@ -1,5 +1,5 @@
 
-@with_kw struct GridParam
+@with_kw struct ParamGrid
     xmin        :: Float64
     xmax        :: Float64
     xnodes      :: Int
@@ -41,7 +41,7 @@ function System(ucoord::SpectralCoord, xcoord::CartCoord, ycoord::CartCoord)
     System(coords)
 end
 
-function create_sys(p::GridParam)
+function create_sys(p::ParamGrid)
     Nsys = p.udomains
     delta_udom = (p.umax - p.umin) / Nsys
 

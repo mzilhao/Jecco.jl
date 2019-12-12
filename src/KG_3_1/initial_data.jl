@@ -1,5 +1,5 @@
 
-@with_kw struct IDParam
+@with_kw struct ParamID
     ID_type      :: String
     A0x          :: Float64
     A0y          :: Float64
@@ -7,7 +7,7 @@
     Ly           :: Float64
 end
 
-function initial_data(sys, p::IDParam)
+function initial_data(sys, p::ParamID)
     if p.ID_type == "sine2D"
         return sine2D(sys, p)
     else
@@ -15,7 +15,7 @@ function initial_data(sys, p::IDParam)
     end
 end
 
-function uniform2D(sys::System, p::IDParam)
+function uniform2D(sys::System, p::ParamID)
     coords = sys.coords
 
     uu, xx, yy = Vivi.xx(coords)
@@ -38,12 +38,12 @@ function uniform2D(sys::System, p::IDParam)
     phif
 end
 
-uniform2D(systems::Array, p::IDParam) = [uniform2D(sys, p) for sys in systems]
+uniform2D(systems::Array, p::ParamID) = [uniform2D(sys, p) for sys in systems]
 
 sine2D(x, y, Lx::Real, Ly::Real, kx::Integer, ky::Integer) =
              sin( 2*π * kx / Lx * x ) * sin( 2*π * ky / Ly * y )
 
-function sine2D(sys::System, p::IDParam)
+function sine2D(sys::System, p::ParamID)
     coords = sys.coords
 
     uu, xx, yy = Vivi.xx(coords)
@@ -71,7 +71,7 @@ function sine2D(sys::System, p::IDParam)
     phif
 end
 
-sine2D(systems::Array, p::IDParam) = [sine2D(sys, p) for sys in systems]
+sine2D(systems::Array, p::ParamID) = [sine2D(sys, p) for sys in systems]
 
 function ones2D(sys::System)
     coords = sys.coords
