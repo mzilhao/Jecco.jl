@@ -28,8 +28,8 @@ function write_out(out, fieldnames, coordss)
     end
 end
 
-function ibvp(p::Param, par_base::ParamBase, par_grid::ParamGrid, par_id::ParamID,
-              par_evol::ParamEvol)
+function ibvp(par_base::ParamBase, par_grid::ParamGrid, par_id::ParamID,
+              par_evol::ParamEvol, par_io::ParamIO)
 
     systems = Jecco.KG_3_1.create_sys(par_grid)
     Nsys    = length(systems)
@@ -42,8 +42,7 @@ function ibvp(p::Param, par_base::ParamBase, par_grid::ParamGrid, par_id::ParamI
 
     rhs! = Jecco.KG_3_1.setup_rhs(phi0s, systems, unpack)
 
-    dt0 = p.dt
-
+    dt0   = par_evol.dt
     tspan = (0.0, par_evol.tmax)
 
     prob  = ODEProblem(rhs!, ID, tspan, systems)
@@ -60,7 +59,7 @@ function ibvp(p::Param, par_base::ParamBase, par_grid::ParamGrid, par_id::ParamI
     fields     = phi0s
     coordss    = [systems[i].coords for i in 1:Nsys]
 
-    out    = Vivi.Output(p.folder, p.prefix, p.out_every, tinfo)
+    out    = Vivi.Output(par_io.folder, par_io.prefix, par_io.out_every, tinfo)
     output = write_out(out, fieldnames, coordss)
     output(ID)
 

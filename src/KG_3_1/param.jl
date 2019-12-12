@@ -17,14 +17,20 @@ end
 end
 
 @with_kw struct ParamID
-    ID_type      :: String
-    A0x          :: Float64
-    A0y          :: Float64
-    Lx           :: Float64
-    Ly           :: Float64
+    ID_type     :: String
+    A0x         :: Float64
+    A0y         :: Float64
+    Lx          :: Float64
+    Ly          :: Float64
 end
 
 @with_kw struct ParamEvol
     dt          :: Float64
     tmax        :: Float64
+end
+
+@with_kw struct ParamIO
+    out_every   :: Int
+    folder      :: String  = "./data"
+    prefix      :: String  = "phi"
 end

@@ -4,36 +4,9 @@ using Jecco
 using Vivi
 using Parameters
 
-export Param
-export ParamBase, ParamGrid, ParamID, ParamEvol
+export ParamBase, ParamGrid, ParamID, ParamEvol, ParamIO
 export System
 export BulkVars, BoundaryVars, AllVars
-
-# TODO: to remove...
-@with_kw struct Param
-    A0x         :: Float64
-    A0y         :: Float64
-
-    tmax        :: Float64
-    out_every   :: Int
-
-    xmin        :: Float64
-    xmax        :: Float64
-    xnodes      :: Int
-    ymin        :: Float64
-    ymax        :: Float64
-    ynodes      :: Int
-    umin        :: Float64
-    umax        :: Float64
-    udomains    :: Int     = 1
-    unodes      :: Int # number of points per domain
-
-    # dtfac       :: Float64    = 0.5
-    dt          :: Float64
-
-    folder      :: String  = "./data"
-    prefix      :: String  = "phi"
-end
 
 struct BulkVars{A}
     phi    :: A
