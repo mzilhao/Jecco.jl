@@ -28,22 +28,23 @@ function write_out(out, fieldnames, coordss)
     end
 end
 
-function ibvp(p::Param, gpar::ParamGrid, idpar::ParamID)
+function ibvp(p::Param, par_base::ParamBase, par_grid::ParamGrid, par_id::ParamID,
+              par_evol::ParamEvol)
 
-    systems = Jecco.KG_3_1.create_sys(gpar)
+    systems = Jecco.KG_3_1.create_sys(par_grid)
     Nsys    = length(systems)
 
     ucoords = [systems[i].coords[1] for i in 1:Nsys]
     unpack  = unpack_dom(ucoords)
 
-    phi0s = initial_data(systems, idpar)
+    phi0s = initial_data(systems, par_id)
     ID    = vcat(phi0s...)
 
     rhs! = Jecco.KG_3_1.setup_rhs(phi0s, systems, unpack)
 
     dt0 = p.dt
 
-    tspan = (0.0, p.tmax)
+    tspan = (0.0, par_evol.tmax)
 
     prob  = ODEProblem(rhs!, ID, tspan, systems)
     # http://docs.juliadiffeq.org/latest/basics/integrator.html
