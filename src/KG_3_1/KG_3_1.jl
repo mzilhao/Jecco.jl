@@ -5,6 +5,8 @@ using Vivi
 using Parameters
 
 export ParamBase, ParamGrid, ParamID, ParamEvol, ParamIO
+export Potential
+export VV # this will contain the potential
 export System
 export BulkVars, BoundaryVars, AllVars
 
@@ -98,14 +100,21 @@ function AllVars{T}() where {T<:AbstractFloat}
     AllVars{T}(array...)
 end
 
-
 include("param.jl")
 include("system.jl")
 include("initial_data.jl")
+include("potential.jl")
 include("dphidt.jl")
 include("equation_coeff.jl")
 include("solve_nested.jl")
 include("rhs.jl")
 include("ibvp.jl")
+
+par_base = ParamBase(
+    which_potential = "square",
+)
+
+# define potential. TODO: move this somewhere else
+VV = Potential(par_base)
 
 end

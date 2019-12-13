@@ -1,8 +1,6 @@
 
-## TODO
-# Need signature Vf(phi::Real)
-function Vf end
-function Vfp end
+Vf(phi)  = VV(phi)
+Vfp(phi) = ∂(VV)(phi)
 
 # assuming
 # (A d_uu + B d_u + C Id) f = -S
