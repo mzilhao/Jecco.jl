@@ -1,5 +1,6 @@
 
 import Base.Threads.@threads
+import Base.Threads.@spawn
 using LinearAlgebra
 
 function solve_lin_system!(sol, A_mat, b_vec)
@@ -77,9 +78,9 @@ function solve_nested_g1!(bulk::BulkVars, BC::BulkVars, nested::Nested)
     xderiv = sys.xderiv
     yderiv = sys.yderiv
 
-    Vivi.D!(Du_phi, bulk.phi, uderiv, 1)
-    Vivi.D2!(Dxx_phi, bulk.phi, xderiv, 2)
-    Vivi.D2!(Dyy_phi, bulk.phi, yderiv, 3)
+    t1 = @spawn Vivi.D!(Du_phi, bulk.phi, uderiv, 1)
+    t2 = @spawn Vivi.D2!(Dxx_phi, bulk.phi, xderiv, 2)
+    t3 = @spawn Vivi.D2!(Dyy_phi, bulk.phi, yderiv, 3)
 
     # set Sd
     @fastmath @inbounds for j in eachindex(yy)
@@ -90,6 +91,9 @@ function solve_nested_g1!(bulk::BulkVars, BC::BulkVars, nested::Nested)
         end
     end
 
+    wait(t1)
+    wait(t2)
+    wait(t3)
 
     # solve for phidg1
 
