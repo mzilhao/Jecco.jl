@@ -2,6 +2,8 @@
 function initial_data(sys, p::ParamID)
     if p.ID_type == "sine2D"
         return sine2D(sys, p)
+    elseif p.ID_type == "uniform2D"
+        return uniform2D(sys, p)
     else
         error("Unknown initial data type.")
     end

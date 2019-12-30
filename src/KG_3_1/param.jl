@@ -18,10 +18,10 @@ end
 
 @with_kw struct ParamID
     ID_type     :: String
-    A0x         :: Float64
-    A0y         :: Float64
-    Lx          :: Float64
-    Ly          :: Float64
+    A0x         :: Float64  = 0.0
+    A0y         :: Float64  = 0.0
+    Lx          :: Float64  = 1.0
+    Ly          :: Float64  = 1.0
 end
 
 @with_kw struct ParamEvol
