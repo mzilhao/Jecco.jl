@@ -28,35 +28,34 @@ function write_out(out, fieldnames, coordss)
     end
 end
 
-function ibvp(p::Param)
+function ibvp(par_grid::ParamGrid, par_id::ParamID,
+              par_evol::ParamEvol, par_io::ParamIO)
 
-    # TODO: make parameter
-    initial_data = Jecco.KG_3_1.sine2D
+    systems = Jecco.KG_3_1.create_sys(par_grid)
+    Nsys    = length(systems)
 
-    Nsys = p.udomains
-    delta_udom = (p.umax - p.umin) / Nsys
+    ucoords = [systems[i].coords[1] for i in 1:Nsys]
+    unpack  = unpack_dom(ucoords)
 
-    ucoord = [Vivi.SpectralCoord("u", p.umin + (i-1)*delta_udom, p.umin + i*delta_udom,
-                                 p.unodes) for i in 1:Nsys]
-    xcoord  = Vivi.CartCoord("x", p.xmin, p.xmax, p.xnodes, endpoint=false)
-    ycoord  = Vivi.CartCoord("y", p.ymin, p.ymax, p.ynodes, endpoint=false)
-
-    systems = [System(ucoord[i], xcoord, ycoord) for i in 1:Nsys]
-    unpack  = unpack_dom(ucoord)
-
-    phi0s = initial_data(systems, p)
+    phi0s = initial_data(systems, par_id)
     ID    = vcat(phi0s...)
 
     rhs! = Jecco.KG_3_1.setup_rhs(phi0s, systems, unpack)
 
-    dt0 = p.dt
+    dt0   = par_evol.dt
+    tspan = (0.0, par_evol.tmax)
 
-    tspan = (0.0, p.tmax)
+    if par_evol.ODE_method == "RK4"
+        alg = RK4()
+    elseif par_evol.ODE_method == "AB3"
+        alg = AB3()
+    else
+        error("Unknown ODE_method")
+    end
 
     prob  = ODEProblem(rhs!, ID, tspan, systems)
     # http://docs.juliadiffeq.org/latest/basics/integrator.html
-    integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
-    # integrator = init(prob, AB3(), save_everystep=false, dt=dt0, adaptive=false)
+    integrator = init(prob, alg, save_everystep=false, dt=dt0, adaptive=false)
 
     tinfo  = Vivi.TimeInfo()
 
@@ -67,7 +66,7 @@ function ibvp(p::Param)
     fields     = phi0s
     coordss    = [systems[i].coords for i in 1:Nsys]
 
-    out    = Vivi.Output(p.folder, p.prefix, p.out_every, tinfo)
+    out    = Vivi.Output(par_io.folder, par_io.prefix, par_io.out_every, tinfo)
     output = write_out(out, fieldnames, coordss)
     output(ID)
 

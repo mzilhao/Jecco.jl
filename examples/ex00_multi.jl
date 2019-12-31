@@ -31,13 +31,12 @@ function write_out(out, fieldnames, coordss)
     end
 end
 
-p = Param(
-    A0x         = 1.0,
-    A0y         = 1.0,
 
-    tmax        = 4.0,
-    out_every   = 4,
+par_base = ParamBase(
+    which_potential = "square",
+)
 
+par_grid = ParamGrid(
     xmin        = -5.0,
     xmax        =  5.0,
     xnodes      =  128,
@@ -48,49 +47,56 @@ p = Param(
     umax        =  1.0,
     udomains    =  4,
     unodes      =  16,
+)
 
-    # dtfac       = 0.5,
+par_id = ParamID(
+    ID_type      = "sine2D",
+    A0x          = 1.0,
+    A0y          = 1.0,
+    Lx           = par_grid.xmax - par_grid.xmin,
+    Ly           = par_grid.ymax - par_grid.ymin,
+)
 
-    dt          = 0.02, # for RK4
+par_evol = ParamEvol(
+    dt      = 0.02, # for RK4
+    # tmax    = 4.0,
+    tmax    = 0.4,
+)
 
+par_io = ParamIO(
+    out_every   = 4,
     folder      = "./data00_multi",
 )
 
+# define potential
+Jecco.KG_3_1.setup(par_base)
 
 initial_data = Jecco.KG_3_1.sine2D
 
-Nsys = p.udomains
+Nsys = par_grid.udomains
 
-delta_udom = (p.umax - p.umin) / Nsys
+delta_udom = (par_grid.umax - par_grid.umin) / Nsys
 
-ucoord = [Vivi.SpectralCoord("u", p.umin + (i-1)*delta_udom, p.umin + i*delta_udom,
-                             p.unodes) for i in 1:Nsys]
-xcoord  = Vivi.CartCoord("x", p.xmin, p.xmax, p.xnodes, endpoint=false)
-ycoord  = Vivi.CartCoord("y", p.ymin, p.ymax, p.ynodes, endpoint=false)
+ucoord = [Vivi.SpectralCoord("u", par_grid.umin + (i-1)*delta_udom, par_grid.umin + i*delta_udom,
+                             par_grid.unodes) for i in 1:Nsys]
+xcoord  = Vivi.CartCoord("x", par_grid.xmin, par_grid.xmax, par_grid.xnodes, endpoint=false)
+ycoord  = Vivi.CartCoord("y", par_grid.ymin, par_grid.ymax, par_grid.ynodes, endpoint=false)
 
 systems = [System(ucoord[i], xcoord, ycoord) for i in 1:Nsys]
 
-phi0s = initial_data(systems, p)
+phi0s = initial_data(systems, par_id)
 ID    = vcat(phi0s...)
 
 
-Jecco.KG_3_1.Vf(phi)  = -1.0 + 0.5 * phi*phi
-Jecco.KG_3_1.Vfp(phi) = phi
 
 
 unpack = unpack_dom(ucoord)
 
 rhs! = Jecco.KG_3_1.setup_rhs(phi0s, systems, unpack)
 
+dt0 = par_evol.dt
 
-# timestep = Jecco.KG_3_1.timestep
-# timestep = p.dt
-
-
-# dt0 = timestep(sys, phi0)
-dt0 = p.dt
-
-tspan = (0.0, p.tmax)
+tspan = (0.0, par_evol.tmax)
 
 
 prob  = ODEProblem(rhs!, ID, tspan, systems)
@@ -107,7 +113,7 @@ fieldnames = ["phi c=$i" for i in 1:Nsys]
 fields     = phi0s
 coordss    = [systems[i].coords for i in 1:Nsys]
 
-out    = Vivi.Output(p.folder, p.prefix, p.out_every, tinfo)
+out    = Vivi.Output(par_io.folder, par_io.prefix, par_io.out_every, tinfo)
 output = write_out(out, fieldnames, coordss)
 output(ID)
 

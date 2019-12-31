@@ -1,5 +1,15 @@
 
-function uniform2D(sys::System, p::Param)
+function initial_data(sys, p::ParamID)
+    if p.ID_type == "sine2D"
+        return sine2D(sys, p)
+    elseif p.ID_type == "uniform2D"
+        return uniform2D(sys, p)
+    else
+        error("Unknown initial data type.")
+    end
+end
+
+function uniform2D(sys::System, p::ParamID)
     coords = sys.coords
 
     uu, xx, yy = Vivi.xx(coords)
@@ -22,12 +32,12 @@ function uniform2D(sys::System, p::Param)
     phif
 end
 
-uniform2D(systems::Array, p::Param) = [uniform2D(sys, p) for sys in systems]
+uniform2D(systems::Array, p::ParamID) = [uniform2D(sys, p) for sys in systems]
 
 sine2D(x, y, Lx::Real, Ly::Real, kx::Integer, ky::Integer) =
              sin( 2*π * kx / Lx * x ) * sin( 2*π * ky / Ly * y )
 
-function sine2D(sys::System, p::Param)
+function sine2D(sys::System, p::ParamID)
     coords = sys.coords
 
     uu, xx, yy = Vivi.xx(coords)
@@ -36,8 +46,8 @@ function sine2D(sys::System, p::Param)
     Ny = length(yy)
     phif  = zeros(Nu, Nx, Ny)
 
-    Lx    = p.xmax - p.xmin
-    Ly    = p.ymax - p.ymin
+    Lx    = p.Lx
+    Ly    = p.Ly
 
     kx = 2
     ky = 4
@@ -55,7 +65,7 @@ function sine2D(sys::System, p::Param)
     phif
 end
 
-sine2D(systems::Array, p::Param) = [sine2D(sys, p) for sys in systems]
+sine2D(systems::Array, p::ParamID) = [sine2D(sys, p) for sys in systems]
 
 function ones2D(sys::System)
     coords = sys.coords

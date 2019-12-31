@@ -4,69 +4,11 @@ using Jecco
 using Vivi
 using Parameters
 
-export Param
+export ParamBase, ParamGrid, ParamID, ParamEvol, ParamIO
+export Potential
+export VV # this will contain the potential
 export System
 export BulkVars, BoundaryVars, AllVars
-
-@with_kw struct Param
-    A0x         :: Float64
-    A0y         :: Float64
-
-    tmax        :: Float64
-    out_every   :: Int
-
-    xmin        :: Float64
-    xmax        :: Float64
-    xnodes      :: Int
-    ymin        :: Float64
-    ymax        :: Float64
-    ynodes      :: Int
-    umin        :: Float64
-    umax        :: Float64
-    udomains    :: Int     = 1
-    unodes      :: Int # number of points per domain
-
-    # dtfac       :: Float64    = 0.5
-    dt          :: Float64
-
-    folder      :: String  = "./data"
-    prefix      :: String  = "phi"
-end
-
-struct System{C,D,E} <: Vivi.System
-    coords :: C
-    uderiv :: D
-    xderiv :: E
-    yderiv :: E
-end
-
-function System(coords::CoordSystem)
-    # FIXME
-    ord    = 4
-    BC     = :periodic
-
-    # dx     = xcoord.delta
-    # dy     = ycoord.delta
-    # dt0    = p.dtfac * min(dx, dy)
-
-    derivs = Vivi.Deriv(coords, (nothing, ord, ord), (nothing, BC, BC))
-    uderiv = derivs[1]
-    xderiv = derivs[2]
-    yderiv = derivs[3]
-
-    System{typeof(coords), typeof(uderiv), typeof(xderiv)}(coords, uderiv, xderiv, yderiv)
-end
-
-function System(ucoord::SpectralCoord, xcoord::CartCoord, ycoord::CartCoord)
-    coords = Vivi.CoordSystem{Float64}("uxy", [ucoord, xcoord, ycoord])
-    System(coords)
-end
-
-
-# TODO: determine it using the metric
-function timestep(sys::System, f)
-end
-
 
 struct BulkVars{A}
     phi    :: A
@@ -131,6 +73,9 @@ end
 Base.lastindex(bulk::BulkVars) = lastindex(bulk.phi)
 Base.lastindex(bulk::BulkVars, i::Int) = lastindex(bulk.phi, i)
 
+function setup(par_base)
+    global VV = Potential(par_base)
+end
 
 
 struct BoundaryVars{A}
@@ -158,8 +103,10 @@ function AllVars{T}() where {T<:AbstractFloat}
     AllVars{T}(array...)
 end
 
-
+include("param.jl")
+include("system.jl")
 include("initial_data.jl")
+include("potential.jl")
 include("dphidt.jl")
 include("equation_coeff.jl")
 include("solve_nested.jl")
