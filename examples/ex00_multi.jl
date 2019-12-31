@@ -68,6 +68,8 @@ par_io = ParamIO(
     folder      = "./data00_multi",
 )
 
+# define potential
+Jecco.KG_3_1.setup(par_base)
 
 initial_data = Jecco.KG_3_1.sine2D
 
@@ -92,12 +94,6 @@ unpack = unpack_dom(ucoord)
 
 rhs! = Jecco.KG_3_1.setup_rhs(phi0s, systems, unpack)
 
-
-# timestep = Jecco.KG_3_1.timestep
-# timestep = p.dt
-
-
-# dt0 = timestep(sys, phi0)
 dt0 = par_evol.dt
 
 tspan = (0.0, par_evol.tmax)

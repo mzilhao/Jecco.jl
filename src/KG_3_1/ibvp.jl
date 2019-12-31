@@ -28,7 +28,7 @@ function write_out(out, fieldnames, coordss)
     end
 end
 
-function ibvp(par_base::ParamBase, par_grid::ParamGrid, par_id::ParamID,
+function ibvp(par_grid::ParamGrid, par_id::ParamID,
               par_evol::ParamEvol, par_io::ParamIO)
 
     systems = Jecco.KG_3_1.create_sys(par_grid)

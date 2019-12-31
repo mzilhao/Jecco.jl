@@ -73,6 +73,9 @@ end
 Base.lastindex(bulk::BulkVars) = lastindex(bulk.phi)
 Base.lastindex(bulk::BulkVars, i::Int) = lastindex(bulk.phi, i)
 
+function setup(par_base)
+    global VV = Potential(par_base)
+end
 
 
 struct BoundaryVars{A}
@@ -109,12 +112,5 @@ include("equation_coeff.jl")
 include("solve_nested.jl")
 include("rhs.jl")
 include("ibvp.jl")
-
-par_base = ParamBase(
-    which_potential = "square",
-)
-
-# define potential. TODO: move this somewhere else
-VV = Potential(par_base)
 
 end

@@ -40,7 +40,8 @@ par_io = ParamIO(
     folder      = "./data",
 )
 
-
+# define potential
+Jecco.KG_3_1.setup(par_base)
 
 initial_data = Jecco.KG_3_1.sine2D
 
