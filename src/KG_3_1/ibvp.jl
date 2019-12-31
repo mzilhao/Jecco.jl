@@ -45,10 +45,17 @@ function ibvp(par_grid::ParamGrid, par_id::ParamID,
     dt0   = par_evol.dt
     tspan = (0.0, par_evol.tmax)
 
+    if par_evol.ODE_method == "RK4"
+        alg = RK4()
+    elseif par_evol.ODE_method == "AB3"
+        alg = AB3()
+    else
+        error("Unknown ODE_method")
+    end
+
     prob  = ODEProblem(rhs!, ID, tspan, systems)
     # http://docs.juliadiffeq.org/latest/basics/integrator.html
-    integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
-    # integrator = init(prob, AB3(), save_everystep=false, dt=dt0, adaptive=false)
+    integrator = init(prob, alg, save_everystep=false, dt=dt0, adaptive=false)
 
     tinfo  = Vivi.TimeInfo()
 

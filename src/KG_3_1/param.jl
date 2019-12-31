@@ -27,6 +27,7 @@ end
 @with_kw struct ParamEvol
     dt          :: Float64
     tmax        :: Float64
+    ODE_method  :: String   = "RK4"
 end
 
 @with_kw struct ParamIO
