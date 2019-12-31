@@ -28,7 +28,9 @@ par_id = ParamID(
 )
 
 par_evol = ParamEvol(
-    dt      = 0.02, # for RK4
+    ODE_method = "AB3",
+    # ODE_method = "RK4",
+    dt      = 0.008, # for AB3. runs faster than with RK4
     # tmax    = 4.0,
     tmax    = 2.0,
 )
