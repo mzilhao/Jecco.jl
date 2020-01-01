@@ -71,10 +71,12 @@ function convolve!(x_temp::AbstractVector{T}, x::AbstractVector{T},
     coeffs = A.stencil_coefs
     mid = div(A.stencil_length, 2) + 1
 
-    for i in 1:N
+    @inbounds for i in 1:N
         xtempi = zero(T)
         @inbounds for idx in 1:A.stencil_length
-            xtempi += coeffs[idx] * x[i - (mid-idx)]
+            # imposing periodicity
+            j_circ = 1 + mod(i - (mid-idx) - 1, N)
+            xtempi += coeffs[idx] * x[j_circ]
         end
         x_temp[i] = xtempi
     end
