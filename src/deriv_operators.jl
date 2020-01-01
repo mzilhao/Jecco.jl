@@ -1,4 +1,6 @@
 
+import Base: *
+
 abstract type AbstractDerivOperator{T,N} end
 
 D1_42_weights() = [1.0, -8.0, 0.0, 8.0, -1.0] ./ 12.0
@@ -45,7 +47,7 @@ function CenteredDiff{N}(derivative_order::Int,
         error("derivative_order not implemented yet")
     end
 
-    stencil_coefs = (1/dx^derivative_order) * weights
+    stencil_coefs = (1/dx^derivative_order) .* weights
 
     FiniteDiffDeriv{T,N,T,typeof(stencil_coefs)}(derivative_order, approximation_order,
                                                  dx, len, stencil_length, stencil_coefs)
