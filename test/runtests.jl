@@ -1,6 +1,5 @@
+
 using Jecco
 using Test
 
-@testset "Jecco.jl" begin
-    # Write your own tests here.
-end
+@time @testset "derivative operators tests:" begin include("deriv_operators_test.jl") end
