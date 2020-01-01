@@ -64,7 +64,8 @@ function LinearAlgebra.mul!(x_temp::AbstractVector, A::FiniteDiffDeriv, x::Abstr
 end
 
 # convolution operation to act with derivatives on vectors. this currently
-# assumes periodic BCs
+# assumes periodic BCs. adapted from
+# DiffEqOperators.jl/src/derivative_operators/convolutions.jl
 function convolve!(x_temp::AbstractVector{T}, x::AbstractVector{T},
                    A::FiniteDiffDeriv) where {T<:Real}
     N = length(x)
