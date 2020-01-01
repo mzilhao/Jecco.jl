@@ -54,3 +54,32 @@ end
 CenteredDiff(args...) = CenteredDiff{1}(args...)
 
 diff_axis(A::AbstractDerivOperator{T,N}) where {T,N} = N
+
+
+# mul! done by convolution
+function LinearAlgebra.mul!(x_temp::AbstractVector, A::FiniteDiffDeriv, x::AbstractVector)
+    convolve!(x_temp, x, A)
+end
+
+# convolution operation to act with derivatives on vectors. this currently
+# assumes periodic BCs
+function convolve!(x_temp::AbstractVector{T}, x::AbstractVector{T},
+                   A::FiniteDiffDeriv) where {T<:Real}
+    N = length(x)
+    coeffs = A.stencil_coefs
+    mid = div(A.stencil_length, 2) + 1
+
+    for i in 1:N
+        xtempi = zero(T)
+        @inbounds for idx in 1:A.stencil_length
+            xtempi += coeffs[idx] * x[i - (mid-idx)]
+        end
+        x_temp[i] = xtempi
+    end
+end
+
+function *(A::AbstractDerivOperator, x::AbstractVector)
+    y = similar(x)
+    LinearAlgebra.mul!(y, A, x)
+    y
+end
