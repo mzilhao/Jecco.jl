@@ -17,9 +17,10 @@ struct FiniteDiffDeriv{T<:Real,N,T2,S} <: AbstractDerivOperator{T,N}
     stencil_coefs           :: S
 end
 
-struct SpectralDeriv{T<:Real,N} <: AbstractDerivOperator{T,N}
+struct SpectralDeriv{T<:Real,N,S} <: AbstractDerivOperator{T,N}
     derivative_order        :: Int
     len                     :: Int
+    D                       :: S
 end
 
 struct CenteredDiff{N} end
@@ -55,7 +56,15 @@ end
 
 CenteredDiff(args...) = CenteredDiff{1}(args...)
 
-diff_axis(A::AbstractDerivOperator{T,N}) where {T,N} = N
+
+struct ChebDeriv{N} end
+
+# TODO
+function ChebDeriv{N}(derivative_order::Int, delta::T, len::Int) where {T<:Real,N}
+
+end
+
+ChebDeriv(args...) = ChebDeriv{1}(args...)
 
 
 # mul! done by convolution
