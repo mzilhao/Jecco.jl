@@ -16,10 +16,10 @@
     D1 = CenteredDiff(1, ord, hx, length(x))
     D2 = CenteredDiff(2, ord, hx, length(x))
 
-    df1 = D1 * f
-    df2 = D2 * f
+    df  = D1 * f
+    d2f = D2 * f
 
-    @test df1 ≈ cos.(x) atol=hx^ord
+    @test df  ≈ cos.(x) atol=hx^ord
     @test d2f ≈ -f atol=hx^ord
 
 
