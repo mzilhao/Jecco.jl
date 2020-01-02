@@ -63,27 +63,59 @@ function LinearAlgebra.mul!(x_temp::AbstractVector, A::FiniteDiffDeriv, x::Abstr
     convolve!(x_temp, x, A)
 end
 
+
+function LinearAlgebra.mul!(fout::AbstractArray{T}, A::FiniteDiffDeriv{T,N},
+                            f::AbstractArray{T}) where {T,N}
+    # dimension of f
+    ndim   = ndims(f)
+    dims   = [axes(f)...]
+
+    otherdims = setdiff(1:ndim, N)
+
+    # an array of type "Any" with the first index of each dimension
+    idx = Any[first(ind) for ind in axes(f)]
+    # and now set the Nth dimension entry to a Colon, ie, if ndim = 4 and N = 2,
+    # idx = [1,:,1,1]
+    setindex!(idx, :, N)
+
+    itershape = tuple(dims[otherdims]...)
+    # this generates an iterator along all the otherdims, ie, without touching the
+    # N-dimension
+    indices = Iterators.drop(CartesianIndices(itershape), 0)
+
+    nidx = length(otherdims)
+    # index I will loop along all indices in otherdims, without touching the
+    # N-dimension, and idx is updated through the call to replace_tuples!
+    @fastmath @inbounds for I in indices
+        Base.replace_tuples!(nidx, idx, idx, otherdims, I)
+        mul!(view(fout, idx...), A, view(f, idx...))
+    end
+
+    nothing
+end
+
 # convolution operation to act with derivatives on vectors. this currently
 # assumes periodic BCs. adapted from
 # DiffEqOperators.jl/src/derivative_operators/convolutions.jl
-function convolve!(x_temp::AbstractVector{T}, x::AbstractVector{T},
+function convolve!(xout::AbstractVector{T}, x::AbstractVector{T},
                    A::FiniteDiffDeriv) where {T<:Real}
     N = length(x)
     coeffs = A.stencil_coefs
     mid = div(A.stencil_length, 2) + 1
 
-    @inbounds for i in 1:N
-        xtempi = zero(T)
+    @fastmath @inbounds for i in 1:N
+        sum_i = zero(T)
         @inbounds for idx in 1:A.stencil_length
             # imposing periodicity
-            j_circ = 1 + mod(i - (mid-idx) - 1, N)
-            xtempi += coeffs[idx] * x[j_circ]
+            i_circ = 1 + mod(i - (mid-idx) - 1, N)
+            sum_i += coeffs[idx] * x[i_circ]
         end
-        x_temp[i] = xtempi
+        xout[i] = sum_i
     end
+    nothing
 end
 
-function *(A::AbstractDerivOperator, x::AbstractVector)
+function *(A::AbstractDerivOperator, x::AbstractArray)
     y = similar(x)
     LinearAlgebra.mul!(y, A, x)
     y
