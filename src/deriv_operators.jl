@@ -72,8 +72,7 @@ function LinearAlgebra.mul!(x_temp::AbstractVector, A::FiniteDiffDeriv, x::Abstr
     convolve!(x_temp, x, A)
 end
 
-
-function LinearAlgebra.mul!(fout::AbstractArray{T}, A::FiniteDiffDeriv{T,N},
+function LinearAlgebra.mul!(df::AbstractArray{T}, A::FiniteDiffDeriv{T,N},
                             f::AbstractArray{T}) where {T,N}
     # dimension of f
     ndim   = ndims(f)
@@ -92,12 +91,16 @@ function LinearAlgebra.mul!(fout::AbstractArray{T}, A::FiniteDiffDeriv{T,N},
     # N-dimension
     indices = Iterators.drop(CartesianIndices(itershape), 0)
 
+    _mul_loop(df, A, f, indices, idx, otherdims)
+end
+
+@noinline function _mul_loop(df, A, f, indices, idx, otherdims)
     nidx = length(otherdims)
     # index I will loop along all indices in otherdims, without touching the
     # N-dimension, and idx is updated through the call to replace_tuples!
     @fastmath @inbounds for I in indices
         Base.replace_tuples!(nidx, idx, idx, otherdims, I)
-        mul!(view(fout, idx...), A, view(f, idx...))
+        mul!(view(df, idx...), A, view(f, idx...))
     end
 
     nothing
