@@ -13,7 +13,8 @@ differentiation matrices.
 function cheb(xmin::T, xmax::T, N::Integer) where {T<:Real}
     x, D, D2 = cheb(N)
     x = 0.5 * (xmax + xmin .+ (xmax - xmin) * x)
-    D ./= 0.5 * (xmax - xmin)
+    D  ./= 0.5 * (xmax - xmin)
+    D2 ./= 0.25 * (xmax - xmin)^2
     x, D, D2
 end
 
