@@ -9,6 +9,6 @@ include("output.jl")
 include("spectral.jl")
 include("KG_3_1/KG_3_1.jl")
 
-export CenteredDiff
+export CenteredDiff, ChebDeriv
 
 end # module

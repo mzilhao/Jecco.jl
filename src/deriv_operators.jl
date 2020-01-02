@@ -85,7 +85,7 @@ end
 # mul! done by standard matrix multiplication for Chebyshev differentiation
 # matrices. This can also be done (potentially more efficiently) through
 # FFT. TODO; test if worthwhile
-function LinearAlgebra.mul!(df::AbstractVector, A::ChebDeriv, f::AbstractVector)
+function LinearAlgebra.mul!(df::AbstractVector, A::SpectralDeriv, f::AbstractVector)
     mul!(df, A.D, f)
 end
 
