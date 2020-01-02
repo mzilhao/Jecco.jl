@@ -74,35 +74,42 @@ end
 
 function LinearAlgebra.mul!(df::AbstractArray{T}, A::FiniteDiffDeriv{T,N},
                             f::AbstractArray{T}) where {T,N}
-    # dimension of f
-    ndim   = ndims(f)
-    dims   = [axes(f)...]
+    Rpre  = CartesianIndices(axes(f)[1:N-1])
+    Rpost = CartesianIndices(axes(f)[N+1:end])
 
-    otherdims = setdiff(1:ndim, N)
-
-    # an array of type "Any" with the first index of each dimension
-    idx = Any[first(ind) for ind in axes(f)]
-    # and now set the Nth dimension entry to a Colon, ie, if ndim = 4 and N = 2,
-    # idx = [1,:,1,1]
-    setindex!(idx, :, N)
-
-    itershape = tuple(dims[otherdims]...)
-    # this generates an iterator along all the otherdims, ie, without touching the
-    # N-dimension
-    indices = Iterators.drop(CartesianIndices(itershape), 0)
-
-    _mul_loop(df, A, f, indices, idx, otherdims)
+    _mul_loop!(df, A, f, Rpre, Rpost)
 end
 
-@noinline function _mul_loop(df, A, f, indices, idx, otherdims)
-    nidx = length(otherdims)
-    # index I will loop along all indices in otherdims, without touching the
-    # N-dimension, and idx is updated through the call to replace_tuples!
-    @fastmath @inbounds for I in indices
-        Base.replace_tuples!(nidx, idx, idx, otherdims, I)
-        mul!(view(df, idx...), A, view(f, idx...))
+# this works as follows. suppose we are taking the derivative of a 4-dimensional
+# array g, with coordinates w,x,y,z, and size
+#
+#   size(g) = (nw, nx, ny, nz)
+#
+# let's further suppose that we want the derivative along the x-direction (here,
+# the second entry). this fixes
+#
+#   N = 2
+#
+# and then
+#
+#   Rpre  = CartesianIndices((nw,))
+#   Rpost = CartesianIndices((ny,nz))
+#
+# now, the entry [Ipre,:,Ipost]
+#
+# slices *only* along the x-direction, for fixed Ipre and Ipost. Ipre and Ipost
+# loop along Rpre and Rpost (respectively) without touching the x-direction. we
+# further take care to loop in memory-order, since julia's arrays are faster in
+# the first dimension.
+#
+# adapted from http://julialang.org/blog/2016/02/iteration
+#
+@noinline function _mul_loop!(df, A, f, Rpre, Rpost)
+    @fastmath @inbounds for Ipost in Rpost
+        @inbounds for Ipre in Rpre
+            @views mul!(df[Ipre,:,Ipost], A, f[Ipre,:,Ipost])
+        end
     end
-
     nothing
 end
 
