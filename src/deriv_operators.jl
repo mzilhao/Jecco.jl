@@ -1,5 +1,6 @@
 
 import Base: *
+import LinearAlgebra: mul!
 
 abstract type AbstractDerivOperator{T,N} end
 
@@ -59,20 +60,38 @@ CenteredDiff(args...) = CenteredDiff{1}(args...)
 
 struct ChebDeriv{N} end
 
-# TODO
-function ChebDeriv{N}(derivative_order::Int, delta::T, len::Int) where {T<:Real,N}
+function ChebDeriv{N}(derivative_order::Int, xmin::T, xmax::T, len::Int) where {T<:Real,N}
+    x, Dx, Dxx = cheb(xmin, xmax, len)
 
+    if derivative_order == 1
+        D = Dx
+    elseif derivative_order == 2
+        D = Dxx
+    else
+        error("derivative_order not implemented")
+    end
+
+    SpectralDeriv{T,N,typeof(D)}(derivative_order, len, D)
 end
 
 ChebDeriv(args...) = ChebDeriv{1}(args...)
 
 
-# mul! done by convolution
-function LinearAlgebra.mul!(x_temp::AbstractVector, A::FiniteDiffDeriv, x::AbstractVector)
-    convolve!(x_temp, x, A)
+# mul! done by convolution for finite difference operators
+function LinearAlgebra.mul!(df::AbstractVector, A::FiniteDiffDeriv, f::AbstractVector)
+    convolve!(df, f, A)
 end
 
-function LinearAlgebra.mul!(df::AbstractArray{T}, A::FiniteDiffDeriv{T,N},
+# mul! done by standard matrix multiplication for Chebyshev differentiation
+# matrices. This can also be done (potentially more efficiently) through
+# FFT. TODO; test if worthwhile
+function LinearAlgebra.mul!(df::AbstractVector, A::ChebDeriv, f::AbstractVector)
+    mul!(df, A.D, f)
+end
+
+# and now for Arrays
+
+function LinearAlgebra.mul!(df::AbstractArray{T}, A::AbstractDerivOperator{T,N},
                             f::AbstractArray{T}) where {T,N}
     Rpre  = CartesianIndices(axes(f)[1:N-1])
     Rpost = CartesianIndices(axes(f)[N+1:end])
@@ -136,6 +155,6 @@ end
 
 function *(A::AbstractDerivOperator, x::AbstractArray)
     y = similar(x)
-    LinearAlgebra.mul!(y, A, x)
+    mul!(y, A, x)
     y
 end
