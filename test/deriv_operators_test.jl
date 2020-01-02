@@ -64,3 +64,20 @@
     @test d2xf ≈ -f
     @test d2zf ≈ -f
 end
+
+@testset "Spectral Derivative tests:" begin
+
+    # 1D case
+    xmin   = -2.0
+    xmax   =  2.0
+    xnodes =  32
+
+    x, Dx, Dxx = Jecco.cheb(xmin, xmax, xnodes)
+    f = 0.5 * x.^2
+
+    dxf  = Dx * f
+    dxxf = Dxx * f
+    @test dxf  ≈ x
+    @test dxxf ≈ fill(1.0, size(dxxf))
+
+end
