@@ -72,12 +72,50 @@ end
     xmax   =  2.0
     xnodes =  32
 
-    x, Dx, Dxx = Jecco.cheb(xmin, xmax, xnodes)
+    x, = Jecco.cheb(xmin, xmax, xnodes)
     f = 0.5 * x.^2
+
+    Dx  = ChebDeriv(1, xmin, xmax, xnodes)
+    Dxx = ChebDeriv(2, xmin, xmax, xnodes)
 
     dxf  = Dx * f
     dxxf = Dxx * f
     @test dxf  ≈ x
     @test dxxf ≈ fill(1.0, size(dxxf))
 
+
+    # 3D case
+
+    ymin   = -1.0
+    ymax   =  1.0
+    ynodes =  8
+
+    zmin   = -1.0
+    zmax   =  1.0
+    znodes =  16
+
+    y, = Jecco.cheb(ymin, ymax, ynodes)
+    z, = Jecco.cheb(zmin, zmax, znodes)
+
+    Dy  = ChebDeriv{2}(1, ymin, ymax, ynodes)
+    Dyy = ChebDeriv{2}(2, ymin, ymax, ynodes)
+    Dz  = ChebDeriv{3}(1, zmin, zmax, znodes)
+    Dzz = ChebDeriv{3}(2, zmin, zmax, znodes)
+
+    f     = [0.5 * x1.^2 .* cos.(x2) .* sin.(x3) for x1 in x, x2 in y, x3 in z]
+    dxf0  = [x1 .* cos.(x2) .* sin.(x3)          for x1 in x, x2 in y, x3 in z]
+    dzf0  = [0.5 * x1.^2 .* cos.(x2) .* cos.(x3) for x1 in x, x2 in y, x3 in z]
+    dxxf0 = [cos.(x2) .* sin.(x3)                for x1 in x, x2 in y, x3 in z]
+    dzzf0 = -copy(f)
+
+    dxf = Dx * f
+    dzf = Dz * f
+    d2xf = Dxx * f
+    d2zf = Dzz * f
+
+    @test dxf ≈ dxf0
+    @test dzf ≈ dzf0
+
+    @test d2xf ≈ dxxf0
+    @test d2zf ≈ dzzf0
 end
