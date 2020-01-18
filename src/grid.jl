@@ -74,6 +74,8 @@ end
 @inline Base.getindex(coord::AbstractCoord, ::Colon) = [coord[i] for i in 1:coord.nodes]
 
 
+# TODO: are these necessary??
+
 struct Grid{A}
     ndim    :: Int
     coords  :: A
@@ -126,31 +128,3 @@ end
 @inline function coord_type(grid::Grid)
     [coord_type(grid.coords[a]) for a in 1:grid.ndim]
 end
-
-
-xmin        = -5.0
-xmax        =  5.0
-xnodes      =  128
-ymin        = -5.0
-ymax        =  5.0
-ynodes      =  128
-umin        =  0.0
-umax        =  1.0
-unodes      =  64
-
-
-ucoord  = SpectralCoord{1}("u", umin, umax, unodes)
-xcoord  = CartCoord{2}("x", xmin, xmax, xnodes, endpoint=false)
-ycoord  = CartCoord{3}("y", ymin, ymax, ynodes, endpoint=false)
-
-
-grid = Grid([ucoord, xcoord, ycoord])
-
-
-names  = name(grid)
-mins   = min(grid)
-maxs   = max(grid)
-nodess = nodes(grid)
-coord_types = coord_type(grid)
-
-# Coord{T,N,GaussLobatto}(name, xmin, xmax, nodes)

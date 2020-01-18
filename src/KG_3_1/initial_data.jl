@@ -10,20 +10,21 @@ function initial_data(sys, p::ParamID)
 end
 
 function uniform2D(sys::System, p::ParamID)
-    coords = sys.coords
+    ucoord = sys.ucoord
+    xcoord = sys.xcoord
+    ycoord = sys.ycoord
 
-    uu, xx, yy = Vivi.xx(coords)
-    Nu = length(uu)
-    Nx = length(xx)
-    Ny = length(yy)
+    Nu = length(ucoord)
+    Nx = length(xcoord)
+    Ny = length(ycoord)
     phif  = zeros(Nu, Nx, Ny)
 
     # TODO: make parameter
     phi2 = 1.0
 
-    for j in eachindex(yy)
-        for i in eachindex(xx)
-            for a in eachindex(uu)
+    for j in 1:Ny
+        for i in 1:Nx
+            for a in 1:Nu
                 phif[a,i,j] = phi2
             end
         end
@@ -38,12 +39,13 @@ sine2D(x, y, Lx::Real, Ly::Real, kx::Integer, ky::Integer) =
              sin( 2*π * kx / Lx * x ) * sin( 2*π * ky / Ly * y )
 
 function sine2D(sys::System, p::ParamID)
-    coords = sys.coords
+    ucoord = sys.ucoord
+    xcoord = sys.xcoord
+    ycoord = sys.ycoord
 
-    uu, xx, yy = Vivi.xx(coords)
-    Nu = length(uu)
-    Nx = length(xx)
-    Ny = length(yy)
+    Nu = length(ucoord)
+    Nx = length(xcoord)
+    Ny = length(ycoord)
     phif  = zeros(Nu, Nx, Ny)
 
     Lx    = p.Lx
@@ -52,11 +54,11 @@ function sine2D(sys::System, p::ParamID)
     kx = 2
     ky = 4
 
-    for j in eachindex(yy)
-        for i in eachindex(xx)
-            for a in eachindex(uu)
-                x = xx[i]
-                y = yy[j]
+    for j in 1:Ny
+        for i in 1:Nx
+            for a in 1:Nu
+                x = xcoord[i]
+                y = ycoord[j]
                 phif[a,i,j] = sine2D(x, y, Lx, Ly, kx, ky)
             end
         end
@@ -68,12 +70,13 @@ end
 sine2D(systems::Array, p::ParamID) = [sine2D(sys, p) for sys in systems]
 
 function ones2D(sys::System)
-    coords = sys.coords
+    ucoord = sys.ucoord
+    xcoord = sys.xcoord
+    ycoord = sys.ycoord
 
-    uu, xx, yy = Vivi.xx(coords)
-    Nu = length(uu)
-    Nx = length(xx)
-    Ny = length(yy)
+    Nu = length(ucoord)
+    Nx = length(xcoord)
+    Ny = length(ycoord)
 
     ones(Nx, Ny)
 end

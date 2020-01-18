@@ -4,13 +4,14 @@ using LinearAlgebra
 # using Vivi
 using Parameters
 
+export AbstractCoord, Cartesian, GaussLobatto
+export CartCoord, SpectralCoord, delta
+export CenteredDiff, ChebDeriv
+
 include("deriv_operators.jl")
 include("grid.jl")
 include("output.jl")
 include("spectral.jl")
 include("KG_3_1/KG_3_1.jl")
-
-export CartCoord, SpectralCoord, Grid, xx
-export CenteredDiff, ChebDeriv
 
 end # module
