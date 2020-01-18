@@ -69,6 +69,7 @@ end
 
 @inline Base.firstindex(coord::AbstractCoord) = 1
 @inline Base.lastindex(coord::AbstractCoord)  = coord.nodes
+@inline Base.length(coord::AbstractCoord) = coord.nodes
 
 @inline Base.getindex(coord::AbstractCoord, ::Colon) = [coord[i] for i in 1:coord.nodes]
 
