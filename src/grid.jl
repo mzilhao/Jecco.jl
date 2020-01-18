@@ -47,18 +47,19 @@ SpectralCoord(args...) = SpectralCoord{1}(args...)
     (coord.max - coord.min) / (coord.nodes - 1)
 end
 
+# a Gauss-Lobatto grid has non-uniform spacing. not sure if the best is to
+# return "missing" or simply not define the method...
 @inline function delta(coord::AbstractCoord{T,N,GaussLobatto}) where {T<:Real,N}
     missing
 end
 
-@inline function xx(coord::AbstractCoord{T,N,Cartesian},
-                    i::Int) where {T<:Real,N}
+
+@inline function Base.getindex(coord::AbstractCoord{T,N,Cartesian}, i::Int) where {T<:Real,N}
     h = delta(coord)
     coord.min + (i - 1) * h
 end
 
-@inline function xx(coord::AbstractCoord{T,N,GaussLobatto},
-                    j::Int) where {T<:Real,N}
+@inline function Base.getindex(coord::AbstractCoord{T,N,GaussLobatto}, j::Int) where {T<:Real,N}
     xmin  = coord.min
     xmax  = coord.max
     M     = coord.nodes - 1.0
@@ -66,7 +67,10 @@ end
     0.5 * (xmax + xmin + (xmax - xmin) * xj)
 end
 
-@inline xx(coord::AbstractCoord) = [xx(coord, i) for i in 1:coord.nodes]
+@inline Base.firstindex(coord::AbstractCoord) = 1
+@inline Base.lastindex(coord::AbstractCoord)  = coord.nodes
+
+@inline Base.getindex(coord::AbstractCoord, ::Colon) = [coord[i] for i in 1:coord.nodes]
 
 
 struct Grid{A}
@@ -95,7 +99,7 @@ end
 
 
 @inline function xx(grid::Grid)
-    [xx(grid.coords[a]) for a in 1:grid.ndim]
+    [grid.coords[a][:] for a in 1:grid.ndim]
 end
 
 @inline function name(grid::Grid)

@@ -7,14 +7,14 @@
 
     ucoord = SpectralCoord("u", umin, umax, unodes)
     u, = Jecco.cheb(umin, umax, unodes)
-    @test xx(ucoord) ≈ u
+    @test ucoord[:] ≈ u
 
     xmin   = -10.0
     xmax   =  10.0
     xnodes =  20
 
     xcoord = CartCoord{2}("x", xmin, xmax, xnodes, endpoint=false)
-    @test xx(xcoord) == collect(-10.0:1.0:9.0)
+    @test xcoord[:] == collect(-10.0:1.0:9.0)
 
     ymin   = -20.0
     ymax   =  20.0
