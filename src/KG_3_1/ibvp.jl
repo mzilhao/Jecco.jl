@@ -1,6 +1,5 @@
 
 using DifferentialEquations
-# using Vivi
 
 function unpack_dom(ucoord)
     Nsys = length(ucoord)
@@ -58,12 +57,10 @@ function ibvp(par_grid::ParamGrid, par_id::ParamID,
     # http://docs.juliadiffeq.org/latest/basics/integrator.html
     integrator = init(prob, alg, save_everystep=false, dt=dt0, adaptive=false)
 
-    # tinfo  = Vivi.TimeInfo()
+    tinfo  = Jecco.TimeInfo()
 
     # write initial data
-    # FIXME
-    # Jecco.out_info(tinfo.it, tinfo.t, ID, "phi", 1, 200)
-    Jecco.out_info(0, 0.0, ID, "phi", 1, 200)
+    Jecco.out_info(tinfo.it, tinfo.t, ID, "phi", 1, 200)
 
     fieldnames = ["phi c=$i" for i in 1:Nsys]
     fields     = phi0s
@@ -76,13 +73,12 @@ function ibvp(par_grid::ParamGrid, par_id::ParamID,
     # output(ID)
 
     for (u,t) in tuples(integrator)
-        # tinfo.it += 1
-        # tinfo.dt  = integrator.dt
-        # tinfo.t   = t
+        tinfo.it += 1
+        tinfo.dt  = integrator.dt
+        tinfo.t   = t
 
+        Jecco.out_info(tinfo.it, tinfo.t, u, "phi", 1, 200)
         # FIXME
-        @show t
-        # Jecco.out_info(tinfo.it, tinfo.t, u, "phi", 1, 200)
         # output(u)
     end
 

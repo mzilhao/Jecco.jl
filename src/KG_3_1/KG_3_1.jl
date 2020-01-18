@@ -1,7 +1,6 @@
 module KG_3_1
 
 using Jecco
-# using Vivi
 using Parameters
 
 export ParamBase, ParamGrid, ParamID, ParamEvol, ParamIO

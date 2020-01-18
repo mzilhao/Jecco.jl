@@ -1,5 +1,14 @@
 
+using Dates
 using Printf
+
+mutable struct TimeInfo{T}
+    it  :: Int
+    t   :: T
+    dt  :: T
+end
+TimeInfo(it::Int, t::Real, dt::Real) = TimeInfo{typeof(t)}(it, t, dt)
+TimeInfo() = TimeInfo(0, 0.0, 0.0)
 
 function out_info(it::Integer, t::Real, f, label::String, info_every::Integer,
                   header_every::Integer)

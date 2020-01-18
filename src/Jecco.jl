@@ -1,7 +1,6 @@
 module Jecco
 
 using LinearAlgebra
-# using Vivi
 using Parameters
 
 export AbstractCoord, Cartesian, GaussLobatto
