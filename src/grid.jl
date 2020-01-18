@@ -10,21 +10,15 @@ coord_axis(A::AbstractCoord{T,N,C}) where {T,N,C} = N
 coord_type(A::AbstractCoord{T,N,C}) where {T,N,C} = C
 
 
-struct Coord{T<:Real,N,C,T2} <: AbstractCoord{T,N,C}
+struct Coord{T<:Real,N,C} <: AbstractCoord{T,N,C}
     name  :: String
     min   :: T
     max   :: T
     nodes :: Int
-    delta :: T2
 end
 
 struct CartCoord{T,N} end
 
-function CartCoord{N}(name::String, xmin::T, xmax::T,
-                      nodes::Integer) where {T<:Real,N}
-    delta = (xmax - xmin) / (nodes - 1)
-    Coord{T,N,Cartesian,typeof(delta)}(name, xmin, xmax, nodes, delta)
-end
 function CartCoord{N}(name::String, xmin::T, xmax::T, nodes::Integer;
                       endpoint::Bool=true) where {T<:Real,N}
     min_ = xmin
@@ -32,10 +26,9 @@ function CartCoord{N}(name::String, xmin::T, xmax::T, nodes::Integer;
         h    = (xmax - xmin) / nodes
         max_ = xmax - h
     else
-        h    = (xmax - xmin) / (nodes - 1)
         max_ = xmax
     end
-    Coord{T,N,Cartesian,typeof(h)}(name, min_, max_, nodes, h)
+    Coord{T,N,Cartesian}(name, min_, max_, nodes)
 end
 CartCoord(args...) = CartCoord{1}(args...)
 
@@ -44,15 +37,24 @@ struct SpectralCoord{T,N} end
 
 function SpectralCoord{N}(name::String, xmin::T, xmax::T,
                           nodes::Integer) where {T<:Real,N}
-    Coord{T,N,GaussLobatto,Missing}(name, xmin, xmax, nodes, missing)
+    Coord{T,N,GaussLobatto}(name, xmin, xmax, nodes)
 end
 
 SpectralCoord(args...) = SpectralCoord{1}(args...)
 
 
+@inline function delta(coord::AbstractCoord{T,N,Cartesian}) where {T<:Real,N}
+    (coord.max - coord.min) / (coord.nodes - 1)
+end
+
+@inline function delta(coord::AbstractCoord{T,N,GaussLobatto}) where {T<:Real,N}
+    missing
+end
+
 @inline function xx(coord::AbstractCoord{T,N,Cartesian},
                     i::Int) where {T<:Real,N}
-    coord.min + (i - 1) * coord.delta
+    h = delta(coord)
+    coord.min + (i - 1) * h
 end
 
 @inline function xx(coord::AbstractCoord{T,N,GaussLobatto},
@@ -113,7 +115,7 @@ end
 end
 
 @inline function delta(grid::Grid)
-    [grid.coords[a].delta for a in 1:grid.ndim]
+    [delta(grid.coords[a]) for a in 1:grid.ndim]
 end
 
 @inline function coord_type(grid::Grid)
@@ -138,3 +140,12 @@ ycoord  = CartCoord{3}("y", ymin, ymax, ynodes, endpoint=false)
 
 
 grid = Grid([ucoord, xcoord, ycoord])
+
+
+names  = name(grid)
+mins   = min(grid)
+maxs   = max(grid)
+nodess = nodes(grid)
+coord_types = coord_type(grid)
+
+# Coord{T,N,GaussLobatto}(name, xmin, xmax, nodes)
