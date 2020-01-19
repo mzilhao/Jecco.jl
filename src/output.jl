@@ -69,7 +69,7 @@ function Output(dir::String, prefix::String, every::Int, tinfo::TimeInfo)
     Output(dir, prefix, every, software, software_version, tinfo)
 end
 
-function output(param::Output, field::Field)
+function output(param::Output, fields::Vararg{Field,N}) where {N}
     it = param.tinfo.it
     if it % param.every == 0
         filename = "$(param.prefix)$(lpad(string(it), 8, string(0))).h5"
@@ -78,7 +78,12 @@ function output(param::Output, field::Field)
         # open file
         fid = h5open(fullpath, "cw")
 
-        write_hdf5(param, fid, field)
+        # create openPMD structure
+        grp = setup_openpmd_file(param, fid)
+
+        for field in fields
+            write_hdf5(param, grp, field)
+        end
 
         # close file
         close(fid)
@@ -86,13 +91,10 @@ function output(param::Output, field::Field)
     nothing
 end
 
-write_hdf5(param::Output, fid::HDF5File, field::Field) =
-    write_hdf5(param, fid, field.name, field.data, field.grid)
+write_hdf5(param::Output, grp::HDF5Group, field::Field) =
+    write_hdf5(param, grp, field.name, field.data, field.grid)
 
-function write_hdf5(param::Output, fid::HDF5File, fieldname::String, data::AbstractArray, grid::Grid)
-    # create openPMD structure
-    grp = setup_openpmd_file(param, fid)
-
+function write_hdf5(param::Output, grp::HDF5Group, fieldname::String, data::AbstractArray, grid::Grid)
     # write actual data
     dset = write_dataset(grp, fieldname, data)
     setup_openpmd_mesh(dset, grid)
