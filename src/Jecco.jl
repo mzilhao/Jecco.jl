@@ -5,7 +5,7 @@ using LinearAlgebra
 using Parameters
 
 export AbstractCoord, Cartesian, GaussLobatto
-export CartCoord, SpectralCoord, delta
+export CartCoord, SpectralCoord, Grid, delta
 export CenteredDiff, ChebDeriv
 
 include("deriv_operators.jl")

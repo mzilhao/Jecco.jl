@@ -6,6 +6,7 @@ abstract type GaussLobatto <: CoordType end
 
 abstract type AbstractCoord{T,N,C} end
 
+coord_elem(A::AbstractCoord{T,N,C}) where {T,N,C} = T
 coord_axis(A::AbstractCoord{T,N,C}) where {T,N,C} = N
 coord_type(A::AbstractCoord{T,N,C}) where {T,N,C} = C
 
@@ -48,10 +49,8 @@ SpectralCoord(args...) = SpectralCoord{1}(args...)
 end
 
 # a Gauss-Lobatto grid has non-uniform spacing. not sure if the best is to
-# return "missing" or simply not define the method...
-@inline function delta(coord::AbstractCoord{T,N,GaussLobatto}) where {T<:Real,N}
-    missing
-end
+# return "missing", not define the method, or just have it return -1, as now.
+@inline delta(coord::AbstractCoord{T,N,GaussLobatto}) where {T<:Real,N} = -1
 
 
 @inline function Base.getindex(coord::AbstractCoord{T,N,Cartesian}, i::Int) where {T<:Real,N}
@@ -74,13 +73,11 @@ end
 @inline Base.getindex(coord::AbstractCoord, ::Colon) = [coord[i] for i in 1:coord.nodes]
 
 
-# TODO: are these necessary??
-
-struct Grid{A}
+struct Grid{T<:Real,A}
     ndim    :: Int
     coords  :: A
 
-    function Grid{A}(ndim, coords) where {A}
+    function Grid{T,A}(ndim, coords) where {T,A}
         ndim = length(coords)
         for a in 1:ndim
             @assert(coord_axis(coords[a]) == a, "wrong order in grid array")
@@ -89,19 +86,30 @@ struct Grid{A}
     end
 end
 
-function Grid(coords::Vector)
+function Grid(coords::Tuple)
     ndim = length(coords)
-    Grid{typeof(coords)}(ndim, coords)
+    T    = coord_elem(coords[1])
+    Grid{T,typeof(coords)}(ndim, coords)
+end
+
+function Grid(coords::Vararg{AbstractCoord,N}) where {N}
+    ndim = length(coords)
+    T    = coord_elem(coords[1])
+    Grid{T,typeof(coords)}(ndim, coords)
 end
 
 function Grid(coord::AbstractCoord)
     ndim   = 1
-    coords = [coord]
-    Grid{typeof(coords)}(ndim, coords)
+    coords = (coord)
+    T      = coord_elem(coord)
+    Grid{T,typeof(coords)}(ndim, coords)
 end
 
+@inline function Base.getindex(grid::Grid, idx::Vararg{Int,N}) where {N}
+    [grid.coords[a][idx[a]] for a in 1:N]
+end
 
-@inline function xx(grid::Grid)
+@inline function Base.getindex(grid::Grid, ::Colon)
     [grid.coords[a][:] for a in 1:grid.ndim]
 end
 

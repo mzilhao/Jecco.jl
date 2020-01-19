@@ -22,9 +22,9 @@
 
     ycoord = CartCoord{3}("y", ymin, ymax, ynodes, endpoint=false)
 
-    grid = Grid([ucoord, xcoord, ycoord])
+    grid = Grid(ucoord, xcoord, ycoord)
 
-    u, x, y = xx(grid)
+    u, x, y = grid[:]
 
     @test x == collect(-10.0:1.0:9.0)
     @test y == collect(-20.0:2.0:19.0)
