@@ -49,8 +49,8 @@ SpectralCoord(args...) = SpectralCoord{1}(args...)
 end
 
 # a Gauss-Lobatto grid has non-uniform spacing. not sure if the best is to
-# return "missing", not define the method, or just have it return -1, as now.
-@inline delta(coord::AbstractCoord{T,N,GaussLobatto}) where {T<:Real,N} = -1
+# return "missing", not define the method, or just have it return NaN, as now.
+@inline delta(coord::AbstractCoord{T,N,GaussLobatto}) where {T<:Real,N} = NaN
 
 
 @inline function Base.getindex(coord::AbstractCoord{T,N,Cartesian}, i::Int) where {T<:Real,N}
