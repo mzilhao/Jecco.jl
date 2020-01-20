@@ -136,3 +136,5 @@ end
 @inline function coord_type(grid::Grid)
     [coord_type(grid.coords[a]) for a in 1:grid.ndim]
 end
+
+@inline Base.size(grid::Grid) = Tuple(nodes(grid))

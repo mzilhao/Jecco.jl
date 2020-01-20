@@ -1,8 +1,6 @@
 
-struct System{Cu,Cx,Cy,Du,Dx,Dy}
-    ucoord :: Cu
-    xcoord :: Cx
-    ycoord :: Cy
+struct System{G,Du,Dx,Dy}
+    grid   :: G
     Du     :: Du
     Duu    :: Du
     Dx     :: Dx
@@ -14,6 +12,8 @@ end
 function System(ucoord::AbstractCoord{T,1,GaussLobatto},
                 xcoord::AbstractCoord{T,2,Cartesian},
                 ycoord::AbstractCoord{T,3,Cartesian}) where {T<:Real}
+    grid = Grid(ucoord, xcoord, ycoord)
+
     ord = 4
 
     Du  = ChebDeriv{1}(1, ucoord.min, ucoord.max, ucoord.nodes)
@@ -25,8 +25,8 @@ function System(ucoord::AbstractCoord{T,1,GaussLobatto},
     Dy  = CenteredDiff{3}(1, ord, delta(ycoord), ycoord.nodes)
     Dyy = CenteredDiff{3}(2, ord, delta(ycoord), ycoord.nodes)
 
-    System{typeof(ucoord), typeof(xcoord), typeof(ycoord), typeof(Du), typeof(Dx),
-           typeof(Dy)}(ucoord, xcoord, ycoord, Du, Duu, Dx, Dxx, Dy, Dyy)
+    System{typeof(grid), typeof(Du), typeof(Dx),
+           typeof(Dy)}(grid, Du, Duu, Dx, Dxx, Dy, Dyy)
 end
 
 function create_sys(p::ParamGrid)

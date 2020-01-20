@@ -34,7 +34,7 @@ function ibvp(par_grid::ParamGrid, par_id::ParamID,
     systems = Jecco.KG_3_1.create_sys(par_grid)
     Nsys    = length(systems)
 
-    ucoords = [systems[i].ucoord for i in 1:Nsys]
+    ucoords = [systems[i].grid.coords[1] for i in 1:Nsys]
     unpack  = unpack_dom(ucoords)
 
     phi0s = initial_data(systems, par_id)
