@@ -44,13 +44,17 @@ struct Output{T}
     tinfo            :: TimeInfo{T}
 
     function Output{T}(dir::String, prefix::String, every::Int,
-                       software::String, software_version::String, tinfo::TimeInfo{T}) where {T}
+                       software::String, software_version::String, tinfo::TimeInfo{T};
+                       remove_existing::Bool=false) where {T}
         # if no name specified, use name of script
         if dir == ""
             dir = splitext(basename(Base.source_path()))[1]
         end
 
         # create folder if it doesn't exist already
+        if isdir(dir) && remove_existing
+            rm(dir, recursive=true)
+        end
         if !isdir(dir)
             mkdir(dir)
         end
@@ -62,10 +66,12 @@ struct Output{T}
         new(dir, prefix, every, software, software_version, tinfo)
     end
 end
-function Output(dir::String, prefix::String, every::Int, tinfo::TimeInfo{T}) where {T<:Real}
+function Output(dir::String, prefix::String, every::Int, tinfo::TimeInfo{T};
+                remove_existing::Bool=false) where {T<:Real}
     software         = "Jecco"
     software_version = "0.1.0"
-    Output{T}(dir, prefix, every, software, software_version, tinfo)
+    Output{T}(dir, prefix, every, software, software_version, tinfo;
+              remove_existing=remove_existing)
 end
 
 function output(param::Output, fields::Vararg{Field,N}) where {N}
