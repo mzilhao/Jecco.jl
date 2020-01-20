@@ -2,7 +2,7 @@
 using Dates
 using Printf
 
-mutable struct TimeInfo{T}
+mutable struct TimeInfo{T<:Real}
     it  :: Int
     t   :: T
     dt  :: T
@@ -35,16 +35,16 @@ function out_info(it::Integer, t::Real, f, label::String, info_every::Integer,
 end
 
 
-struct Output
+struct Output{T}
     dir              :: String
     prefix           :: String
     every            :: Int
     software         :: String
     software_version :: String
-    tinfo            :: TimeInfo
+    tinfo            :: TimeInfo{T}
 
-    function Output(dir::String, prefix::String, every::Int,
-                    software::String, software_version::String, tinfo::TimeInfo)
+    function Output{T}(dir::String, prefix::String, every::Int,
+                       software::String, software_version::String, tinfo::TimeInfo{T}) where {T}
         # if no name specified, use name of script
         if dir == ""
             dir = splitext(basename(Base.source_path()))[1]
@@ -62,11 +62,10 @@ struct Output
         new(dir, prefix, every, software, software_version, tinfo)
     end
 end
-
-function Output(dir::String, prefix::String, every::Int, tinfo::TimeInfo)
+function Output(dir::String, prefix::String, every::Int, tinfo::TimeInfo{T}) where {T<:Real}
     software         = "Jecco"
     software_version = "0.1.0"
-    Output(dir, prefix, every, software, software_version, tinfo)
+    Output{T}(dir, prefix, every, software, software_version, tinfo)
 end
 
 function output(param::Output, fields::Vararg{Field,N}) where {N}
