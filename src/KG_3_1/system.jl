@@ -29,7 +29,7 @@ function System(ucoord::AbstractCoord{T,1,GaussLobatto},
            typeof(Dy)}(grid, Du, Duu, Dx, Dxx, Dy, Dyy)
 end
 
-function create_sys(p::ParamGrid)
+function create_systems(p::ParamGrid)
     Nsys = p.udomains
     delta_udom = (p.umax - p.umin) / Nsys
 

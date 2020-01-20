@@ -31,7 +31,7 @@ end
 function ibvp(par_grid::ParamGrid, par_id::ParamID,
               par_evol::ParamEvol, par_io::ParamIO)
 
-    systems = Jecco.KG_3_1.create_sys(par_grid)
+    systems = Jecco.KG_3_1.create_systems(par_grid)
     Nsys    = length(systems)
 
     ucoords = [systems[i].grid.coords[1] for i in 1:Nsys]
