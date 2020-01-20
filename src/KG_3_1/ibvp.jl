@@ -60,7 +60,7 @@ function ibvp(par_grid::ParamGrid, par_id::ParamID,
     tinfo  = Jecco.TimeInfo()
 
     # write initial data
-    Jecco.out_info(tinfo.it, tinfo.t, ID, "phi", 1, 200)
+    Jecco.out_info(tinfo.it, tinfo.t, 0.0, ID, "phi", 1, 200)
 
     fieldnames = ["phi c=$i" for i in 1:Nsys]
     fields     = phi0s
@@ -72,12 +72,16 @@ function ibvp(par_grid::ParamGrid, par_id::ParamID,
     # output = write_out(out, fieldnames, coordss)
     # output(ID)
 
+    tstart = time()
+    t0     = tinfo.t
     for (u,t) in tuples(integrator)
         tinfo.it += 1
         tinfo.dt  = integrator.dt
         tinfo.t   = t
 
-        Jecco.out_info(tinfo.it, tinfo.t, u, "phi", 1, 200)
+        telapsed = (time() - tstart) / 3600
+        deltat   = t - t0
+        Jecco.out_info(tinfo.it, tinfo.t, deltat/telapsed, u, "phi", 1, 200)
         # FIXME
         # output(u)
     end
