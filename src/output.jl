@@ -42,19 +42,17 @@ struct Output{T}
     software         :: String
     software_version :: String
     tinfo            :: TimeInfo{T}
+    overwrite        :: Bool
 
     function Output{T}(dir::String, prefix::String, every::Int,
                        software::String, software_version::String, tinfo::TimeInfo{T};
-                       remove_existing::Bool=false) where {T}
+                       overwrite::Bool=false) where {T}
         # if no name specified, use name of script
         if dir == ""
             dir = splitext(basename(Base.source_path()))[1]
         end
 
         # create folder if it doesn't exist already
-        if isdir(dir) && remove_existing
-            rm(dir, recursive=true)
-        end
         if !isdir(dir)
             mkdir(dir)
         end
@@ -63,15 +61,15 @@ struct Output{T}
             prefix = "data_"
         end
 
-        new(dir, prefix, every, software, software_version, tinfo)
+        new(dir, prefix, every, software, software_version, tinfo, overwrite)
     end
 end
 function Output(dir::String, prefix::String, every::Int, tinfo::TimeInfo{T};
-                remove_existing::Bool=false) where {T<:Real}
+                overwrite::Bool=false) where {T<:Real}
     software         = "Jecco"
     software_version = "0.1.0"
     Output{T}(dir, prefix, every, software, software_version, tinfo;
-              remove_existing=remove_existing)
+              overwrite=overwrite)
 end
 
 function output(param::Output, fields::Vararg{Field,N}) where {N}
@@ -80,8 +78,13 @@ function output(param::Output, fields::Vararg{Field,N}) where {N}
         filename = "$(param.prefix)$(lpad(string(it), 8, string(0))).h5"
         fullpath = abspath(param.dir, filename)
 
+        if param.overwrite
+            mode = "w"
+        else
+            mode = "cw"
+        end
         # open file
-        fid = h5open(fullpath, "cw")
+        fid = h5open(fullpath, mode)
 
         # create openPMD structure
         grp = setup_openpmd_file(param, fid)
@@ -178,6 +181,8 @@ function setup_openpmd_mesh(dset::HDF5Dataset, grid::Grid)
     gridtypes = string.(Jecco.coord_type(grid))
     names     = Jecco.name(grid)
 
+    attrs(dset)["geometry"]         = openpmd_geometry(grid)
+
     # Julia, like Fortran and Matlab, stores arrays in column-major order. HDF5
     # uses C's row-major order, and consequently every array's dimensions are
     # inverted compared to what is seen with tools like h5dump. This is the same
@@ -185,8 +190,6 @@ function setup_openpmd_mesh(dset::HDF5Dataset, grid::Grid)
     # then, we here flip the order of the grid arrays (and remember to flip back
     # when reading data in). The advantage is that no data rearrangement takes
     # place when reading or writing the data itself, which is more intensive.
-
-    attrs(dset)["geometry"]         = openpmd_geometry(grid)
     attrs(dset)["gridGlobalOffset"] = mins[end:-1:1]
     attrs(dset)["gridSpacing"]      = deltas[end:-1:1]
     attrs(dset)["gridMax"]          = maxs[end:-1:1]

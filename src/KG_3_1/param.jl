@@ -34,4 +34,5 @@ end
     out_every   :: Int
     folder      :: String  = "./data"
     prefix      :: String  = "phi"
+    overwrite   :: Bool    = false
 end
