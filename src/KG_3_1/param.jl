@@ -33,6 +33,6 @@ end
 @with_kw struct ParamIO
     out_every   :: Int
     folder      :: String  = "./data"
-    prefix      :: String  = "phi"
+    prefix      :: String  = "phi_"
     overwrite   :: Bool    = false
 end

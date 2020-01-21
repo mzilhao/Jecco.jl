@@ -11,7 +11,7 @@ function unpack_dom(ucoord)
     end
 
     function (f)
-        [f[Nu_lims[i]+1:Nu_lims[i+1],:,:] for i in 1:Nsys]
+        [view(f, Nu_lims[i]+1:Nu_lims[i+1],:,:) for i in 1:Nsys]
     end
 end
 
@@ -60,17 +60,20 @@ function ibvp(par_grid::ParamGrid, par_id::ParamID,
     tinfo  = Jecco.TimeInfo()
 
     # write initial data
-    Jecco.out_info(tinfo.it, tinfo.t, 0.0, ID, "phi", 1, 200)
 
+    phis = unpack(ID)
     fieldnames = ["phi c=$i" for i in 1:Nsys]
-    fields     = phi0s
+    grids      = [systems[i].grid for i in 1:Nsys]
+    fields     = [Jecco.Field(fieldnames[i], phis[i], grids[i]) for i in 1:Nsys]
 
-    # FIXME
-    # coordss    = [systems[i].coords for i in 1:Nsys]
+    out  = Jecco.Output(par_io.folder, par_io.prefix, par_io.out_every, tinfo;
+                        overwrite=par_io.overwrite)
+    Jecco.output(out, fields)
 
-    # out    = Vivi.Output(par_io.folder, par_io.prefix, par_io.out_every, tinfo)
     # output = write_out(out, fieldnames, coordss)
     # output(ID)
+
+    Jecco.out_info(tinfo.it, tinfo.t, 0.0, ID, "phi", 1, 200)
 
     tstart = time()
     t0     = tinfo.t
@@ -79,11 +82,17 @@ function ibvp(par_grid::ParamGrid, par_id::ParamID,
         tinfo.dt  = integrator.dt
         tinfo.t   = t
 
+        # TODO: group in one function
+        phis = unpack(u)
+        for i in 1:Nsys
+            fields[i].data = phis[i]
+        end
+        Jecco.output(out, fields)
+        # output(u)
+
         telapsed = (time() - tstart) / 3600
         deltat   = t - t0
         Jecco.out_info(tinfo.it, tinfo.t, deltat/telapsed, u, "phi", 1, 200)
-        # FIXME
-        # output(u)
     end
 
     nothing

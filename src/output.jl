@@ -72,7 +72,11 @@ function Output(dir::String, prefix::String, every::Int, tinfo::TimeInfo{T};
               overwrite=overwrite)
 end
 
-function output(param::Output, fields::Vararg{Field,N}) where {N}
+
+output(param::Output, fields::Vararg{Field,N}) where {N} = output(param, [fields...])
+
+# function output(param::Output, fields::Vector{Field{A,G}}) where {A,G}
+function output(param::Output, fields::Vector)
     it = param.tinfo.it
     if it % param.every == 0
         filename = "$(param.prefix)$(lpad(string(it), 8, string(0))).h5"
@@ -137,9 +141,11 @@ function setup_openpmd_file(param::Output, fid::HDF5File)
 end
 
 function write_dataset(grp::HDF5Group, fieldname::String, data::AbstractArray)
-    dset, = d_create(grp, fieldname, data)
-    write(dset, data)
-    dset
+    # dset, = d_create(grp, fieldname, data)
+    # write(dset, data)
+    # dset
+    grp[fieldname] = data
+    grp[fieldname]
 end
 
 
