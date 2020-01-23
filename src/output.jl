@@ -22,7 +22,7 @@ function out_info(it::Integer, t::Real, time_per_hour::Real, f, label::String, i
 
     if it % header_every == 0
         println("-------------------------------------------------------------")
-        println("Iteration      Time | Time per hour  |          $label")
+        println("Iteration      Time | Time per hour  |           $label")
         println("                    |                |   minimum      maximum")
         println("-------------------------------------------------------------")
     end
@@ -176,7 +176,6 @@ function setup_openpmd_mesh(dset::HDF5Dataset, coord::AbstractCoord)
     attrs(dset)["gridMax"]          = coord.max
     attrs(dset)["gridType"]         = string(Jecco.coord_type(coord))
     attrs(dset)["axisLabels"]       = coord.name
-
     nothing
 end
 
@@ -201,6 +200,5 @@ function setup_openpmd_mesh(dset::HDF5Dataset, grid::Grid)
     attrs(dset)["gridMax"]          = maxs[end:-1:1]
     attrs(dset)["gridType"]         = gridtypes[end:-1:1]
     attrs(dset)["axisLabels"]       = names[end:-1:1]
-
     nothing
 end
