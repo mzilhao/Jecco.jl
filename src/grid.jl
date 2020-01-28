@@ -10,6 +10,16 @@ coord_elem(A::AbstractCoord{T,N,C}) where {T,N,C} = T
 coord_axis(A::AbstractCoord{T,N,C}) where {T,N,C} = N
 coord_type(A::AbstractCoord{T,N,C}) where {T,N,C} = C
 
+function coord_type(name::String)
+    if name == "Cartesian"
+        return Cartesian
+    elseif name == "GaussLobatto"
+        return GaussLobatto
+    else
+        error("Unknown coord type")
+    end
+end
+
 
 struct Coord{T<:Real,N,C} <: AbstractCoord{T,N,C}
     name  :: String
