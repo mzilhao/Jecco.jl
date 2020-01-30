@@ -38,12 +38,8 @@ struct Nested{S,D,T<:Real}
     aux_acc :: Vector{Aux{T}}
 end
 function Nested(sys::System)
-    coords = sys.coords
-
-    uu, xx, yy = Vivi.xx(coords)
-    Nu = length(uu)
-    Nx = length(xx)
-    Ny = length(yy)
+    Nu, Nx, Ny = size(sys.grid)
+    uu, xx, yy = sys.grid[:]
 
     Du_phi    = zeros(Nu, Nx, Ny)
     Dxx_phi   = zeros(Nu, Nx, Ny)
@@ -74,13 +70,16 @@ function solve_nested_g1!(bulk::BulkVars, BC::BulkVars, nested::Nested)
 
     aux_acc = nested.aux_acc
 
-    uderiv = sys.uderiv
-    xderiv = sys.xderiv
-    yderiv = sys.yderiv
+    Du  = sys.Du
+    Duu = sys.Duu
+    # Dx  = sys.Dx
+    Dxx = sys.Dxx
+    # Dy  = sys.Dy
+    Dyy = sys.Dyy
 
-    t1 = @spawn Vivi.D!(Du_phi, bulk.phi, uderiv, 1)
-    t2 = @spawn Vivi.D2!(Dxx_phi, bulk.phi, xderiv, 2)
-    t3 = @spawn Vivi.D2!(Dyy_phi, bulk.phi, yderiv, 3)
+    t1 = @spawn mul!(Du_phi, Du, bulk.phi)
+    t2 = @spawn mul!(Dxx_phi, Dxx, bulk.phi)
+    t3 = @spawn mul!(Dyy_phi, Dyy, bulk.phi)
 
     # set Sd
     @fastmath @inbounds for j in eachindex(yy)
@@ -114,8 +113,9 @@ function solve_nested_g1!(bulk::BulkVars, BC::BulkVars, nested::Nested)
 
                 aux.b_vec[a]     = -aux.ABCS[4]
 
+                # TODO: replace Duu.D and Du.D with something more general and portable
                 @inbounds @simd for aa in eachindex(uu)
-                    aux.A_mat[a,aa] = aux.ABCS[1] * uderiv.D2[a,aa] + aux.ABCS[2] * uderiv.D[a,aa]
+                    aux.A_mat[a,aa] = aux.ABCS[1] * Duu.D[a,aa] + aux.ABCS[2] * Du.D[a,aa]
                 end
                 aux.A_mat[a,a] += aux.ABCS[3]
             end
@@ -142,7 +142,7 @@ function solve_nested_g1!(bulk::BulkVars, BC::BulkVars, nested::Nested)
 
     # finally compute dphidt_g1
 
-    Vivi.D!(Du_phid, bulk.phid, uderiv, 1)
+    mul!(Du_phid, Du, bulk.phid)
 
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)

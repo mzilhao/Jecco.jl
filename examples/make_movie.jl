@@ -1,4 +1,4 @@
-using Vivi
+using Jecco
 using Plots
 using Printf
 pyplot()
@@ -6,7 +6,7 @@ pyplot()
 ts = OpenPMDTimeSeries("./data")
 
 for it in ts.iterations
-    phi, info=get_field(ts, it=it, field="phi");
+    phi, grid=get_field(ts, it=it, field="phi c=1");
     ti = ts.current_t
     heatmap(phi[1,:,:],
             aspect_ratio=:equal,

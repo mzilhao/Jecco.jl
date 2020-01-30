@@ -1,6 +1,5 @@
 
 using DifferentialEquations
-using Vivi
 
 function unpack_dom(ucoord)
     Nsys = length(ucoord)
@@ -16,14 +15,18 @@ function unpack_dom(ucoord)
     end
 end
 
-function write_out(out, fieldnames, coordss)
-    Nsys   = length(fieldnames)
-    ucoord = [coordss[i][1] for i in 1:Nsys]
-    unpack = unpack_dom(ucoord)
+function write_out(out, fields)
+    Nsys    = length(fields)
+    ucoords = [fields[i].grid.coords[1] for i in 1:Nsys]
+
+    unpack  = unpack_dom(ucoords)
 
     function (u)
         phis = unpack(u)
-        Vivi.output(out, fieldnames, phis, coordss)
+        for i in 1:Nsys
+            fields[i].data = phis[i]
+        end
+        Jecco.output(out, fields)
         nothing
     end
 end
@@ -31,10 +34,10 @@ end
 function ibvp(par_grid::ParamGrid, par_id::ParamID,
               par_evol::ParamEvol, par_io::ParamIO)
 
-    systems = Jecco.KG_3_1.create_sys(par_grid)
+    systems = Jecco.KG_3_1.create_systems(par_grid)
     Nsys    = length(systems)
 
-    ucoords = [systems[i].coords[1] for i in 1:Nsys]
+    ucoords = [systems[i].grid.coords[1] for i in 1:Nsys]
     unpack  = unpack_dom(ucoords)
 
     phi0s = initial_data(systems, par_id)
@@ -57,26 +60,35 @@ function ibvp(par_grid::ParamGrid, par_id::ParamID,
     # http://docs.juliadiffeq.org/latest/basics/integrator.html
     integrator = init(prob, alg, save_everystep=false, dt=dt0, adaptive=false)
 
-    tinfo  = Vivi.TimeInfo()
+    tinfo  = Jecco.TimeInfo()
 
     # write initial data
-    Jecco.out_info(tinfo.it, tinfo.t, ID, "phi", 1, 200)
 
+    phis = unpack(ID)
     fieldnames = ["phi c=$i" for i in 1:Nsys]
-    fields     = phi0s
-    coordss    = [systems[i].coords for i in 1:Nsys]
+    grids      = [systems[i].grid for i in 1:Nsys]
+    fields     = [Jecco.Field(fieldnames[i], phis[i], grids[i]) for i in 1:Nsys]
 
-    out    = Vivi.Output(par_io.folder, par_io.prefix, par_io.out_every, tinfo)
-    output = write_out(out, fieldnames, coordss)
+    out  = Jecco.Output(par_io.folder, par_io.prefix, par_io.out_every, tinfo;
+                        overwrite=par_io.overwrite)
+
+    output = write_out(out, fields)
     output(ID)
 
+    Jecco.out_info(tinfo.it, tinfo.t, 0.0, ID, "phi", 1, 200)
+
+    tstart = time()
+    t0     = tinfo.t
     for (u,t) in tuples(integrator)
         tinfo.it += 1
         tinfo.dt  = integrator.dt
         tinfo.t   = t
 
-        Jecco.out_info(tinfo.it, tinfo.t, u, "phi", 1, 200)
         output(u)
+
+        telapsed = (time() - tstart) / 3600
+        deltat   = t - t0
+        Jecco.out_info(tinfo.it, tinfo.t, deltat/telapsed, u, "phi", 1, 200)
     end
 
     nothing
