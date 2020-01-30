@@ -11,7 +11,7 @@ function unpack_dom(ucoord)
     end
 
     function (f)
-        [view(f, Nu_lims[i]+1:Nu_lims[i+1],:,:) for i in 1:Nsys]
+        [f[Nu_lims[i]+1:Nu_lims[i+1],:,:] for i in 1:Nsys]
     end
 end
 

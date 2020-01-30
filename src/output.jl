@@ -106,7 +106,8 @@ end
 write_hdf5(param::Output, grp::HDF5Group, field::Field) =
     write_hdf5(param, grp, field.name, field.data, field.grid)
 
-function write_hdf5(param::Output, grp::HDF5Group, fieldname::String, data::AbstractArray, grid::Grid)
+function write_hdf5(param::Output, grp::HDF5Group, fieldname::String, data::AbstractArray,
+                    grid::Grid)
     # write actual data
     dset = write_dataset(grp, fieldname, data)
     setup_openpmd_mesh(dset, grid)
@@ -141,11 +142,9 @@ function setup_openpmd_file(param::Output, fid::HDF5File)
 end
 
 function write_dataset(grp::HDF5Group, fieldname::String, data::AbstractArray)
-    # dset, = d_create(grp, fieldname, data)
-    # write(dset, data)
-    # dset
-    grp[fieldname] = data
-    grp[fieldname]
+    dset, = d_create(grp, fieldname, data)
+    write(dset, data)
+    dset
 end
 
 
