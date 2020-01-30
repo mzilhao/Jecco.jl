@@ -110,6 +110,7 @@ include("dphidt.jl")
 include("equation_coeff.jl")
 include("solve_nested.jl")
 include("rhs.jl")
+include("run.jl")
 include("ibvp.jl")
 
 end

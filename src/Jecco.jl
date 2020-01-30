@@ -14,6 +14,7 @@ include("deriv_operators.jl")
 include("grid.jl")
 include("input.jl")
 include("output.jl")
+include("startup.jl")
 include("spectral.jl")
 include("KG_3_1/KG_3_1.jl")
 
