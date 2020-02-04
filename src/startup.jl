@@ -6,7 +6,18 @@ function startup()
     date        = string(now())
     host        = gethostname()
     user        = ENV["USER"]
-    num_threads = ENV["JULIA_NUM_THREADS"]
+
+    num_threads = try
+        ENV["JULIA_NUM_THREADS"]
+    catch e
+        if isa(e, KeyError)
+            # no JULIA_NUM_THREADS defined; set num_threads to 1
+            1
+        else
+            # unknown error
+            error(e)
+        end
+    end
 
     println("-------------------------------------------------------------")
     println("")
