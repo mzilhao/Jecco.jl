@@ -5,7 +5,7 @@ using LinearAlgebra
 using Parameters
 
 export AbstractCoord, Cartesian, GaussLobatto
-export CartCoord, SpectralCoord, Grid, delta
+export CartCoord, SpectralCoord, Grid
 export CenteredDiff, ChebDeriv
 
 export OpenPMDTimeSeries, get_field

@@ -171,7 +171,7 @@ end
 function setup_openpmd_mesh(dset::HDF5Dataset, coord::AbstractCoord)
     attrs(dset)["geometry"]         = openpmd_geometry(coord)
     attrs(dset)["gridGlobalOffset"] = coord.min
-    attrs(dset)["gridSpacing"]      = delta(coord)
+    attrs(dset)["gridSpacing"]      = Jecco.delta(coord)
     attrs(dset)["gridMax"]          = coord.max
     attrs(dset)["gridType"]         = string(Jecco.coord_type(coord))
     attrs(dset)["axisLabels"]       = coord.name
