@@ -168,12 +168,16 @@ function openpmd_geometry(grid::Grid)
     geometry
 end
 
+openpmd_gridtype(coord::CartCoord)    = "Cartesian"
+openpmd_gridtype(coord::GaussLobatto) = "GaussLobatto"
+openpmd_gridtype(grid::Grid) = [openpmd_gridtype(coord) for coord in grid.coords]
+
 function setup_openpmd_mesh(dset::HDF5Dataset, coord::AbstractCoord)
     attrs(dset)["geometry"]         = openpmd_geometry(coord)
     attrs(dset)["gridGlobalOffset"] = coord.min
     attrs(dset)["gridSpacing"]      = Jecco.delta(coord)
     attrs(dset)["gridMax"]          = coord.max
-    attrs(dset)["gridType"]         = string(Jecco.coord_type(coord))
+    attrs(dset)["gridType"]         = openpmd_gridtype(coord)
     attrs(dset)["axisLabels"]       = coord.name
     nothing
 end
