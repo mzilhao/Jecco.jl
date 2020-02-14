@@ -9,106 +9,146 @@ export VV # this will contain the potential
 export System
 export BulkVars, BoundaryVars, AllVars
 
-struct BulkVars{A}
-    phi    :: A
-    S      :: A
-    Sd     :: A
-    phid   :: A
-    A      :: A
-    dphidt :: A
-end
-BulkVars(phi, S, Sd, phid, A, dphidt) =  BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
-function BulkVars(phi::Array{<:Number,N}) where {N}
-    S      = similar(phi)
-    Sd     = similar(phi)
-    phid   = similar(phi)
-    A      = similar(phi)
-    dphidt = similar(phi)
-    BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
-end
+# Note: in the future we may promote this to something like BulkVars{Ng,T}, to
+# dispatch on Ng (the type of equations to be solved on each grid)
 
-BulkVars(phis::Vector) = [BulkVars(phi) for phi in phis]
-
-function Base.getindex(bulk::BulkVars, i::Int)
-    phi    = bulk.phi[i]
-    S      = bulk.S[i]
-    Sd     = bulk.Sd[i]
-    phid   = bulk.phid[i]
-    A      = bulk.A[i]
-    dphidt = bulk.dphidt[i]
-    BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
+struct BulkVars{T}
+    B1     :: T
+    B2     :: T
+    G      :: T
+    phi    :: T
+    S      :: T
+    Fx     :: T
+    Fy     :: T
+    B1d    :: T
+    B2d    :: T
+    Gd     :: T
+    phid   :: T
+    Sd     :: T
+    A      :: T
+    dB1dt  :: T
+    dB2dt  :: T
+    dGdt   :: T
+    dphidt :: T
 end
 
-function Base.getindex(bulk::BulkVars, kr::AbstractRange)
-    phi    = bulk.phi[kr]
-    S      = bulk.S[kr]
-    Sd     = bulk.Sd[kr]
-    phid   = bulk.phid[kr]
-    A      = bulk.A[kr]
-    dphidt = bulk.dphidt[kr]
-    BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
+BulkVars(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A, dB1dt, dB2dt,
+         dGdt, dphidt) = BulkVars{typeof(B1)}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d,
+                                              Gd, phid, Sd, A, dB1dt, dB2dt, dGdt, dphidt)
+
+function BulkVars(B1::Array{<:Number,N}) where {N}
+    B2     = similar(B1)
+    G      = similar(B1)
+    phi    = similar(B1)
+    S      = similar(B1)
+    Fx     = similar(B1)
+    Fy     = similar(B1)
+    B1d    = similar(B1)
+    B2d    = similar(B1)
+    Gd     = similar(B1)
+    phid   = similar(B1)
+    Sd     = similar(B1)
+    A      = similar(B1)
+    dB1dt  = similar(B1)
+    dB2dt  = similar(B1)
+    dGdt   = similar(B1)
+    dphidt = similar(B1)
+
+    BulkVars{typeof(B1)}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A,
+                         dB1dt, dB2dt,dGdt, dphidt)
 end
 
-function Base.getindex(bulk::BulkVars, I::Vararg)
-    phi    = bulk.phi[I...]
-    S      = bulk.S[I...]
-    Sd     = bulk.Sd[I...]
-    phid   = bulk.phid[I...]
-    A      = bulk.A[I...]
-    dphidt = bulk.dphidt[I...]
-    BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
-end
 
-function Base.getindex(bulk::BulkVars, ::Colon)
-    phi    = bulk.phi[:]
-    S      = bulk.S[:]
-    Sd     = bulk.Sd[:]
-    phid   = bulk.phid[:]
-    A      = bulk.A[:]
-    dphidt = bulk.dphidt[:]
-    BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
-end
+# TODO
 
-Base.lastindex(bulk::BulkVars) = lastindex(bulk.phi)
-Base.lastindex(bulk::BulkVars, i::Int) = lastindex(bulk.phi, i)
+# BulkVars(phis::Vector) = [BulkVars(phi) for phi in phis]
+
+# function Base.getindex(bulk::BulkVars, i::Int)
+#     phi    = bulk.phi[i]
+#     S      = bulk.S[i]
+#     Sd     = bulk.Sd[i]
+#     phid   = bulk.phid[i]
+#     A      = bulk.A[i]
+#     dphidt = bulk.dphidt[i]
+#     BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
+# end
+
+# function Base.getindex(bulk::BulkVars, kr::AbstractRange)
+#     phi    = bulk.phi[kr]
+#     S      = bulk.S[kr]
+#     Sd     = bulk.Sd[kr]
+#     phid   = bulk.phid[kr]
+#     A      = bulk.A[kr]
+#     dphidt = bulk.dphidt[kr]
+#     BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
+# end
+
+# function Base.getindex(bulk::BulkVars, I::Vararg)
+#     phi    = bulk.phi[I...]
+#     S      = bulk.S[I...]
+#     Sd     = bulk.Sd[I...]
+#     phid   = bulk.phid[I...]
+#     A      = bulk.A[I...]
+#     dphidt = bulk.dphidt[I...]
+#     BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
+# end
+
+# function Base.getindex(bulk::BulkVars, ::Colon)
+#     phi    = bulk.phi[:]
+#     S      = bulk.S[:]
+#     Sd     = bulk.Sd[:]
+#     phid   = bulk.phid[:]
+#     A      = bulk.A[:]
+#     dphidt = bulk.dphidt[:]
+#     BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
+# end
+
+# Base.lastindex(bulk::BulkVars) = lastindex(bulk.phi)
+# Base.lastindex(bulk::BulkVars, i::Int) = lastindex(bulk.phi, i)
+
 
 function setup(par_base)
     global VV = Potential(par_base)
 end
 
 
-struct BoundaryVars{A}
-    a4   :: A
+struct BoundaryVars{T}
+    a4   :: T
+    fx2  :: T
+    fy2  :: T
 end
 
-mutable struct AllVars{T}
-    u        :: T
 
-    phi_d0   :: T
-    phi_du   :: T
-    phi_dxx  :: T
-    phi_dyy  :: T
+# TODO
+# mutable struct AllVars{T}
+#     u        :: T
 
-    Sd_d0    :: T
+#     phi_d0   :: T
+#     phi_du   :: T
+#     phi_dxx  :: T
+#     phi_dyy  :: T
 
-    phid_d0  :: T
-    phid_du  :: T
+#     Sd_d0    :: T
 
-    A_d0     :: T
-end
-function AllVars{T}() where {T<:AbstractFloat}
-    N = 1 + 4 + 1 + 2 + 1
-    array = zeros(N)
-    AllVars{T}(array...)
-end
+#     phid_d0  :: T
+#     phid_du  :: T
+
+#     A_d0     :: T
+# end
+# function AllVars{T}() where {T<:AbstractFloat}
+#     N = 1 + 4 + 1 + 2 + 1
+#     array = zeros(N)
+#     AllVars{T}(array...)
+# end
+
 
 include("param.jl")
 include("system.jl")
-include("initial_data.jl")
+# include("initial_data.jl")
 include("potential.jl")
 # include("dphidt.jl")
-include("equation_coeff.jl")
-include("solve_nested.jl")
+# include("equation_coeff.jl")
+# include("solve_nested.jl")
 # include("rhs.jl")
 # include("run.jl")
 # include("ibvp.jl")
