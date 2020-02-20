@@ -36,10 +36,32 @@ BulkVars(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A, dB1dt, dB2dt,
          dGdt, dphidt) = BulkVars{typeof(B1)}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d,
                                               Gd, phid, Sd, A, dB1dt, dB2dt, dGdt, dphidt)
 
-function BulkVars(B1::Array{<:Number,N}) where {N}
-    B2     = similar(B1)
-    G      = similar(B1)
-    phi    = similar(B1)
+function BulkVars(Nxx::Vararg)
+    B1     = zeros(Nxx...)
+    B2     = copy(B1)
+    G      = copy(B1)
+    phi    = copy(B1)
+    S      = copy(B1)
+    Fx     = copy(B1)
+    Fy     = copy(B1)
+    B1d    = copy(B1)
+    B2d    = copy(B1)
+    Gd     = copy(B1)
+    phid   = copy(B1)
+    Sd     = copy(B1)
+    A      = copy(B1)
+    dB1dt  = copy(B1)
+    dB2dt  = copy(B1)
+    dGdt   = copy(B1)
+    dphidt = copy(B1)
+
+    BulkVars{typeof(B1)}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A,
+                         dB1dt, dB2dt,dGdt, dphidt)
+end
+
+
+function BulkVars(B1::Array{T,N}, B2::Array{T,N}, G::Array{T,N},
+                  phi::Array{T,N}) where {T<:Number,N}
     S      = similar(B1)
     Fx     = similar(B1)
     Fy     = similar(B1)
@@ -120,26 +142,23 @@ end
 
 
 # TODO
-# mutable struct AllVars{T}
-#     u        :: T
+mutable struct AllVars{T}
+    u        :: T
 
-#     phi_d0   :: T
-#     phi_du   :: T
-#     phi_dxx  :: T
-#     phi_dyy  :: T
+    B1p      :: T
+    B2p      :: T
 
-#     Sd_d0    :: T
+    G        :: T
+    Gp       :: T
 
-#     phid_d0  :: T
-#     phid_du  :: T
+    phip     :: T
 
-#     A_d0     :: T
-# end
-# function AllVars{T}() where {T<:AbstractFloat}
-#     N = 1 + 4 + 1 + 2 + 1
-#     array = zeros(N)
-#     AllVars{T}(array...)
-# end
+end
+function AllVars{T}() where {T<:AbstractFloat}
+    N = 1 + 2 + 2 + 1
+    array = zeros(N)
+    AllVars{T}(array...)
+end
 
 
 include("param.jl")
@@ -148,7 +167,7 @@ include("system.jl")
 include("potential.jl")
 # include("dphidt.jl")
 # include("equation_coeff.jl")
-# include("solve_nested.jl")
+include("solve_nested.jl")
 # include("rhs.jl")
 # include("run.jl")
 # include("ibvp.jl")
