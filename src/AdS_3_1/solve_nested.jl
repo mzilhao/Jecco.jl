@@ -31,31 +31,76 @@ struct Nested{S,D,T<:Real}
     uu      :: Vector{T}
     xx      :: Vector{T}
     yy      :: Vector{T}
+    Du_B1   :: D
+    Du_B2   :: D
+    Du_G    :: D
     Du_phi  :: D
-    Dxx_phi :: D
-    Dyy_phi :: D
-    Du_phid :: D
     aux_acc :: Vector{Aux{T}}
 end
 function Nested(sys::System)
     Nu, Nx, Ny = size(sys.grid)
     uu, xx, yy = sys.grid[:]
 
-    Du_phi    = zeros(Nu, Nx, Ny)
-    Dxx_phi   = zeros(Nu, Nx, Ny)
-    Dyy_phi   = zeros(Nu, Nx, Ny)
-    Du_phid   = zeros(Nu, Nx, Ny)
+    Du_B1    = zeros(Nu, Nx, Ny)
+    Du_B2    = zeros(Nu, Nx, Ny)
+    Du_G     = zeros(Nu, Nx, Ny)
+    Du_phi   = zeros(Nu, Nx, Ny)
 
     nt = Threads.nthreads()
     # pre-allocate thread-local aux quantities
     aux_acc = [Aux{eltype(uu)}(Nu) for _ in 1:nt]
 
-    Nested{typeof(sys),typeof(Du_phi), eltype(uu)}(sys,uu, xx, yy, Du_phi, Dxx_phi,
-                                                      Dyy_phi, Du_phid, aux_acc)
+    Nested{typeof(sys),typeof(Du_phi), eltype(uu)}(sys, uu, xx, yy, Du_B1, Du_B2,
+                                                   Du_G, Du_phi, aux_acc)
 end
 
 Nested(systems::Vector) = [Nested(sys) for sys in systems]
 
+
+#= Notes
+
+for each metric function there are radial ODEs at each z point. since they are
+z-independent, they can all be solved independently and simultaneously. this is
+achieved via the trivial Threads.@thread parallelisation below.
+
+the matrix A_mat is obtained, for each equation, through
+
+  A_mat = A D_uu + B D_u + C Id
+
+which builds the differential operator, and then the top and bottom lines are
+replaced to enforce the boundary conditions, as shown below. the vector b_vec is
+simply built through
+
+  b_vec = -S
+
+the first and last entries are replaced to enforce the boundary conditions,
+leading to the schematic form
+
+  (  1   0   0  ...  0  ) ( x0 )   (  u0  )
+  ( a10 a11 a12 ... a1N ) ( x1 )   (  b1  )
+  ( ................... ) ( x2 ) = (  b2  )                               (*)
+  ( ................... ) ( .. )   (  ..  )
+  ( d00 d01 d02 ... d0N ) ( xN )   (  u'0 )
+
+where N = Nu and d00, d01, d02, ..., d0N are the coefficients of the first
+line in the first derivative operator D_u:
+
+         ( d00 d01 d02 d03 ... d0N )
+         ( d10 d11 d12 d13 ... d1N )
+  D_u =  ( d20 d21 d22 d23 ... d2N )
+         ( ....................... )
+         ( dN0 dN1 dN2 dN3 ... dNN )
+
+the first equation from the system (*) then enforces x0 = u0 while the last
+equation enforces dx/du_{u=u0} = u'0, where u0 and u'0 need to be given for each
+equation. the remaining equations from (*) enforce the differential equations
+themselves.
+
+note that this example is valid only for the second order ODEs. for the first
+order ones, obviously, just one BC is needed. thus, we accordingly skip the step
+of replacing the last line of the A_mat matrix and last entry of b_vec vector.
+
+=#
 
 function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
     sys  = nested.sys
@@ -63,10 +108,10 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
     xx   = nested.xx
     yy   = nested.yy
 
-    Du_phi  = nested.Du_phi
-    Dxx_phi = nested.Dxx_phi
-    Dyy_phi = nested.Dyy_phi
-    Du_phid = nested.Du_phid
+    Du_B1  = nested.Du_B1
+    Du_B2  = nested.Du_B2
+    Du_G   = nested.Du_G
+    Du_phi = nested.Du_phi
 
     aux_acc = nested.aux_acc
 
@@ -77,24 +122,13 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
     # Dy  = sys.Dy
     Dyy = sys.Dyy
 
-    t1 = @spawn mul!(Du_phi, Du, bulk.phi)
-    t2 = @spawn mul!(Dxx_phi, Dxx, bulk.phi)
-    t3 = @spawn mul!(Dyy_phi, Dyy, bulk.phi)
+    # TODO @spawn here ?
+    mul!(Du_B1,  Du, bulk.B1)
+    mul!(Du_B2,  Du, bulk.B2)
+    mul!(Du_G,   Du, bulk.G)
+    mul!(Du_phi, Du, bulk.phi)
 
-    # set Sd
-    @fastmath @inbounds for j in eachindex(yy)
-        @inbounds for i in eachindex(xx)
-            @inbounds @simd for a in eachindex(uu)
-                bulk.Sd[a,i,j] = BC.Sd[i,j]
-            end
-        end
-    end
-
-    wait(t1)
-    wait(t2)
-    wait(t3)
-
-    # solve for phidg1
+    # solve for S
 
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
@@ -102,14 +136,18 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
             aux = aux_acc[id]
 
             @inbounds @simd for a in eachindex(uu)
-                aux.vars.u       = uu[a]
-                aux.vars.Sd_d0   = bulk.Sd[a,i,j]
-                aux.vars.phi_d0  = bulk.phi[a,i,j]
-                aux.vars.phi_du  = Du_phi[a,i,j]
-                aux.vars.phi_dxx = Dxx_phi[a,i,j]
-                aux.vars.phi_dyy = Dyy_phi[a,i,j]
+                u              = uu[a]
+                aux.vars.u     = u
 
-                phig1_eq_coeff!(aux.ABCS, aux.vars)
+                aux.vars.B1p   = -u*u * Du_B1[a,i,j]
+                aux.vars.B2p   = -u*u * Du_B2[a,i,j]
+
+                aux.vars.G     = bulk.G[a,i,j]
+                aux.vars.Gp    = -u*u * Du_G[a,i,j]
+
+                aux.vars.phip  = -u*u * Du_phi[a,i,j]
+
+                S_outer_eq_coeff!(aux.ABCS, aux.vars)
 
                 aux.b_vec[a]     = -aux.ABCS[4]
 
@@ -120,52 +158,58 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
                 aux.A_mat[a,a] += aux.ABCS[3]
             end
 
-            # boundary condition
-            aux.b_vec[1]    = BC.phid[i,j]
+            # boundary condition. FIXME
+            dfunc_du_ui     = 0.0
+            func_ui         = 0.01
+            aux.b_vec[1]    = func_ui
             aux.A_mat[1,:] .= 0.0
             aux.A_mat[1,1]  = 1.0
 
-            sol = view(bulk.phid, :, i, j)
+            aux.b_vec[end]    = dfunc_du_ui
+            aux.A_mat[end,:]  = Du.D[1,:]
+
+            sol = view(bulk.S, :, i, j)
             solve_lin_system!(sol, aux.A_mat, aux.b_vec)
         end
     end
 
-    # set Ag1
-    @fastmath @inbounds for j in eachindex(yy)
-        @inbounds for i in eachindex(xx)
-            @inbounds @simd for a in eachindex(uu)
-                bulk.A[a,i,j] = BC.A[i,j]
-            end
-        end
-    end
+
+    # # set Ag1
+    # @fastmath @inbounds for j in eachindex(yy)
+    #     @inbounds for i in eachindex(xx)
+    #         @inbounds @simd for a in eachindex(uu)
+    #             bulk.A[a,i,j] = BC.A[i,j]
+    #         end
+    #     end
+    # end
 
 
-    # finally compute dphidt_g1
+    # # finally compute dphidt_g1
 
-    mul!(Du_phid, Du, bulk.phid)
+    # mul!(Du_phid, Du, bulk.phid)
 
-    @fastmath @inbounds @threads for j in eachindex(yy)
-        @inbounds for i in eachindex(xx)
-            id  = Threads.threadid()
-            aux = aux_acc[id]
-            @inbounds @simd for a in eachindex(uu)
-                aux.vars.u       = uu[a]
+    # @fastmath @inbounds @threads for j in eachindex(yy)
+    #     @inbounds for i in eachindex(xx)
+    #         id  = Threads.threadid()
+    #         aux = aux_acc[id]
+    #         @inbounds @simd for a in eachindex(uu)
+    #             aux.vars.u       = uu[a]
 
-                aux.vars.phi_d0  = bulk.phi[a,i,j]
-                aux.vars.phid_d0 = bulk.phid[a,i,j]
-                aux.vars.A_d0    = bulk.A[a,i,j]
+    #             aux.vars.phi_d0  = bulk.phi[a,i,j]
+    #             aux.vars.phid_d0 = bulk.phid[a,i,j]
+    #             aux.vars.A_d0    = bulk.A[a,i,j]
 
-                aux.vars.phi_du  = Du_phi[a,i,j]
-                aux.vars.phid_du = Du_phid[a,i,j]
+    #             aux.vars.phi_du  = Du_phi[a,i,j]
+    #             aux.vars.phid_du = Du_phid[a,i,j]
 
-                if aux.vars.u > 1.e-9
-                    bulk.dphidt[a,i,j]  = dphig1dt(aux.vars)
-                else
-                    bulk.dphidt[a,i,j]  = dphig1dt_u0(aux.vars)
-                end
-            end
-        end
-    end
+    #             if aux.vars.u > 1.e-9
+    #                 bulk.dphidt[a,i,j]  = dphig1dt(aux.vars)
+    #             else
+    #                 bulk.dphidt[a,i,j]  = dphig1dt_u0(aux.vars)
+    #             end
+    #         end
+    #     end
+    # end
 
     nothing
 end

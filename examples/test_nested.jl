@@ -33,7 +33,6 @@ function IDtest0(sys::System)
 end
 
 
-
 par_grid = ParamGrid(
     xmin        = -5.0,
     xmax        =  5.0,
@@ -54,15 +53,8 @@ sys = systems[1]
 
 Nu, Nx, Ny = size(sys.grid)
 
-nested = Jecco.AdS_3_1.Nested(system)
+nested = Jecco.AdS_3_1.Nested(sys)
 
 bulk = IDtest0(sys)
 
-BC = BulkVars(Nx, Ny)
-
-
-#     a4 = -ones2D(sys)
-#     boundary = BoundaryVars(a4)
-
-#     bulk = BulkVars(phi)
-#     BC = bulk[1,:,:]
+Jecco.AdS_3_1.solve_nested_outer!(bulk, bulk, nested)
