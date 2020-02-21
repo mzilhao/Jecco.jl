@@ -60,7 +60,7 @@ Nested(systems::Vector) = [Nested(sys) for sys in systems]
 #= Notes
 
 for each metric function there are radial ODEs at each z point. since they are
-z-independent, they can all be solved independently and simultaneously. this is
+x,y-independent, they can all be solved independently and simultaneously. this is
 achieved via the trivial Threads.@thread parallelisation below.
 
 the matrix A_mat is obtained, for each equation, through
@@ -102,7 +102,7 @@ of replacing the last line of the A_mat matrix and last entry of b_vec vector.
 
 =#
 
-function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
+function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -122,11 +122,12 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
     # Dy  = sys.Dy
     Dyy = sys.Dyy
 
-    # TODO @spawn here ?
-    mul!(Du_B1,  Du, bulk.B1)
-    mul!(Du_B2,  Du, bulk.B2)
-    mul!(Du_G,   Du, bulk.G)
-    mul!(Du_phi, Du, bulk.phi)
+    @sync begin
+        @spawn mul!(Du_B1,  Du, bulk.B1)
+        @spawn mul!(Du_B2,  Du, bulk.B2)
+        @spawn mul!(Du_G,   Du, bulk.G)
+        @spawn mul!(Du_phi, Du, bulk.phi)
+    end
 
     # solve for S
 
@@ -149,23 +150,18 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
 
                 S_outer_eq_coeff!(aux.ABCS, aux.vars)
 
-                aux.b_vec[a]     = -aux.ABCS[4]
-
-                # TODO: replace Duu.D and Du.D with something more general and portable
+                aux.b_vec[a]   = -aux.ABCS[4]
                 @inbounds @simd for aa in eachindex(uu)
                     aux.A_mat[a,aa] = aux.ABCS[1] * Duu.D[a,aa] + aux.ABCS[2] * Du.D[a,aa]
                 end
                 aux.A_mat[a,a] += aux.ABCS[3]
             end
 
-            # boundary condition. FIXME
-            dfunc_du_ui     = 0.0
-            func_ui         = 0.01
-            aux.b_vec[1]    = func_ui
+            aux.b_vec[1]    = BC.S[i,j]
             aux.A_mat[1,:] .= 0.0
             aux.A_mat[1,1]  = 1.0
 
-            aux.b_vec[end]    = dfunc_du_ui
+            aux.b_vec[end]    = dBC.S[i,j]
             aux.A_mat[end,:]  = Du.D[1,:]
 
             sol = view(bulk.S, :, i, j)

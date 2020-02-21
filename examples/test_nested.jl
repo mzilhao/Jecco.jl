@@ -40,7 +40,7 @@ par_grid = ParamGrid(
     ymin        = -5.0,
     ymax        =  5.0,
     ynodes      =  128,
-    umin        =  0.1,
+    umin        =  0.01,
     umax        =  1.0,
     udomains    =  1,
     unodes      =  16,
@@ -52,9 +52,18 @@ systems = Jecco.AdS_3_1.create_systems(par_grid)
 sys = systems[1]
 
 Nu, Nx, Ny = size(sys.grid)
+u, x, y = sys.grid[:]
 
 nested = Jecco.AdS_3_1.Nested(sys)
 
 bulk = IDtest0(sys)
 
-Jecco.AdS_3_1.solve_nested_outer!(bulk, bulk, nested)
+BC  = BulkVars(Nx, Ny)
+dBC = BulkVars(Nx, Ny)
+
+u0 = u[1]
+
+BC.S  .= 1.0/u0
+dBC.S .= -1.0/(u0*u0)
+
+Jecco.AdS_3_1.solve_nested_outer!(bulk, BC, dBC, nested)
