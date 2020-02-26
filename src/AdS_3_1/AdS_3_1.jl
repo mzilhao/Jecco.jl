@@ -141,17 +141,29 @@ struct BoundaryVars{T}
 end
 
 
-# TODO
+#= Notation
+
+for any function f we're using the following notation (let _x denote partial
+derivative with respect to x)
+
+fp  = f_r = -u^2 f_u
+fd  = \dot f
+ft  = \tilde f = f_x - Fx f_r
+fh  = \hat f   = f_y - Fy f_r
+
+=#
+
 mutable struct AllVars{T}
     u        :: T
 
     B1       :: T
     B1p      :: T
-    B1h      :: T
-    B1hp     :: T
     B1t      :: T
+    B1h      :: T
     B1tp     :: T
+    B1hp     :: T
 
+    B2       :: T
     B2p      :: T
     B2t      :: T
     B2h      :: T
@@ -160,24 +172,27 @@ mutable struct AllVars{T}
 
     G        :: T
     Gp       :: T
-    Gh       :: T
     Gt       :: T
-    Ghp      :: T
+    Gh       :: T
     Gtp      :: T
+    Ghp      :: T
 
+    phi      :: T
     phip     :: T
     phit     :: T
     phih     :: T
+    phitp    :: T
+    phihp    :: T
 
     S        :: T
     Sp       :: T
     St       :: T
-    Stp      :: T
     Sh       :: T
+    Stp      :: T
     Shp      :: T
 end
 function AllVars{T}() where {T<:AbstractFloat}
-    N = 1 + 6 + 5 + 6 + 3 + 6
+    N = 1 + 6*5
     array = zeros(N)
     AllVars{T}(array...)
 end
