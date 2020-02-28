@@ -100,7 +100,7 @@ function Fxy_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, var
     B2    = vars.B2
     B2p   = vars.B2p
     B2_x  = vars.B2_x
-    B2_y  = vars.B2p_y
+    B2_y  = vars.B2_y
     B2pp  = vars.B2pp
     B2p_x = vars.B2p_x
     B2p_y = vars.B2p_y
