@@ -104,9 +104,9 @@ mul!(Du_G,   Du, bulk.G)
 mul!(Du_phi, Du, bulk.phi)
 
 
-AA = zeros(4,4)
-BB = zeros(4,4)
-CC = zeros(4,4)
+AA = zeros(2,2)
+BB = zeros(2,2)
+CC = zeros(2,2)
 SS = zeros(2)
 
 
@@ -122,7 +122,7 @@ id  = 1
 vars = Jecco.AdS5_3_1.FxyVars{Float64}()
 
 
-u              = uu[a]
+u          = uu[a]
 vars.u     = u
 
 vars.B1    = bulk.B1[a,i,j]
@@ -130,8 +130,6 @@ vars.B1p   = -u*u * Du_B1[a,i,j]
 
 # vars.B2    = bulk.B2[a,i,j]
 vars.B2p   = -u*u * Du_B2[a,i,j]
-
-vars.G     = bulk.G[a,i,j]
 
 vars.G     = bulk.G[a,i,j]
 vars.Gp    = -u*u * Du_G[a,i,j]
