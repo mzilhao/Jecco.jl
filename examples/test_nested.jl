@@ -104,7 +104,10 @@ mul!(Du_G,   Du, bulk.G)
 mul!(Du_phi, Du, bulk.phi)
 
 
-ABCS2 = [zeros(4,4), zeros(4,4), zeros(4,4), zeros(2)]
+AA = zeros(4,4)
+BB = zeros(4,4)
+CC = zeros(4,4)
+SS = zeros(2)
 
 
 j = 4
@@ -137,7 +140,7 @@ vars.phip  = -u*u * Du_phi[a,i,j]
 
 vars.S     = bulk.S[a,i,j]
 
-Jecco.AdS_3_1.Fxy_outer_eq_coeff!(ABCS2, vars)
+Jecco.AdS_3_1.Fxy_outer_eq_coeff!(AA, BB, CC, SS, vars)
 
 
 # @inbounds @simd for a in eachindex(uu)

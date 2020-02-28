@@ -86,7 +86,7 @@ end
 # ( A11 d_uu Fx + A12 d_uu Fy + B11 d_u Fx + B12 d_u Fy + C11 Fx + C12 Fy ) = -S1
 # ( A21 d_uu Fx + A22 d_uu Fy + B21 d_u Fx + B22 d_u Fy + C21 Fx + C22 Fy ) = -S2
 
-function Fxy_outer_eq_coeff!(ABCS::Vector, vars::FxyVars)
+function Fxy_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::FxyVars)
     u    = vars.u
 
     B1    = vars.B1
@@ -131,12 +131,6 @@ function Fxy_outer_eq_coeff!(ABCS::Vector, vars::FxyVars)
     sinh2G  = sinh(*(2, G))
     cosh2G  = cosh(*(2, G))
     coshGsq = cosh(G)^2
-
-
-    AA   = ABCS[1]
-    BB   = ABCS[2]
-    CC   = ABCS[3]
-    SS   = ABCS[4]
 
 
     AA[1,1] = *(2, S ^ 2, u ^ 4, expB1)
