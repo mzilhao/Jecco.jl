@@ -34,7 +34,7 @@ end
 function ibvp(par_grid::ParamGrid, par_id::ParamID,
               par_evol::ParamEvol, par_io::ParamIO)
 
-    systems = Jecco.AdS_3_1.create_systems(par_grid)
+    systems = Jecco.AdS5_3_1.create_systems(par_grid)
     Nsys    = length(systems)
 
     ucoords = [systems[i].grid.coords[1] for i in 1:Nsys]
@@ -43,7 +43,7 @@ function ibvp(par_grid::ParamGrid, par_id::ParamID,
     phi0s = initial_data(systems, par_id)
     ID    = vcat(phi0s...)
 
-    rhs! = Jecco.AdS_3_1.setup_rhs(phi0s, systems, unpack)
+    rhs! = Jecco.AdS5_3_1.setup_rhs(phi0s, systems, unpack)
 
     dt0   = par_evol.dt
     tspan = (0.0, par_evol.tmax)

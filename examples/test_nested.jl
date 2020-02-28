@@ -1,6 +1,6 @@
 
 using Jecco
-using Jecco.AdS_3_1
+using Jecco.AdS5_3_1
 
 using LinearAlgebra
 
@@ -49,14 +49,14 @@ par_grid = ParamGrid(
 )
 
 
-systems = Jecco.AdS_3_1.create_systems(par_grid)
+systems = Jecco.AdS5_3_1.create_systems(par_grid)
 
 sys = systems[1]
 
 Nu, Nx, Ny = size(sys.grid)
 u, x, y = sys.grid[:]
 
-nested = Jecco.AdS_3_1.Nested(sys)
+nested = Jecco.AdS5_3_1.Nested(sys)
 
 bulk = IDtest0(sys)
 
@@ -77,7 +77,7 @@ BC.Fy .= fy2_0 * u0 * u0
 dBC.Fx .= 2 * fx2_0 * u0
 dBC.Fy .= 2 * fy2_0 * u0
 
-Jecco.AdS_3_1.solve_nested_outer!(bulk, BC, dBC, nested)
+Jecco.AdS5_3_1.solve_nested_outer!(bulk, BC, dBC, nested)
 
 
 uu   = nested.uu
@@ -119,7 +119,7 @@ a = 2
 id  = 1
 # aux = aux_acc[id]
 
-vars = Jecco.AdS_3_1.FxyVars{Float64}()
+vars = Jecco.AdS5_3_1.FxyVars{Float64}()
 
 
 u              = uu[a]
@@ -140,7 +140,7 @@ vars.phip  = -u*u * Du_phi[a,i,j]
 
 vars.S     = bulk.S[a,i,j]
 
-Jecco.AdS_3_1.Fxy_outer_eq_coeff!(AA, BB, CC, SS, vars)
+Jecco.AdS5_3_1.Fxy_outer_eq_coeff!(AA, BB, CC, SS, vars)
 
 
 # @inbounds @simd for a in eachindex(uu)

@@ -17,6 +17,6 @@ include("output.jl")
 include("startup.jl")
 include("spectral.jl")
 include("KG_3_1/KG_3_1.jl")
-include("AdS_3_1/AdS_3_1.jl")
+include("AdS5_3_1/AdS5_3_1.jl")
 
 end # module
