@@ -77,6 +77,27 @@ end
 ChebDeriv(args...) = ChebDeriv{1}(args...)
 
 
+@inline function Base.getindex(A::FiniteDiffDeriv, i::Int, j::Int)
+    N      = A.len
+    coeffs = A.stencil_coefs
+    mid    = div(A.stencil_length, 2) + 1
+
+    # note: without the assumption of periodicity this needs to be adapted
+    idx  = 1 + mod(j - i + mid - 1, N)
+
+    if idx < 1 || idx > A.stencil_length
+        return 0.0
+    else
+        return coeffs[idx]
+    end
+end
+
+@inline Base.getindex(A::FiniteDiffDeriv, i::Int, ::Colon) =
+    [A[i,j] for j in 1:A.len]
+
+@inline Base.getindex(A::SpectralDeriv, i, j) = A.D[i,j]
+
+
 # mul! done by convolution for finite difference operators
 function LinearAlgebra.mul!(df::AbstractVector, A::FiniteDiffDeriv, f::AbstractVector)
     convolve!(df, f, A)
