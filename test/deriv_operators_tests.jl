@@ -22,6 +22,10 @@
     @test df  ≈ cos.(x) atol=hx^ord
     @test d2f ≈ -f atol=hx^ord
 
+    # now for the callable, point-wise, methods
+    for i in eachindex(f)
+        @test D1(f,i) == df[i]
+    end
 
     # 3D case
 
@@ -63,6 +67,13 @@
 
     @test d2xf ≈ -f
     @test d2zf ≈ -f
+
+
+    # now for callable, point-wise, methods
+    @test Dx(f,2,10,120)  == dxf[2,10,120]
+    @test Dx(f,42,20,300) == dxf[42,20,300]
+    @test Dz(f,2,10,120)  == dzf[2,10,120]
+    @test Dz(f,42,20,300) == dzf[42,20,300]
 end
 
 @testset "Spectral Derivative tests:" begin
@@ -82,6 +93,11 @@ end
     dxxf = Dxx * f
     @test dxf  ≈ x
     @test dxxf ≈ fill(1.0, size(dxxf))
+
+    # now for the callable, point-wise, methods
+    for i in eachindex(f)
+        @test Dx(f,i) ≈ dxf[i]
+    end
 
 
     # 3D case
@@ -118,4 +134,10 @@ end
 
     @test d2xf ≈ dxxf0
     @test d2zf ≈ dzzf0
+
+    # now for callable, point-wise, methods
+    @test Dx(f,2,4,16)  ≈ dxf[2,4,16]
+    @test Dx(f,1,6,12)  ≈ dxf[1,6,12]
+    @test Dz(f,2,3,8)   ≈ dzf[2,3,8]
+    @test Dz(f,16,8,1)  ≈ dzf[16,8,1]
 end

@@ -158,3 +158,32 @@ function *(A::AbstractDerivOperator, x::AbstractArray)
     mul!(y, A, x)
     y
 end
+
+# make FiniteDiffDeriv a callable struct, to compute derivatives only at a given point
+function (A::FiniteDiffDeriv)(x::AbstractVector{T}, i::Int) where {T<:Real}
+    N = length(x)
+    coeffs = A.stencil_coefs
+    mid = div(A.stencil_length, 2) + 1
+
+    sum_i = zero(T)
+    @fastmath @inbounds for idx in 1:A.stencil_length
+        # imposing periodicity
+        i_circ = 1 + mod(i - (mid-idx) - 1, N)
+        sum_i += coeffs[idx] * x[i_circ]
+    end
+
+    sum_i
+end
+
+# make SpectralDeriv a callable struct, to compute derivatives only at a given point
+(A::SpectralDeriv)(x::AbstractVector{T}, i::Int) where {T<:Real} = dot(A.D[i,:], x)
+
+# and now for Arrays
+function (A::AbstractDerivOperator{T,N})(f::AbstractArray{T},
+                                         idx::Vararg{Int,M}) where {T,N,M}
+    Ipre  = CartesianIndex(idx[1:N-1])
+    Ipost = CartesianIndex(idx[N+1:end])
+    i     = idx[N]
+
+    @views A(f[Ipre, :, Ipost], i)
+end
