@@ -113,9 +113,8 @@ function solve_nested_g1!(bulk::BulkVars, BC::BulkVars, nested::Nested)
 
                 aux.b_vec[a]     = -aux.ABCS[4]
 
-                # TODO: replace Duu.D and Du.D with something more general and portable
                 @inbounds @simd for aa in eachindex(uu)
-                    aux.A_mat[a,aa] = aux.ABCS[1] * Duu.D[a,aa] + aux.ABCS[2] * Du.D[a,aa]
+                    aux.A_mat[a,aa] = aux.ABCS[1] * Duu[a,aa] + aux.ABCS[2] * Du[a,aa]
                 end
                 aux.A_mat[a,a] += aux.ABCS[3]
             end

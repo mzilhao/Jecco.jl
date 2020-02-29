@@ -152,7 +152,7 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
 
                 aux.b_vec[a]   = -aux.ABCS[4]
                 @inbounds @simd for aa in eachindex(uu)
-                    aux.A_mat[a,aa] = aux.ABCS[1] * Duu.D[a,aa] + aux.ABCS[2] * Du.D[a,aa]
+                    aux.A_mat[a,aa] = aux.ABCS[1] * Duu[a,aa] + aux.ABCS[2] * Du[a,aa]
                 end
                 aux.A_mat[a,a] += aux.ABCS[3]
             end
@@ -162,7 +162,7 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
             aux.A_mat[1,1]  = 1.0
 
             aux.b_vec[end]    = dBC.S[i,j]
-            aux.A_mat[end,:]  = Du.D[1,:]
+            aux.A_mat[end,:]  = Du[1,:]
 
             sol = view(bulk.S, :, i, j)
             solve_lin_system!(sol, aux.A_mat, aux.b_vec)
