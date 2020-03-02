@@ -153,3 +153,32 @@ end
     @test Dz(f,2,3,8)   ≈ dzf[2,3,8]
     @test Dz(f,16,8,1)  ≈ dzf[16,8,1]
 end
+
+@testset "Cross derivative tests:" begin
+    # 2D FD case
+    xmin   = -2.0*pi
+    xmax   =  2.0*pi
+    xnodes =  600
+    ymin   = -1.0*pi
+    ymax   =  1.0*pi
+    ynodes =  300
+    ord    =  4
+
+    hx     = (xmax - xmin) / xnodes
+    hy     = (ymax - ymin) / ynodes
+
+    x      = collect(xmin:hx:xmax-hx)
+    y      = collect(ymin:hy:ymax-hy)
+
+    f      = [sin.(x1) .* sin.(x2) for x1 in x, x2 in y]
+
+    Dx     = CenteredDiff{1}(1, ord, hx, length(x))
+    Dy     = CenteredDiff{2}(1, ord, hy, length(y))
+
+    dxf    = Dx * f
+    dyf    = Dy * f
+    dxyf   = Dx * (Dy * f)
+
+    @test Dx(Dy, f,  2,120) ≈ dxyf[2,120]
+    @test Dx(Dy, f, 42,300) ≈ dxyf[42,300]
+end

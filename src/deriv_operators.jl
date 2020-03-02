@@ -208,3 +208,35 @@ function (A::AbstractDerivOperator{T,N})(f::AbstractArray{T},
 
     @views A(f[Ipre, :, Ipost], i)
 end
+
+
+# now for cross-derivatives. we assume that A acts on the first and B on the
+# second axis of the x Matrix.
+
+function (A::FiniteDiffDeriv{T,1,T2,S})(B::FiniteDiffDeriv{T,2,T2,S}, x::AbstractMatrix{T},
+                                        i::Int, j::Int) where {T<:Real,T2,S}
+    NA   = A.len
+    NB   = B.len
+    qA   = A.stencil_coefs
+    qB   = B.stencil_coefs
+    midA = div(A.stencil_length, 2) + 1
+    midB = div(B.stencil_length, 2) + 1
+
+    @assert( (NA, NB) == size(x) )
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.stencil_length
+        # imposing periodicity
+        j_circ = 1 + mod(j - (midB-jj) - 1, NB)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.stencil_length
+            # imposing periodicity
+            i_circ = 1 + mod(i - (midA-ii) - 1, NA)
+
+            sum_i += qA[ii] * qB[jj] * x[i_circ,j_circ]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
