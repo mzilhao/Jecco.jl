@@ -154,7 +154,7 @@ end
     @test Dz(f,16,8,1)  ≈ dzf[16,8,1]
 end
 
-@testset "Cross derivative tests:" begin
+@testset "Cross FD derivative tests:" begin
     # 2D FD case
     xmin   = -2.0*pi
     xmax   =  2.0*pi
@@ -175,10 +175,31 @@ end
     Dx     = CenteredDiff{1}(1, ord, hx, length(x))
     Dy     = CenteredDiff{2}(1, ord, hy, length(y))
 
-    dxf    = Dx * f
-    dyf    = Dy * f
     dxyf   = Dx * (Dy * f)
 
     @test Dx(Dy, f,  2,120) ≈ dxyf[2,120]
     @test Dx(Dy, f, 42,300) ≈ dxyf[42,300]
+end
+
+@testset "Cross spectral derivative tests:" begin
+
+    xmin   = -2.0
+    xmax   =  2.0
+    xnodes =  32
+    ymin   = -1.0
+    ymax   =  1.0
+    ynodes =  16
+
+    x,  = Jecco.cheb(xmin, xmax, xnodes)
+    y,  = Jecco.cheb(ymin, ymax, ynodes)
+
+    f   = [0.5 * x1.^2 .* sin.(x2) for x1 in x, x2 in y]
+
+    Dx  = ChebDeriv{1}(1, xmin, xmax, xnodes)
+    Dy  = ChebDeriv{2}(1, ymin, ymax, ynodes)
+
+    dxyf  = Dx * (Dy * f)
+
+    @test Dx(Dy, f, 2,16)  ≈ dxyf[2,16]
+    @test Dx(Dy, f, 1,12)  ≈ dxyf[1,12]
 end

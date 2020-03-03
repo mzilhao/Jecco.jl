@@ -213,6 +213,7 @@ end
 # now for cross-derivatives. we assume that A acts on the first and B on the
 # second axis of the x Matrix.
 
+# first the FD case
 function (A::FiniteDiffDeriv{T,1,T2,S})(B::FiniteDiffDeriv{T,2,T2,S}, x::AbstractMatrix{T},
                                         i::Int, j::Int) where {T<:Real,T2,S}
     NA   = A.len
@@ -234,6 +235,26 @@ function (A::FiniteDiffDeriv{T,1,T2,S})(B::FiniteDiffDeriv{T,2,T2,S}, x::Abstrac
             i_circ = 1 + mod(i - (midA-ii) - 1, NA)
 
             sum_i += qA[ii] * qB[jj] * x[i_circ,j_circ]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+
+# now for spectral derivatives
+function (A::SpectralDeriv{T,1,S})(B::SpectralDeriv{T,2,S}, x::AbstractMatrix{T},
+                                   i::Int, j::Int) where {T<:Real,S}
+    NA = A.len
+    NB = B.len
+
+    @assert( (NA, NB) == size(x) )
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:NB
+        sum_i = zero(T)
+        @inbounds for ii in 1:NA
+            sum_i += A[i,ii] * B[j,jj] * x[ii,jj]
         end
         sum_ij += sum_i
     end
