@@ -203,3 +203,45 @@ end
     @test Dx(Dy, f, 2,16)  ≈ dxyf[2,16]
     @test Dx(Dy, f, 1,12)  ≈ dxyf[1,12]
 end
+
+@testset "Mixed spectral and FD cross derivative tests:" begin
+
+    xmin   = -2.0*pi
+    xmax   =  2.0*pi
+    xnodes =  600
+    ord    =  4
+
+    ymin   = -1.0
+    ymax   =  1.0
+    ynodes =  16
+
+    hx     = (xmax - xmin) / xnodes
+
+    x   = collect(xmin:hx:xmax-hx)
+    y,  = Jecco.cheb(ymin, ymax, ynodes)
+
+    f   = [0.5 * sin.(x1) .* x2.^2 for x1 in x, x2 in y]
+
+    Dx  = CenteredDiff{1}(1, ord, hx, length(x))
+    Dy  = ChebDeriv{2}(1, ymin, ymax, ynodes)
+
+    dxyf  = Dx * (Dy * f)
+
+    @test Dx(Dy, f, 2,16)   ≈ dxyf[2,16]
+    @test Dx(Dy, f, 1,12)   ≈ dxyf[1,12]
+    @test Dx(Dy, f, 100,12) ≈ dxyf[100,12]
+    @test Dx(Dy, f, 600,8)  ≈ dxyf[600,8]
+
+
+    g   = [0.5 * sin.(x2) .* x1.^2 for x1 in y, x2 in x]
+
+    Dy  = ChebDeriv{1}(1, ymin, ymax, ynodes)
+    Dx  = CenteredDiff{2}(1, ord, hx, length(x))
+
+    dxyg  = Dx * (Dy * g)
+
+    @test Dy(Dx, g, 2,16)   ≈ dxyg[2,16]
+    @test Dy(Dx, g, 1,12)   ≈ dxyg[1,12]
+    @test Dy(Dx, g, 12,100) ≈ dxyg[12,100]
+    @test Dy(Dx, g, 8,600)  ≈ dxyg[8,600]
+end

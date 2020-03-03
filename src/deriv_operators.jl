@@ -261,3 +261,52 @@ function (A::SpectralDeriv{T,1,S})(B::SpectralDeriv{T,2,S}, x::AbstractMatrix{T}
 
     sum_ij
 end
+
+# we can also have mixed FD and spectral cases
+
+function (A::SpectralDeriv{T,1,S1})(B::FiniteDiffDeriv{T,2,T2,S2}, x::AbstractMatrix{T},
+                                    i::Int, j::Int) where {T<:Real,T2,S1,S2}
+    NA   = A.len
+    NB   = B.len
+    qB   = B.stencil_coefs
+    midB = div(B.stencil_length, 2) + 1
+
+    @assert( (NA, NB) == size(x) )
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.stencil_length
+        # imposing periodicity
+        j_circ = 1 + mod(j - (midB-jj) - 1, NB)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:NA
+            sum_i += A[i,ii] * qB[jj] * x[ii,j_circ]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+
+function (A::FiniteDiffDeriv{T,1,T2,S1})(B::SpectralDeriv{T,2,S2}, x::AbstractMatrix{T},
+                                         i::Int, j::Int) where {T<:Real,T2,S1,S2}
+    NA   = A.len
+    NB   = B.len
+    qA   = A.stencil_coefs
+    midA = div(A.stencil_length, 2) + 1
+
+    @assert( (NA, NB) == size(x) )
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:NB
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.stencil_length
+            # imposing periodicity
+            i_circ = 1 + mod(i - (midA-ii) - 1, NA)
+
+            sum_i += qA[ii] * B[j,jj] * x[i_circ,jj]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
