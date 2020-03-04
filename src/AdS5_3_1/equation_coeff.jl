@@ -30,7 +30,8 @@ end
 for any function f we're using the following convention: _x denotes partial
 derivative with respect to x and
 
-fp  = f_r = -u^2 f_u
+fp  = f_r  = -u^2 f_u
+fpp = f_rr = 2u^3 f_u + u^4 f_uu
 
 =#
 

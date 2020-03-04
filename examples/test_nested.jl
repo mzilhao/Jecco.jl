@@ -84,24 +84,19 @@ uu   = nested.uu
 xx   = nested.xx
 yy   = nested.yy
 
-Du_B1  = nested.Du_B1
-Du_B2  = nested.Du_B2
-Du_G   = nested.Du_G
-Du_phi = nested.Du_phi
-
 aux_acc = nested.aux_acc
 
 Du  = sys.Du
 Duu = sys.Duu
-# Dx  = sys.Dx
+Dx  = sys.Dx
 Dxx = sys.Dxx
-# Dy  = sys.Dy
+Dy  = sys.Dy
 Dyy = sys.Dyy
 
-mul!(Du_B1,  Du, bulk.B1)
-mul!(Du_B2,  Du, bulk.B2)
-mul!(Du_G,   Du, bulk.G)
-mul!(Du_phi, Du, bulk.phi)
+# mul!(Du_B1,  Du, bulk.B1)
+# mul!(Du_B2,  Du, bulk.B2)
+# mul!(Du_G,   Du, bulk.G)
+# mul!(Du_phi, Du, bulk.phi)
 
 
 AA = zeros(2,2)
@@ -123,20 +118,53 @@ vars = Jecco.AdS5_3_1.FxyVars{Float64}()
 
 
 u          = uu[a]
+u2         = u * u
+u3         = u * u2
+u4         = u2 * u2
+
 vars.u     = u
 
+# maybe it's worth to make some structs (or macros), here...
+
 vars.B1    = bulk.B1[a,i,j]
-vars.B1p   = -u*u * Du_B1[a,i,j]
+vars.B1p   = -u2 * Du(bulk.B1, a,i,j)
+vars.B1_x  = Dx(bulk.B1, a,i,j)
+vars.B1_y  = Dy(bulk.B1, a,i,j)
+vars.B1pp  = 2*u3 * Du(bulk.B1, a,i,j) + u4 * Duu(bulk.B1, a,i,j)
+vars.B1p_x = -u2 * Du(Dx, bulk.B1, a,i,j)
+vars.B1p_y = -u2 * Du(Dy, bulk.B1, a,i,j)
 
-# vars.B2    = bulk.B2[a,i,j]
-vars.B2p   = -u*u * Du_B2[a,i,j]
+vars.B2    = bulk.B2[a,i,j]
+vars.B2p   = -u2 * Du(bulk.B2, a,i,j)
+vars.B2_x  = Dx(bulk.B2, a,i,j)
+vars.B2_y  = Dy(bulk.B2, a,i,j)
+vars.B2pp  = 2*u3 * Du(bulk.B2, a,i,j) + u4 * Duu(bulk.B2, a,i,j)
+vars.B2p_x = -u2 * Du(Dx, bulk.B2, a,i,j)
+vars.B2p_y = -u2 * Du(Dy, bulk.B2, a,i,j)
 
-vars.G     = bulk.G[a,i,j]
-vars.Gp    = -u*u * Du_G[a,i,j]
+vars.G    = bulk.G[a,i,j]
+vars.Gp   = -u2 * Du(bulk.G, a,i,j)
+vars.G_x  = Dx(bulk.G, a,i,j)
+vars.G_y  = Dy(bulk.G, a,i,j)
+vars.Gpp  = 2*u3 * Du(bulk.G, a,i,j) + u4 * Duu(bulk.G, a,i,j)
+vars.Gp_x = -u2 * Du(Dx, bulk.G, a,i,j)
+vars.Gp_y = -u2 * Du(Dy, bulk.G, a,i,j)
 
-vars.phip  = -u*u * Du_phi[a,i,j]
+vars.phi    = bulk.phi[a,i,j]
+vars.phip   = -u2 * Du(bulk.phi, a,i,j)
+vars.phi_x  = Dx(bulk.phi, a,i,j)
+vars.phi_y  = Dy(bulk.phi, a,i,j)
+# vars.phipp  = 2*u3 * Du(bulk.phi, a,i,j) + u4 * Duu(bulk.phi, a,i,j)
+# vars.phip_x = -u2 * Du(Dx, bulk.phi, a,i,j)
+# vars.phip_y = -u2 * Du(Dy, bulk.phi, a,i,j)
 
-vars.S     = bulk.S[a,i,j]
+vars.S    = bulk.S[a,i,j]
+vars.Sp   = -u2 * Du(bulk.S, a,i,j)
+vars.S_x  = Dx(bulk.S, a,i,j)
+vars.S_y  = Dy(bulk.S, a,i,j)
+vars.Spp  = 2*u3 * Du(bulk.S, a,i,j) + u4 * Duu(bulk.S, a,i,j)
+vars.Sp_x = -u2 * Du(Dx, bulk.S, a,i,j)
+vars.Sp_y = -u2 * Du(Dy, bulk.S, a,i,j)
 
 Jecco.AdS5_3_1.Fxy_outer_eq_coeff!(AA, BB, CC, SS, vars)
 
