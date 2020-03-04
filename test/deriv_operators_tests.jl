@@ -245,3 +245,52 @@ end
     @test Dy(Dx, g, 12,100) ≈ dxyg[12,100]
     @test Dy(Dx, g, 8,600)  ≈ dxyg[8,600]
 end
+
+@testset "Mixed spectral and FD cross derivative for general arrays tests:" begin
+
+    xmin   = -2.0*pi
+    xmax   =  2.0*pi
+    xnodes =  600
+    ord    =  4
+
+    ymin   = -1.0
+    ymax   =  1.0
+    ynodes =  16
+
+    zmin   = -1.0*pi
+    zmax   =  1.0*pi
+    znodes =  300
+
+
+    hx     = (xmax - xmin) / xnodes
+    hz     = (zmax - zmin) / znodes
+
+    x      = collect(xmin:hx:xmax-hx)
+    y,     = Jecco.cheb(ymin, ymax, ynodes)
+    z      = collect(zmin:hz:zmax-hz)
+
+    f   = [0.5 * sin.(x1) .* x2.^2 .* sin.(x3)  for x1 in x, x2 in y, x3 in z]
+
+    Dx  = CenteredDiff{1}(1, ord, hx, length(x))
+    Dy  = ChebDeriv{2}(1, ymin, ymax, ynodes)
+
+    dxyf  = Dx * (Dy * f)
+
+    @test Dx(Dy, f, 2,16,1)     ≈ dxyf[2,16,1]
+    @test Dx(Dy, f, 1,12,2)     ≈ dxyf[1,12,2]
+    @test Dx(Dy, f, 100,12,300) ≈ dxyf[100,12,300]
+    @test Dx(Dy, f, 600,8,100)  ≈ dxyf[600,8,100]
+
+
+    g   = [sin.(x3) .* 0.5 * sin.(x2) .* x1.^2 for x3 in z, x1 in y, x2 in x]
+
+    Dy  = ChebDeriv{2}(1, ymin, ymax, ynodes)
+    Dx  = CenteredDiff{3}(1, ord, hx, length(x))
+
+    dxyg  = Dx * (Dy * g)
+
+    @test Dy(Dx, g, 100,2,1)     ≈ dxyg[100,2,1]
+    @test Dy(Dx, g, 1,1,1)       ≈ dxyg[1,1,1]
+    @test Dy(Dx, g, 300,16,600)  ≈ dxyg[300,16,600]
+    @test Dy(Dx, g, 10,8,150)    ≈ dxyg[10,8,150]
+end

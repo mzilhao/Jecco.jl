@@ -214,8 +214,8 @@ end
 # second axis of the x Matrix.
 
 # first the FD case
-function (A::FiniteDiffDeriv{T,1,T2,S})(B::FiniteDiffDeriv{T,2,T2,S}, x::AbstractMatrix{T},
-                                        i::Int, j::Int) where {T<:Real,T2,S}
+function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S}, x::AbstractMatrix{T},
+                                        i::Int, j::Int) where {T<:Real,T2,S,N1,N2}
     NA   = A.len
     NB   = B.len
     qA   = A.stencil_coefs
@@ -224,6 +224,7 @@ function (A::FiniteDiffDeriv{T,1,T2,S})(B::FiniteDiffDeriv{T,2,T2,S}, x::Abstrac
     midB = div(B.stencil_length, 2) + 1
 
     @assert( (NA, NB) == size(x) )
+    @assert( N2 > N1 )
 
     sum_ij = zero(T)
     @fastmath @inbounds for jj in 1:B.stencil_length
@@ -243,12 +244,13 @@ function (A::FiniteDiffDeriv{T,1,T2,S})(B::FiniteDiffDeriv{T,2,T2,S}, x::Abstrac
 end
 
 # now for spectral derivatives
-function (A::SpectralDeriv{T,1,S})(B::SpectralDeriv{T,2,S}, x::AbstractMatrix{T},
-                                   i::Int, j::Int) where {T<:Real,S}
+function (A::SpectralDeriv{T,N1,S})(B::SpectralDeriv{T,N2,S}, x::AbstractMatrix{T},
+                                   i::Int, j::Int) where {T<:Real,S,N1,N2}
     NA = A.len
     NB = B.len
 
     @assert( (NA, NB) == size(x) )
+    @assert( N2 > N1 )
 
     sum_ij = zero(T)
     @fastmath @inbounds for jj in 1:NB
@@ -264,14 +266,15 @@ end
 
 # we can also have mixed FD and spectral cases
 
-function (A::SpectralDeriv{T,1,S1})(B::FiniteDiffDeriv{T,2,T2,S2}, x::AbstractMatrix{T},
-                                    i::Int, j::Int) where {T<:Real,T2,S1,S2}
+function (A::SpectralDeriv{T,N1,S1})(B::FiniteDiffDeriv{T,N2,T2,S2}, x::AbstractMatrix{T},
+                                    i::Int, j::Int) where {T<:Real,T2,S1,S2,N1,N2}
     NA   = A.len
     NB   = B.len
     qB   = B.stencil_coefs
     midB = div(B.stencil_length, 2) + 1
 
     @assert( (NA, NB) == size(x) )
+    @assert( N2 > N1 )
 
     sum_ij = zero(T)
     @fastmath @inbounds for jj in 1:B.stencil_length
@@ -287,14 +290,15 @@ function (A::SpectralDeriv{T,1,S1})(B::FiniteDiffDeriv{T,2,T2,S2}, x::AbstractMa
     sum_ij
 end
 
-function (A::FiniteDiffDeriv{T,1,T2,S1})(B::SpectralDeriv{T,2,S2}, x::AbstractMatrix{T},
-                                         i::Int, j::Int) where {T<:Real,T2,S1,S2}
+function (A::FiniteDiffDeriv{T,N1,T2,S1})(B::SpectralDeriv{T,N2,S2}, x::AbstractMatrix{T},
+                                         i::Int, j::Int) where {T<:Real,T2,S1,S2,N1,N2}
     NA   = A.len
     NB   = B.len
     qA   = A.stencil_coefs
     midA = div(A.stencil_length, 2) + 1
 
     @assert( (NA, NB) == size(x) )
+    @assert( N2 > N1 )
 
     sum_ij = zero(T)
     @fastmath @inbounds for jj in 1:NB
@@ -309,4 +313,18 @@ function (A::FiniteDiffDeriv{T,1,T2,S1})(B::SpectralDeriv{T,2,S2}, x::AbstractMa
     end
 
     sum_ij
+end
+
+
+# and now for any Array
+
+function (A::AbstractDerivOperator{T,N1})(B::AbstractDerivOperator{T,N2}, f::AbstractArray{T},
+                                          idx::Vararg{Int,M}) where {T,N1,N2,M}
+    Ipre  = CartesianIndex(idx[1:N1-1])
+    Imid  = CartesianIndex(idx[N1+1:N2-1])
+    Ipost = CartesianIndex(idx[N2+1:end])
+    i     = idx[N1]
+    j     = idx[N2]
+
+    @views A(B, f[Ipre, :, Imid, :, Ipost], i, j)
 end
