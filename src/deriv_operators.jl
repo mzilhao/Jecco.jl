@@ -200,13 +200,17 @@ end
 (A::SpectralDeriv)(x::AbstractVector{T}, i::Int) where {T<:Real} = dot(A.D[i,:], x)
 
 # and now for Arrays
-function (A::AbstractDerivOperator{T,N})(f::AbstractArray{T},
-                                         idx::Vararg{Int,M}) where {T,N,M}
+function (A::AbstractDerivOperator{T,N})(f::AbstractArray{T,M},
+                                         idx::Vararg{Int,M}) where {T<:Real,N,M}
     Ipre  = CartesianIndex(idx[1:N-1])
     Ipost = CartesianIndex(idx[N+1:end])
     i     = idx[N]
 
-    @views A(f[Ipre, :, Ipost], i)
+    _D(A, f, Ipre, Ipost, i)
+end
+@noinline function _D(A, f::AbstractArray{T}, Ipre, Ipost, i) where {T<:Real}
+    f_slice = view(f, Ipre, :, Ipost)
+    A(f_slice, i)::T
 end
 
 
@@ -318,13 +322,17 @@ end
 
 # and now for any Array
 
-function (A::AbstractDerivOperator{T,N1})(B::AbstractDerivOperator{T,N2}, f::AbstractArray{T},
-                                          idx::Vararg{Int,M}) where {T,N1,N2,M}
+function (A::AbstractDerivOperator{T,N1})(B::AbstractDerivOperator{T,N2}, f::AbstractArray{T,M},
+                                          idx::Vararg{Int,M}) where {T<:Real,N1,N2,M}
     Ipre  = CartesianIndex(idx[1:N1-1])
     Imid  = CartesianIndex(idx[N1+1:N2-1])
     Ipost = CartesianIndex(idx[N2+1:end])
     i     = idx[N1]
     j     = idx[N2]
 
-    @views A(B, f[Ipre, :, Imid, :, Ipost], i, j)
+    _DxDy(A, B, f, Ipre, Imid, Ipost, i, j)
+end
+@noinline function _DxDy(A, B, f::AbstractArray{T}, Ipre, Imid, Ipost, i, j) where {T<:Real}
+    f_slice = view(f, Ipre, :, Imid, :, Ipost)
+    A(B, f_slice, i, j)::T
 end
