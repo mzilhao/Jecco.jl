@@ -1,6 +1,6 @@
 
 import Base.Threads.@threads
-import Base.Threads.@spawn
+# import Base.Threads.@spawn
 using LinearAlgebra
 
 function solve_lin_system!(sol, A_mat, b_vec)
@@ -16,13 +16,33 @@ struct Aux{T<:Real}
     ABCS    :: Vector{T}
     vars    :: AllVars{T}
 
+    A_mat2  :: Matrix{T}
+    b_vec2  :: Vector{T}
+    sol2    :: Vector{T}
+    AA      :: Matrix{T}
+    BB      :: Matrix{T}
+    CC      :: Matrix{T}
+    SS      :: Vector{T}
+    varsFxy :: FxyVars{T}
+
     function Aux{T}(N::Int) where {T<:Real}
         A_mat  = zeros(T, N, N)
         b_vec  = zeros(T, N)
         ABCS   = zeros(T, 4)
         vars   = AllVars{T}()
 
-        new(A_mat, b_vec, ABCS, vars)
+        A_mat2 = zeros(T, 2*N, 2*N)
+        b_vec2 = zeros(T, 2*N)
+        sol2   = zeros(T, 2*N)
+
+        AA = zeros(2,2)
+        BB = zeros(2,2)
+        CC = zeros(2,2)
+        SS = zeros(2)
+
+        varsFxy = Jecco.AdS5_3_1.FxyVars{T}()
+
+        new(A_mat, b_vec, ABCS, vars, A_mat2, b_vec2, sol2, AA, BB, CC, SS, varsFxy)
     end
 end
 
