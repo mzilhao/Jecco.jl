@@ -1,6 +1,6 @@
 
 import Base.Threads.@threads
-# import Base.Threads.@spawn
+import Base.Threads.@spawn
 using LinearAlgebra
 
 function solve_lin_system!(sol, A_mat, b_vec)
@@ -46,22 +46,41 @@ struct Aux{T<:Real}
     end
 end
 
-struct Nested{S,T<:Real}
+struct Nested{S,D,T<:Real}
     sys     :: S
     uu      :: Vector{T}
     xx      :: Vector{T}
     yy      :: Vector{T}
+    Du_B1   :: D
+    Du_B2   :: D
+    Du_G    :: D
+    Du_phi  :: D
+    Duu_B1  :: D
+    Duu_B2  :: D
+    Duu_G   :: D
+    Duu_phi :: D
     aux_acc :: Vector{Aux{T}}
 end
 function Nested(sys::System)
     Nu, Nx, Ny = size(sys.grid)
     uu, xx, yy = sys.grid[:]
 
+    Du_B1    = zeros(Nu, Nx, Ny)
+    Du_B2    = zeros(Nu, Nx, Ny)
+    Du_G     = zeros(Nu, Nx, Ny)
+    Du_phi   = zeros(Nu, Nx, Ny)
+    Duu_B1   = zeros(Nu, Nx, Ny)
+    Duu_B2   = zeros(Nu, Nx, Ny)
+    Duu_G    = zeros(Nu, Nx, Ny)
+    Duu_phi  = zeros(Nu, Nx, Ny)
+
     nt = Threads.nthreads()
     # pre-allocate thread-local aux quantities
     aux_acc = [Aux{eltype(uu)}(Nu) for _ in 1:nt]
 
-    Nested{typeof(sys), eltype(uu)}(sys, uu, xx, yy, aux_acc)
+    Nested{typeof(sys),typeof(Du_B1),
+           eltype(uu)}(sys, uu, xx, yy, Du_B1, Du_B2, Du_G, Du_phi,
+                       Duu_B1, Duu_B2, Duu_G, Duu_phi, aux_acc)
 end
 
 Nested(systems::Vector) = [Nested(sys) for sys in systems]
@@ -118,6 +137,15 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
     xx   = nested.xx
     yy   = nested.yy
 
+    Du_B1   = nested.Du_B1
+    Du_B2   = nested.Du_B2
+    Du_G    = nested.Du_G
+    Du_phi  = nested.Du_phi
+    Duu_B1  = nested.Duu_B1
+    Duu_B2  = nested.Duu_B2
+    Duu_G   = nested.Duu_G
+    Duu_phi = nested.Duu_phi
+
     aux_acc = nested.aux_acc
 
     Du  = sys.Du
@@ -126,6 +154,17 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
     Dxx = sys.Dxx
     Dy  = sys.Dy
     Dyy = sys.Dyy
+
+    @sync begin
+        @spawn mul!(Du_B1,  Du,  bulk.B1)
+        @spawn mul!(Du_B2,  Du,  bulk.B2)
+        @spawn mul!(Du_G,   Du,  bulk.G)
+        @spawn mul!(Du_phi, Du,  bulk.phi)
+        @spawn mul!(Duu_B1, Duu, bulk.B1)
+        @spawn mul!(Duu_B2, Duu, bulk.B2)
+        @spawn mul!(Duu_G,  Duu, bulk.G)
+        @spawn mul!(Duu_phi,Duu, bulk.phi)
+    end
 
     # solve for S
 
@@ -138,13 +177,13 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
                 u              = uu[a]
                 aux.vars.u     = u
 
-                aux.vars.B1p   = -u*u * Du(bulk.B1, a,i,j)
-                aux.vars.B2p   = -u*u * Du(bulk.B2, a,i,j)
+                aux.vars.B1p   = -u*u * Du_B1[a,i,j]
+                aux.vars.B2p   = -u*u * Du_B2[a,i,j]
 
                 aux.vars.G     = bulk.G[a,i,j]
-                aux.vars.Gp    = -u*u * Du(bulk.G, a,i,j)
+                aux.vars.Gp    = -u*u * Du_G[a,i,j]
 
-                aux.vars.phip  = -u*u * Du(bulk.phi, a,i,j)
+                aux.vars.phip  = -u*u * Du_phi[a,i,j]
 
                 S_outer_eq_coeff!(aux.ABCS, aux.vars)
 
