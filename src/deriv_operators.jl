@@ -180,21 +180,42 @@ function *(A::AbstractDerivOperator, x::AbstractArray)
     y
 end
 
-# make FiniteDiffDeriv a callable struct, to compute derivatives only at a given point
-function (A::FiniteDiffDeriv)(x::AbstractVector{T}, i::Int) where {T<:Real}
-    N = length(x)
+
+# make FiniteDiffDeriv a callable struct, to compute derivatives at a given point
+function (A::FiniteDiffDeriv{T,N,T2,S})(f::AbstractArray{T,M},
+                                        idx::Vararg{Int,M}) where {T<:Real,N,T2,S,M}
+
+    # make sure axis of differentitation is contained in the dimensions of f
+    @assert N <= M
+
     coeffs = A.stencil_coefs
     mid = div(A.stencil_length, 2) + 1
+    i   = idx[N] # point where derivative will be taken (with respect to the N-axis)
 
     sum_i = zero(T)
-    @fastmath @inbounds for idx in 1:A.stencil_length
-        # imposing periodicity
-        i_circ = 1 + mod(i - (mid-idx) - 1, N)
-        sum_i += coeffs[idx] * x[i_circ]
+
+    if mid <= i <= (A.len-mid+1)
+        @fastmath @inbounds for aa in 1:A.stencil_length
+            i_circ = i - (mid - aa)
+            I = Base.setindex(idx, i_circ, N)
+
+            sum_i += coeffs[aa] * f[I...]
+        end
+    else
+        @fastmath @inbounds for aa in 1:A.stencil_length
+            # imposing periodicity
+            i_circ = 1 + mod(i - (mid-aa) - 1, A.len)
+            I = Base.setindex(idx, i_circ, N)
+
+            sum_i += coeffs[aa] * f[I...]
+        end
     end
 
     sum_i
 end
+
+
+
 
 # make SpectralDeriv a callable struct, to compute derivatives only at a given point
 (A::SpectralDeriv)(x::AbstractVector{T}, i::Int) where {T<:Real} = dot(A.D[i,:], x)
