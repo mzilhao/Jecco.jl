@@ -3,6 +3,7 @@ using Jecco
 using Jecco.AdS5_3_1
 
 import Base.Threads.@threads
+import Base.Threads.@spawn
 using LinearAlgebra
 
 # par_base = ParamBase(
@@ -82,6 +83,36 @@ dBC.Fy .= 2 * fy2_0 * u0
 
 Jecco.AdS5_3_1.solve_nested_outer!(bulk, BC, dBC, nested)
 
+Du_B1   = nested.Du_B1
+Du_B2   = nested.Du_B2
+Du_G    = nested.Du_G
+Du_phi  = nested.Du_phi
+Du_S    = nested.Du_S
+Duu_B1  = nested.Duu_B1
+Duu_B2  = nested.Duu_B2
+Duu_G   = nested.Duu_G
+Duu_phi = nested.Duu_phi
+Duu_S   = nested.Duu_S
+
+Du  = nested.sys.Du
+Duu = nested.sys.Duu
+
+@sync begin
+    @spawn mul!(Du_B1,  Du,  bulk.B1)
+    @spawn mul!(Du_B2,  Du,  bulk.B2)
+    @spawn mul!(Du_G,   Du,  bulk.G)
+    @spawn mul!(Du_phi, Du,  bulk.phi)
+    @spawn mul!(Duu_B1, Duu, bulk.B1)
+    @spawn mul!(Duu_B2, Duu, bulk.B2)
+    @spawn mul!(Duu_G,  Duu, bulk.G)
+    @spawn mul!(Duu_phi,Duu, bulk.phi)
+end
+
+
+@sync begin
+    @spawn mul!(Du_S,   Du,  bulk.S)
+    @spawn mul!(Duu_S,  Duu, bulk.S)
+end
 
 
 # T = Float64
@@ -105,6 +136,17 @@ function Fxy(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Jecco.AdS5_3_1
 
     Nu = length(uu)
 
+    Du_B1   = nested.Du_B1
+    Du_B2   = nested.Du_B2
+    Du_G    = nested.Du_G
+    Du_phi  = nested.Du_phi
+    Du_S    = nested.Du_S
+    Duu_B1  = nested.Duu_B1
+    Duu_B2  = nested.Duu_B2
+    Duu_G   = nested.Duu_G
+    Duu_phi = nested.Duu_phi
+    Duu_S   = nested.Duu_S
+
     aux_acc = nested.aux_acc
 
     Du  = sys.Du
@@ -116,9 +158,6 @@ function Fxy(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Jecco.AdS5_3_1
 
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
-
-    # j = 1
-    # i = 1
 
             id  = Threads.threadid()
             aux = aux_acc[id]
@@ -134,48 +173,47 @@ function Fxy(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Jecco.AdS5_3_1
                 # maybe it's worth to make some structs (or macros), here...
 
                 aux.varsFxy.B1    = bulk.B1[a,i,j]
-                aux.varsFxy.B1p   = -u2 * Du(bulk.B1, a,i,j)
+                aux.varsFxy.B1p   = -u2 * Du_B1[a,i,j]
                 aux.varsFxy.B1_x  = Dx(bulk.B1, a,i,j)
                 aux.varsFxy.B1_y  = Dy(bulk.B1, a,i,j)
-                aux.varsFxy.B1pp  = 2*u3 * Du(bulk.B1, a,i,j) + u4 * Duu(bulk.B1, a,i,j)
-                aux.varsFxy.B1p_x = -u2 * Du(Dx, bulk.B1, a,i,j)
-                aux.varsFxy.B1p_y = -u2 * Du(Dy, bulk.B1, a,i,j)
+                aux.varsFxy.B1pp  = 2*u3 * Du_B1[a,i,j] + u4 * Duu_B1[a,i,j]
+                aux.varsFxy.B1p_x = -u2 * Dx(Du_B1, a,i,j)
+                aux.varsFxy.B1p_y = -u2 * Dy(Du_B1, a,i,j)
 
                 aux.varsFxy.B2    = bulk.B2[a,i,j]
-                aux.varsFxy.B2p   = -u2 * Du(bulk.B2, a,i,j)
+                aux.varsFxy.B2p   = -u2 * Du_B2[a,i,j]
                 aux.varsFxy.B2_x  = Dx(bulk.B2, a,i,j)
                 aux.varsFxy.B2_y  = Dy(bulk.B2, a,i,j)
-                aux.varsFxy.B2pp  = 2*u3 * Du(bulk.B2, a,i,j) + u4 * Duu(bulk.B2, a,i,j)
-                aux.varsFxy.B2p_x = -u2 * Du(Dx, bulk.B2, a,i,j)
-                aux.varsFxy.B2p_y = -u2 * Du(Dy, bulk.B2, a,i,j)
+                aux.varsFxy.B2pp  = 2*u3 * Du_B2[a,i,j] + u4 * Duu_B2[a,i,j]
+                aux.varsFxy.B2p_x = -u2 * Dx(Du_B2, a,i,j)
+                aux.varsFxy.B2p_y = -u2 * Dy(Du_B2, a,i,j)
 
-                aux.varsFxy.G    = bulk.G[a,i,j]
-                aux.varsFxy.Gp   = -u2 * Du(bulk.G, a,i,j)
-                aux.varsFxy.G_x  = Dx(bulk.G, a,i,j)
-                aux.varsFxy.G_y  = Dy(bulk.G, a,i,j)
-                aux.varsFxy.Gpp  = 2*u3 * Du(bulk.G, a,i,j) + u4 * Duu(bulk.G, a,i,j)
-                aux.varsFxy.Gp_x = -u2 * Du(Dx, bulk.G, a,i,j)
-                aux.varsFxy.Gp_y = -u2 * Du(Dy, bulk.G, a,i,j)
+                aux.varsFxy.G     = bulk.G[a,i,j]
+                aux.varsFxy.Gp    = -u2 * Du_G[a,i,j]
+                aux.varsFxy.G_x   = Dx(bulk.G, a,i,j)
+                aux.varsFxy.G_y   = Dy(bulk.G, a,i,j)
+                aux.varsFxy.Gpp   = 2*u3 * Du_G[a,i,j] + u4 * Duu_G[a,i,j]
+                aux.varsFxy.Gp_x  = -u2 * Dx(Du_G, a,i,j)
+                aux.varsFxy.Gp_y  = -u2 * Dy(Du_G, a,i,j)
 
-                aux.varsFxy.phi    = bulk.phi[a,i,j]
-                aux.varsFxy.phip   = -u2 * Du(bulk.phi, a,i,j)
-                aux.varsFxy.phi_x  = Dx(bulk.phi, a,i,j)
-                aux.varsFxy.phi_y  = Dy(bulk.phi, a,i,j)
-                # aux.varsFxy.phipp  = 2*u3 * Du(bulk.phi, a,i,j) + u4 * Duu(bulk.phi, a,i,j)
-                # aux.varsFxy.phip_x = -u2 * Du(Dx, bulk.phi, a,i,j)
-                # aux.varsFxy.phip_y = -u2 * Du(Dy, bulk.phi, a,i,j)
+                aux.varsFxy.phi   = bulk.phi[a,i,j]
+                aux.varsFxy.phip  = -u2 * Du_phi[a,i,j]
+                aux.varsFxy.phi_x = Dx(bulk.phi, a,i,j)
+                aux.varsFxy.phi_y = Dy(bulk.phi, a,i,j)
+                # aux.varsFxy.phipp   = 2*u3 * Du_phi[a,i,j] + u4 * Duu_phi[a,i,j]
+                # aux.varsFxy.phip_x  = -u2 * Dx(Du_phi, a,i,j)
+                # aux.varsFxy.phip_y  = -u2 * Dy(Du_phi, a,i,j)
 
-                aux.varsFxy.S    = bulk.S[a,i,j]
-                aux.varsFxy.Sp   = -u2 * Du(bulk.S, a,i,j)
-                aux.varsFxy.S_x  = Dx(bulk.S, a,i,j)
-                aux.varsFxy.S_y  = Dy(bulk.S, a,i,j)
-                aux.varsFxy.Spp  = 2*u3 * Du(bulk.S, a,i,j) + u4 * Duu(bulk.S, a,i,j)
-                aux.varsFxy.Sp_x = -u2 * Du(Dx, bulk.S, a,i,j)
-                aux.varsFxy.Sp_y = -u2 * Du(Dy, bulk.S, a,i,j)
+                aux.varsFxy.S     = bulk.S[a,i,j]
+                aux.varsFxy.Sp    = -u2 * Du_S[a,i,j]
+                aux.varsFxy.S_x   = Dx(bulk.S, a,i,j)
+                aux.varsFxy.S_y   = Dy(bulk.S, a,i,j)
+                aux.varsFxy.Spp   = 2*u3 * Du_S[a,i,j] + u4 * Duu_S[a,i,j]
+                aux.varsFxy.Sp_x  = -u2 * Dx(Du_S, a,i,j)
+                aux.varsFxy.Sp_y  = -u2 * Dy(Du_S, a,i,j)
 
                 Jecco.AdS5_3_1.Fxy_outer_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, aux.varsFxy)
 
-                # TODO: check if explicit loops are faster
                 @inbounds @simd for aa in eachindex(uu)
                     aux.A_mat2[a,aa]         = aux.AA[1,1] .* Duu[a,aa] .+ aux.BB[1,1] .* Du[a,aa] .+ aux.CC[1,1]
                     aux.A_mat2[a,aa+Nu]      = aux.AA[1,2] .* Duu[a,aa] .+ aux.BB[1,2] .* Du[a,aa] .+ aux.CC[1,2]
@@ -200,13 +238,17 @@ function Fxy(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Jecco.AdS5_3_1
             aux.b_vec2[Nu]   = dBC.Fx[i,j]
             aux.b_vec2[2*Nu] = dBC.Fy[i,j]
 
-            aux.A_mat2[end,1:Nu]      = Du[1,:]
-            aux.A_mat2[end,Nu+1:2*Nu] = Du[1,:]
+            @inbounds @simd for aa in eachindex(uu)
+                aux.A_mat2[end,aa]    = Du[1,aa]
+                aux.A_mat2[end,aa+Nu] = Du[1,aa]
+            end
 
             Jecco.AdS5_3_1.solve_lin_system!(aux.sol2, aux.A_mat2, aux.b_vec2)
 
-            bulk.Fx[:,i,j] .= aux.sol2[1:Nu]
-            bulk.Fy[:,i,j] .= aux.sol2[Nu+1:2*Nu]
+            @inbounds @simd for aa in eachindex(uu)
+                bulk.Fx[aa,i,j] = aux.sol2[aa]
+                bulk.Fy[aa,i,j] = aux.sol2[aa+Nu]
+            end
 
         end
     end
@@ -216,6 +258,7 @@ end
 
 # Dx = nested.sys.Dx
 # Dy = nested.sys.Dy
+
 
 Fxy(bulk, BC, dBC, nested)
 

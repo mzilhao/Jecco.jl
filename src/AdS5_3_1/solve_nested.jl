@@ -55,10 +55,12 @@ struct Nested{S,D,T<:Real}
     Du_B2   :: D
     Du_G    :: D
     Du_phi  :: D
+    Du_S    :: D
     Duu_B1  :: D
     Duu_B2  :: D
     Duu_G   :: D
     Duu_phi :: D
+    Duu_S   :: D
     aux_acc :: Vector{Aux{T}}
 end
 function Nested(sys::System)
@@ -69,18 +71,20 @@ function Nested(sys::System)
     Du_B2    = zeros(Nu, Nx, Ny)
     Du_G     = zeros(Nu, Nx, Ny)
     Du_phi   = zeros(Nu, Nx, Ny)
+    Du_S     = zeros(Nu, Nx, Ny)
     Duu_B1   = zeros(Nu, Nx, Ny)
     Duu_B2   = zeros(Nu, Nx, Ny)
     Duu_G    = zeros(Nu, Nx, Ny)
     Duu_phi  = zeros(Nu, Nx, Ny)
+    Duu_S    = zeros(Nu, Nx, Ny)
 
     nt = Threads.nthreads()
     # pre-allocate thread-local aux quantities
     aux_acc = [Aux{eltype(uu)}(Nu) for _ in 1:nt]
 
     Nested{typeof(sys),typeof(Du_B1),
-           eltype(uu)}(sys, uu, xx, yy, Du_B1, Du_B2, Du_G, Du_phi,
-                       Duu_B1, Duu_B2, Duu_G, Duu_phi, aux_acc)
+           eltype(uu)}(sys, uu, xx, yy, Du_B1, Du_B2, Du_G, Du_phi, Du_S,
+                       Duu_B1, Duu_B2, Duu_G, Duu_phi, Duu_S, aux_acc)
 end
 
 Nested(systems::Vector) = [Nested(sys) for sys in systems]
