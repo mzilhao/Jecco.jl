@@ -233,14 +233,18 @@ function Fxy(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Jecco.AdS5_3_1
 
             aux.A_mat2[1,:]   .= 0.0
             aux.A_mat2[1,1]    = 1.0
-            aux.A_mat2[1,1+Nu] = 1.0
+
+            aux.A_mat2[1+Nu,:]   .= 0.0
+            aux.A_mat2[1+Nu,1+Nu] = 1.0
 
             aux.b_vec2[Nu]   = dBC.Fx[i,j]
             aux.b_vec2[2*Nu] = dBC.Fy[i,j]
 
+            aux.A_mat2[Nu,:]   .= 0.0
+            aux.A_mat2[2*Nu,:] .= 0.0
             @inbounds @simd for aa in eachindex(uu)
-                aux.A_mat2[end,aa]    = Du[1,aa]
-                aux.A_mat2[end,aa+Nu] = Du[1,aa]
+                aux.A_mat2[Nu,aa]      = Du[1,aa]
+                aux.A_mat2[2*Nu,aa+Nu] = Du[1,aa]
             end
 
             Jecco.AdS5_3_1.solve_lin_system!(aux.sol2, aux.A_mat2, aux.b_vec2)
