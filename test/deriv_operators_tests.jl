@@ -146,12 +146,6 @@ end
 
     @test d2xf ≈ dxxf0
     @test d2zf ≈ dzzf0
-
-    # now for callable, point-wise, methods
-    @test Dx(f,2,4,16)  ≈ dxf[2,4,16]
-    @test Dx(f,1,6,12)  ≈ dxf[1,6,12]
-    @test Dz(f,2,3,8)   ≈ dzf[2,3,8]
-    @test Dz(f,16,8,1)  ≈ dzf[16,8,1]
 end
 
 @testset "Cross FD derivative tests:" begin
@@ -181,72 +175,7 @@ end
     @test Dx(Dy, f, 42,300) ≈ dxyf[42,300]
 end
 
-@testset "Cross spectral derivative tests:" begin
-
-    xmin   = -2.0
-    xmax   =  2.0
-    xnodes =  32
-    ymin   = -1.0
-    ymax   =  1.0
-    ynodes =  16
-
-    x,  = Jecco.cheb(xmin, xmax, xnodes)
-    y,  = Jecco.cheb(ymin, ymax, ynodes)
-
-    f   = [0.5 * x1.^2 .* sin.(x2) for x1 in x, x2 in y]
-
-    Dx  = ChebDeriv{1}(1, xmin, xmax, xnodes)
-    Dy  = ChebDeriv{2}(1, ymin, ymax, ynodes)
-
-    dxyf  = Dx * (Dy * f)
-
-    @test Dx(Dy, f, 2,16)  ≈ dxyf[2,16]
-    @test Dx(Dy, f, 1,12)  ≈ dxyf[1,12]
-end
-
-@testset "Mixed spectral and FD cross derivative tests:" begin
-
-    xmin   = -2.0*pi
-    xmax   =  2.0*pi
-    xnodes =  600
-    ord    =  4
-
-    ymin   = -1.0
-    ymax   =  1.0
-    ynodes =  16
-
-    hx     = (xmax - xmin) / xnodes
-
-    x   = collect(xmin:hx:xmax-hx)
-    y,  = Jecco.cheb(ymin, ymax, ynodes)
-
-    f   = [0.5 * sin.(x1) .* x2.^2 for x1 in x, x2 in y]
-
-    Dx  = CenteredDiff{1}(1, ord, hx, length(x))
-    Dy  = ChebDeriv{2}(1, ymin, ymax, ynodes)
-
-    dxyf  = Dx * (Dy * f)
-
-    @test Dx(Dy, f, 2,16)   ≈ dxyf[2,16]
-    @test Dx(Dy, f, 1,12)   ≈ dxyf[1,12]
-    @test Dx(Dy, f, 100,12) ≈ dxyf[100,12]
-    @test Dx(Dy, f, 600,8)  ≈ dxyf[600,8]
-
-
-    g   = [0.5 * sin.(x2) .* x1.^2 for x1 in y, x2 in x]
-
-    Dy  = ChebDeriv{1}(1, ymin, ymax, ynodes)
-    Dx  = CenteredDiff{2}(1, ord, hx, length(x))
-
-    dxyg  = Dx * (Dy * g)
-
-    @test Dy(Dx, g, 2,16)   ≈ dxyg[2,16]
-    @test Dy(Dx, g, 1,12)   ≈ dxyg[1,12]
-    @test Dy(Dx, g, 12,100) ≈ dxyg[12,100]
-    @test Dy(Dx, g, 8,600)  ≈ dxyg[8,600]
-end
-
-@testset "Mixed spectral and FD cross derivative for general arrays tests:" begin
+@testset "FD cross derivative for general arrays tests:" begin
 
     xmin   = -2.0*pi
     xmax   =  2.0*pi
@@ -272,25 +201,25 @@ end
     f   = [0.5 * sin.(x1) .* x2.^2 .* sin.(x3)  for x1 in x, x2 in y, x3 in z]
 
     Dx  = CenteredDiff{1}(1, ord, hx, length(x))
-    Dy  = ChebDeriv{2}(1, ymin, ymax, ynodes)
+    Dz  = CenteredDiff{3}(1, ord, hz, length(z))
 
-    dxyf  = Dx * (Dy * f)
+    dxzf  = Dx * (Dz * f)
 
-    @test Dx(Dy, f, 2,16,1)     ≈ dxyf[2,16,1]
-    @test Dx(Dy, f, 1,12,2)     ≈ dxyf[1,12,2]
-    @test Dx(Dy, f, 100,12,300) ≈ dxyf[100,12,300]
-    @test Dx(Dy, f, 600,8,100)  ≈ dxyf[600,8,100]
+    @test Dx(Dz, f, 2,16,1)     ≈ dxzf[2,16,1]
+    @test Dx(Dz, f, 1,12,2)     ≈ dxzf[1,12,2]
+    @test Dx(Dz, f, 100,12,300) ≈ dxzf[100,12,300]
+    @test Dx(Dz, f, 600,8,100)  ≈ dxzf[600,8,100]
 
 
     g   = [sin.(x3) .* 0.5 * sin.(x2) .* x1.^2 for x3 in z, x1 in y, x2 in x]
 
-    Dy  = ChebDeriv{2}(1, ymin, ymax, ynodes)
+    Dz  = CenteredDiff{1}(1, ord, hz, length(z))
     Dx  = CenteredDiff{3}(1, ord, hx, length(x))
 
-    dxyg  = Dx * (Dy * g)
+    dxzg  = Dx * (Dz * g)
 
-    @test Dy(Dx, g, 100,2,1)     ≈ dxyg[100,2,1]
-    @test Dy(Dx, g, 1,1,1)       ≈ dxyg[1,1,1]
-    @test Dy(Dx, g, 300,16,600)  ≈ dxyg[300,16,600]
-    @test Dy(Dx, g, 10,8,150)    ≈ dxyg[10,8,150]
+    @test Dz(Dx, g, 100,2,1)     ≈ dxzg[100,2,1]
+    @test Dz(Dx, g, 1,1,1)       ≈ dxzg[1,1,1]
+    @test Dz(Dx, g, 300,16,600)  ≈ dxzg[300,16,600]
+    @test Dz(Dx, g, 10,8,150)    ≈ dxzg[10,8,150]
 end
