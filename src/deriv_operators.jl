@@ -131,10 +131,16 @@ function (A::FiniteDiffDeriv{T,N,T2,S})(f::AbstractArray{T,M},
     sum_i
 end
 
-function LinearAlgebra.mul!(df::AbstractArray{T}, A::FiniteDiffDeriv,
-                            f::AbstractArray{T}) where {T}
+function LinearAlgebra.mul!(df::AbstractVector, A::FiniteDiffDeriv, f::AbstractVector)
     @fastmath @inbounds for idx in eachindex(f)
         df[idx] = A(f,idx)
+    end
+    nothing
+end
+
+function LinearAlgebra.mul!(df::AbstractArray, A::FiniteDiffDeriv, f::AbstractArray)
+    @fastmath @inbounds for idx in CartesianIndices(f)
+        df[idx] = A(f,idx.I...)
     end
     nothing
 end
