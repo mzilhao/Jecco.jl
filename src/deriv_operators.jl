@@ -230,10 +230,8 @@ end
 # now for cross-derivatives. we assume that A acts on the first and B on the
 # second axis of the x Matrix.
 
-# FIXME
-
 function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S}, x::AbstractMatrix{T},
-                                        i::Int, j::Int) where {T<:Real,T2,S,N1,N2}
+                                         i::Int, j::Int) where {T<:Real,T2,S,N1,N2}
     NA   = A.len
     NB   = B.len
     qA   = A.stencil_coefs
@@ -245,17 +243,81 @@ function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S}, x::Abstr
     @assert( N2 > N1 )
 
     sum_ij = zero(T)
-    @fastmath @inbounds for jj in 1:B.stencil_length
-        # imposing periodicity
-        j_circ = 1 + mod(j - (midB-jj) - 1, NB)
-        sum_i  = zero(T)
-        @inbounds for ii in 1:A.stencil_length
-            # imposing periodicity
-            i_circ = 1 + mod(i - (midA-ii) - 1, NA)
 
-            sum_i += qA[ii] * qB[jj] * x[i_circ,j_circ]
+    if midA <= i <= (NA-midA+1) && midB <= j <= (NB-midB+1)
+        @fastmath @inbounds for jj in 1:B.stencil_length
+            j_circ = j - (midB-jj)
+            sum_i  = zero(T)
+            @inbounds for ii in 1:A.stencil_length
+                i_circ = i - (midA-ii)
+                sum_i += qA[ii] * qB[jj] * x[i_circ,j_circ]
+            end
+            sum_ij += sum_i
         end
-        sum_ij += sum_i
+    else
+        @fastmath @inbounds for jj in 1:B.stencil_length
+            # imposing periodicity
+            j_circ = 1 + mod(j - (midB-jj) - 1, NB)
+            sum_i  = zero(T)
+            @inbounds for ii in 1:A.stencil_length
+                # imposing periodicity
+                i_circ = 1 + mod(i - (midA-ii) - 1, NA)
+                sum_i += qA[ii] * qB[jj] * x[i_circ,j_circ]
+            end
+            sum_ij += sum_i
+        end
+    end
+
+    sum_ij
+end
+
+# and now for any Array. maybe we could even remove the method above
+
+function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S},
+                                         f::AbstractArray{T,M},
+                                         idx::Vararg{Int,M}) where {T<:Real,T2,S,N1,N2,M}
+    NA   = A.len
+    NB   = B.len
+    qA   = A.stencil_coefs
+    qB   = B.stencil_coefs
+    midA = div(A.stencil_length, 2) + 1
+    midB = div(B.stencil_length, 2) + 1
+
+    # make sure axes of differentiation are contained in the dimensions of f
+    @assert N1 < N2 <= M
+
+    # points where derivative will be taken (along their respective axes)
+    i  = idx[N1]
+    j  = idx[N2]
+
+    sum_ij = zero(T)
+
+    if midA <= i <= (NA-midA+1) && midB <= j <= (NB-midB+1)
+        @fastmath @inbounds for jj in 1:B.stencil_length
+            j_circ = j - (midB-jj)
+            Itmp   = Base.setindex(idx, j_circ, N2)
+            sum_i  = zero(T)
+            @inbounds for ii in 1:A.stencil_length
+                i_circ = i - (midA-ii)
+                I      = Base.setindex(Itmp, i_circ, N1)
+                sum_i += qA[ii] * qB[jj] * f[I...]
+            end
+            sum_ij += sum_i
+        end
+    else
+        @fastmath @inbounds for jj in 1:B.stencil_length
+            # imposing periodicity
+            j_circ = 1 + mod(j - (midB-jj) - 1, NB)
+            Itmp   = Base.setindex(idx, j_circ, N2)
+            sum_i  = zero(T)
+            @inbounds for ii in 1:A.stencil_length
+                # imposing periodicity
+                i_circ = 1 + mod(i - (midA-ii) - 1, NA)
+                I      = Base.setindex(Itmp, i_circ, N1)
+                sum_i += qA[ii] * qB[jj] * f[I...]
+            end
+            sum_ij += sum_i
+        end
     end
 
     sum_ij
