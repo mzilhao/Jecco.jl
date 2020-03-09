@@ -97,12 +97,6 @@ end
 
 @inline Base.getindex(A::SpectralDeriv, i, j) = A.D[i,j]
 
-
-# mul! done by convolution for finite difference operators
-function LinearAlgebra.mul!(df::AbstractVector, A::FiniteDiffDeriv, f::AbstractVector)
-    convolve!(df, f, A)
-end
-
 # mul! done by standard matrix multiplication for Chebyshev differentiation
 # matrices. This can also be done (potentially more efficiently) through
 # FFT. TODO; test if worthwhile
@@ -153,27 +147,6 @@ end
     nothing
 end
 
-# convolution operation to act with derivatives on vectors. this currently
-# assumes periodic BCs. adapted from
-# DiffEqOperators.jl/src/derivative_operators/convolutions.jl
-function convolve!(xout::AbstractVector{T}, x::AbstractVector{T},
-                   A::FiniteDiffDeriv) where {T<:Real}
-    N = length(x)
-    coeffs = A.stencil_coefs
-    mid = div(A.stencil_length, 2) + 1
-
-    @fastmath @inbounds for i in 1:N
-        sum_i = zero(T)
-        @inbounds for idx in 1:A.stencil_length
-            # imposing periodicity
-            i_circ = 1 + mod(i - (mid-idx) - 1, N)
-            sum_i += coeffs[idx] * x[i_circ]
-        end
-        xout[i] = sum_i
-    end
-    nothing
-end
-
 function *(A::AbstractDerivOperator, x::AbstractArray)
     y = similar(x)
     mul!(y, A, x)
@@ -214,6 +187,13 @@ function (A::FiniteDiffDeriv{T,N,T2,S})(f::AbstractArray{T,M},
     sum_i
 end
 
+function LinearAlgebra.mul!(df::AbstractArray{T}, A::FiniteDiffDeriv,
+                            f::AbstractArray{T}) where {T}
+    @fastmath @inbounds for idx in eachindex(f)
+        df[idx] = A(f,idx)
+    end
+    nothing
+end
 
 
 
