@@ -102,7 +102,7 @@ end
 function (A::FiniteDiffDeriv{T,N,T2,S})(f::AbstractArray{T,M},
                                         idx::Vararg{Int,M}) where {T<:Real,N,T2,S,M}
 
-    # make sure axis of differentitation is contained in the dimensions of f
+    # make sure axis of differentiation is contained in the dimensions of f
     @assert N <= M
 
     coeffs = A.stencil_coefs
@@ -148,8 +148,8 @@ end
 
 
 # mul! done by standard matrix multiplication for Chebyshev differentiation
-# matrices. This can also be done (potentially more efficiently) through
-# FFT. TODO: test if worthwhile
+# matrices. This can also be done through FFT, but after some testing the FFT
+# route actually seemed to be performing slower, so let's stick with this
 function LinearAlgebra.mul!(df::AbstractVector, A::SpectralDeriv, f::AbstractVector)
     mul!(df, A.D, f)
 end
@@ -230,7 +230,8 @@ end
 # now for cross-derivatives. we assume that A acts on the first and B on the
 # second axis of the x Matrix.
 
-# first the FD case
+# FIXME
+
 function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S}, x::AbstractMatrix{T},
                                         i::Int, j::Int) where {T<:Real,T2,S,N1,N2}
     NA   = A.len
@@ -258,94 +259,4 @@ function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S}, x::Abstr
     end
 
     sum_ij
-end
-
-# now for spectral derivatives
-function (A::SpectralDeriv{T,N1,S})(B::SpectralDeriv{T,N2,S}, x::AbstractMatrix{T},
-                                   i::Int, j::Int) where {T<:Real,S,N1,N2}
-    NA = A.len
-    NB = B.len
-
-    @assert( (NA, NB) == size(x) )
-    @assert( N2 > N1 )
-
-    sum_ij = zero(T)
-    @fastmath @inbounds for jj in 1:NB
-        sum_i = zero(T)
-        @inbounds for ii in 1:NA
-            sum_i += A[i,ii] * B[j,jj] * x[ii,jj]
-        end
-        sum_ij += sum_i
-    end
-
-    sum_ij
-end
-
-# we can also have mixed FD and spectral cases
-
-function (A::SpectralDeriv{T,N1,S1})(B::FiniteDiffDeriv{T,N2,T2,S2}, x::AbstractMatrix{T},
-                                    i::Int, j::Int) where {T<:Real,T2,S1,S2,N1,N2}
-    NA   = A.len
-    NB   = B.len
-    qB   = B.stencil_coefs
-    midB = div(B.stencil_length, 2) + 1
-
-    @assert( (NA, NB) == size(x) )
-    @assert( N2 > N1 )
-
-    sum_ij = zero(T)
-    @fastmath @inbounds for jj in 1:B.stencil_length
-        # imposing periodicity
-        j_circ = 1 + mod(j - (midB-jj) - 1, NB)
-        sum_i  = zero(T)
-        @inbounds for ii in 1:NA
-            sum_i += A[i,ii] * qB[jj] * x[ii,j_circ]
-        end
-        sum_ij += sum_i
-    end
-
-    sum_ij
-end
-
-function (A::FiniteDiffDeriv{T,N1,T2,S1})(B::SpectralDeriv{T,N2,S2}, x::AbstractMatrix{T},
-                                         i::Int, j::Int) where {T<:Real,T2,S1,S2,N1,N2}
-    NA   = A.len
-    NB   = B.len
-    qA   = A.stencil_coefs
-    midA = div(A.stencil_length, 2) + 1
-
-    @assert( (NA, NB) == size(x) )
-    @assert( N2 > N1 )
-
-    sum_ij = zero(T)
-    @fastmath @inbounds for jj in 1:NB
-        sum_i  = zero(T)
-        @inbounds for ii in 1:A.stencil_length
-            # imposing periodicity
-            i_circ = 1 + mod(i - (midA-ii) - 1, NA)
-
-            sum_i += qA[ii] * B[j,jj] * x[i_circ,jj]
-        end
-        sum_ij += sum_i
-    end
-
-    sum_ij
-end
-
-
-# and now for any Array
-
-function (A::AbstractDerivOperator{T,N1})(B::AbstractDerivOperator{T,N2}, f::AbstractArray{T,M},
-                                          idx::Vararg{Int,M}) where {T<:Real,N1,N2,M}
-    Ipre  = CartesianIndex(idx[1:N1-1])
-    Imid  = CartesianIndex(idx[N1+1:N2-1])
-    Ipost = CartesianIndex(idx[N2+1:end])
-    i     = idx[N1]
-    j     = idx[N2]
-
-    _DxDy(A, B, f, Ipre, Imid, Ipost, i, j)
-end
-@noinline function _DxDy(A, B, f::AbstractArray{T}, Ipre, Imid, Ipost, i, j) where {T<:Real}
-    f_slice = view(f, Ipre, :, Imid, :, Ipost)
-    A(B, f_slice, i, j)::T
 end
