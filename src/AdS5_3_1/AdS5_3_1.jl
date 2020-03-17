@@ -190,9 +190,23 @@ mutable struct AllVars{T}
     Sh       :: T
     Stp      :: T
     Shp      :: T
+
+    Fx       :: T
+    Fxp      :: T
+    Fxt      :: T
+    Fxh      :: T
+    Fxtp     :: T
+    Fxhp     :: T
+
+    Fy       :: T
+    Fyp      :: T
+    Fyt      :: T
+    Fyh      :: T
+    Fytp     :: T
+    Fyhp     :: T
 end
 function AllVars{T}() where {T<:AbstractFloat}
-    N = 1 + 6*5
+    N = 1 + 6*7
     array = zeros(N)
     AllVars{T}(array...)
 end

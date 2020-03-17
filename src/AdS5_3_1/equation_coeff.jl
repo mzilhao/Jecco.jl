@@ -2,6 +2,9 @@
 # Vf(phi)  = VV(phi)
 # Vfp(phi) = ∂(VV)(phi)
 
+# FIXME
+V(phi) = -3.0
+
 # assuming
 # (A d_uu + B d_u + C Id) f = -S
 
@@ -156,6 +159,79 @@ function Fxy_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, var
     SS[1] = *(2, Gp_y, S ^ 2) + *(B1p_y, S ^ 2, sinh2G) + *(-8, S, Sp_x, expB1) + *(-2, B1_y, Gp, S ^ 2) + *(-2, B2p_x, S ^ 2, expB1) + *(6, Gp, S, S_y) + *(8, S_x, Sp, expB1) + *(-1, B1_y, B1p, S ^ 2, sinh2G) + *(-8, phi_x, phip, S ^ 2, expB1) + *(-6, B2_x, B2p, S ^ 2, expB1) + *(-6, B2p, S, S_x, expB1) + *(-2, G_x, Gp, S ^ 2, expB1) + *(-2, S, coshGsq, *(B1p_x, S) + *(3, B1p, S_x) + *(B1_x, B1p, S), expB1) + *(2, B1p, G_y, S ^ 2, cosh2G) + *(3, B1p, S, S_y, sinh2G) + *(-2, B1p, G_x, S ^ 2, expB1, sinh2G)
 
     SS[2] = *(-8, S, Sp_y) + *(-2, B2p_y, S ^ 2) + *(8, S_y, Sp) + *(-8, phi_y, phip, S ^ 2) + *(-6, B2_y, B2p, S ^ 2) + *(-6, B2p, S, S_y) + *(-2, G_y, Gp, S ^ 2) + *(2, Gp_x, S ^ 2, expB1) + *(2, S, coshGsq, *(B1p_y, S) + *(3, B1p, S_y) + *(-1, B1_y, B1p, S)) + *(-1, B1p_x, S ^ 2, expB1, sinh2G) + *(2, B1_x, Gp, S ^ 2, expB1) + *(2, B1p, G_y, S ^ 2, sinh2G) + *(6, Gp, S, S_x, expB1) + *(-1, B1_x, B1p, S ^ 2, expB1, sinh2G) + *(-3, B1p, S, S_x, expB1, sinh2G) + *(-2, B1p, G_x, S ^ 2, cosh2G, expB1)
+
+    nothing
+end
+
+
+function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
+    u   = vars.u
+
+    B1     = vars.B1
+    B1p    = vars.B1p
+    B1t    = vars.B1t
+    B1h    = vars.B1h
+    B1tp   = vars.B1tp
+    B1hp   = vars.B1hp
+
+    B2     = vars.B2
+    B2p    = vars.B2p
+    B2t    = vars.B2t
+    B2h    = vars.B2h
+    B2tp   = vars.B2tp
+    B2hp   = vars.B2hp
+
+    G      = vars.G
+    Gp     = vars.Gp
+    Gt     = vars.Gt
+    Gh     = vars.Gh
+    Gtp    = vars.Gtp
+    Ghp    = vars.Ghp
+
+    phi    = vars.phi
+    phip   = vars.phip
+    phit   = vars.phit
+    phih   = vars.phih
+    phitp  = vars.phitp
+    phihp  = vars.phihp
+
+    S      = vars.S
+    Sp     = vars.Sp
+    St     = vars.St
+    Sh     = vars.Sh
+    Stp    = vars.Stp
+    Shp    = vars.Shp
+
+    Fx     = vars.Fx
+    Fxp    = vars.Fxp
+    Fxt    = vars.Fxt
+    Fxh    = vars.Fxh
+    Fxtp   = vars.Fxtp
+    Fxhp   = vars.Fxhp
+
+    Fy     = vars.Fy
+    Fyp    = vars.Fyp
+    Fyt    = vars.Fyt
+    Fyh    = vars.Fyh
+    Fytp   = vars.Fytp
+    Fyhp   = vars.Fyhp
+
+
+    expB1   = exp(B1)
+    sinh2G  = sinh(*(2, G))
+    cosh2G  = cosh(*(2, G))
+    coshGsq = cosh(G)^2
+    coshG   = cosh(G)
+    sinhG   = sinh(G)
+
+
+    ABCS[1] = 0.0
+
+    ABCS[2] = *(-12, S ^ 3, u ^ 2, expB1)
+
+    ABCS[3] = *(24, Sp, S ^ 2, expB1)
+
+    ABCS[4] = *(*(S, *(*(-8, Gh, St) + *(-8, Gt, Sh), coshG) + *(*(-16, Sth) + *(2, Sh, Fxp + *(-4, B2t)) + *(2, Sp, *(4, Fxh) + *(4, Fyt)) + *(2, St, Fyp + *(-4, B2h)), sinhG)) + *(S ^ 2, *(*(-4, Gth) + *(-2, Gh, B1t + B2t + *(-1, Fxp)) + *(2, Gp, Fxh + Fyt) + *(2, Gt, B1h + Fyp + *(-1, B2h)), coshG) + *(*(-4, B2th) + *(2, Fxhp) + *(2, Fytp) + *(-8, phih, phit) + *(-4, Gh, Gt) + *(2, B2h, Fxp + *(-4, B2t)) + *(2, B2p, Fxh + Fyt) + *(2, Fyp, B2t + *(-1, Fxp)), sinhG)) + *(8, Sh, St, sinhG), expB1 *  expB2) + *(*(S, *(*(8, Shh) + *(-8, Fyh, Sp) + *(-2, Sh, Fyp + *(-4, B2h) + *(4, B1h)), coshG) + *(8, Gh, Sh, sinhG)) + *(S ^ 2, *(*(2, Ghh) + *(-2, Fyh, Gp) + *(2, Gh, B2h + *(-1, Fyp) + *(-2, B1h)), sinhG) + *(Fyp ^ 2 + *(-2, B1hh) + *(-2, Fyhp) + *(2, B2hh) + *(2, B1h ^ 2) + *(2, Gh ^ 2) + *(4, B2h ^ 2) + *(4, phih ^ 2) + *(Fyp, *(-2, B2h) + *(2, B1h)) + *(-2, B1h, B2h) + *(-2, B2p, Fyh) + *(2, B1p, Fyh), coshG)) + *(-4, Sh ^ 2, coshG), expB2) + *(*(S, *(*(8, Stt) + *(-8, Fxt, Sp) + *(-2, Fxp, St) + *(8, B1t, St) + *(8, B2t, St), coshG) + *(8, Gt, St, sinhG)) + *(S ^ 2, *(*(2, Gtt) + *(-2, Fxt, Gp) + *(2, Gt, B2t + *(-1, Fxp) + *(2, B1t)), sinhG) + *(Fxp ^ 2 + *(-2, Fxtp) + *(2, B1tt) + *(2, B2tt) + *(2, B1t ^ 2) + *(2, Gt ^ 2) + *(4, B2t ^ 2) + *(4, phit ^ 2) + *(-1, Fxp, *(2, B1t) + *(2, B2t)) + *(-2, Fxt, B1p + B2p) + *(2, B1t, B2t), coshG)) + *(-4, St ^ 2, coshG), exp(B2 + *(2, B1))) + *(8, V(phi), S ^ 4, expB1)
 
     nothing
 end
