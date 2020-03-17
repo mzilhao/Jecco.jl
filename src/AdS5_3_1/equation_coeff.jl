@@ -171,6 +171,8 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
     B1p    = vars.B1p
     B1t    = vars.B1t
     B1h    = vars.B1h
+    B1tt   = vars.B1tt
+    B1hh   = vars.B1hh
     B1tp   = vars.B1tp
     B1hp   = vars.B1hp
 
@@ -178,6 +180,8 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
     B2p    = vars.B2p
     B2t    = vars.B2t
     B2h    = vars.B2h
+    B2tt   = vars.B2tt
+    B2hh   = vars.B2hh
     B2tp   = vars.B2tp
     B2hp   = vars.B2hp
 
@@ -185,6 +189,8 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
     Gp     = vars.Gp
     Gt     = vars.Gt
     Gh     = vars.Gh
+    Gtt    = vars.Gtt
+    Ghh    = vars.Ghh
     Gtp    = vars.Gtp
     Ghp    = vars.Ghp
 
@@ -192,6 +198,8 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
     phip   = vars.phip
     phit   = vars.phit
     phih   = vars.phih
+    phitt  = vars.phitt
+    phihh  = vars.phihh
     phitp  = vars.phitp
     phihp  = vars.phihp
 
@@ -199,6 +207,8 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
     Sp     = vars.Sp
     St     = vars.St
     Sh     = vars.Sh
+    Stt    = vars.Stt
+    Shh    = vars.Shh
     Stp    = vars.Stp
     Shp    = vars.Shp
 
@@ -206,6 +216,8 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
     Fxp    = vars.Fxp
     Fxt    = vars.Fxt
     Fxh    = vars.Fxh
+    Fxtt   = vars.Fxtt
+    Fxhh   = vars.Fxhh
     Fxtp   = vars.Fxtp
     Fxhp   = vars.Fxhp
 
@@ -213,11 +225,17 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
     Fyp    = vars.Fyp
     Fyt    = vars.Fyt
     Fyh    = vars.Fyh
+    Fytt   = vars.Fytt
+    Fyhh   = vars.Fyhh
     Fytp   = vars.Fytp
     Fyhp   = vars.Fyhp
 
+    B2th   = vars.B2th
+    Gth    = vars.Gth
+    Sth    = vars.Sth
 
     expB1   = exp(B1)
+    expB2   = exp(B2)
     sinh2G  = sinh(*(2, G))
     cosh2G  = cosh(*(2, G))
     coshGsq = cosh(G)^2

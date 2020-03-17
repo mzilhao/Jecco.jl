@@ -160,6 +160,8 @@ mutable struct AllVars{T}
     B1p      :: T
     B1t      :: T
     B1h      :: T
+    B1tt     :: T
+    B1hh     :: T
     B1tp     :: T
     B1hp     :: T
 
@@ -167,6 +169,8 @@ mutable struct AllVars{T}
     B2p      :: T
     B2t      :: T
     B2h      :: T
+    B2tt     :: T
+    B2hh     :: T
     B2tp     :: T
     B2hp     :: T
 
@@ -174,6 +178,8 @@ mutable struct AllVars{T}
     Gp       :: T
     Gt       :: T
     Gh       :: T
+    Gtt      :: T
+    Ghh      :: T
     Gtp      :: T
     Ghp      :: T
 
@@ -181,6 +187,8 @@ mutable struct AllVars{T}
     phip     :: T
     phit     :: T
     phih     :: T
+    phitt    :: T
+    phihh    :: T
     phitp    :: T
     phihp    :: T
 
@@ -188,6 +196,8 @@ mutable struct AllVars{T}
     Sp       :: T
     St       :: T
     Sh       :: T
+    Stt      :: T
+    Shh      :: T
     Stp      :: T
     Shp      :: T
 
@@ -195,6 +205,8 @@ mutable struct AllVars{T}
     Fxp      :: T
     Fxt      :: T
     Fxh      :: T
+    Fxtt     :: T
+    Fxhh     :: T
     Fxtp     :: T
     Fxhp     :: T
 
@@ -202,11 +214,17 @@ mutable struct AllVars{T}
     Fyp      :: T
     Fyt      :: T
     Fyh      :: T
+    Fytt     :: T
+    Fyhh     :: T
     Fytp     :: T
     Fyhp     :: T
+
+    B2th     :: T
+    Gth      :: T
+    Sth      :: T
 end
 function AllVars{T}() where {T<:AbstractFloat}
-    N = 1 + 6*7
+    N = 1 + 8*7 + 3
     array = zeros(N)
     AllVars{T}(array...)
 end
