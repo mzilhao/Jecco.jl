@@ -216,8 +216,8 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
     Fxp    = vars.Fxp
     Fxt    = vars.Fxt
     Fxh    = vars.Fxh
-    Fxtt   = vars.Fxtt
-    Fxhh   = vars.Fxhh
+    # Fxtt   = vars.Fxtt
+    # Fxhh   = vars.Fxhh
     Fxtp   = vars.Fxtp
     Fxhp   = vars.Fxhp
 
@@ -225,8 +225,8 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
     Fyp    = vars.Fyp
     Fyt    = vars.Fyt
     Fyh    = vars.Fyh
-    Fytt   = vars.Fytt
-    Fyhh   = vars.Fyhh
+    # Fytt   = vars.Fytt
+    # Fyhh   = vars.Fyhh
     Fytp   = vars.Fytp
     Fyhp   = vars.Fyhp
 

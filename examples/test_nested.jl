@@ -44,11 +44,13 @@ par_grid = ParamGrid(
     ymin        = -5.0,
     ymax        =  5.0,
     ynodes      =  128,
-    umin        =  0.01,
+    # umin        =  0.01,
+    umin        =  0.1,
     umax        =  1.0,
     udomains    =  1,
     unodes      =  16,
     # unodes      =  32,
+    # unodes      =  64,
 )
 
 
@@ -69,8 +71,8 @@ dBC = BulkVars(Nx, Ny)
 
 u0 = u[1]
 
-fx2_0 = 0.005
-fy2_0 = 0.002
+fx2_0 = 0.02
+fy2_0 = 0.1
 
 BC.S  .= 1.0/u0
 dBC.S .= -1.0/(u0*u0)
@@ -80,6 +82,8 @@ BC.Fy .= fy2_0 * u0 * u0
 
 dBC.Fx .= 2 * fx2_0 * u0
 dBC.Fy .= 2 * fy2_0 * u0
+
+BC.Sd .= 0.5/(u0*u0)
 
 Jecco.AdS5_3_1.solve_nested_outer!(bulk, BC, dBC, nested)
 
