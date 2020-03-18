@@ -300,16 +300,18 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
 
                 Fxy_outer_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, aux.varsFxy)
 
-                @inbounds @simd for aa in eachindex(uu)
-                    aux.A_mat2[a,aa]         = aux.AA[1,1] .* Duu[a,aa] .+ aux.BB[1,1] .* Du[a,aa] .+ aux.CC[1,1]
-                    aux.A_mat2[a,aa+Nu]      = aux.AA[1,2] .* Duu[a,aa] .+ aux.BB[1,2] .* Du[a,aa] .+ aux.CC[1,2]
-                    aux.A_mat2[a+Nu,aa]      = aux.AA[2,1] .* Duu[a,aa] .+ aux.BB[2,1] .* Du[a,aa] .+ aux.CC[2,1]
-                    aux.A_mat2[a+Nu,aa+Nu]   = aux.AA[2,2] .* Duu[a,aa] .+ aux.BB[2,2] .* Du[a,aa] .+ aux.CC[2,2]
-                end
-
                 aux.b_vec2[a]    = -aux.SS[1]
                 aux.b_vec2[a+Nu] = -aux.SS[2]
-
+                @inbounds @simd for aa in eachindex(uu)
+                    aux.A_mat2[a,aa]         = aux.AA[1,1] * Duu[a,aa] + aux.BB[1,1] * Du[a,aa]
+                    aux.A_mat2[a,aa+Nu]      = aux.AA[1,2] * Duu[a,aa] + aux.BB[1,2] * Du[a,aa]
+                    aux.A_mat2[a+Nu,aa]      = aux.AA[2,1] * Duu[a,aa] + aux.BB[2,1] * Du[a,aa]
+                    aux.A_mat2[a+Nu,aa+Nu]   = aux.AA[2,2] * Duu[a,aa] + aux.BB[2,2] * Du[a,aa]
+                end
+                aux.A_mat2[a,a]       += aux.CC[1,1]
+                aux.A_mat2[a,a+Nu]    += aux.CC[1,2]
+                aux.A_mat2[a+Nu,a]    += aux.CC[2,1]
+                aux.A_mat2[a+Nu,a+Nu] += aux.CC[2,2]
             end
 
             # BC
