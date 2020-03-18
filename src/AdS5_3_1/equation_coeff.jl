@@ -347,3 +347,122 @@ function B2d_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
 
     nothing
 end
+
+
+# this is another coupled equation, for B1d and Gd. the notation used is
+#
+# ( A11 d_uu B1d + A12 d_uu Gdy + B11 d_u B1d + B12 d_u Gd + C11 B1d + C12 Gd ) = -S1
+# ( A21 d_uu B1d + A22 d_uu Gd + B21 d_u B1d + B22 d_u Gd + C21 B1d + C22 Gd ) = -S2
+
+function B1dGd_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::AllVars)
+    u    = vars.u
+
+    B1     = vars.B1
+    B1p    = vars.B1p
+    B1t    = vars.B1t
+    B1h    = vars.B1h
+    B1tt   = vars.B1tt
+    B1hh   = vars.B1hh
+    B1tp   = vars.B1tp
+    B1hp   = vars.B1hp
+
+    B2     = vars.B2
+    B2p    = vars.B2p
+    B2t    = vars.B2t
+    B2h    = vars.B2h
+    B2tt   = vars.B2tt
+    B2hh   = vars.B2hh
+    B2tp   = vars.B2tp
+    B2hp   = vars.B2hp
+
+    G      = vars.G
+    Gp     = vars.Gp
+    Gt     = vars.Gt
+    Gh     = vars.Gh
+    Gtt    = vars.Gtt
+    Ghh    = vars.Ghh
+    Gtp    = vars.Gtp
+    Ghp    = vars.Ghp
+
+    phi    = vars.phi
+    phip   = vars.phip
+    phit   = vars.phit
+    phih   = vars.phih
+    phitt  = vars.phitt
+    phihh  = vars.phihh
+    phitp  = vars.phitp
+    phihp  = vars.phihp
+
+    S      = vars.S
+    Sp     = vars.Sp
+    St     = vars.St
+    Sh     = vars.Sh
+    Stt    = vars.Stt
+    Shh    = vars.Shh
+    Stp    = vars.Stp
+    Shp    = vars.Shp
+
+    Fx     = vars.Fx
+    Fxp    = vars.Fxp
+    Fxt    = vars.Fxt
+    Fxh    = vars.Fxh
+    # Fxtt   = vars.Fxtt
+    # Fxhh   = vars.Fxhh
+    Fxtp   = vars.Fxtp
+    Fxhp   = vars.Fxhp
+
+    Fy     = vars.Fy
+    Fyp    = vars.Fyp
+    Fyt    = vars.Fyt
+    Fyh    = vars.Fyh
+    # Fytt   = vars.Fytt
+    # Fyhh   = vars.Fyhh
+    Fytp   = vars.Fytp
+    Fyhp   = vars.Fyhp
+
+    B2th   = vars.B2th
+    Gth    = vars.Gth
+    Sth    = vars.Sth
+
+    Sd     = vars.Sd
+
+    expB1   = exp(B1)
+    expB2   = exp(B2)
+    sinh2G  = sinh(*(2, G))
+    cosh2G  = cosh(*(2, G))
+    coshGsq = cosh(G)^2
+    coshG   = cosh(G)
+    tanhG   = tanh(G)
+    sinhG   = sinh(G)
+    sechG   = sech(G)
+
+    AA[1,1] = 0
+    AA[1,2] = 0
+    AA[2,1] = 0
+    AA[2,2] = 0
+
+
+    BB[1,1] = *(-12, S ^ 4, u ^ 2, expB1)
+
+    BB[1,2] = 0
+
+    BB[2,1] = 0
+
+    BB[2,2] = *(-12, S ^ 4, u ^ 2, expB1)
+
+
+    CC[1,1] = *(6, S ^ 3, *(3, Sp) + *(2, Gp, S, tanhG), expB1)
+
+    CC[1,2] = *(12, B1p, S ^ 4, expB1, tanhG)
+
+    CC[2,1] = *(-6, B1p, S ^ 4, expB1, sinh2G)
+
+    CC[2,2] = *(18, Sp, S ^ 3, expB1)
+
+
+    SS[1] = *(3, *(-4, Sh ^ 2) + *(S, *(2, Shh) + *(-2, Fyh, Sp) + *(2, B2h, Sh) + *(4, Fyp, Sh)) + *(S ^ 2, Fyp ^ 2 + *(-2, Fyhp) + *(2, B2hh) + *(4, B2h ^ 2) + *(4, phih ^ 2) + *(-2, B2h, Fyp) + *(-2, B2p, Fyh)), expB2, sechG) + *(3, *(4, St ^ 2) + *(-1, S ^ 2, Fxp ^ 2 + *(-2, Fxtp) + *(2, B2tt) + *(4, B2t ^ 2) + *(4, phit ^ 2) + *(-2, B2p, Fxt) + *(-2, B2t, Fxp)) + *(-2, S, Stt + *(B2t, St) + *(-1, Fxt, Sp) + *(2, Fxp, St)), exp(B2 + *(2, B1)), sechG) + *(6, S, *(Gt, Sh + *(S, B2h + *(-1, Fyp))) + *(-1, Gh, St) + *(Fxp, Gh, S) + *(Fyt, Gp, S) + *(-1, B2t, Gh, S) + *(-1, Fxh, Gp, S), exp(B1 + B2), sechG) + *(18, B1p, Sd, S ^ 3, expB1)
+
+    SS[2] = *(3, *(4, Sh ^ 2) + *(-1, S, *(2, Shh) + *(-2, Fyh, Sp) + *(2, B2h, Sh) + *(4, Fyp, Sh)) + *(-1, S ^ 2, Fyp ^ 2 + *(-2, Fyhp) + *(2, B2hh) + *(4, B2h ^ 2) + *(4, phih ^ 2) + *(-2, B2h, Fyp) + *(-2, B2p, Fyh)), expB2, sinhG) + *(3, *(4, St ^ 2) + *(-1, S ^ 2, Fxp ^ 2 + *(-2, Fxtp) + *(2, B2tt) + *(4, B2t ^ 2) + *(4, phit ^ 2) + *(-2, B2p, Fxt) + *(-2, B2t, Fxp)) + *(-2, S, Stt + *(B2t, St) + *(-1, Fxt, Sp) + *(2, Fxp, St)), exp(B2 + *(2, B1)), sinhG) + *(6, *(S, *(2, Sth) + *(Sh, B2t + *(-1, B1t) + *(2, Fxp)) + *(St, B1h + B2h + *(2, Fyp)) + *(-1, Sp, Fxh + Fyt)) + *(S ^ 2, *(-1, Fxhp) + *(-1, Fytp) + *(2, B2th) + *(B1p, Fxh + *(-1, Fyt)) + *(B1t, Fyp) + *(B1h + *(-1, Fyp), B2t + *(-1, Fxp)) + *(-1, B2h, B1t + Fxp + *(-4, B2t)) + *(-1, B2p, Fxh + Fyt) + *(4, phih, phit)) + *(-4, Sh, St), coshG, exp(B1 + B2)) + *(18, Gp, Sd, S ^ 3, expB1)
+
+    nothing
+end

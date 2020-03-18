@@ -48,8 +48,8 @@ par_grid = ParamGrid(
     umin        =  0.1,
     umax        =  1.0,
     udomains    =  1,
-    unodes      =  16,
-    # unodes      =  32,
+    # unodes      =  16,
+    unodes      =  32,
     # unodes      =  64,
 )
 
@@ -86,6 +86,9 @@ dBC.Fy .= 2 * fy2_0 * u0
 BC.Sd .= 0.5/(u0*u0)
 
 BC.B2d .= -2.0 * u0*u0*u0 * 0.02
+BC.B1d .= -2.0 * u0*u0*u0 * 0.01
+
+BC.Gd  .= 0.0
 
 Jecco.AdS5_3_1.solve_nested_outer!(bulk, BC, dBC, nested)
 
