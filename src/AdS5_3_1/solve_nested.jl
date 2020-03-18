@@ -58,7 +58,6 @@ struct Nested{S,D,T<:Real}
     Du_S    :: D
     Du_Fx   :: D
     Du_Fy   :: D
-    Du_Sd   :: D
     Duu_B1  :: D
     Duu_B2  :: D
     Duu_G   :: D
@@ -66,7 +65,6 @@ struct Nested{S,D,T<:Real}
     Duu_S   :: D
     Duu_Fx  :: D
     Duu_Fy  :: D
-    Duu_Sd  :: D
     aux_acc :: Vector{Aux{T}}
 end
 function Nested(sys::System)
@@ -80,7 +78,6 @@ function Nested(sys::System)
     Du_S     = zeros(Nu, Nx, Ny)
     Du_Fx    = zeros(Nu, Nx, Ny)
     Du_Fy    = zeros(Nu, Nx, Ny)
-    Du_Sd    = zeros(Nu, Nx, Ny)
     Duu_B1   = zeros(Nu, Nx, Ny)
     Duu_B2   = zeros(Nu, Nx, Ny)
     Duu_G    = zeros(Nu, Nx, Ny)
@@ -88,15 +85,14 @@ function Nested(sys::System)
     Duu_S    = zeros(Nu, Nx, Ny)
     Duu_Fx   = zeros(Nu, Nx, Ny)
     Duu_Fy   = zeros(Nu, Nx, Ny)
-    Duu_Sd   = zeros(Nu, Nx, Ny)
 
     nt = Threads.nthreads()
     # pre-allocate thread-local aux quantities
     aux_acc = [Aux{eltype(uu)}(Nu) for _ in 1:nt]
 
     Nested{typeof(sys),typeof(Du_B1),
-           eltype(uu)}(sys, uu, xx, yy, Du_B1, Du_B2, Du_G, Du_phi, Du_S, Du_Fx, Du_Fy, Du_Sd,
-                       Duu_B1, Duu_B2, Duu_G, Duu_phi, Duu_S, Duu_Fx, Duu_Fy, Duu_Sd, aux_acc)
+           eltype(uu)}(sys, uu, xx, yy, Du_B1, Du_B2, Du_G, Du_phi, Du_S, Du_Fx, Du_Fy,
+                       Duu_B1, Duu_B2, Duu_G, Duu_phi, Duu_S, Duu_Fx, Duu_Fy, aux_acc)
 end
 
 Nested(systems::Vector) = [Nested(sys) for sys in systems]
@@ -160,7 +156,6 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
     Du_S    = nested.Du_S
     Du_Fx   = nested.Du_Fx
     Du_Fy   = nested.Du_Fy
-    Du_Sd   = nested.Du_Sd
     Duu_B1  = nested.Duu_B1
     Duu_B2  = nested.Duu_B2
     Duu_G   = nested.Duu_G
@@ -168,7 +163,6 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
     Duu_S   = nested.Duu_S
     Duu_Fx  = nested.Duu_Fx
     Duu_Fy  = nested.Duu_Fy
-    Duu_Sd  = nested.Duu_Sd
 
     aux_acc = nested.aux_acc
 
@@ -508,11 +502,7 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
         end
     end
 
-    # take u-derivatives of Sd
-    @sync begin
-        @spawn mul!(Du_Sd,   Du,  bulk.Sd)
-        @spawn mul!(Duu_Sd,  Duu, bulk.Sd)
-    end
+
 
 
     # # finally compute dphidt_g1
