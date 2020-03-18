@@ -505,9 +505,9 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
 
 
     # solve for B2d. note that solving for B2d and (B1d,Gd) are independent
-    # processes. we can therefore @spawn, here
+    # processes. we can therefore @spawn, here. TODO: see if worthwhile
 
-    t1 = @spawn @fastmath @inbounds @threads for j in eachindex(yy)
+    @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
             id  = Threads.threadid()
             aux = aux_acc[id]
@@ -665,7 +665,7 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
 
     # solve for B1d and Gd
 
-    t2 = @spawn @fastmath @inbounds @threads for j in eachindex(yy)
+    @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
             id  = Threads.threadid()
             aux = aux_acc[id]
@@ -836,8 +836,7 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
     end
 
 
-    wait(t1)
-    wait(t2)
+
 
     # # finally compute dphidt_g1
 
