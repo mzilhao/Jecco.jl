@@ -4,6 +4,7 @@
 
 # FIXME
 V(phi) = -3.0
+Vp(phi) = 0.0
 
 # assuming
 # (A d_uu + B d_u + C Id) f = -S
@@ -250,6 +251,99 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
     ABCS[3] = *(24, Sp, S ^ 2, expB1)
 
     ABCS[4] = *(*(S, *(*(-8, Gh, St) + *(-8, Gt, Sh), coshG) + *(*(-16, Sth) + *(2, Sh, Fxp + *(-4, B2t)) + *(2, Sp, *(4, Fxh) + *(4, Fyt)) + *(2, St, Fyp + *(-4, B2h)), sinhG)) + *(S ^ 2, *(*(-4, Gth) + *(-2, Gh, B1t + B2t + *(-1, Fxp)) + *(2, Gp, Fxh + Fyt) + *(2, Gt, B1h + Fyp + *(-1, B2h)), coshG) + *(*(-4, B2th) + *(2, Fxhp) + *(2, Fytp) + *(-8, phih, phit) + *(-4, Gh, Gt) + *(2, B2h, Fxp + *(-4, B2t)) + *(2, B2p, Fxh + Fyt) + *(2, Fyp, B2t + *(-1, Fxp)), sinhG)) + *(8, Sh, St, sinhG), expB1 *  expB2) + *(*(S, *(*(8, Shh) + *(-8, Fyh, Sp) + *(-2, Sh, Fyp + *(-4, B2h) + *(4, B1h)), coshG) + *(8, Gh, Sh, sinhG)) + *(S ^ 2, *(*(2, Ghh) + *(-2, Fyh, Gp) + *(2, Gh, B2h + *(-1, Fyp) + *(-2, B1h)), sinhG) + *(Fyp ^ 2 + *(-2, B1hh) + *(-2, Fyhp) + *(2, B2hh) + *(2, B1h ^ 2) + *(2, Gh ^ 2) + *(4, B2h ^ 2) + *(4, phih ^ 2) + *(Fyp, *(-2, B2h) + *(2, B1h)) + *(-2, B1h, B2h) + *(-2, B2p, Fyh) + *(2, B1p, Fyh), coshG)) + *(-4, Sh ^ 2, coshG), expB2) + *(*(S, *(*(8, Stt) + *(-8, Fxt, Sp) + *(-2, Fxp, St) + *(8, B1t, St) + *(8, B2t, St), coshG) + *(8, Gt, St, sinhG)) + *(S ^ 2, *(*(2, Gtt) + *(-2, Fxt, Gp) + *(2, Gt, B2t + *(-1, Fxp) + *(2, B1t)), sinhG) + *(Fxp ^ 2 + *(-2, Fxtp) + *(2, B1tt) + *(2, B2tt) + *(2, B1t ^ 2) + *(2, Gt ^ 2) + *(4, B2t ^ 2) + *(4, phit ^ 2) + *(-1, Fxp, *(2, B1t) + *(2, B2t)) + *(-2, Fxt, B1p + B2p) + *(2, B1t, B2t), coshG)) + *(-4, St ^ 2, coshG), exp(B2 + *(2, B1))) + *(8, V(phi), S ^ 4, expB1)
+
+    nothing
+end
+
+
+function B2d_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
+    u   = vars.u
+
+    B1     = vars.B1
+    B1p    = vars.B1p
+    B1t    = vars.B1t
+    B1h    = vars.B1h
+    B1tt   = vars.B1tt
+    B1hh   = vars.B1hh
+    B1tp   = vars.B1tp
+    B1hp   = vars.B1hp
+
+    B2     = vars.B2
+    B2p    = vars.B2p
+    B2t    = vars.B2t
+    B2h    = vars.B2h
+    B2tt   = vars.B2tt
+    B2hh   = vars.B2hh
+    B2tp   = vars.B2tp
+    B2hp   = vars.B2hp
+
+    G      = vars.G
+    Gp     = vars.Gp
+    Gt     = vars.Gt
+    Gh     = vars.Gh
+    Gtt    = vars.Gtt
+    Ghh    = vars.Ghh
+    Gtp    = vars.Gtp
+    Ghp    = vars.Ghp
+
+    phi    = vars.phi
+    phip   = vars.phip
+    phit   = vars.phit
+    phih   = vars.phih
+    phitt  = vars.phitt
+    phihh  = vars.phihh
+    phitp  = vars.phitp
+    phihp  = vars.phihp
+
+    S      = vars.S
+    Sp     = vars.Sp
+    St     = vars.St
+    Sh     = vars.Sh
+    Stt    = vars.Stt
+    Shh    = vars.Shh
+    Stp    = vars.Stp
+    Shp    = vars.Shp
+
+    Fx     = vars.Fx
+    Fxp    = vars.Fxp
+    Fxt    = vars.Fxt
+    Fxh    = vars.Fxh
+    # Fxtt   = vars.Fxtt
+    # Fxhh   = vars.Fxhh
+    Fxtp   = vars.Fxtp
+    Fxhp   = vars.Fxhp
+
+    Fy     = vars.Fy
+    Fyp    = vars.Fyp
+    Fyt    = vars.Fyt
+    Fyh    = vars.Fyh
+    # Fytt   = vars.Fytt
+    # Fyhh   = vars.Fyhh
+    Fytp   = vars.Fytp
+    Fyhp   = vars.Fyhp
+
+    B2th   = vars.B2th
+    Gth    = vars.Gth
+    Sth    = vars.Sth
+
+    Sd     = vars.Sd
+
+    expB1   = exp(B1)
+    expB2   = exp(B2)
+    sinh2G  = sinh(*(2, G))
+    cosh2G  = cosh(*(2, G))
+    coshGsq = cosh(G)^2
+    coshG   = cosh(G)
+    sinhG   = sinh(G)
+
+
+    ABCS[1] = 0.0
+
+    ABCS[2] = *(-12, S ^ 4, u ^ 2, expB1)
+
+    ABCS[3] = *(18, Sp, S ^ 3, expB1)
+
+    ABCS[4] = *(*(S, *(*(2, Gh, St) + *(2, Gt, Sh), coshG) + *(-1, *(-4, Sth) + *(-4, Fxp, Sh) + *(-4, Fyp, St) + *(2, Fxh, Sp) + *(2, Fyt, Sp) + *(4, B2h, St) + *(4, B2t, Sh), sinhG)) + *(S ^ 2, *(*(4, Gth) + *(-2, Gp, Fxh + Fyt) + *(-2, Gt, B1h + Fyp + *(2, B2h)) + *(2, Gh, B1t + *(-1, Fxp) + *(-2, B2t)), coshG) + *(*(-8, B2th) + *(-2, Fxhp) + *(-2, Fytp) + *(2, Fyp, Fxp + *(2, B2t)) + *(4, B2h, Fxp + *(-1, B2t)) + *(4, B2p, Fxh + Fyt) + *(4, Gh, Gt) + *(8, phih, phit), sinhG)) + *(-8, Sh, St, sinhG), exp(B1 + B2)) + *(*(S, *(*(-2, Shh) + *(2, Fyh, Sp) + *(2, Sh, B1h + *(-2, Fyp) + *(2, B2h)), coshG) + *(-2, Gh, Sh, sinhG)) + *(S ^ 2, *(*(-2, Ghh) + *(2, Fyh, Gp) + *(2, Gh, Fyp + *(2, B1h) + *(2, B2h)), sinhG) + *(-1, Fyp ^ 2 + *(-4, B2hh) + *(-2, B1hh) + *(-2, Fyhp) + *(-2, B2h ^ 2) + *(2, B1h ^ 2) + *(2, Gh ^ 2) + *(4, phih ^ 2) + *(2, B1h, Fyp + *(2, B2h)) + *(2, B1p, Fyh) + *(4, B2h, Fyp) + *(4, B2p, Fyh), coshG)) + *(4, Sh ^ 2, coshG), expB2) + *(*(S, *(*(-2, Stt) + *(-2, St, B1t + *(-2, B2t) + *(2, Fxp)) + *(2, Fxt, Sp), coshG) + *(-2, Gt, St, sinhG)) + *(S ^ 2, *(*(-2, Gtt) + *(2, Fxt, Gp) + *(2, Gt, Fxp + *(-2, B1t) + *(2, B2t)), sinhG) + *(-1, Fxp ^ 2 + *(-4, B2tt) + *(-2, Fxtp) + *(-2, B2t ^ 2) + *(2, B1tt) + *(2, B1t ^ 2) + *(2, Gt ^ 2) + *(4, phit ^ 2) + *(-2, B1p, Fxt) + *(-2, B1t, Fxp + *(2, B2t)) + *(4, B2p, Fxt) + *(4, B2t, Fxp), coshG)) + *(4, St ^ 2, coshG), exp(B2 + *(2, B1))) + *(18, B2p, Sd, S ^ 3, expB1)
 
     nothing
 end

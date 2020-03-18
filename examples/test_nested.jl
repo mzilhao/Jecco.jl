@@ -85,5 +85,7 @@ dBC.Fy .= 2 * fy2_0 * u0
 
 BC.Sd .= 0.5/(u0*u0)
 
+BC.B2d .= -2.0 * u0*u0*u0 * 0.02
+
 Jecco.AdS5_3_1.solve_nested_outer!(bulk, BC, dBC, nested)
 
