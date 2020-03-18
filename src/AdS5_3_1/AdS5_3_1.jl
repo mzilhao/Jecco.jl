@@ -224,9 +224,10 @@ mutable struct AllVars{T}
     B2th     :: T
     Gth      :: T
     Sth      :: T
+    phith    :: T
 end
 function AllVars{T}() where {T<:AbstractFloat}
-    N = 1 + 8*7 + 1 + 3
+    N = 1 + 8*7 + 1 + 4
     array = zeros(N)
     AllVars{T}(array...)
 end

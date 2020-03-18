@@ -21,13 +21,16 @@ function IDtest0(sys::System)
     b14 = 0.01
     b24 = 0.02
 
+    phi0 = 1.0
+    phi2 = 0.01
+
     for j in 1:Ny
         for i in 1:Nx
             for a in 1:Nu
                 u,x,y = sys.grid[a,i,j]
                 B1[a,i,j]  = u^4 * b14
                 B2[a,i,j]  = u^4 * b24
-                phi[a,i,j] = 0.0
+                phi[a,i,j] = phi0 * u + phi2 * u^3
                 G[a,i,j]   = 0.0
             end
         end
@@ -88,7 +91,8 @@ BC.Sd .= 0.5/(u0*u0)
 BC.B2d .= -2.0 * u0*u0*u0 * 0.02
 BC.B1d .= -2.0 * u0*u0*u0 * 0.01
 
-BC.Gd  .= 0.0
+BC.Gd   .= 0.0
+BC.phid .= -0.5 + u0*u0 * ( 1.0/3.0 - 1.5 * 0.01 )
 
 Jecco.AdS5_3_1.solve_nested_outer!(bulk, BC, dBC, nested)
 
