@@ -153,20 +153,18 @@ function solve_S_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nes
     Du_B2   = nested.Du_B2
     Du_G    = nested.Du_G
     Du_phi  = nested.Du_phi
-    Duu_B1  = nested.Duu_B1
-    Duu_B2  = nested.Duu_B2
-    Duu_G   = nested.Duu_G
+    # Duu_B1  = nested.Duu_B1
+    # Duu_B2  = nested.Duu_B2
+    # Duu_G   = nested.Duu_G
 
     aux_acc = nested.aux_acc
 
     Du  = sys.Du
     Duu = sys.Duu
-    Dx  = sys.Dx
-    Dxx = sys.Dxx
-    Dy  = sys.Dy
-    Dyy = sys.Dyy
-
-    Nu = length(uu)
+    # Dx  = sys.Dx
+    # Dxx = sys.Dxx
+    # Dy  = sys.Dy
+    # Dyy = sys.Dyy
 
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
@@ -193,6 +191,8 @@ function solve_S_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nes
                 end
                 aux.A_mat[a,a] += aux.ABCS[3]
             end
+
+            # BC
 
             aux.b_vec[1]    = BC.S[i,j]
             aux.A_mat[1,:] .= 0.0
@@ -222,15 +222,11 @@ function solve_Fxy_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::N
     Du_G    = nested.Du_G
     Du_phi  = nested.Du_phi
     Du_S    = nested.Du_S
-    Du_Fx   = nested.Du_Fx
-    Du_Fy   = nested.Du_Fy
     Duu_B1  = nested.Duu_B1
     Duu_B2  = nested.Duu_B2
     Duu_G   = nested.Duu_G
     Duu_phi = nested.Duu_phi
     Duu_S   = nested.Duu_S
-    Duu_Fx  = nested.Duu_Fx
-    Duu_Fy  = nested.Duu_Fy
 
     aux_acc = nested.aux_acc
 
@@ -242,7 +238,6 @@ function solve_Fxy_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::N
     Dyy = sys.Dyy
 
     Nu = length(uu)
-
 
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
@@ -256,8 +251,6 @@ function solve_Fxy_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::N
                 u4         = u2 * u2
 
                 aux.varsFxy.u     = u
-
-                # maybe it's worth to make some structs (or macros), here...
 
                 aux.varsFxy.B1    = bulk.B1[a,i,j]
                 aux.varsFxy.B1p   = -u2 * Du_B1[a,i,j]
@@ -348,7 +341,7 @@ function solve_Fxy_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::N
     nothing
 end
 
-function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nested)
+function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -377,8 +370,6 @@ function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Ne
     Dxx = sys.Dxx
     Dy  = sys.Dy
     Dyy = sys.Dyy
-
-    Nu = length(uu)
 
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
@@ -535,7 +526,7 @@ function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Ne
     nothing
 end
 
-function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nested)
+function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -564,8 +555,6 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::N
     Dxx = sys.Dxx
     Dy  = sys.Dy
     Dyy = sys.Dyy
-
-    Nu = length(uu)
 
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
@@ -724,7 +713,7 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::N
     nothing
 end
 
-function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nested)
+function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -755,6 +744,7 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested:
     Dyy = sys.Dyy
 
     Nu = length(uu)
+
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
             id  = Threads.threadid()
@@ -928,8 +918,7 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested:
     nothing
 end
 
-
-function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nested)
+function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -958,9 +947,6 @@ function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::
     Dxx = sys.Dxx
     Dy  = sys.Dy
     Dyy = sys.Dyy
-
-    Nu = length(uu)
-
 
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
@@ -1154,9 +1140,6 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nes
     Dxx = sys.Dxx
     Dy  = sys.Dy
     Dyy = sys.Dyy
-
-    Nu = length(uu)
-
 
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
@@ -1360,8 +1343,6 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
     Dy  = sys.Dy
     Dyy = sys.Dyy
 
-    Nu = length(uu)
-
     @sync begin
         @spawn mul!(Du_B1,  Du,  bulk.B1)
         @spawn mul!(Du_B2,  Du,  bulk.B2)
@@ -1374,7 +1355,6 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
     end
 
     # solve for S
-
     solve_S_outer!(bulk, BC, dBC, nested)
 
     # take u-derivatives of S
@@ -1383,10 +1363,7 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
         @spawn mul!(Duu_S,  Duu, bulk.S)
     end
 
-
-
     # solve for Fx and Fy
-
     solve_Fxy_outer!(bulk, BC, dBC, nested)
 
     # take u-derivatives of Fx and Fy
@@ -1397,25 +1374,19 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
         @spawn mul!(Duu_Fy,  Duu, bulk.Fy)
     end
 
-
     # solve for Sd
-
-    solve_Sd_outer!(bulk, BC, dBC, nested)
+    solve_Sd_outer!(bulk, BC, nested)
 
 
     # solve for B2d. note that solving for B2d, (B1d,Gd) and phid are independent
     # processes. we can therefore @spawn, here. TODO: see if worthwhile
-
-    solve_B2d_outer!(bulk, BC, dBC, nested)
-
+    solve_B2d_outer!(bulk, BC, nested)
 
     # solve for B1d and Gd
-
-    solve_B1dGd_outer!(bulk, BC, dBC, nested)
+    solve_B1dGd_outer!(bulk, BC, nested)
 
     # solve for phid
-
-    solve_phid_outer!(bulk, BC, dBC, nested)
+    solve_phid_outer!(bulk, BC, nested)
 
 
     # solve for A
