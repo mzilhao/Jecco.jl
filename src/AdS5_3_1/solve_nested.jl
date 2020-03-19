@@ -1315,9 +1315,6 @@ end
 
 function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nested)
     sys  = nested.sys
-    uu   = nested.uu
-    xx   = nested.xx
-    yy   = nested.yy
 
     Du_B1   = nested.Du_B1
     Du_B2   = nested.Du_B2
@@ -1333,8 +1330,6 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
     Duu_S   = nested.Duu_S
     Duu_Fx  = nested.Duu_Fx
     Duu_Fy  = nested.Duu_Fy
-
-    aux_acc = nested.aux_acc
 
     Du  = sys.Du
     Duu = sys.Duu
@@ -1377,17 +1372,13 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
     # solve for Sd
     solve_Sd_outer!(bulk, BC, nested)
 
-
-    # solve for B2d. note that solving for B2d, (B1d,Gd) and phid are independent
-    # processes. we can therefore @spawn, here. TODO: see if worthwhile
-    solve_B2d_outer!(bulk, BC, nested)
-
-    # solve for B1d and Gd
-    solve_B1dGd_outer!(bulk, BC, nested)
-
-    # solve for phid
-    solve_phid_outer!(bulk, BC, nested)
-
+    # solving for B2d, (B1d,Gd) and phid are independent processes. we can
+    # therefore @spawn, here
+    @sync begin
+        @spawn solve_B2d_outer!(bulk, BC, nested)
+        @spawn solve_B1dGd_outer!(bulk, BC, nested)
+        @spawn solve_phid_outer!(bulk, BC, nested)
+    end
 
     # solve for A
     solve_A_outer!(bulk, BC, dBC, nested)
