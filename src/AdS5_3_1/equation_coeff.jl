@@ -6,26 +6,96 @@
 V(phi) = -3.0
 Vp(phi) = 0.0
 
-# assuming
-# (A d_uu + B d_u + C Id) f = -S
 
-function S_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
-    u   = vars.u
+#= Notation
 
-    B1p  = vars.B1p
-    B2p  = vars.B2p
+for any function f we're using the following notation (let _x denote partial
+derivative with respect to x)
 
-    G   = vars.G
-    Gp  = vars.Gp
+fp  = f_r = -u^2 f_u
+fd  = \dot f
+ft  = \tilde f = f_x - Fx f_r
+fh  = \hat f   = f_y - Fy f_r
 
-    phip = vars.phip
+=#
 
-    ABCS[1] = *(6, u ^ 4)
-    ABCS[2] = *(12, u ^ 3)
-    ABCS[3] = Gp ^ 2 + *(3, B2p ^ 2) + *(4, phip ^ 2) + *(B1p ^ 2, cosh(G) ^ 2)
-    ABCS[4] = 0
+mutable struct AllVars{T}
+    u        :: T
 
-    nothing
+    B1       :: T
+    B1p      :: T
+    B1t      :: T
+    B1h      :: T
+    B1tt     :: T
+    B1hh     :: T
+    B1tp     :: T
+    B1hp     :: T
+
+    B2       :: T
+    B2p      :: T
+    B2t      :: T
+    B2h      :: T
+    B2tt     :: T
+    B2hh     :: T
+    B2tp     :: T
+    B2hp     :: T
+
+    G        :: T
+    Gp       :: T
+    Gt       :: T
+    Gh       :: T
+    Gtt      :: T
+    Ghh      :: T
+    Gtp      :: T
+    Ghp      :: T
+
+    phi      :: T
+    phip     :: T
+    phit     :: T
+    phih     :: T
+    phitt    :: T
+    phihh    :: T
+    phitp    :: T
+    phihp    :: T
+
+    S        :: T
+    Sp       :: T
+    St       :: T
+    Sh       :: T
+    Stt      :: T
+    Shh      :: T
+    Stp      :: T
+    Shp      :: T
+
+    Fx       :: T
+    Fxp      :: T
+    Fxt      :: T
+    Fxh      :: T
+    Fxtt     :: T
+    Fxhh     :: T
+    Fxtp     :: T
+    Fxhp     :: T
+
+    Fy       :: T
+    Fyp      :: T
+    Fyt      :: T
+    Fyh      :: T
+    Fytt     :: T
+    Fyhh     :: T
+    Fytp     :: T
+    Fyhp     :: T
+
+    Sd       :: T
+
+    B2th     :: T
+    Gth      :: T
+    Sth      :: T
+    phith    :: T
+end
+function AllVars{T}() where {T<:AbstractFloat}
+    N = 1 + 8*7 + 1 + 4
+    array = zeros(N)
+    AllVars{T}(array...)
 end
 
 
@@ -83,6 +153,29 @@ function FxyVars{T}() where {T<:AbstractFloat}
     N = 1 + 4*7 + 4
     array = zeros(N)
     FxyVars{T}(array...)
+end
+
+
+# assuming
+# (A d_uu + B d_u + C Id) f = -S
+
+function S_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
+    u   = vars.u
+
+    B1p  = vars.B1p
+    B2p  = vars.B2p
+
+    G   = vars.G
+    Gp  = vars.Gp
+
+    phip = vars.phip
+
+    ABCS[1] = *(6, u ^ 4)
+    ABCS[2] = *(12, u ^ 3)
+    ABCS[3] = Gp ^ 2 + *(3, B2p ^ 2) + *(4, phip ^ 2) + *(B1p ^ 2, cosh(G) ^ 2)
+    ABCS[4] = 0
+
+    nothing
 end
 
 
@@ -351,7 +444,7 @@ end
 
 # this is another coupled equation, for B1d and Gd. the notation used is
 #
-# ( A11 d_uu B1d + A12 d_uu Gdy + B11 d_u B1d + B12 d_u Gd + C11 B1d + C12 Gd ) = -S1
+# ( A11 d_uu B1d + A12 d_uu Gd + B11 d_u B1d + B12 d_u Gd + C11 B1d + C12 Gd ) = -S1
 # ( A21 d_uu B1d + A22 d_uu Gd + B21 d_u B1d + B22 d_u Gd + C21 B1d + C22 Gd ) = -S2
 
 function B1dGd_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::AllVars)
