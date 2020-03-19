@@ -94,5 +94,8 @@ BC.B1d .= -2.0 * u0*u0*u0 * 0.01
 BC.Gd   .= 0.0
 BC.phid .= -0.5 + u0*u0 * ( 1.0/3.0 - 1.5 * 0.01 )
 
+BC.A  .= 1.0/(u0*u0)
+dBC.A .= -2.0/(u0*u0*u0)
+
 Jecco.AdS5_3_1.solve_nested_outer!(bulk, BC, dBC, nested)
 
