@@ -14,7 +14,7 @@ struct Aux{T<:Real}
     A_mat   :: Matrix{T}
     b_vec   :: Vector{T}
     ABCS    :: Vector{T}
-    vars    :: AllVars{T}
+    vars    :: AllVarsOuter{T}
 
     A_mat2  :: Matrix{T}
     b_vec2  :: Vector{T}
@@ -29,7 +29,7 @@ struct Aux{T<:Real}
         A_mat  = zeros(T, N, N)
         b_vec  = zeros(T, N)
         ABCS   = zeros(T, 4)
-        vars   = AllVars{T}()
+        vars   = AllVarsOuter{T}()
 
         A_mat2 = zeros(T, 2*N, 2*N)
         b_vec2 = zeros(T, 2*N)

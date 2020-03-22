@@ -19,7 +19,7 @@ fh  = \hat f   = f_y - Fy f_r
 
 =#
 
-mutable struct AllVars{T}
+mutable struct AllVarsOuter{T}
     u        :: T
 
     B1       :: T
@@ -96,10 +96,10 @@ mutable struct AllVars{T}
     Sth      :: T
     phith    :: T
 end
-function AllVars{T}() where {T<:AbstractFloat}
+function AllVarsOuter{T}() where {T<:AbstractFloat}
     N = 1 + 8*7 + 5 + 4
     array = zeros(N)
-    AllVars{T}(array...)
+    AllVarsOuter{T}(array...)
 end
 
 
@@ -163,7 +163,7 @@ end
 # assuming
 # (A d_uu + B d_u + C Id) f = -S
 
-function S_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
+function S_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     u   = vars.u
 
     B1p  = vars.B1p
@@ -262,7 +262,7 @@ function Fxy_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, var
 end
 
 
-function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
+function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     u   = vars.u
 
     B1     = vars.B1
@@ -353,7 +353,7 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
 end
 
 
-function B2d_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
+function B2d_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     u   = vars.u
 
     B1     = vars.B1
@@ -451,7 +451,7 @@ end
 # ( A11 d_uu B1d + A12 d_uu Gd + B11 d_u B1d + B12 d_u Gd + C11 B1d + C12 Gd ) = -S1
 # ( A21 d_uu B1d + A22 d_uu Gd + B21 d_u B1d + B22 d_u Gd + C21 B1d + C22 Gd ) = -S2
 
-function B1dGd_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::AllVars)
+function B1dGd_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::AllVarsOuter)
     u    = vars.u
 
     B1     = vars.B1
@@ -565,7 +565,7 @@ function B1dGd_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, v
 end
 
 
-function phid_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
+function phid_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     u   = vars.u
 
     B1     = vars.B1
@@ -659,7 +659,7 @@ function phid_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
 end
 
 
-function A_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
+function A_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     u   = vars.u
 
     B1     = vars.B1
