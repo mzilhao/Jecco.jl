@@ -41,25 +41,23 @@ end
 
 
 par_grid = ParamGrid(
-    xmin        = -5.0,
-    xmax        =  5.0,
-    xnodes      =  128,
-    ymin        = -5.0,
-    ymax        =  5.0,
-    ynodes      =  128,
-    # umin        =  0.01,
-    umin        =  0.1,
-    umax        =  1.0,
-    udomains    =  1,
-    # unodes      =  16,
-    unodes      =  32,
-    # unodes      =  64,
+    x_min            = -5.0,
+    x_max            =  5.0,
+    x_nodes          =  128,
+    y_min            = -5.0,
+    y_max            =  5.0,
+    y_nodes          =  128,
+    u_outer_min      =  0.1,
+    u_outer_max      =  1.0,
+    u_outer_domains  =  2,
+    u_outer_nodes    =  16,
+    u_inner_nodes    =  12,
 )
 
 
 systems = Jecco.AdS5_3_1.create_systems(par_grid)
 
-sys = systems[1]
+sys = systems[2]
 
 # Nu, Nx, Ny = size(sys.grid)
 Nu_, Nx, Ny = size(sys.grid)

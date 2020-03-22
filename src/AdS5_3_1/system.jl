@@ -30,15 +30,22 @@ function System(ucoord::AbstractCoord{T,1,GaussLobatto},
 end
 
 function create_systems(p::ParamGrid)
-    Nsys = p.udomains
-    delta_udom = (p.umax - p.umin) / Nsys
+    u_inner_coord = SpectralCoord{1}("u", 0.0, p.u_outer_min, p.u_inner_nodes)
 
-    ucoords = [SpectralCoord{1}("u", p.umin + (i-1)*delta_udom, p.umin + i*delta_udom,
-                               p.unodes) for i in 1:Nsys]
-    xcoord  = CartCoord{2}("x", p.xmin, p.xmax, p.xnodes, endpoint=false)
-    ycoord  = CartCoord{3}("y", p.ymin, p.ymax, p.ynodes, endpoint=false)
+    N_outer_sys = p.u_outer_domains
+    delta_udom  = (p.u_outer_max - p.u_outer_min) / N_outer_sys
 
-    systems = [System(ucoords[i], xcoord, ycoord) for i in 1:Nsys]
+    u_outer_coords =
+        [SpectralCoord{1}("u", p.u_outer_min + (i-1)*delta_udom,
+                          p.u_outer_min + i*delta_udom, p.u_outer_nodes)
+         for i in 1:N_outer_sys]
 
-    systems
+    xcoord  = CartCoord{2}("x", p.x_min, p.x_max, p.x_nodes, endpoint=false)
+    ycoord  = CartCoord{3}("y", p.y_min, p.y_max, p.y_nodes, endpoint=false)
+
+    inner_system = System(u_inner_coord, xcoord, ycoord)
+
+    outer_systems = [System(u_outer_coords[i], xcoord, ycoord) for i in 1:N_outer_sys]
+
+    [inner_system; outer_systems]
 end
