@@ -1,5 +1,11 @@
 
-struct System{G,Du,Dx,Dy}
+abstract type GridType end
+abstract type Inner <: GridType end
+abstract type Outer <: GridType end
+
+abstract type AbstractSystem{T} end
+
+struct System{GT,G,Du,Dx,Dy} <: AbstractSystem{GT}
     grid   :: G
     Du     :: Du
     Duu    :: Du
@@ -9,9 +15,9 @@ struct System{G,Du,Dx,Dy}
     Dyy    :: Dy
 end
 
-function System(ucoord::AbstractCoord{T,1,GaussLobatto},
-                xcoord::AbstractCoord{T,2,Cartesian},
-                ycoord::AbstractCoord{T,3,Cartesian}) where {T<:Real}
+function System{GT}(ucoord::AbstractCoord{T,1,GaussLobatto},
+                    xcoord::AbstractCoord{T,2,Cartesian},
+                    ycoord::AbstractCoord{T,3,Cartesian}) where {T<:Real,GT<:GridType}
     grid = Grid(ucoord, xcoord, ycoord)
 
     ord = 4
@@ -25,7 +31,7 @@ function System(ucoord::AbstractCoord{T,1,GaussLobatto},
     Dy  = CenteredDiff{3}(1, ord, Jecco.delta(ycoord), ycoord.nodes)
     Dyy = CenteredDiff{3}(2, ord, Jecco.delta(ycoord), ycoord.nodes)
 
-    System{typeof(grid), typeof(Du), typeof(Dx),
+    System{GT,typeof(grid), typeof(Du), typeof(Dx),
            typeof(Dy)}(grid, Du, Duu, Dx, Dxx, Dy, Dyy)
 end
 
@@ -43,9 +49,10 @@ function create_systems(p::ParamGrid)
     xcoord  = CartCoord{2}("x", p.x_min, p.x_max, p.x_nodes, endpoint=false)
     ycoord  = CartCoord{3}("y", p.y_min, p.y_max, p.y_nodes, endpoint=false)
 
-    inner_system = System(u_inner_coord, xcoord, ycoord)
+    inner_system = System{Inner}(u_inner_coord, xcoord, ycoord)
 
-    outer_systems = [System(u_outer_coords[i], xcoord, ycoord) for i in 1:N_outer_sys]
+    outer_systems = [System{Outer}(u_outer_coords[i], xcoord, ycoord)
+                     for i in 1:N_outer_sys]
 
     [inner_system; outer_systems]
 end
