@@ -1388,7 +1388,9 @@ end
 
 
 function syncBCs!(BC::BulkVars, dBC::BulkVars, bulk::BulkVars, nested::Nested)
-    Nx, Ny = size(BC.S)
+    Du = nested.sys.Du
+
+    Nu, Nx, Ny = size(bulk.S)
 
     @fastmath @inbounds @threads for j in 1:Ny
         @inbounds @simd for i in 1:Nx
@@ -1405,17 +1407,15 @@ function syncBCs!(BC::BulkVars, dBC::BulkVars, bulk::BulkVars, nested::Nested)
             dBC.S[i,j]   = nested.Du_S[end,i,j]
             dBC.Fx[i,j]  = nested.Du_Fx[end,i,j]
             dBC.Fy[i,j]  = nested.Du_Fy[end,i,j]
-            # FIXME
-            # dBC.A[i,j]   = nested.Du_A[end,i,j]
+            dBC.A[i,j]   = Du(bulk.A, Nu,i,j)
         end
     end
 
     nothing
 end
 
-
-function solve_nested!(bulks::Vector{T}, BCs::Vector{T}, dBCs::Vector{T},
-                       nesteds::Vector{T}) where {T<:System}
+function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector,
+                       nesteds::Vector)
     Nsys = length(nesteds)
 
     # We assume that the first entry on these arrays is the inner grid, and that
@@ -1423,7 +1423,7 @@ function solve_nested!(bulks::Vector{T}, BCs::Vector{T}, dBCs::Vector{T},
     # construction we must remember to make the appropriate changes here.
     for i in 2:Nsys-1
         solve_nested_outer!(bulks[i], BCs[i], dBCs[i], nesteds[i])
-        syncBCs(BCs[i+1], dBCs[i+1], bulks[i], nesteds[i])
+        syncBCs!(BCs[i+1], dBCs[i+1], bulks[i], nesteds[i])
     end
     solve_nested_outer!(bulks[Nsys], BCs[Nsys], dBCs[Nsys], nesteds[Nsys])
 

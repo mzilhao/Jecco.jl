@@ -80,6 +80,8 @@ par_grid = ParamGrid(
     y_nodes          =  128,
     u_outer_min      =  0.1,
     u_outer_max      =  1.0,
+    # u_outer_domains  =  1,
+    # u_outer_nodes    =  32,
     u_outer_domains  =  2,
     u_outer_nodes    =  16,
     u_inner_nodes    =  12,
@@ -98,41 +100,33 @@ nested = Jecco.AdS5_3_1.Nested(sys)
 
 bulks = IDtest0(systems)
 
-BCs  = [BulkVars(Nx, Ny) for sys in systems]
-dBCs = [BulkVars(Nx, Ny) for sys in systems]
-
-
-bulk = IDtest0(sys)
-
-BC  = BulkVars(Nx, Ny)
-dBC = BulkVars(Nx, Ny)
+nesteds = [Jecco.AdS5_3_1.Nested(sys) for sys in systems]
+BCs     = [BulkVars(Nx, Ny) for sys in systems]
+dBCs    = [BulkVars(Nx, Ny) for sys in systems]
 
 u0 = u[1]
 
 fx2_0 = 0.02
 fy2_0 = 0.1
 
-BC.S  .= 1.0/u0
-dBC.S .= -1.0/(u0*u0)
+BCs[2].S  .= 1.0/u0
+dBCs[2].S .= -1.0/(u0*u0)
 
-BC.Fx .= fx2_0 * u0 * u0
-BC.Fy .= fy2_0 * u0 * u0
+BCs[2].Fx .= fx2_0 * u0 * u0
+BCs[2].Fy .= fy2_0 * u0 * u0
 
-dBC.Fx .= 2 * fx2_0 * u0
-dBC.Fy .= 2 * fy2_0 * u0
+dBCs[2].Fx .= 2 * fx2_0 * u0
+dBCs[2].Fy .= 2 * fy2_0 * u0
 
-BC.Sd .= 0.5/(u0*u0)
+BCs[2].Sd .= 0.5/(u0*u0)
 
-BC.B2d .= -2.0 * u0*u0*u0 * 0.02
-BC.B1d .= -2.0 * u0*u0*u0 * 0.01
+BCs[2].B2d .= -2.0 * u0*u0*u0 * 0.02
+BCs[2].B1d .= -2.0 * u0*u0*u0 * 0.01
 
-BC.Gd   .= 0.0
-BC.phid .= -0.5 + u0*u0 * ( 1.0/3.0 - 1.5 * 0.01 )
+BCs[2].Gd   .= 0.0
+BCs[2].phid .= -0.5 + u0*u0 * ( 1.0/3.0 - 1.5 * 0.01 )
 
-BC.A  .= 1.0/(u0*u0)
-dBC.A .= -2.0/(u0*u0*u0)
+BCs[2].A  .= 1.0/(u0*u0)
+dBCs[2].A .= -2.0/(u0*u0*u0)
 
-Jecco.AdS5_3_1.solve_nested_outer!(bulk, BC, dBC, nested)
-
-Jecco.AdS5_3_1.syncBCs!(BC, dBC, bulk, nested)
-
+Jecco.AdS5_3_1.solve_nested!(bulks, BCs, dBCs, nesteds)
