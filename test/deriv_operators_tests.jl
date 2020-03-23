@@ -146,6 +146,12 @@ end
 
     @test d2xf ≈ dxxf0
     @test d2zf ≈ dzzf0
+
+    # now for callable, point-wise, methods
+    @test Dx(f,2,4,16)  ≈ dxf[2,4,16]
+    @test Dx(f,1,6,12)  ≈ dxf[1,6,12]
+    @test Dz(f,2,3,8)   ≈ dzf[2,3,8]
+    @test Dz(f,16,8,1)  ≈ dzf[16,8,1]
 end
 
 @testset "Cross FD derivative tests:" begin

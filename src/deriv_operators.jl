@@ -203,28 +203,21 @@ function *(A::AbstractDerivOperator, x::AbstractArray)
 end
 
 
+# make SpectralDeriv a callable struct, to compute derivatives only at a given point.
+function (A::SpectralDeriv{T,N,S})(f::AbstractArray{T,M},
+                                   idx::Vararg{Int,M}) where {T<:Real,N,M,S}
+    # make sure axis of differentiation is contained in the dimensions of f
+    @assert N <= M
 
-# make SpectralDeriv a callable struct, to compute derivatives only at a given
-# point. Note: note sure if this is very efficient... in any case, probably we
-# won't use it much, so we can revisit this if it becomes performance-critical
-(A::SpectralDeriv)(x::AbstractVector{T}, i::Int) where {T<:Real} = @views dot(A.D[i,:], x)
+    i  = idx[N] # point where derivative will be taken (with respect to the N-axis)
 
-
-# commenting out the one for Arrays, since it's not very efficient and allocates a lot.
-
-# function (A::AbstractDerivOperator{T,N})(f::AbstractArray{T,M},
-#                                          idx::Vararg{Int,M}) where {T<:Real,N,M}
-#     Ipre  = CartesianIndex(idx[1:N-1])
-#     Ipost = CartesianIndex(idx[N+1:end])
-#     i     = idx[N]
-
-#     _D(A, f, Ipre, Ipost, i)
-# end
-# @noinline function _D(A, f::AbstractArray{T}, Ipre, Ipost, i) where {T<:Real}
-#     f_slice = view(f, Ipre, :, Ipost)
-#     A(f_slice, i)::T
-# end
-
+    sum_i = zero(T)
+    @fastmath @inbounds for ii in 1:A.len
+        I = Base.setindex(idx, ii, N)
+        sum_i += A.D[i,ii] * f[I...]
+    end
+    sum_i
+end
 
 
 # now for cross-derivatives. we assume that A acts on the first and B on the
