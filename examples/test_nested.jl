@@ -10,7 +10,7 @@ using LinearAlgebra
 #     which_potential = "square",
 # )
 
-function IDtest0(sys::System)
+function IDtest0(sys::AbstractSystem{Outer})
     Nu, Nx, Ny = size(sys.grid)
 
     B1  = zeros(Nu, Nx, Ny)
@@ -39,6 +39,37 @@ function IDtest0(sys::System)
     BulkVars(B1, B2, G, phi)
 end
 
+function IDtest0(sys::AbstractSystem{Inner})
+    Nu, Nx, Ny = size(sys.grid)
+
+    B1  = zeros(Nu, Nx, Ny)
+    B2  = zeros(Nu, Nx, Ny)
+    G   = zeros(Nu, Nx, Ny)
+    phi = zeros(Nu, Nx, Ny)
+
+    b14 = 0.01
+    b24 = 0.02
+
+    phi0 = 1.0
+    phi2 = 0.01
+
+    for j in 1:Ny
+        for i in 1:Nx
+            for a in 1:Nu
+                u,x,y = sys.grid[a,i,j]
+                B1[a,i,j]  = b14
+                B2[a,i,j]  = b24
+                phi[a,i,j] = phi2
+                G[a,i,j]   = 0.0
+            end
+        end
+    end
+
+    BulkVars(B1, B2, G, phi)
+end
+
+IDtest0(systems::Vector{T}) where {T<:System} = [IDtest0(sys) for sys in systems]
+
 
 par_grid = ParamGrid(
     x_min            = -5.0,
@@ -64,6 +95,12 @@ Nu_, Nx, Ny = size(sys.grid)
 u, x, y = sys.grid[:]
 
 nested = Jecco.AdS5_3_1.Nested(sys)
+
+bulks = IDtest0(systems)
+
+BCs  = [BulkVars(Nx, Ny) for sys in systems]
+dBCs = [BulkVars(Nx, Ny) for sys in systems]
+
 
 bulk = IDtest0(sys)
 

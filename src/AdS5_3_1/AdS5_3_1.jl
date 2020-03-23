@@ -6,7 +6,7 @@ using Parameters
 export ParamBase, ParamGrid, ParamID, ParamEvol, ParamIO
 export Potential
 export VV # this will contain the potential
-export System
+export Inner, Outer, AbstractSystem, System
 export BulkVars, BoundaryVars, AllVars
 
 # Note: in the future we may promote this to something like BulkVars{Ng,T}, to
