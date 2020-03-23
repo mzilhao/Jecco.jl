@@ -12,6 +12,8 @@ export BulkVars, BoundaryVars, AllVars
 # Note: in the future we may promote this to something like BulkVars{Ng,T}, to
 # dispatch on Ng (the type of equations to be solved on each grid)
 
+# TODO: remove d*dt fields from this struct ?
+
 struct BulkVars{T}
     B1     :: T
     B2     :: T
@@ -80,53 +82,6 @@ function BulkVars(B1::Array{T,N}, B2::Array{T,N}, G::Array{T,N},
                          dB1dt, dB2dt,dGdt, dphidt)
 end
 
-
-# TODO
-
-# BulkVars(phis::Vector) = [BulkVars(phi) for phi in phis]
-
-# function Base.getindex(bulk::BulkVars, i::Int)
-#     phi    = bulk.phi[i]
-#     S      = bulk.S[i]
-#     Sd     = bulk.Sd[i]
-#     phid   = bulk.phid[i]
-#     A      = bulk.A[i]
-#     dphidt = bulk.dphidt[i]
-#     BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
-# end
-
-# function Base.getindex(bulk::BulkVars, kr::AbstractRange)
-#     phi    = bulk.phi[kr]
-#     S      = bulk.S[kr]
-#     Sd     = bulk.Sd[kr]
-#     phid   = bulk.phid[kr]
-#     A      = bulk.A[kr]
-#     dphidt = bulk.dphidt[kr]
-#     BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
-# end
-
-# function Base.getindex(bulk::BulkVars, I::Vararg)
-#     phi    = bulk.phi[I...]
-#     S      = bulk.S[I...]
-#     Sd     = bulk.Sd[I...]
-#     phid   = bulk.phid[I...]
-#     A      = bulk.A[I...]
-#     dphidt = bulk.dphidt[I...]
-#     BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
-# end
-
-# function Base.getindex(bulk::BulkVars, ::Colon)
-#     phi    = bulk.phi[:]
-#     S      = bulk.S[:]
-#     Sd     = bulk.Sd[:]
-#     phid   = bulk.phid[:]
-#     A      = bulk.A[:]
-#     dphidt = bulk.dphidt[:]
-#     BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
-# end
-
-# Base.lastindex(bulk::BulkVars) = lastindex(bulk.phi)
-# Base.lastindex(bulk::BulkVars, i::Int) = lastindex(bulk.phi, i)
 
 
 function setup(par_base)

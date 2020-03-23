@@ -134,3 +134,5 @@ dBC.A .= -2.0/(u0*u0*u0)
 
 Jecco.AdS5_3_1.solve_nested_outer!(bulk, BC, dBC, nested)
 
+Jecco.AdS5_3_1.syncBCs!(BC, dBC, bulk, nested)
+

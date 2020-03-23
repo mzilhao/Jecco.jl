@@ -1387,69 +1387,45 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested
 end
 
 
+function syncBCs!(BC::BulkVars, dBC::BulkVars, bulk::BulkVars, nested::Nested)
+    Nx, Ny = size(BC.S)
 
-# function solve_nested_g1!(bulk::BulkVars, BC::BulkVars, boundary::BoundaryVars,
-#                           nested::Nested)
-#     # u=0 boundary
-#     BC.Sd   .= 0.5 * boundary.a4
-#     BC.phid .= bulk.phi[1,:,:] # phi2
-#     BC.A    .= boundary.a4
+    @fastmath @inbounds @threads for j in 1:Ny
+        @inbounds @simd for i in 1:Nx
+            BC.S[i,j]    = bulk.S[end,i,j]
+            BC.Fx[i,j]   = bulk.Fx[end,i,j]
+            BC.Fy[i,j]   = bulk.Fy[end,i,j]
+            BC.Sd[i,j]   = bulk.Sd[end,i,j]
+            BC.B1d[i,j]  = bulk.B1d[end,i,j]
+            BC.B2d[i,j]  = bulk.B2d[end,i,j]
+            BC.Gd[i,j]   = bulk.Gd[end,i,j]
+            BC.phid[i,j] = bulk.phid[end,i,j]
+            BC.A[i,j]    = bulk.A[end,i,j]
 
-#     solve_nested_g1!(bulk, BC, nested)
+            dBC.S[i,j]   = nested.Du_S[end,i,j]
+            dBC.Fx[i,j]  = nested.Du_Fx[end,i,j]
+            dBC.Fy[i,j]  = nested.Du_Fy[end,i,j]
+            # FIXME
+            # dBC.A[i,j]   = nested.Du_A[end,i,j]
+        end
+    end
 
-#     nothing
-# end
-
-# function solve_nested_g1!(bulks::Vector, BCs::Vector, boundary::BoundaryVars,
-#                           nesteds::Vector)
-#     Nsys = length(nesteds)
-
-#     # u=0 boundary
-#     BCs[1].Sd   .= 0.5 * boundary.a4
-#     BCs[1].phid .= bulks[1].phi[1,:,:] # phi2
-#     BCs[1].A    .= boundary.a4
-
-#     for i in 1:Nsys-1
-#         solve_nested_g1!(bulks[i], BCs[i], nesteds[i])
-#         BCs[i+1] = bulks[i][end,:,:]
-#     end
-#     solve_nested_g1!(bulks[Nsys], BCs[Nsys], nesteds[Nsys])
-
-#     # sync boundary points. note: in a more general situation we may need to
-#     # check the characteristic speeds (in this case we just know where the
-#     # horizon is)
-#     for i in 1:Nsys-1
-#         bulks[i].dphidt[end,:,:] .= bulks[i+1].dphidt[1,:,:]
-#     end
-
-#     nothing
-# end
+    nothing
+end
 
 
-# function solve_nested_g1(phi::Array{<:Number,N}, sys::System) where {N}
-#     a4 = -ones2D(sys)
-#     boundary = BoundaryVars(a4)
+function solve_nested!(bulks::Vector{T}, BCs::Vector{T}, dBCs::Vector{T},
+                       nesteds::Vector{T}) where {T<:System}
+    Nsys = length(nesteds)
 
-#     bulk = BulkVars(phi)
-#     BC = bulk[1,:,:]
+    # We assume that the first entry on these arrays is the inner grid, and that
+    # there is only one domain spanning this grid. If we ever change this
+    # construction we must remember to make the appropriate changes here.
+    for i in 2:Nsys-1
+        solve_nested_outer!(bulks[i], BCs[i], dBCs[i], nesteds[i])
+        syncBCs(BCs[i+1], dBCs[i+1], bulks[i], nesteds[i])
+    end
+    solve_nested_outer!(bulks[Nsys], BCs[Nsys], dBCs[Nsys], nesteds[Nsys])
 
-#     nested = Nested(sys)
-
-#     solve_nested_g1!(bulk, BC, boundary, nested)
-#     bulk
-# end
-
-# function solve_nested_g1(phis::Vector, systems::Vector)
-#     a4 = -ones2D(systems[1])
-#     boundary = BoundaryVars(a4)
-
-#     bulks = BulkVars(phis)
-#     phis_slice  = [phi[1,:,:] for phi in phis]
-#     BCs  = BulkVars(phis_slice)
-
-#     Nsys    = length(systems)
-#     nesteds = Nested(systems)
-
-#     solve_nested_g1!(bulks, BCs, boundary, nesteds)
-#     bulks
-# end
+    nothing
+end
