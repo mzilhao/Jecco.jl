@@ -5,8 +5,7 @@ using LinearAlgebra
 
 function solve_lin_system!(sol, A_mat, b_vec)
     A_fact = lu!(A_mat)
-    ldiv!(A_fact, b_vec)
-    sol .= b_vec
+    ldiv!(sol, A_fact, b_vec)
     nothing
 end
 
