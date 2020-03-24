@@ -12,6 +12,7 @@ end
 struct Aux{T<:Real}
     A_mat   :: Matrix{T}
     b_vec   :: Vector{T}
+    sol     :: Vector{T}
     ABCS    :: Vector{T}
     vars    :: AllVarsOuter{T}
 
@@ -27,6 +28,8 @@ struct Aux{T<:Real}
     function Aux{T}(N::Int) where {T<:Real}
         A_mat  = zeros(T, N, N)
         b_vec  = zeros(T, N)
+        sol    = zeros(T, N)
+
         ABCS   = zeros(T, 4)
         vars   = AllVarsOuter{T}()
 
@@ -41,7 +44,7 @@ struct Aux{T<:Real}
 
         varsFxy = FxyVars{T}()
 
-        new(A_mat, b_vec, ABCS, vars, A_mat2, b_vec2, sol2, AA, BB, CC, SS, varsFxy)
+        new(A_mat, b_vec, sol, ABCS, vars, A_mat2, b_vec2, sol2, AA, BB, CC, SS, varsFxy)
     end
 end
 
@@ -202,8 +205,12 @@ function solve_S_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nes
                 aux.A_mat[end,aa]  = Du[1,aa]
             end
 
-            sol = view(bulk.S, :, i, j)
-            solve_lin_system!(sol, aux.A_mat, aux.b_vec)
+            solve_lin_system!(aux.sol, aux.A_mat, aux.b_vec)
+
+            @inbounds @simd for aa in eachindex(uu)
+                bulk.S[aa,i,j] = aux.sol[aa]
+            end
+
         end
     end
 
@@ -517,8 +524,12 @@ function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
             aux.A_mat[1,:] .= 0.0
             aux.A_mat[1,1]  = 1.0
 
-            sol = view(bulk.Sd, :, i, j)
-            solve_lin_system!(sol, aux.A_mat, aux.b_vec)
+            solve_lin_system!(aux.sol, aux.A_mat, aux.b_vec)
+
+            @inbounds @simd for aa in eachindex(uu)
+                bulk.Sd[aa,i,j] = aux.sol[aa]
+            end
+
         end
     end
 
@@ -704,8 +715,12 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
             aux.A_mat[1,:] .= 0.0
             aux.A_mat[1,1]  = 1.0
 
-            sol = view(bulk.B2d, :, i, j)
-            solve_lin_system!(sol, aux.A_mat, aux.b_vec)
+            solve_lin_system!(aux.sol, aux.A_mat, aux.b_vec)
+
+            @inbounds @simd for aa in eachindex(uu)
+                bulk.B2d[aa,i,j] = aux.sol[aa]
+            end
+
         end
     end
 
@@ -1102,8 +1117,12 @@ function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
             aux.A_mat[1,:] .= 0.0
             aux.A_mat[1,1]  = 1.0
 
-            sol = view(bulk.phid, :, i, j)
-            solve_lin_system!(sol, aux.A_mat, aux.b_vec)
+            solve_lin_system!(aux.sol, aux.A_mat, aux.b_vec)
+
+            @inbounds @simd for aa in eachindex(uu)
+                bulk.phid[aa,i,j] = aux.sol[aa]
+            end
+
         end
     end
 
@@ -1304,8 +1323,12 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nes
                 aux.A_mat[end,aa]  = Du[1,aa]
             end
 
-            sol = view(bulk.A, :, i, j)
-            solve_lin_system!(sol, aux.A_mat, aux.b_vec)
+            solve_lin_system!(aux.sol, aux.A_mat, aux.b_vec)
+
+            @inbounds @simd for aa in eachindex(uu)
+                bulk.A[aa,i,j] = aux.sol[aa]
+            end
+
         end
     end
 
