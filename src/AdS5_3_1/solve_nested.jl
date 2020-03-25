@@ -3,48 +3,37 @@ import Base.Threads.@threads
 import Base.Threads.@spawn
 using LinearAlgebra
 
-function solve_lin_system!(sol, A_mat, b_vec)
+function solve_lin_system!(A_mat, b_vec)
     A_fact = lu!(A_mat)
-    ldiv!(sol, A_fact, b_vec)
+    ldiv!(A_fact, b_vec)        # b_vec is overwritten to store the result
     nothing
 end
 
 struct Aux{T<:Real}
     A_mat   :: Matrix{T}
     b_vec   :: Vector{T}
-    sol     :: Vector{T}
     ABCS    :: Vector{T}
     vars    :: AllVarsOuter{T}
-
     A_mat2  :: Matrix{T}
     b_vec2  :: Vector{T}
-    sol2    :: Vector{T}
     AA      :: Matrix{T}
     BB      :: Matrix{T}
     CC      :: Matrix{T}
     SS      :: Vector{T}
     varsFxy :: FxyVars{T}
-
     function Aux{T}(N::Int) where {T<:Real}
-        A_mat  = zeros(T, N, N)
-        b_vec  = zeros(T, N)
-        sol    = zeros(T, N)
-
-        ABCS   = zeros(T, 4)
-        vars   = AllVarsOuter{T}()
-
-        A_mat2 = zeros(T, 2*N, 2*N)
-        b_vec2 = zeros(T, 2*N)
-        sol2   = zeros(T, 2*N)
-
-        AA = zeros(2,2)
-        BB = zeros(2,2)
-        CC = zeros(2,2)
-        SS = zeros(2)
-
+        A_mat   = zeros(T, N, N)
+        b_vec   = zeros(T, N)
+        ABCS    = zeros(T, 4)
+        vars    = AllVarsOuter{T}()
+        A_mat2  = zeros(T, 2*N, 2*N)
+        b_vec2  = zeros(T, 2*N)
+        AA      = zeros(2,2)
+        BB      = zeros(2,2)
+        CC      = zeros(2,2)
+        SS      = zeros(2)
         varsFxy = FxyVars{T}()
-
-        new(A_mat, b_vec, sol, ABCS, vars, A_mat2, b_vec2, sol2, AA, BB, CC, SS, varsFxy)
+        new(A_mat, b_vec, ABCS, vars, A_mat2, b_vec2, AA, BB, CC, SS, varsFxy)
     end
 end
 
@@ -205,10 +194,10 @@ function solve_S_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nes
                 aux.A_mat[end,aa]  = Du[1,aa]
             end
 
-            solve_lin_system!(aux.sol, aux.A_mat, aux.b_vec)
+            solve_lin_system!(aux.A_mat, aux.b_vec)
 
             @inbounds @simd for aa in eachindex(uu)
-                bulk.S[aa,i,j] = aux.sol[aa]
+                bulk.S[aa,i,j] = aux.b_vec[aa]
             end
 
         end
@@ -334,11 +323,11 @@ function solve_Fxy_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::N
                 aux.A_mat2[2*Nu,aa+Nu] = Du[1,aa]
             end
 
-            solve_lin_system!(aux.sol2, aux.A_mat2, aux.b_vec2)
+            solve_lin_system!(aux.A_mat2, aux.b_vec2)
 
             @inbounds @simd for aa in eachindex(uu)
-                bulk.Fx[aa,i,j] = aux.sol2[aa]
-                bulk.Fy[aa,i,j] = aux.sol2[aa+Nu]
+                bulk.Fx[aa,i,j] = aux.b_vec2[aa]
+                bulk.Fy[aa,i,j] = aux.b_vec2[aa+Nu]
             end
 
         end
@@ -524,10 +513,10 @@ function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
             aux.A_mat[1,:] .= 0.0
             aux.A_mat[1,1]  = 1.0
 
-            solve_lin_system!(aux.sol, aux.A_mat, aux.b_vec)
+            solve_lin_system!(aux.A_mat, aux.b_vec)
 
             @inbounds @simd for aa in eachindex(uu)
-                bulk.Sd[aa,i,j] = aux.sol[aa]
+                bulk.Sd[aa,i,j] = aux.b_vec[aa]
             end
 
         end
@@ -715,10 +704,10 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
             aux.A_mat[1,:] .= 0.0
             aux.A_mat[1,1]  = 1.0
 
-            solve_lin_system!(aux.sol, aux.A_mat, aux.b_vec)
+            solve_lin_system!(aux.A_mat, aux.b_vec)
 
             @inbounds @simd for aa in eachindex(uu)
-                bulk.B2d[aa,i,j] = aux.sol[aa]
+                bulk.B2d[aa,i,j] = aux.b_vec[aa]
             end
 
         end
@@ -919,11 +908,11 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
             aux.A_mat2[1+Nu,:]   .= 0.0
             aux.A_mat2[1+Nu,1+Nu] = 1.0
 
-            solve_lin_system!(aux.sol2, aux.A_mat2, aux.b_vec2)
+            solve_lin_system!(aux.A_mat2, aux.b_vec2)
 
             @inbounds @simd for aa in eachindex(uu)
-                bulk.B1d[aa,i,j] = aux.sol2[aa]
-                bulk.Gd[aa,i,j]  = aux.sol2[aa+Nu]
+                bulk.B1d[aa,i,j] = aux.b_vec2[aa]
+                bulk.Gd[aa,i,j]  = aux.b_vec2[aa+Nu]
             end
 
         end
@@ -1117,10 +1106,10 @@ function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
             aux.A_mat[1,:] .= 0.0
             aux.A_mat[1,1]  = 1.0
 
-            solve_lin_system!(aux.sol, aux.A_mat, aux.b_vec)
+            solve_lin_system!(aux.A_mat, aux.b_vec)
 
             @inbounds @simd for aa in eachindex(uu)
-                bulk.phid[aa,i,j] = aux.sol[aa]
+                bulk.phid[aa,i,j] = aux.b_vec[aa]
             end
 
         end
@@ -1323,10 +1312,10 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nes
                 aux.A_mat[end,aa]  = Du[1,aa]
             end
 
-            solve_lin_system!(aux.sol, aux.A_mat, aux.b_vec)
+            solve_lin_system!(aux.A_mat, aux.b_vec)
 
             @inbounds @simd for aa in eachindex(uu)
-                bulk.A[aa,i,j] = aux.sol[aa]
+                bulk.A[aa,i,j] = aux.b_vec[aa]
             end
 
         end
