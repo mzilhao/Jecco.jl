@@ -9,6 +9,29 @@ function solve_lin_system!(A_mat, b_vec)
     nothing
 end
 
+
+function solve_lin_system_refine!(A_mat, b_vec, A_aux, b_aux)
+    A_aux .= A_mat
+    b_aux .= b_vec
+
+    A_fact = lu!(A_aux)
+    ldiv!(A_fact, b_vec)
+
+    # now let's refine the solution, using the same procedure as in
+    # gsl_linalg_LU_refine: https://github.com/ampl/gsl/blob/master/linalg/lu.c
+
+    # compute the residual = A * x - b. remember that the solution vector x is
+    # now in b_vec
+    mul!(b_aux, A_mat, b_vec, 1.0, -1.0) # residual is written into the b_aux array
+
+    # find correction delta, A * delta = -residual, and apply it
+    ldiv!(A_fact, b_aux)
+    b_vec .-= b_aux
+
+    nothing
+end
+
+
 struct Aux{T<:Real}
     A_mat   :: Matrix{T}
     b_vec   :: Vector{T}
