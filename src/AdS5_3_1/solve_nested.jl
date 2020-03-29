@@ -4,7 +4,10 @@ import Base.Threads.@spawn
 using LinearAlgebra
 
 function solve_lin_system!(A_mat, b_vec)
-    A_fact = lu!(A_mat)
+    # passing Val(false) to the second argument turns off pivoting. it seems to
+    # improve speed for the small matrices that we typically consider. we can
+    # revisit this (or make it a parameter) if needed.
+    A_fact = lu!(A_mat, Val(false))
     ldiv!(A_fact, b_vec)        # b_vec is overwritten to store the result
     nothing
 end
