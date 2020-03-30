@@ -81,7 +81,7 @@ par_grid = ParamGrid(
     u_outer_min      =  0.1,
     u_outer_max      =  1.0,
     # u_outer_domains  =  1,
-    # u_outer_nodes    =  32,
+    # u_outer_nodes    =  64,
     u_outer_domains  =  2,
     u_outer_nodes    =  16,
     u_inner_nodes    =  12,
@@ -95,6 +95,9 @@ sys = systems[2]
 # Nu, Nx, Ny = size(sys.grid)
 Nu_, Nx, Ny = size(sys.grid)
 u, x, y = sys.grid[:]
+
+xi = zeros(Float64, Nx, Ny)
+gauge = GaugeVars(xi, 1.0)
 
 nested = Jecco.AdS5_3_1.Nested(sys)
 
@@ -129,4 +132,12 @@ BCs[2].phid .= -0.5 + u0*u0 * ( 1.0/3.0 - 1.5 * 0.01 )
 BCs[2].A  .= 1.0/(u0*u0)
 dBCs[2].A .= -2.0/(u0*u0*u0)
 
-Jecco.AdS5_3_1.solve_nested!(bulks, BCs, dBCs, nesteds)
+Jecco.AdS5_3_1.solve_nested!(bulks, BCs, dBCs, gauge, nesteds)
+
+bulk = bulks[2]
+BC   = BCs[2]
+dBC  = dBCs[2]
+nested = nesteds[2]
+
+# Jecco.AdS5_3_1.solve_S_outer!(bulk, BC, dBC, nested)
+# Jecco.AdS5_3_1.solve_A_outer!(bulk, BC, dBC, nested)

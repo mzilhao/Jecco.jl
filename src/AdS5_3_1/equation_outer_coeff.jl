@@ -14,8 +14,8 @@ derivative with respect to x)
 
 fp  = f_r = -u^2 f_u
 fd  = \dot f
-ft  = \tilde f = f_x - Fx f_r
-fh  = \hat f   = f_y - Fy f_r
+ft  = \tilde f = f_x - (Fx + xi_x) f_r
+fh  = \hat f   = f_y - (Fy + xi_y) f_r
 
 =#
 

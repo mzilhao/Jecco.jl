@@ -7,7 +7,7 @@ export ParamBase, ParamGrid, ParamID, ParamEvol, ParamIO
 export Potential
 export VV # this will contain the potential
 export Inner, Outer, AbstractSystem, System
-export BulkVars, BoundaryVars, AllVars
+export BulkVars, BoundaryVars, GaugeVars
 
 # Note: in the future we may promote this to something like BulkVars{Ng,T}, to
 # dispatch on Ng (the type of equations to be solved on each grid)
@@ -61,7 +61,6 @@ function BulkVars(Nxx::Vararg)
                          dB1dt, dB2dt,dGdt, dphidt)
 end
 
-
 function BulkVars(B1::Array{T,N}, B2::Array{T,N}, G::Array{T,N},
                   phi::Array{T,N}) where {T<:Number,N}
     S      = similar(B1)
@@ -82,6 +81,15 @@ function BulkVars(B1::Array{T,N}, B2::Array{T,N}, G::Array{T,N},
                          dB1dt, dB2dt,dGdt, dphidt)
 end
 
+
+struct GaugeVars{A,T}
+    xi    :: A
+    kappa :: T
+end
+
+function GaugeVars(xi::Array{T,N}, kappa::T) where {T<:Number,N}
+    GaugeVars{typeof(xi), typeof(kappa)}(xi, kappa)
+end
 
 
 function setup(par_base)

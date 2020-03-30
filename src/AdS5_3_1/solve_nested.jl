@@ -1350,7 +1350,8 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nes
     nothing
 end
 
-function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nested)
+function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
+                             nested::Nested)
     sys  = nested.sys
 
     Du_B1   = nested.Du_B1
@@ -1451,7 +1452,7 @@ function syncBCs!(BC::BulkVars, dBC::BulkVars, bulk::BulkVars, nested::Nested)
     nothing
 end
 
-function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector,
+function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, gauge::GaugeVars,
                        nesteds::Vector)
     Nsys = length(nesteds)
 
@@ -1459,10 +1460,10 @@ function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector,
     # there is only one domain spanning this grid. If we ever change this
     # construction we must remember to make the appropriate changes here.
     for i in 2:Nsys-1
-        solve_nested_outer!(bulks[i], BCs[i], dBCs[i], nesteds[i])
+        solve_nested_outer!(bulks[i], BCs[i], dBCs[i], gauge, nesteds[i])
         syncBCs!(BCs[i+1], dBCs[i+1], bulks[i], nesteds[i])
     end
-    solve_nested_outer!(bulks[Nsys], BCs[Nsys], dBCs[Nsys], nesteds[Nsys])
+    solve_nested_outer!(bulks[Nsys], BCs[Nsys], dBCs[Nsys], gauge, nesteds[Nsys])
 
     nothing
 end
