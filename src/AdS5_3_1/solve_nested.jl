@@ -820,6 +820,11 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nest
 
                 aux.vars.u     = u
 
+                # FIXME!!
+                aux.vars.xi_xx = 0.0
+                aux.vars.xi_xy = 0.0
+                aux.vars.xi_yy = 0.0
+
                 aux.vars.B1    = bulk.B1[a,i,j]
                 aux.vars.B1p   = B1p
 
@@ -1028,6 +1033,11 @@ function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
                 Fy         = bulk.Fy[a,i,j]
 
                 aux.vars.u     = u
+
+                # FIXME!!
+                aux.vars.xi_xx = 0.0
+                aux.vars.xi_xy = 0.0
+                aux.vars.xi_yy = 0.0
 
                 aux.vars.B1    = bulk.B1[a,i,j]
                 aux.vars.B1p   = B1p

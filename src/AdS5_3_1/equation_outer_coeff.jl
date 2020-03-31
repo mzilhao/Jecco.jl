@@ -475,6 +475,10 @@ end
 function B1dGd_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::AllVarsOuter)
     u    = vars.u
 
+    xi_xx  = vars.xi_xx
+    xi_xy  = vars.xi_xy
+    xi_yy  = vars.xi_yy
+
     B1     = vars.B1
     B1p    = vars.B1p
     B1t    = vars.B1t
@@ -554,6 +558,7 @@ function B1dGd_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, v
     sinhG   = sinh(G)
     sechG   = sech(G)
 
+
     AA[1,1] = 0
     AA[1,2] = 0
     AA[2,1] = 0
@@ -578,9 +583,9 @@ function B1dGd_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, v
     CC[2,2] = *(18, Sp, S ^ 3, expB1)
 
 
-    SS[1] = *(3, *(-4, Sh ^ 2) + *(S, *(2, Shh) + *(-2, Fyh, Sp) + *(2, B2h, Sh) + *(4, Fyp, Sh)) + *(S ^ 2, Fyp ^ 2 + *(-2, Fyhp) + *(2, B2hh) + *(4, B2h ^ 2) + *(4, phih ^ 2) + *(-2, B2h, Fyp) + *(-2, B2p, Fyh)), expB2, sechG) + *(3, *(4, St ^ 2) + *(-1, S ^ 2, Fxp ^ 2 + *(-2, Fxtp) + *(2, B2tt) + *(4, B2t ^ 2) + *(4, phit ^ 2) + *(-2, B2p, Fxt) + *(-2, B2t, Fxp)) + *(-2, S, Stt + *(B2t, St) + *(-1, Fxt, Sp) + *(2, Fxp, St)), exp(B2 + *(2, B1)), sechG) + *(6, S, *(Gt, Sh + *(S, B2h + *(-1, Fyp))) + *(-1, Gh, St) + *(Fxp, Gh, S) + *(Fyt, Gp, S) + *(-1, B2t, Gh, S) + *(-1, Fxh, Gp, S), exp(B1 + B2), sechG) + *(18, B1p, Sd, S ^ 3, expB1)
+    SS[1] = *(3, *(-4, Sh ^ 2) + *(S, *(2, Shh) + *(-2, Sp, Fyh + xi_yy) + *(2, Sh, B2h + *(2, Fyp))) + *(S ^ 2, Fyp ^ 2 + *(-2, Fyhp) + *(2, B2hh) + *(4, B2h ^ 2) + *(4, phih ^ 2) + *(-2, B2h, Fyp) + *(-2, B2p, Fyh + xi_yy)), expB2, sechG) + *(3, *(4, St ^ 2) + *(-1, S ^ 2, Fxp ^ 2 + *(-2, Fxtp) + *(2, B2tt) + *(4, B2t ^ 2) + *(4, phit ^ 2) + *(-2, B2p, Fxt + xi_xx) + *(-2, B2t, Fxp)) + *(2, S, *(-1, Stt) + *(Fxt, Sp) + *(Sp, xi_xx) + *(-1, B2t, St) + *(-2, Fxp, St)), exp(B2 + *(2, B1)), sechG) + *(6, S, *(Gt, Sh + *(S, B2h + *(-1, Fyp))) + *(-1, Gh, St) + *(Fxp, Gh, S) + *(Fyt, Gp, S) + *(-1, B2t, Gh, S) + *(-1, Fxh, Gp, S), exp(B1 + B2), sechG) + *(18, B1p, Sd, S ^ 3, expB1)
 
-    SS[2] = *(3, *(4, Sh ^ 2) + *(-1, S, *(2, Shh) + *(-2, Fyh, Sp) + *(2, B2h, Sh) + *(4, Fyp, Sh)) + *(-1, S ^ 2, Fyp ^ 2 + *(-2, Fyhp) + *(2, B2hh) + *(4, B2h ^ 2) + *(4, phih ^ 2) + *(-2, B2h, Fyp) + *(-2, B2p, Fyh)), expB2, sinhG) + *(3, *(4, St ^ 2) + *(-1, S ^ 2, Fxp ^ 2 + *(-2, Fxtp) + *(2, B2tt) + *(4, B2t ^ 2) + *(4, phit ^ 2) + *(-2, B2p, Fxt) + *(-2, B2t, Fxp)) + *(-2, S, Stt + *(B2t, St) + *(-1, Fxt, Sp) + *(2, Fxp, St)), exp(B2 + *(2, B1)), sinhG) + *(6, *(S, *(2, Sth) + *(Sh, B2t + *(-1, B1t) + *(2, Fxp)) + *(St, B1h + B2h + *(2, Fyp)) + *(-1, Sp, Fxh + Fyt)) + *(S ^ 2, *(-1, Fxhp) + *(-1, Fytp) + *(2, B2th) + *(B1p, Fxh + *(-1, Fyt)) + *(B1t, Fyp) + *(B1h + *(-1, Fyp), B2t + *(-1, Fxp)) + *(-1, B2h, B1t + Fxp + *(-4, B2t)) + *(-1, B2p, Fxh + Fyt) + *(4, phih, phit)) + *(-4, Sh, St), coshG, exp(B1 + B2)) + *(18, Gp, Sd, S ^ 3, expB1)
+    SS[2] = *(3, *(4, Sh ^ 2) + *(-1, S, *(2, Shh) + *(-2, Sp, Fyh + xi_yy) + *(2, Sh, B2h + *(2, Fyp))) + *(-1, S ^ 2, Fyp ^ 2 + *(-2, Fyhp) + *(2, B2hh) + *(4, B2h ^ 2) + *(4, phih ^ 2) + *(-2, B2h, Fyp) + *(-2, B2p, Fyh + xi_yy)), expB2, sinhG) + *(3, *(4, St ^ 2) + *(-1, S ^ 2, Fxp ^ 2 + *(-2, Fxtp) + *(2, B2tt) + *(4, B2t ^ 2) + *(4, phit ^ 2) + *(-2, B2p, Fxt + xi_xx) + *(-2, B2t, Fxp)) + *(2, S, *(-1, Stt) + *(Fxt, Sp) + *(Sp, xi_xx) + *(-1, B2t, St) + *(-2, Fxp, St)), exp(B2 + *(2, B1)), sinhG) + *(6, *(S, *(2, Sth) + *(Sh, B2t + *(-1, B1t) + *(2, Fxp)) + *(St, B1h + B2h + *(2, Fyp)) + *(-1, Sp, Fxh + Fyt + *(2, xi_xy))) + *(S ^ 2, *(-1, Fxhp) + *(-1, Fytp) + *(2, B2th) + *(B1p, Fxh + *(-1, Fyt)) + *(B1t, Fyp) + *(B1h + *(-1, Fyp), B2t + *(-1, Fxp)) + *(-1, B2h, B1t + Fxp + *(-4, B2t)) + *(-1, B2p, Fxh + Fyt + *(2, xi_xy)) + *(4, phih, phit)) + *(-4, Sh, St), coshG, exp(B1 + B2)) + *(18, Gp, Sd, S ^ 3, expB1)
 
     nothing
 end
@@ -588,6 +593,10 @@ end
 
 function phid_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     u   = vars.u
+
+    xi_xx  = vars.xi_xx
+    xi_xy  = vars.xi_xy
+    xi_yy  = vars.xi_yy
 
     B1     = vars.B1
     B1p    = vars.B1p
@@ -668,13 +677,13 @@ function phid_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     sinhG   = sinh(G)
 
 
-    ABCS[1] = 0.0
+    ABCS[1] = 0
 
     ABCS[2] = *(-8, S ^ 3, u ^ 2, expB1)
 
     ABCS[3] = *(12, Sp, S ^ 2, expB1)
 
-    ABCS[4] = *(*(*(4, phih, Sh + *(-1, S, B1h + Fyp + *(-1, B2h))) + *(4, S, phihh + *(-1, Fyh, phip)), coshG) + *(4, Gh, phih, S, sinhG), expB2) + *(*(4, S, *(phitt + *(phit, B1t + B2t + *(-1, Fxp)) + *(-1, Fxt, phip), coshG) + *(Gt, phit, sinhG)) + *(4, phit, St, coshG), exp(B2 + *(2, B1))) + *(*(-1, *(4, phih, St) + *(4, phit, Sh), sinhG) + *(S, *(-4, Gh, phit) + *(-4, Gt, phih), coshG) + *(S, *(-8, phith) + *(4, phih, Fxp + *(-1, B2t)) + *(4, phip, Fxh + Fyt) + *(4, phit, Fyp + *(-1, B2h)), sinhG), exp(B1 + B2)) + *(-4, S ^ 2, *(S, Vp(phi)) + *(-3, phip, Sd), expB1)
+    ABCS[4] = *(*(*(4, phih, Sh + *(-1, S, B1h + Fyp + *(-1, B2h))) + *(4, S, phihh + *(-1, phip, Fyh + xi_yy)), coshG) + *(4, Gh, phih, S, sinhG), expB2) + *(*(4, S, *(phitt + *(phit, B1t + B2t + *(-1, Fxp)) + *(-1, phip, Fxt + xi_xx), coshG) + *(Gt, phit, sinhG)) + *(4, phit, St, coshG), exp(B2 + *(2, B1))) + *(*(-1, *(4, phih, St) + *(4, phit, Sh), sinhG) + *(S, *(-4, Gh, phit) + *(-4, Gt, phih), coshG) + *(S, *(-8, phith) + *(4, phih, Fxp + *(-1, B2t)) + *(4, phip, Fxh + Fyt + *(2, xi_xy)) + *(4, phit, Fyp + *(-1, B2h)), sinhG), exp(B1 + B2)) + *(-4, S ^ 2, *(S, Vp(phi)) + *(-3, phip, Sd), expB1)
 
     nothing
 end
