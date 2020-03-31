@@ -366,7 +366,7 @@ function solve_Fxy_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Ga
     nothing
 end
 
-function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
+function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -427,6 +427,11 @@ function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
                 Fy         = bulk.Fy[a,i,j]
 
                 aux.vars.u     = u
+
+                # FIXME!!
+                aux.vars.xi_xx = 0.0
+                aux.vars.xi_xy = 0.0
+                aux.vars.xi_yy = 0.0
 
                 aux.vars.B1    = bulk.B1[a,i,j]
                 aux.vars.B1p   = B1p
@@ -812,6 +817,8 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nest
 
                 aux.vars.B1    = bulk.B1[a,i,j]
                 aux.vars.B1p   = B1p
+
+
                 aux.vars.B1t   = Dx(bulk.B1, a,i,j) - Fx * B1p
                 aux.vars.B1h   = Dy(bulk.B1, a,i,j) - Fy * B1p
 
@@ -822,6 +829,8 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nest
 
                 aux.vars.B1tp  = -u2 * Dx(Du_B1, a,i,j) - Fxp * B1p - Fx * B1pp
                 aux.vars.B1hp  = -u2 * Dy(Du_B1, a,i,j) - Fyp * B1p - Fy * B1pp
+
+
 
 
                 aux.vars.B2    = bulk.B2[a,i,j]
@@ -1412,7 +1421,7 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge:
     end
 
     # solve for Sd
-    solve_Sd_outer!(bulk, BC, nested)
+    solve_Sd_outer!(bulk, BC, gauge, nested)
 
     # solving for B2d, (B1d,Gd) and phid are independent processes. we can
     # therefore @spawn, here
