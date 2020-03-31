@@ -232,7 +232,7 @@ function solve_S_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nes
     nothing
 end
 
-function solve_Fxy_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nested)
+function solve_Fxy_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -272,6 +272,10 @@ function solve_Fxy_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::N
                 u4         = u2 * u2
 
                 aux.varsFxy.u     = u
+
+                # FIXME!!
+                aux.varsFxy.xi_x  = 0.0
+                aux.varsFxy.xi_y  = 0.0
 
                 aux.varsFxy.B1    = bulk.B1[a,i,j]
                 aux.varsFxy.B1p   = -u2 * Du_B1[a,i,j]
@@ -742,7 +746,7 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
     nothing
 end
 
-function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
+function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -1397,7 +1401,7 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge:
     end
 
     # solve for Fx and Fy
-    solve_Fxy_outer!(bulk, BC, dBC, nested)
+    solve_Fxy_outer!(bulk, BC, dBC, gauge, nested)
 
     # take u-derivatives of Fx and Fy
     @sync begin
@@ -1414,7 +1418,7 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge:
     # therefore @spawn, here
     @sync begin
         @spawn solve_B2d_outer!(bulk, BC, nested)
-        @spawn solve_B1dGd_outer!(bulk, BC, nested)
+        @spawn solve_B1dGd_outer!(bulk, BC, gauge, nested)
         @spawn solve_phid_outer!(bulk, BC, nested)
     end
 

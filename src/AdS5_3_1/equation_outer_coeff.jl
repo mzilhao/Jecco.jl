@@ -122,6 +122,9 @@ fpp = f_rr = 2u^3 f_u + u^4 f_uu
 mutable struct FxyVars{T}
     u        :: T
 
+    xi_x     :: T
+    xi_y     :: T
+
     B1       :: T
     B1p      :: T
     B1_x     :: T
@@ -160,7 +163,7 @@ mutable struct FxyVars{T}
     Sp_y     :: T
 end
 function FxyVars{T}() where {T<:AbstractFloat}
-    N = 1 + 4*7 + 4
+    N = 1 + 2 + 4*7 + 4
     array = zeros(N)
     FxyVars{T}(array...)
 end
@@ -195,7 +198,10 @@ end
 # ( A21 d_uu Fx + A22 d_uu Fy + B21 d_u Fx + B22 d_u Fy + C21 Fx + C22 Fy ) = -S2
 
 function Fxy_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::FxyVars)
-    u    = vars.u
+    u     = vars.u
+
+    xi_x  = vars.xi_x
+    xi_y  = vars.xi_y
 
     B1    = vars.B1
     B1p   = vars.B1p
@@ -236,7 +242,9 @@ function Fxy_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, var
 
 
     expB1   = exp(B1)
+    sinhG   = sinh(G)
     sinh2G  = sinh(*(2, G))
+    coshG   = cosh(G)
     cosh2G  = cosh(*(2, G))
     coshGsq = cosh(G)^2
 
@@ -247,10 +255,9 @@ function Fxy_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, var
     AA[2,2] = *(2, S ^ 2, u ^ 4)
 
     BB[1,1] = *(2, S, u ^ 2, *(-1, Sp) + *(-1, B2p, S) + *(2, S, u) + *(-1, B1p, S, coshGsq), expB1)
-    BB[1,2] = *(2, S ^ 2, u ^ 2, Gp + *(1 / 2, B1p, sinh2G))
-    BB[2,1] = *(2, S ^ 2, u ^ 2, Gp + *(-1/2, B1p, sinh2G), expB1)
+    BB[1,2] = *(2, S ^ 2, u ^ 2, Gp + *(B1p, coshG, sinhG))
+    BB[2,1] = *(2, S ^ 2, u ^ 2, Gp + *(-1, B1p, coshG, sinhG), expB1)
     BB[2,2] = *(S, u ^ 2, *(-2, Sp) + *(S, B1p + *(-2, B2p) + *(4, u)) + *(B1p, S, cosh2G))
-
 
     CC[1,1] = *(-2, *(4, Sp ^ 2) + *(-1, B2pp, S ^ 2) + *(-1, Gp ^ 2, S ^ 2) + *(-4, S, Spp) + *(-4, phip ^ 2, S ^ 2) + *(-3, B2p ^ 2, S ^ 2) + *(-1, S, coshGsq, *(B1pp, S) + *(S, B1p ^ 2) + *(3, B1p, Sp)) + *(-3, B2p, S, Sp) + *(-1, B1p, Gp, S ^ 2, sinh2G), expB1)
 
@@ -260,9 +267,9 @@ function Fxy_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, var
 
     CC[2,2] = *(-8, Sp ^ 2) + *(2, B2pp, S ^ 2) + *(2, Gp ^ 2, S ^ 2) + *(6, B2p ^ 2, S ^ 2) + *(8, S, Spp) + *(8, phip ^ 2, S ^ 2) + *(2, S, coshGsq, *(S, B1p ^ 2) + *(-1, B1pp, S) + *(-3, B1p, Sp)) + *(6, B2p, S, Sp) + *(-2, B1p, Gp, S ^ 2, sinh2G)
 
-    SS[1] = *(2, Gp_y, S ^ 2) + *(B1p_y, S ^ 2, sinh2G) + *(-8, S, Sp_x, expB1) + *(-2, B1_y, Gp, S ^ 2) + *(-2, B2p_x, S ^ 2, expB1) + *(6, Gp, S, S_y) + *(8, S_x, Sp, expB1) + *(-1, B1_y, B1p, S ^ 2, sinh2G) + *(-8, phi_x, phip, S ^ 2, expB1) + *(-6, B2_x, B2p, S ^ 2, expB1) + *(-6, B2p, S, S_x, expB1) + *(-2, G_x, Gp, S ^ 2, expB1) + *(-2, S, coshGsq, *(B1p_x, S) + *(3, B1p, S_x) + *(B1_x, B1p, S), expB1) + *(2, B1p, G_y, S ^ 2, cosh2G) + *(3, B1p, S, S_y, sinh2G) + *(-2, B1p, G_x, S ^ 2, expB1, sinh2G)
+    SS[1] = *(S ^ 2, *(2, Gp_y) + *(B1p_y + *(xi_y, B1p ^ 2) + *(-1, B1_y, B1p) + *(-1, B1pp, xi_y), sinh2G) + *(-2, B1_y, Gp) + *(-2, Gpp, xi_y) + *(2, B1p, Gp, xi_y) + *(2, B1p, G_y + *(-1, Gp, xi_y), cosh2G)) + *(*(S, *(-8, Sp_x) + *(-1, B2p + *(B1p, coshGsq), *(6, S_x) + *(-6, Sp, xi_x)) + *(8, Spp, xi_x)) + *(S ^ 2, *(-2, B2p_x) + *(-8, phip, phi_x + *(-1, phip, xi_x)) + *(-6, B2p, B2_x + *(-1, B2p, xi_x)) + *(-2, coshGsq, B1p_x + *(-1, B1pp, xi_x)) + *(-2, G_x + *(-1, Gp, xi_x), Gp + *(B1p, sinh2G)) + *(2, B2pp, xi_x) + *(2, B1p, coshGsq, *(-1, B1_x) + *(B1p, xi_x))) + *(8, Sp, S_x + *(-1, Sp, xi_x)), expB1) + *(S, Gp + *(B1p, coshG, sinhG), *(6, S_y) + *(-6, Sp, xi_y))
 
-    SS[2] = *(-8, S, Sp_y) + *(-2, B2p_y, S ^ 2) + *(8, S_y, Sp) + *(-8, phi_y, phip, S ^ 2) + *(-6, B2_y, B2p, S ^ 2) + *(-6, B2p, S, S_y) + *(-2, G_y, Gp, S ^ 2) + *(2, Gp_x, S ^ 2, expB1) + *(2, S, coshGsq, *(B1p_y, S) + *(3, B1p, S_y) + *(-1, B1_y, B1p, S)) + *(-1, B1p_x, S ^ 2, expB1, sinh2G) + *(2, B1_x, Gp, S ^ 2, expB1) + *(2, B1p, G_y, S ^ 2, sinh2G) + *(6, Gp, S, S_x, expB1) + *(-1, B1_x, B1p, S ^ 2, expB1, sinh2G) + *(-3, B1p, S, S_x, expB1, sinh2G) + *(-2, B1p, G_x, S ^ 2, cosh2G, expB1)
+    SS[2] = *(S, *(-8, Sp_y) + *(-1, B2p + *(-1, B1p, coshGsq), *(6, S_y) + *(-6, Sp, xi_y)) + *(8, Spp, xi_y)) + *(2, S ^ 2, *(-1, B2p_y) + *(B2pp, xi_y) + *(xi_y, Gp ^ 2) + *(coshGsq, B1p_y + *(xi_y, B1p ^ 2) + *(-1, B1_y, B1p) + *(-1, B1pp, xi_y)) + *(-1, G_y, Gp) + *(-4, phi_y, phip) + *(-3, B2_y, B2p) + *(3, xi_y, B2p ^ 2) + *(4, xi_y, phip ^ 2) + *(B1p, G_y + *(-1, Gp, xi_y), sinh2G)) + *(8, Sp, S_y + *(-1, Sp, xi_y)) + *(S, *(S, *(2, Gp_x) + *(-1, B1p_x + *(B1_x, B1p) + *(-1, xi_x, B1pp + B1p ^ 2), sinh2G) + *(-2, xi_x, Gpp + *(B1p, Gp)) + *(2, B1_x, Gp) + *(-2, B1p, G_x + *(-1, Gp, xi_x), cosh2G)) + *(Gp + *(-1, B1p, coshG, sinhG), *(6, S_x) + *(-6, Sp, xi_x)), expB1)
 
     nothing
 end
