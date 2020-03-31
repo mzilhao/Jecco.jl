@@ -622,6 +622,11 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
 
                 aux.vars.u     = u
 
+                # FIXME!!
+                aux.vars.xi_xx = 0.0
+                aux.vars.xi_xy = 0.0
+                aux.vars.xi_yy = 0.0
+
                 aux.vars.B1    = bulk.B1[a,i,j]
                 aux.vars.B1p   = B1p
                 aux.vars.B1t   = Dx(bulk.B1, a,i,j) - Fx * B1p
