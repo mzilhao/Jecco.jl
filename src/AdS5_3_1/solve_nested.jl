@@ -1314,6 +1314,11 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gaug
                 u3         = u * u2
                 u4         = u2 * u2
 
+                Fx         = bulk.Fx[a,i,j]
+                Fy         = bulk.Fy[a,i,j]
+
+                # r derivatives
+
                 B1p        = -u2 * Du_B1[a,i,j]
                 B2p        = -u2 * Du_B2[a,i,j]
                 Gp         = -u2 * Du_G[a,i,j]
@@ -1332,125 +1337,143 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gaug
                 Fypp       = 2*u3 * Du_Fy[a,i,j]  + u4 * Duu_Fy[a,i,j]
                 phipp      = 2*u3 * Du_phi[a,i,j] + u4 * Duu_phi[a,i,j]
 
-                Fx         = bulk.Fx[a,i,j]
-                Fy         = bulk.Fy[a,i,j]
+                # x and y derivatives
+
+                B1_x       = Dx(bulk.B1, a,i,j)
+                B2_x       = Dx(bulk.B2, a,i,j)
+                G_x        = Dx(bulk.G,  a,i,j)
+                phi_x      = Dx(bulk.phi,a,i,j)
+                S_x        = Dx(bulk.S,  a,i,j)
+                Fx_x       = Dx(bulk.Fx, a,i,j)
+                Fy_x       = Dx(bulk.Fy, a,i,j)
+
+                B1_y       = Dy(bulk.B1, a,i,j)
+                B2_y       = Dy(bulk.B2, a,i,j)
+                G_y        = Dy(bulk.G,  a,i,j)
+                phi_y      = Dy(bulk.phi,a,i,j)
+                S_y        = Dy(bulk.S,  a,i,j)
+                Fx_y       = Dy(bulk.Fx, a,i,j)
+                Fy_y       = Dy(bulk.Fy, a,i,j)
+
+                B1p_x      = -u2 * Dx(Du_B1, a,i,j)
+                B2p_x      = -u2 * Dx(Du_B2, a,i,j)
+                Gp_x       = -u2 * Dx(Du_G,  a,i,j)
+                phip_x     = -u2 * Dx(Du_phi,a,i,j)
+                Sp_x       = -u2 * Dx(Du_S,  a,i,j)
+                Fxp_x      = -u2 * Dx(Du_Fx,  a,i,j)
+                Fyp_x      = -u2 * Dx(Du_Fy,  a,i,j)
+
+                B1p_y      = -u2 * Dy(Du_B1, a,i,j)
+                B2p_y      = -u2 * Dy(Du_B2, a,i,j)
+                Gp_y       = -u2 * Dy(Du_G,  a,i,j)
+                phip_y     = -u2 * Dy(Du_phi,a,i,j)
+                Sp_y       = -u2 * Dy(Du_S,  a,i,j)
+                Fxp_y      = -u2 * Dy(Du_Fx, a,i,j)
+                Fyp_y      = -u2 * Dy(Du_Fy, a,i,j)
+
+                B1_xx      = Dxx(bulk.B1, a,i,j)
+                B2_xx      = Dxx(bulk.B2, a,i,j)
+                G_xx       = Dxx(bulk.G,  a,i,j)
+                phi_xx     = Dxx(bulk.phi,a,i,j)
+                S_xx       = Dxx(bulk.S,  a,i,j)
+
+                B1_yy      = Dyy(bulk.B1, a,i,j)
+                B2_yy      = Dyy(bulk.B2, a,i,j)
+                G_yy       = Dyy(bulk.G,  a,i,j)
+                phi_yy     = Dyy(bulk.phi,a,i,j)
+                S_yy       = Dyy(bulk.S,  a,i,j)
+
+                B2_xy      = Dx(Dy, bulk.B2, a,i,j)
+                G_xy       = Dx(Dy, bulk.G,  a,i,j)
+                phi_xy     = Dx(Dy, bulk.phi,a,i,j)
+                S_xy       = Dx(Dy, bulk.S,  a,i,j)
+
+
+                # FIXME!!
+                xi_x       = 0.0
+                xi_y       = 0.0
+
 
                 aux.vars.u     = u
+
 
                 # FIXME!!
                 aux.vars.xi_xx = 0.0
                 aux.vars.xi_xy = 0.0
                 aux.vars.xi_yy = 0.0
 
+
                 aux.vars.B1    = bulk.B1[a,i,j]
-                aux.vars.B1p   = B1p
-                aux.vars.B1t   = Dx(bulk.B1, a,i,j) - Fx * B1p
-                aux.vars.B1h   = Dy(bulk.B1, a,i,j) - Fy * B1p
-
-                aux.vars.B1tt  = Dxx(bulk.B1, a,i,j) - Dx(bulk.Fx, a,i,j) * B1p +
-                    2.0 * Fx * u2 * Dx(Du_B1, a,i,j) + Fx * Fxp * B1p + Fx * Fx * B1pp
-                aux.vars.B1hh  = Dyy(bulk.B1, a,i,j) - Dy(bulk.Fy, a,i,j) * B1p +
-                    2.0 * Fy * u2 * Dy(Du_B1, a,i,j) + Fy * Fyp * B1p + Fy * Fy * B1pp
-
-                aux.vars.B1tp  = -u2 * Dx(Du_B1, a,i,j) - Fxp * B1p - Fx * B1pp
-                aux.vars.B1hp  = -u2 * Dy(Du_B1, a,i,j) - Fyp * B1p - Fy * B1pp
-
-
                 aux.vars.B2    = bulk.B2[a,i,j]
-                aux.vars.B2p   = B2p
-                aux.vars.B2t   = Dx(bulk.B2, a,i,j) - Fx * B2p
-                aux.vars.B2h   = Dy(bulk.B2, a,i,j) - Fy * B2p
-
-                aux.vars.B2tt  = Dxx(bulk.B2, a,i,j) - Dx(bulk.Fx, a,i,j) * B2p +
-                    2.0 * Fx * u2 * Dx(Du_B2, a,i,j) + Fx * Fxp * B2p + Fx * Fx * B2pp
-                aux.vars.B2hh  = Dyy(bulk.B2, a,i,j) - Dy(bulk.Fy, a,i,j) * B2p +
-                    2.0 * Fy * u2 * Dy(Du_B2, a,i,j) + Fy * Fyp * B2p + Fy * Fy * B2pp
-
-                aux.vars.B2tp  = -u2 * Dx(Du_B2, a,i,j) - Fxp * B2p - Fx * B2pp
-                aux.vars.B2hp  = -u2 * Dy(Du_B2, a,i,j) - Fyp * B2p - Fy * B2pp
-
-
-                aux.vars.G    = bulk.G[a,i,j]
-                aux.vars.Gp   = Gp
-                aux.vars.Gt   = Dx(bulk.G, a,i,j) - Fx * Gp
-                aux.vars.Gh   = Dy(bulk.G, a,i,j) - Fy * Gp
-
-                aux.vars.Gtt  = Dxx(bulk.G, a,i,j) - Dx(bulk.Fx, a,i,j) * Gp +
-                    2.0 * Fx * u2 * Dx(Du_G, a,i,j) + Fx * Fxp * Gp + Fx * Fx * Gpp
-                aux.vars.Ghh  = Dyy(bulk.G, a,i,j) - Dy(bulk.Fy, a,i,j) * Gp +
-                    2.0 * Fy * u2 * Dy(Du_G, a,i,j) + Fy * Fyp * Gp + Fy * Fy * Gpp
-
-                aux.vars.Gtp  = -u2 * Dx(Du_G, a,i,j) - Fxp * Gp - Fx * Gpp
-                aux.vars.Ghp  = -u2 * Dy(Du_G, a,i,j) - Fyp * Gp - Fy * Gpp
-
-
-                aux.vars.phi    = bulk.phi[a,i,j]
-                aux.vars.phip   = phip
-                aux.vars.phit   = Dx(bulk.phi, a,i,j) - Fx * phip
-                aux.vars.phih   = Dy(bulk.phi, a,i,j) - Fy * phip
-
-                aux.vars.phitt  = Dxx(bulk.phi, a,i,j) - Dx(bulk.Fx, a,i,j) * phip +
-                    2.0 * Fx * u2 * Dx(Du_phi, a,i,j) + Fx * Fxp * phip + Fx * Fx * phipp
-                aux.vars.phihh  = Dyy(bulk.phi, a,i,j) - Dy(bulk.Fy, a,i,j) * phip +
-                    2.0 * Fy * u2 * Dy(Du_phi, a,i,j) + Fy * Fyp * phip + Fy * Fy * phipp
-
-                aux.vars.phitp  = -u2 * Dx(Du_phi, a,i,j) - Fxp * phip - Fx * phipp
-                aux.vars.phihp  = -u2 * Dy(Du_phi, a,i,j) - Fyp * phip - Fy * phipp
-
-
-                aux.vars.S    = bulk.S[a,i,j]
-                aux.vars.Sp   = Sp
-                aux.vars.St   = Dx(bulk.S, a,i,j) - Fx * Sp
-                aux.vars.Sh   = Dy(bulk.S, a,i,j) - Fy * Sp
-
-                aux.vars.Stt  = Dxx(bulk.S, a,i,j) - Dx(bulk.Fx, a,i,j) * Sp +
-                    2.0 * Fx * u2 * Dx(Du_S, a,i,j) + Fx * Fxp * Sp + Fx * Fx * Spp
-                aux.vars.Shh  = Dyy(bulk.S, a,i,j) - Dy(bulk.Fy, a,i,j) * Sp +
-                    2.0 * Fy * u2 * Dy(Du_S, a,i,j) + Fy * Fyp * Sp + Fy * Fy * Spp
-
-                aux.vars.Stp  = -u2 * Dx(Du_S, a,i,j) - Fxp * Sp - Fx * Spp
-                aux.vars.Shp  = -u2 * Dy(Du_S, a,i,j) - Fyp * Sp - Fy * Spp
-
-
+                aux.vars.G     = bulk.G[a,i,j]
+                aux.vars.phi   = bulk.phi[a,i,j]
+                aux.vars.S     = bulk.S[a,i,j]
                 aux.vars.Fx    = bulk.Fx[a,i,j]
-                aux.vars.Fxp   = Fxp
-                aux.vars.Fxt   = Dx(bulk.Fx, a,i,j) - Fx * Fxp
-                aux.vars.Fxh   = Dy(bulk.Fx, a,i,j) - Fy * Fxp
-
-                aux.vars.Fxtp  = -u2 * Dx(Du_Fx, a,i,j) - Fxp * Fxp - Fx * Fxpp
-                aux.vars.Fxhp  = -u2 * Dy(Du_Fx, a,i,j) - Fyp * Fxp - Fy * Fxpp
-
-
                 aux.vars.Fy    = bulk.Fy[a,i,j]
-                aux.vars.Fyp   = Fyp
-                aux.vars.Fyt   = Dx(bulk.Fy, a,i,j) - Fy * Fyp
-                aux.vars.Fyh   = Dy(bulk.Fy, a,i,j) - Fy * Fyp
-
-                aux.vars.Fytp  = -u2 * Dx(Du_Fy, a,i,j) - Fyp * Fyp - Fy * Fypp
-                aux.vars.Fyhp  = -u2 * Dy(Du_Fy, a,i,j) - Fyp * Fyp - Fy * Fypp
-
                 aux.vars.Sd    = bulk.Sd[a,i,j]
+
                 aux.vars.B1d   = bulk.B1d[a,i,j]
                 aux.vars.B2d   = bulk.B2d[a,i,j]
                 aux.vars.Gd    = bulk.Gd[a,i,j]
                 aux.vars.phid  = bulk.phid[a,i,j]
 
-                aux.vars.B2th = Dx(Dy, bulk.B2, a,i,j) - Dy(bulk.Fx, a,i,j) * B2p +
-                    Fx * u2 * Dy(Du_B2, a,i,j) + Fy * u2 * Dx(Du_B2, a,i,j) +
-                    Fy * Fxp * B2p + Fx * Fy * B2pp
 
-                aux.vars.Gth = Dx(Dy, bulk.G, a,i,j) - Dy(bulk.Fx, a,i,j) * Gp +
-                    Fx * u2 * Dy(Du_G, a,i,j) + Fy * u2 * Dx(Du_G, a,i,j) +
-                    Fy * Fxp * Gp + Fx * Fy * Gpp
+                aux.vars.B1p   = B1p
+                aux.vars.B2p   = B2p
+                aux.vars.Gp    = Gp
+                aux.vars.phip  = phip
+                aux.vars.Sp    = Sp
+                aux.vars.Fxp   = Fxp
+                aux.vars.Fyp   = Fyp
 
-                aux.vars.Sth = Dx(Dy, bulk.S, a,i,j) - Dy(bulk.Fx, a,i,j) * Sp +
-                    Fx * u2 * Dy(Du_S, a,i,j) + Fy * u2 * Dx(Du_S, a,i,j) +
-                    Fy * Fxp * Sp + Fx * Fy * Spp
+                aux.vars.B1t   = tilde( B1_x, B1p,  Fx, xi_x)
+                aux.vars.B2t   = tilde( B2_x, B2p,  Fx, xi_x)
+                aux.vars.Gt    = tilde(  G_x,  Gp,  Fx, xi_x)
+                aux.vars.phit  = tilde(phi_x, phip, Fx, xi_x)
+                aux.vars.St    = tilde(  S_x,  Sp,  Fx, xi_x)
+                aux.vars.Fxt   = tilde( Fx_x, Fxp,  Fx, xi_x)
+                aux.vars.Fyt   = tilde( Fy_x, Fyp,  Fy, xi_x)
 
-                aux.vars.phith = Dx(Dy, bulk.phi, a,i,j) - Dy(bulk.Fx, a,i,j) * phip +
-                    Fx * u2 * Dy(Du_phi, a,i,j) + Fy * u2 * Dx(Du_phi, a,i,j) +
-                    Fy * Fxp * phip + Fx * Fy * phipp
+                aux.vars.B1h   = hat( B1_y,  B1p,  Fy, xi_y)
+                aux.vars.B2h   = hat( B2_y,  B2p,  Fy, xi_y)
+                aux.vars.Gh    = hat(  G_y,   Gp,  Fy, xi_y)
+                aux.vars.phih  = hat(phi_y, phip,  Fy, xi_y)
+                aux.vars.Sh    = hat(  S_y,   Sp,  Fy, xi_y)
+                aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy, xi_y)
+                aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy, xi_y)
 
+                aux.vars.B1tt  = tilde2( B1_xx,  B1pp,  B1p_x,  Fx, xi_x)
+                aux.vars.B2tt  = tilde2( B2_xx,  B2pp,  B2p_x,  Fx, xi_x)
+                aux.vars.Gtt   = tilde2(  G_xx,   Gpp,   Gp_x,  Fx, xi_x)
+                aux.vars.phitt = tilde2(phi_xx, phipp, phip_x,  Fx, xi_x)
+                aux.vars.Stt   = tilde2(  S_xx,   Spp,   Sp_x,  Fx, xi_x)
+
+                aux.vars.B1hh  = hat2( B1_yy,  B1pp,  B1p_y,  Fy, xi_y)
+                aux.vars.B2hh  = hat2( B2_yy,  B2pp,  B2p_y,  Fy, xi_y)
+                aux.vars.Ghh   = hat2(  G_yy,   Gpp,   Gp_y,  Fy, xi_y)
+                aux.vars.phihh = hat2(phi_yy, phipp, phip_y,  Fy, xi_y)
+                aux.vars.Shh   = hat2(  S_yy,   Spp,   Sp_y,  Fy, xi_y)
+
+                aux.vars.B1tp  = tilde(  B1p_x,  B1pp,  Fx, xi_x)
+                aux.vars.B2tp  = tilde(  B2p_x,  B2pp,  Fx, xi_x)
+                aux.vars.Gtp   = tilde(   Gp_x,   Gpp,  Fx, xi_x)
+                aux.vars.phitp = tilde( phip_x, phipp,  Fx, xi_x)
+                aux.vars.Stp   = tilde(   Sp_x,   Spp,  Fx, xi_x)
+                aux.vars.Fxtp  = tilde(  Fxp_x,  Fxpp,  Fx, xi_x)
+                aux.vars.Fytp  = tilde(  Fyp_x,  Fypp,  Fy, xi_x)
+
+                aux.vars.B1hp  = hat(  B1p_y,  B1pp,  Fy, xi_y)
+                aux.vars.B2hp  = hat(  B2p_y,  B2pp,  Fy, xi_y)
+                aux.vars.Ghp   = hat(   Gp_y,   Gpp,  Fy, xi_y)
+                aux.vars.phihp = hat( phip_y, phipp,  Fy, xi_y)
+                aux.vars.Shp   = hat(   Sp_y,   Spp,  Fy, xi_y)
+                aux.vars.Fxhp  = hat(  Fxp_y,  Fxpp,  Fy, xi_y)
+                aux.vars.Fyhp  = hat(  Fyp_y,  Fypp,  Fy, xi_y)
+
+                aux.vars.B2th  = tildehat( B2_xy,  B2pp,  B2p_x,  B2p_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.Gth   = tildehat(  G_xy,   Gpp,   Gp_x,   Gp_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.Sth   = tildehat(  S_xy,   Spp,   Sp_x,   Sp_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.phith = tildehat(phi_xy, phipp, phip_x, phip_y, Fx, Fy, xi_x, xi_y)
 
                 A_outer_eq_coeff!(aux.ABCS, aux.vars)
 
