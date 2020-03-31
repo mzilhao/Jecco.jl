@@ -378,73 +378,74 @@ function B2d_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     xi_yy  = vars.xi_yy
 
     B1     = vars.B1
-    B1p    = vars.B1p
-    B1t    = vars.B1t
-    B1h    = vars.B1h
-    B1tt   = vars.B1tt
-    B1hh   = vars.B1hh
-    B1tp   = vars.B1tp
-    B1hp   = vars.B1hp
-
     B2     = vars.B2
-    B2p    = vars.B2p
-    B2t    = vars.B2t
-    B2h    = vars.B2h
-    B2tt   = vars.B2tt
-    B2hh   = vars.B2hh
-    B2tp   = vars.B2tp
-    B2hp   = vars.B2hp
-
     G      = vars.G
-    Gp     = vars.Gp
-    Gt     = vars.Gt
-    Gh     = vars.Gh
-    Gtt    = vars.Gtt
-    Ghh    = vars.Ghh
-    Gtp    = vars.Gtp
-    Ghp    = vars.Ghp
-
     phi    = vars.phi
-    phip   = vars.phip
-    phit   = vars.phit
-    phih   = vars.phih
-    phitt  = vars.phitt
-    phihh  = vars.phihh
-    phitp  = vars.phitp
-    phihp  = vars.phihp
-
     S      = vars.S
-    Sp     = vars.Sp
-    St     = vars.St
-    Sh     = vars.Sh
-    Stt    = vars.Stt
-    Shh    = vars.Shh
-    Stp    = vars.Stp
-    Shp    = vars.Shp
-
     Fx     = vars.Fx
-    Fxp    = vars.Fxp
-    Fxt    = vars.Fxt
-    Fxh    = vars.Fxh
-    # Fxtt   = vars.Fxtt
-    # Fxhh   = vars.Fxhh
-    Fxtp   = vars.Fxtp
-    Fxhp   = vars.Fxhp
-
     Fy     = vars.Fy
+    Sd     = vars.Sd
+
+    B1p    = vars.B1p
+    B2p    = vars.B2p
+    Gp     = vars.Gp
+    phip   = vars.phip
+    Sp     = vars.Sp
+    Fxp    = vars.Fxp
     Fyp    = vars.Fyp
+
+    B1t    = vars.B1t
+    B2t    = vars.B2t
+    Gt     = vars.Gt
+    phit   = vars.phit
+    St     = vars.St
+    Fxt    = vars.Fxt
     Fyt    = vars.Fyt
+
+    B1h    = vars.B1h
+    B2h    = vars.B2h
+    Gh     = vars.Gh
+    phih   = vars.phih
+    Sh     = vars.Sh
+    Fxh    = vars.Fxh
     Fyh    = vars.Fyh
+
+    B1tt   = vars.B1tt
+    B2tt   = vars.B2tt
+    Gtt    = vars.Gtt
+    phitt  = vars.phitt
+    Stt    = vars.Stt
+    # Fxtt   = vars.Fxtt
     # Fytt   = vars.Fytt
+
+    B1hh   = vars.B1hh
+    B2hh   = vars.B2hh
+    Ghh    = vars.Ghh
+    phihh  = vars.phihh
+    Shh    = vars.Shh
+    # Fxhh   = vars.Fxhh
     # Fyhh   = vars.Fyhh
+
+    B1tp   = vars.B1tp
+    B2tp   = vars.B2tp
+    Gtp    = vars.Gtp
+    phitp  = vars.phitp
+    Stp    = vars.Stp
+    Fxtp   = vars.Fxtp
     Fytp   = vars.Fytp
+
+    B1hp   = vars.B1hp
+    B2hp   = vars.B2hp
+    Ghp    = vars.Ghp
+    phihp  = vars.phihp
+    Shp    = vars.Shp
+    Fxhp   = vars.Fxhp
     Fyhp   = vars.Fyhp
 
     B2th   = vars.B2th
     Gth    = vars.Gth
     Sth    = vars.Sth
 
-    Sd     = vars.Sd
 
     expB1   = exp(B1)
     expB2   = exp(B2)
@@ -480,73 +481,74 @@ function B1dGd_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, v
     xi_yy  = vars.xi_yy
 
     B1     = vars.B1
-    B1p    = vars.B1p
-    B1t    = vars.B1t
-    B1h    = vars.B1h
-    B1tt   = vars.B1tt
-    B1hh   = vars.B1hh
-    B1tp   = vars.B1tp
-    B1hp   = vars.B1hp
-
     B2     = vars.B2
-    B2p    = vars.B2p
-    B2t    = vars.B2t
-    B2h    = vars.B2h
-    B2tt   = vars.B2tt
-    B2hh   = vars.B2hh
-    B2tp   = vars.B2tp
-    B2hp   = vars.B2hp
-
     G      = vars.G
-    Gp     = vars.Gp
-    Gt     = vars.Gt
-    Gh     = vars.Gh
-    Gtt    = vars.Gtt
-    Ghh    = vars.Ghh
-    Gtp    = vars.Gtp
-    Ghp    = vars.Ghp
-
     phi    = vars.phi
-    phip   = vars.phip
-    phit   = vars.phit
-    phih   = vars.phih
-    phitt  = vars.phitt
-    phihh  = vars.phihh
-    phitp  = vars.phitp
-    phihp  = vars.phihp
-
     S      = vars.S
-    Sp     = vars.Sp
-    St     = vars.St
-    Sh     = vars.Sh
-    Stt    = vars.Stt
-    Shh    = vars.Shh
-    Stp    = vars.Stp
-    Shp    = vars.Shp
-
     Fx     = vars.Fx
-    Fxp    = vars.Fxp
-    Fxt    = vars.Fxt
-    Fxh    = vars.Fxh
-    # Fxtt   = vars.Fxtt
-    # Fxhh   = vars.Fxhh
-    Fxtp   = vars.Fxtp
-    Fxhp   = vars.Fxhp
-
     Fy     = vars.Fy
+    Sd     = vars.Sd
+
+    B1p    = vars.B1p
+    B2p    = vars.B2p
+    Gp     = vars.Gp
+    phip   = vars.phip
+    Sp     = vars.Sp
+    Fxp    = vars.Fxp
     Fyp    = vars.Fyp
+
+    B1t    = vars.B1t
+    B2t    = vars.B2t
+    Gt     = vars.Gt
+    phit   = vars.phit
+    St     = vars.St
+    Fxt    = vars.Fxt
     Fyt    = vars.Fyt
+
+    B1h    = vars.B1h
+    B2h    = vars.B2h
+    Gh     = vars.Gh
+    phih   = vars.phih
+    Sh     = vars.Sh
+    Fxh    = vars.Fxh
     Fyh    = vars.Fyh
+
+    B1tt   = vars.B1tt
+    B2tt   = vars.B2tt
+    Gtt    = vars.Gtt
+    phitt  = vars.phitt
+    Stt    = vars.Stt
+    # Fxtt   = vars.Fxtt
     # Fytt   = vars.Fytt
+
+    B1hh   = vars.B1hh
+    B2hh   = vars.B2hh
+    Ghh    = vars.Ghh
+    phihh  = vars.phihh
+    Shh    = vars.Shh
+    # Fxhh   = vars.Fxhh
     # Fyhh   = vars.Fyhh
+
+    B1tp   = vars.B1tp
+    B2tp   = vars.B2tp
+    Gtp    = vars.Gtp
+    phitp  = vars.phitp
+    Stp    = vars.Stp
+    Fxtp   = vars.Fxtp
     Fytp   = vars.Fytp
+
+    B1hp   = vars.B1hp
+    B2hp   = vars.B2hp
+    Ghp    = vars.Ghp
+    phihp  = vars.phihp
+    Shp    = vars.Shp
+    Fxhp   = vars.Fxhp
     Fyhp   = vars.Fyhp
 
     B2th   = vars.B2th
     Gth    = vars.Gth
     Sth    = vars.Sth
 
-    Sd     = vars.Sd
 
     expB1   = exp(B1)
     expB2   = exp(B2)
@@ -599,66 +601,68 @@ function phid_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     xi_yy  = vars.xi_yy
 
     B1     = vars.B1
-    B1p    = vars.B1p
-    B1t    = vars.B1t
-    B1h    = vars.B1h
-    B1tt   = vars.B1tt
-    B1hh   = vars.B1hh
-    B1tp   = vars.B1tp
-    B1hp   = vars.B1hp
-
     B2     = vars.B2
-    B2p    = vars.B2p
-    B2t    = vars.B2t
-    B2h    = vars.B2h
-    B2tt   = vars.B2tt
-    B2hh   = vars.B2hh
-    B2tp   = vars.B2tp
-    B2hp   = vars.B2hp
-
     G      = vars.G
-    Gp     = vars.Gp
-    Gt     = vars.Gt
-    Gh     = vars.Gh
-    Gtt    = vars.Gtt
-    Ghh    = vars.Ghh
-    Gtp    = vars.Gtp
-    Ghp    = vars.Ghp
-
     phi    = vars.phi
-    phip   = vars.phip
-    phit   = vars.phit
-    phih   = vars.phih
-    phitt  = vars.phitt
-    phihh  = vars.phihh
-    phitp  = vars.phitp
-    phihp  = vars.phihp
-
     S      = vars.S
-    Sp     = vars.Sp
-    St     = vars.St
-    Sh     = vars.Sh
-    Stt    = vars.Stt
-    Shh    = vars.Shh
-    Stp    = vars.Stp
-    Shp    = vars.Shp
-
     Fx     = vars.Fx
-    Fxp    = vars.Fxp
-    Fxt    = vars.Fxt
-    Fxh    = vars.Fxh
-    # Fxtt   = vars.Fxtt
-    # Fxhh   = vars.Fxhh
-    Fxtp   = vars.Fxtp
-    Fxhp   = vars.Fxhp
-
     Fy     = vars.Fy
+    Sd     = vars.Sd
+
+    B1p    = vars.B1p
+    B2p    = vars.B2p
+    Gp     = vars.Gp
+    phip   = vars.phip
+    Sp     = vars.Sp
+    Fxp    = vars.Fxp
     Fyp    = vars.Fyp
+
+    B1t    = vars.B1t
+    B2t    = vars.B2t
+    Gt     = vars.Gt
+    phit   = vars.phit
+    St     = vars.St
+    Fxt    = vars.Fxt
     Fyt    = vars.Fyt
+
+    B1h    = vars.B1h
+    B2h    = vars.B2h
+    Gh     = vars.Gh
+    phih   = vars.phih
+    Sh     = vars.Sh
+    Fxh    = vars.Fxh
     Fyh    = vars.Fyh
+
+    B1tt   = vars.B1tt
+    B2tt   = vars.B2tt
+    Gtt    = vars.Gtt
+    phitt  = vars.phitt
+    Stt    = vars.Stt
+    # Fxtt   = vars.Fxtt
     # Fytt   = vars.Fytt
+
+    B1hh   = vars.B1hh
+    B2hh   = vars.B2hh
+    Ghh    = vars.Ghh
+    phihh  = vars.phihh
+    Shh    = vars.Shh
+    # Fxhh   = vars.Fxhh
     # Fyhh   = vars.Fyhh
+
+    B1tp   = vars.B1tp
+    B2tp   = vars.B2tp
+    Gtp    = vars.Gtp
+    phitp  = vars.phitp
+    Stp    = vars.Stp
+    Fxtp   = vars.Fxtp
     Fytp   = vars.Fytp
+
+    B1hp   = vars.B1hp
+    B2hp   = vars.B2hp
+    Ghp    = vars.Ghp
+    phihp  = vars.phihp
+    Shp    = vars.Shp
+    Fxhp   = vars.Fxhp
     Fyhp   = vars.Fyhp
 
     B2th   = vars.B2th
@@ -666,7 +670,6 @@ function phid_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     Sth    = vars.Sth
     phith  = vars.phith
 
-    Sd     = vars.Sd
 
     expB1   = exp(B1)
     expB2   = exp(B2)
@@ -697,66 +700,74 @@ function A_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     xi_yy  = vars.xi_yy
 
     B1     = vars.B1
-    B1p    = vars.B1p
-    B1t    = vars.B1t
-    B1h    = vars.B1h
-    B1tt   = vars.B1tt
-    B1hh   = vars.B1hh
-    B1tp   = vars.B1tp
-    B1hp   = vars.B1hp
-
     B2     = vars.B2
-    B2p    = vars.B2p
-    B2t    = vars.B2t
-    B2h    = vars.B2h
-    B2tt   = vars.B2tt
-    B2hh   = vars.B2hh
-    B2tp   = vars.B2tp
-    B2hp   = vars.B2hp
-
     G      = vars.G
-    Gp     = vars.Gp
-    Gt     = vars.Gt
-    Gh     = vars.Gh
-    Gtt    = vars.Gtt
-    Ghh    = vars.Ghh
-    Gtp    = vars.Gtp
-    Ghp    = vars.Ghp
-
     phi    = vars.phi
-    phip   = vars.phip
-    phit   = vars.phit
-    phih   = vars.phih
-    phitt  = vars.phitt
-    phihh  = vars.phihh
-    phitp  = vars.phitp
-    phihp  = vars.phihp
-
     S      = vars.S
-    Sp     = vars.Sp
-    St     = vars.St
-    Sh     = vars.Sh
-    Stt    = vars.Stt
-    Shh    = vars.Shh
-    Stp    = vars.Stp
-    Shp    = vars.Shp
-
     Fx     = vars.Fx
-    Fxp    = vars.Fxp
-    Fxt    = vars.Fxt
-    Fxh    = vars.Fxh
-    # Fxtt   = vars.Fxtt
-    # Fxhh   = vars.Fxhh
-    Fxtp   = vars.Fxtp
-    Fxhp   = vars.Fxhp
-
     Fy     = vars.Fy
+    Sd     = vars.Sd
+
+    B1d    = vars.B1d
+    B2d    = vars.B2d
+    Gd     = vars.Gd
+    phid   = vars.phid
+
+
+    B1p    = vars.B1p
+    B2p    = vars.B2p
+    Gp     = vars.Gp
+    phip   = vars.phip
+    Sp     = vars.Sp
+    Fxp    = vars.Fxp
     Fyp    = vars.Fyp
+
+    B1t    = vars.B1t
+    B2t    = vars.B2t
+    Gt     = vars.Gt
+    phit   = vars.phit
+    St     = vars.St
+    Fxt    = vars.Fxt
     Fyt    = vars.Fyt
+
+    B1h    = vars.B1h
+    B2h    = vars.B2h
+    Gh     = vars.Gh
+    phih   = vars.phih
+    Sh     = vars.Sh
+    Fxh    = vars.Fxh
     Fyh    = vars.Fyh
+
+    B1tt   = vars.B1tt
+    B2tt   = vars.B2tt
+    Gtt    = vars.Gtt
+    phitt  = vars.phitt
+    Stt    = vars.Stt
+    # Fxtt   = vars.Fxtt
     # Fytt   = vars.Fytt
+
+    B1hh   = vars.B1hh
+    B2hh   = vars.B2hh
+    Ghh    = vars.Ghh
+    phihh  = vars.phihh
+    Shh    = vars.Shh
+    # Fxhh   = vars.Fxhh
     # Fyhh   = vars.Fyhh
+
+    B1tp   = vars.B1tp
+    B2tp   = vars.B2tp
+    Gtp    = vars.Gtp
+    phitp  = vars.phitp
+    Stp    = vars.Stp
+    Fxtp   = vars.Fxtp
     Fytp   = vars.Fytp
+
+    B1hp   = vars.B1hp
+    B2hp   = vars.B2hp
+    Ghp    = vars.Ghp
+    phihp  = vars.phihp
+    Shp    = vars.Shp
+    Fxhp   = vars.Fxhp
     Fyhp   = vars.Fyhp
 
     B2th   = vars.B2th
@@ -764,11 +775,6 @@ function A_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     Sth    = vars.Sth
     phith  = vars.phith
 
-    Sd     = vars.Sd
-    B1d    = vars.B1d
-    B2d    = vars.B2d
-    Gd     = vars.Gd
-    phid   = vars.phid
 
     expB1   = exp(B1)
     expB2   = exp(B2)
