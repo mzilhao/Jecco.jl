@@ -692,6 +692,10 @@ end
 function A_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     u   = vars.u
 
+    xi_xx  = vars.xi_xx
+    xi_xy  = vars.xi_xy
+    xi_yy  = vars.xi_yy
+
     B1     = vars.B1
     B1p    = vars.B1p
     B1t    = vars.B1t
@@ -781,7 +785,7 @@ function A_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
 
     ABCS[3] = 0
 
-    ABCS[4] = *(*(2, S ^ 4, *(-4, V(phi)) + *(3, Gd, Gp) + *(9, B2d, B2p) + *(12, phid, phip) + *(3, B1d, B1p, coshGsq)) + *(-72, Sd, Sp, S ^ 2), expB1) + *(*(S, *(*(-24, Stt) + *(-24, St, B1t + B2t) + *(24, Fxt, Sp), coshG) + *(-24, Gt, St, sinhG)) + *(S ^ 2, *(*(-12, B2t ^ 2) + *(-12, phit ^ 2) + *(-6, B1tt) + *(-6, B2tt) + *(-6, B1t ^ 2) + *(-6, Gt ^ 2) + *(3, Fxp ^ 2) + *(-6, B1t, B2t) + *(6, Fxt, B1p + B2p), coshG) + *(-1, *(6, Gtt) + *(-6, Fxt, Gp) + *(6, B2t, Gt) + *(12, B1t, Gt), sinhG)) + *(12, St ^ 2, coshG), exp(B2 + *(2, B1))) + *(*(S, *(*(-24, Shh) + *(-24, B2h, Sh) + *(24, B1h, Sh) + *(24, Fyh, Sp), coshG) + *(-24, Gh, Sh, sinhG)) + *(S ^ 2, *(*(-6, Ghh) + *(-6, B2h, Gh) + *(6, Fyh, Gp) + *(12, B1h, Gh), sinhG) + *(*(-12, B2h ^ 2) + *(-12, phih ^ 2) + *(-6, B2hh) + *(-6, B1h ^ 2) + *(-6, Gh ^ 2) + *(3, Fyp ^ 2) + *(6, B1hh) + *(-6, B1p, Fyh) + *(6, B1h, B2h) + *(6, B2p, Fyh), coshG)) + *(12, Sh ^ 2, coshG), expB2) + *(*(S ^ 2, *(*(12, Gth) + *(-6, Gp, Fxh + Fyt) + *(6, Gh, B1t + B2t) + *(6, Gt, B2h + *(-1, B1h)), coshG) + *(*(12, B2th) + *(-6, B2p, Fxh + Fyt) + *(-6, Fxp, Fyp) + *(12, Gh, Gt) + *(24, B2h, B2t) + *(24, phih, phit), sinhG)) + *(24, S, *(*(Gh, St) + *(Gt, Sh), coshG) + *(*(2, Sth) + *(B2h, St) + *(B2t, Sh) + *(-1, Sp, Fxh + Fyt), sinhG)) + *(-24, Sh, St, sinhG), exp(B1 + B2))
+    ABCS[4] = *(*(2, S ^ 4, *(-4, V(phi)) + *(3, Gd, Gp) + *(9, B2d, B2p) + *(12, phid, phip) + *(3, B1d, B1p, coshGsq)) + *(-72, Sd, Sp, S ^ 2), expB1) + *(*(S, *(*(-24, Shh) + *(24, Sh, B1h + *(-1, B2h)) + *(24, Sp, Fyh + xi_yy), coshG) + *(-24, Gh, Sh, sinhG)) + *(S ^ 2, *(*(-6, Ghh) + *(-6, B2h, Gh) + *(6, Fyh, Gp) + *(6, Gp, xi_yy) + *(12, B1h, Gh), sinhG) + *(*(-12, B2h ^ 2) + *(-12, phih ^ 2) + *(-6, B2hh) + *(-6, B1h ^ 2) + *(-6, Gh ^ 2) + *(3, Fyp ^ 2) + *(6, B1hh) + *(-6, B1p + *(-1, B2p), Fyh + xi_yy) + *(6, B1h, B2h), coshG)) + *(12, Sh ^ 2, coshG), expB2) + *(*(S, *(*(-24, Stt) + *(-24, B1t, St) + *(-24, B2t, St) + *(24, Fxt, Sp) + *(24, Sp, xi_xx), coshG) + *(-24, Gt, St, sinhG)) + *(S ^ 2, *(*(-12, B2t ^ 2) + *(-12, phit ^ 2) + *(-6, B1tt) + *(-6, B2tt) + *(-6, B1t ^ 2) + *(-6, Gt ^ 2) + *(3, Fxp ^ 2) + *(-6, B1t, B2t) + *(6, B1p + B2p, Fxt + xi_xx), coshG) + *(-1, *(6, Gtt) + *(-6, Gp, Fxt + xi_xx) + *(6, Gt, B2t + *(2, B1t)), sinhG)) + *(12, St ^ 2, coshG), exp(B2 + *(2, B1))) + *(*(S ^ 2, *(*(12, Gth) + *(-6, Gp, Fxh + Fyt + *(2, xi_xy)) + *(6, Gh, B1t + B2t) + *(6, Gt, B2h + *(-1, B1h)), coshG) + *(*(12, B2th) + *(-6, B2p, Fxh + Fyt + *(2, xi_xy)) + *(-6, Fxp, Fyp) + *(12, Gh, Gt) + *(24, B2h, B2t) + *(24, phih, phit), sinhG)) + *(24, S, *(*(Gh, St) + *(Gt, Sh), coshG) + *(*(2, Sth) + *(B2h, St) + *(B2t, Sh) + *(-1, Sp, Fxh + Fyt + *(2, xi_xy)), sinhG)) + *(-24, Sh, St, sinhG), exp(B1 + B2))
 
     nothing
 end

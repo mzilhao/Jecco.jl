@@ -560,7 +560,7 @@ function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested:
     nothing
 end
 
-function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
+function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -970,7 +970,7 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nest
     nothing
 end
 
-function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
+function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -1172,7 +1172,7 @@ function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, nested::Nested)
     nothing
 end
 
-function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nested)
+function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -1235,6 +1235,11 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nes
                 Fy         = bulk.Fy[a,i,j]
 
                 aux.vars.u     = u
+
+                # FIXME!!
+                aux.vars.xi_xx = 0.0
+                aux.vars.xi_xy = 0.0
+                aux.vars.xi_yy = 0.0
 
                 aux.vars.B1    = bulk.B1[a,i,j]
                 aux.vars.B1p   = B1p
@@ -1441,13 +1446,13 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge:
     # solving for B2d, (B1d,Gd) and phid are independent processes. we can
     # therefore @spawn, here
     @sync begin
-        @spawn solve_B2d_outer!(bulk, BC, nested)
+        @spawn solve_B2d_outer!(bulk, BC, gauge, nested)
         @spawn solve_B1dGd_outer!(bulk, BC, gauge, nested)
-        @spawn solve_phid_outer!(bulk, BC, nested)
+        @spawn solve_phid_outer!(bulk, BC, gauge, nested)
     end
 
     # solve for A
-    solve_A_outer!(bulk, BC, dBC, nested)
+    solve_A_outer!(bulk, BC, dBC, gauge, nested)
 
     nothing
 end
