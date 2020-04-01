@@ -87,6 +87,8 @@ par_grid = ParamGrid(
     u_inner_nodes    =  12,
 )
 
+# TODO: make parameter
+kappa = 1.0
 
 systems = Jecco.AdS5_3_1.create_systems(par_grid)
 
@@ -96,8 +98,15 @@ sys = systems[2]
 Nu_, Nx, Ny = size(sys.grid)
 u, x, y = sys.grid[:]
 
-xi = zeros(Float64, Nx, Ny)
-gauge = GaugeVars(xi, 1.0)
+
+# Note: it's important that xi is defined on a 1*Nx*Ny grid, rather than a Nx*Ny
+# one, so that the same Dx and Dy differential operators defined for the bulk
+# quantities can also straightforwardly apply on xi. Remember that the axis
+# along which the operator applies is defined on the operator itself. So, by
+# defining things this way, the Dx operator (which acts along the 2nd index)
+# will also do the correct thing when acting on xi.
+xi = zeros(Float64, 1, Nx, Ny)
+gauge = GaugeVars(xi, kappa)
 
 nested = Jecco.AdS5_3_1.Nested(sys)
 

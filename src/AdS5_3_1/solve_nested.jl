@@ -127,6 +127,7 @@ Nested(systems::Vector) = [Nested(sys) for sys in systems]
 @inline tildehat(g_xy, g_rr, g_rx, g_ry, Fx, Fy, xi_x, xi_y) =
     g_xy - (Fx + xi_x) * g_ry - (Fy + xi_y) * (g_rx - (Fx + xi_x) * g_rr)
 
+
 #= Notes
 
 for each metric function there are radial ODEs at each z point. since they are
@@ -277,6 +278,9 @@ function solve_Fxy_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Ga
             id  = Threads.threadid()
             aux = aux_acc[id]
 
+            aux.varsFxy.xi_x  = Dx(gauge.xi, 1,i,j)
+            aux.varsFxy.xi_y  = Dy(gauge.xi, 1,i,j)
+
             @inbounds @simd for a in eachindex(uu)
                 u          = uu[a]
                 u2         = u * u
@@ -284,10 +288,6 @@ function solve_Fxy_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Ga
                 u4         = u2 * u2
 
                 aux.varsFxy.u     = u
-
-                # FIXME!!
-                aux.varsFxy.xi_x  = 0.0
-                aux.varsFxy.xi_y  = 0.0
 
                 aux.varsFxy.B1    = bulk.B1[a,i,j]
                 aux.varsFxy.B1p   = -u2 * Du_B1[a,i,j]
@@ -413,6 +413,13 @@ function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested:
             id  = Threads.threadid()
             aux = aux_acc[id]
 
+            xi_x = Dx(gauge.xi, 1,i,j)
+            xi_y = Dy(gauge.xi, 1,i,j)
+
+            aux.vars.xi_xx = Dxx(gauge.xi, 1,i,j)
+            aux.vars.xi_yy = Dyy(gauge.xi, 1,i,j)
+            aux.vars.xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+
             @inbounds @simd for a in eachindex(uu)
                 u          = uu[a]
                 u2         = u * u
@@ -491,19 +498,7 @@ function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested:
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
 
-                # FIXME!!
-                xi_x       = 0.0
-                xi_y       = 0.0
-
-
                 aux.vars.u     = u
-
-
-                # FIXME!!
-                aux.vars.xi_xx = 0.0
-                aux.vars.xi_xy = 0.0
-                aux.vars.xi_yy = 0.0
-
 
                 aux.vars.B1    = bulk.B1[a,i,j]
                 aux.vars.B2    = bulk.B2[a,i,j]
@@ -631,6 +626,13 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested
             id  = Threads.threadid()
             aux = aux_acc[id]
 
+            xi_x = Dx(gauge.xi, 1,i,j)
+            xi_y = Dy(gauge.xi, 1,i,j)
+
+            aux.vars.xi_xx = Dxx(gauge.xi, 1,i,j)
+            aux.vars.xi_yy = Dyy(gauge.xi, 1,i,j)
+            aux.vars.xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+
             @inbounds @simd for a in eachindex(uu)
                 u          = uu[a]
                 u2         = u * u
@@ -709,20 +711,7 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
 
-                # FIXME!!
-                xi_x       = 0.0
-                xi_y       = 0.0
-
-
-
-
                 aux.vars.u     = u
-
-                # FIXME!!
-                aux.vars.xi_xx = 0.0
-                aux.vars.xi_xy = 0.0
-                aux.vars.xi_yy = 0.0
-
 
                 aux.vars.B1    = bulk.B1[a,i,j]
                 aux.vars.B2    = bulk.B2[a,i,j]
@@ -853,6 +842,13 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nest
             id  = Threads.threadid()
             aux = aux_acc[id]
 
+            xi_x = Dx(gauge.xi, 1,i,j)
+            xi_y = Dy(gauge.xi, 1,i,j)
+
+            aux.vars.xi_xx = Dxx(gauge.xi, 1,i,j)
+            aux.vars.xi_yy = Dyy(gauge.xi, 1,i,j)
+            aux.vars.xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+
             @inbounds @simd for a in eachindex(uu)
                 u          = uu[a]
                 u2         = u * u
@@ -932,18 +928,7 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nest
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
 
-                # FIXME!!
-                xi_x       = 0.0
-                xi_y       = 0.0
-
-
                 aux.vars.u     = u
-
-
-                # FIXME!!
-                aux.vars.xi_xx = 0.0
-                aux.vars.xi_xy = 0.0
-                aux.vars.xi_yy = 0.0
 
                 aux.vars.B1    = bulk.B1[a,i,j]
                 aux.vars.B2    = bulk.B2[a,i,j]
@@ -1084,6 +1069,13 @@ function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, neste
             id  = Threads.threadid()
             aux = aux_acc[id]
 
+            xi_x = Dx(gauge.xi, 1,i,j)
+            xi_y = Dy(gauge.xi, 1,i,j)
+
+            aux.vars.xi_xx = Dxx(gauge.xi, 1,i,j)
+            aux.vars.xi_yy = Dyy(gauge.xi, 1,i,j)
+            aux.vars.xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+
             @inbounds @simd for a in eachindex(uu)
                 u          = uu[a]
                 u2         = u * u
@@ -1166,19 +1158,7 @@ function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, neste
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
 
-                # FIXME!!
-                xi_x       = 0.0
-                xi_y       = 0.0
-
-
                 aux.vars.u     = u
-
-
-                # FIXME!!
-                aux.vars.xi_xx = 0.0
-                aux.vars.xi_xy = 0.0
-                aux.vars.xi_yy = 0.0
-
 
                 aux.vars.B1    = bulk.B1[a,i,j]
                 aux.vars.B2    = bulk.B2[a,i,j]
@@ -1308,6 +1288,13 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gaug
             id  = Threads.threadid()
             aux = aux_acc[id]
 
+            xi_x = Dx(gauge.xi, 1,i,j)
+            xi_y = Dy(gauge.xi, 1,i,j)
+
+            aux.vars.xi_xx = Dxx(gauge.xi, 1,i,j)
+            aux.vars.xi_yy = Dyy(gauge.xi, 1,i,j)
+            aux.vars.xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+
             @inbounds @simd for a in eachindex(uu)
                 u          = uu[a]
                 u2         = u * u
@@ -1389,19 +1376,7 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gaug
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
 
-                # FIXME!!
-                xi_x       = 0.0
-                xi_y       = 0.0
-
-
                 aux.vars.u     = u
-
-
-                # FIXME!!
-                aux.vars.xi_xx = 0.0
-                aux.vars.xi_xy = 0.0
-                aux.vars.xi_yy = 0.0
-
 
                 aux.vars.B1    = bulk.B1[a,i,j]
                 aux.vars.B2    = bulk.B2[a,i,j]
