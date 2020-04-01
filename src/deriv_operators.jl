@@ -77,22 +77,86 @@ end
 ChebDeriv(args...) = ChebDeriv{1}(args...)
 
 
-# mul! done by convolution for finite difference operators
-function LinearAlgebra.mul!(df::AbstractVector, A::FiniteDiffDeriv, f::AbstractVector)
-    convolve!(df, f, A)
+@inline function Base.getindex(A::FiniteDiffDeriv, i::Int, j::Int)
+    N      = A.len
+    coeffs = A.stencil_coefs
+    mid    = div(A.stencil_length, 2) + 1
+
+    # note: without the assumption of periodicity this needs to be adapted
+    idx  = 1 + mod(j - i + mid - 1, N)
+
+    if idx < 1 || idx > A.stencil_length
+        return 0.0
+    else
+        return coeffs[idx]
+    end
 end
 
+@inline Base.getindex(A::FiniteDiffDeriv, i::Int, ::Colon) =
+    [A[i,j] for j in 1:A.len]
+
+@inline Base.getindex(A::SpectralDeriv, i, j) = A.D[i,j]
+
+
+# make FiniteDiffDeriv a callable struct, to compute derivatives at a given point
+function (A::FiniteDiffDeriv{T,N,T2,S})(f::AbstractArray{T,M},
+                                        idx::Vararg{Int,M}) where {T<:Real,N,T2,S,M}
+
+    # make sure axis of differentiation is contained in the dimensions of f
+    @assert N <= M
+
+    coeffs = A.stencil_coefs
+    mid = div(A.stencil_length, 2) + 1
+    i   = idx[N] # point where derivative will be taken (with respect to the N-axis)
+
+    sum_i = zero(T)
+
+    if mid <= i <= (A.len-mid+1)
+        @fastmath @inbounds for aa in 1:A.stencil_length
+            i_circ = i - (mid - aa)
+            I = Base.setindex(idx, i_circ, N)
+
+            sum_i += coeffs[aa] * f[I...]
+        end
+    else
+        @fastmath @inbounds for aa in 1:A.stencil_length
+            # imposing periodicity
+            i_circ = 1 + mod(i - (mid-aa) - 1, A.len)
+            I = Base.setindex(idx, i_circ, N)
+
+            sum_i += coeffs[aa] * f[I...]
+        end
+    end
+
+    sum_i
+end
+
+function LinearAlgebra.mul!(df::AbstractVector, A::FiniteDiffDeriv, f::AbstractVector)
+    @fastmath @inbounds for idx in eachindex(f)
+        df[idx] = A(f,idx)
+    end
+    nothing
+end
+
+function LinearAlgebra.mul!(df::AbstractArray, A::FiniteDiffDeriv, f::AbstractArray)
+    @fastmath @inbounds for idx in CartesianIndices(f)
+        df[idx] = A(f,idx.I...)
+    end
+    nothing
+end
+
+
+
 # mul! done by standard matrix multiplication for Chebyshev differentiation
-# matrices. This can also be done (potentially more efficiently) through
-# FFT. TODO; test if worthwhile
+# matrices. This can also be done through FFT, but after some testing the FFT
+# route actually seemed to be performing slower, so let's stick with this
 function LinearAlgebra.mul!(df::AbstractVector, A::SpectralDeriv, f::AbstractVector)
     mul!(df, A.D, f)
 end
 
 # and now for Arrays
-
-function LinearAlgebra.mul!(df::AbstractArray{T}, A::AbstractDerivOperator{T,N},
-                            f::AbstractArray{T}) where {T,N}
+function LinearAlgebra.mul!(df::AbstractArray{T}, A::SpectralDeriv{T,N,S},
+                            f::AbstractArray{T}) where {T,N,S}
     Rpre  = CartesianIndices(axes(f)[1:N-1])
     Rpost = CartesianIndices(axes(f)[N+1:end])
 
@@ -132,29 +196,122 @@ end
     nothing
 end
 
-# convolution operation to act with derivatives on vectors. this currently
-# assumes periodic BCs. adapted from
-# DiffEqOperators.jl/src/derivative_operators/convolutions.jl
-function convolve!(xout::AbstractVector{T}, x::AbstractVector{T},
-                   A::FiniteDiffDeriv) where {T<:Real}
-    N = length(x)
-    coeffs = A.stencil_coefs
-    mid = div(A.stencil_length, 2) + 1
-
-    @fastmath @inbounds for i in 1:N
-        sum_i = zero(T)
-        @inbounds for idx in 1:A.stencil_length
-            # imposing periodicity
-            i_circ = 1 + mod(i - (mid-idx) - 1, N)
-            sum_i += coeffs[idx] * x[i_circ]
-        end
-        xout[i] = sum_i
-    end
-    nothing
-end
-
 function *(A::AbstractDerivOperator, x::AbstractArray)
     y = similar(x)
     mul!(y, A, x)
     y
+end
+
+
+# make SpectralDeriv a callable struct, to compute derivatives only at a given point.
+function (A::SpectralDeriv{T,N,S})(f::AbstractArray{T,M},
+                                   idx::Vararg{Int,M}) where {T<:Real,N,M,S}
+    # make sure axis of differentiation is contained in the dimensions of f
+    @assert N <= M
+
+    i  = idx[N] # point where derivative will be taken (with respect to the N-axis)
+
+    sum_i = zero(T)
+    @fastmath @inbounds for ii in 1:A.len
+        I = Base.setindex(idx, ii, N)
+        sum_i += A.D[i,ii] * f[I...]
+    end
+    sum_i
+end
+
+
+# now for cross-derivatives. we assume that A acts on the first and B on the
+# second axis of the x Matrix.
+
+function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S}, x::AbstractMatrix{T},
+                                         i::Int, j::Int) where {T<:Real,T2,S,N1,N2}
+    NA   = A.len
+    NB   = B.len
+    qA   = A.stencil_coefs
+    qB   = B.stencil_coefs
+    midA = div(A.stencil_length, 2) + 1
+    midB = div(B.stencil_length, 2) + 1
+
+    @assert( (NA, NB) == size(x) )
+    @assert( N2 > N1 )
+
+    sum_ij = zero(T)
+
+    if midA <= i <= (NA-midA+1) && midB <= j <= (NB-midB+1)
+        @fastmath @inbounds for jj in 1:B.stencil_length
+            j_circ = j - (midB-jj)
+            sum_i  = zero(T)
+            @inbounds for ii in 1:A.stencil_length
+                i_circ = i - (midA-ii)
+                sum_i += qA[ii] * qB[jj] * x[i_circ,j_circ]
+            end
+            sum_ij += sum_i
+        end
+    else
+        @fastmath @inbounds for jj in 1:B.stencil_length
+            # imposing periodicity
+            j_circ = 1 + mod(j - (midB-jj) - 1, NB)
+            sum_i  = zero(T)
+            @inbounds for ii in 1:A.stencil_length
+                # imposing periodicity
+                i_circ = 1 + mod(i - (midA-ii) - 1, NA)
+                sum_i += qA[ii] * qB[jj] * x[i_circ,j_circ]
+            end
+            sum_ij += sum_i
+        end
+    end
+
+    sum_ij
+end
+
+# and now for any Array. maybe we could even remove the method above
+
+function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S},
+                                         f::AbstractArray{T,M},
+                                         idx::Vararg{Int,M}) where {T<:Real,T2,S,N1,N2,M}
+    NA   = A.len
+    NB   = B.len
+    qA   = A.stencil_coefs
+    qB   = B.stencil_coefs
+    midA = div(A.stencil_length, 2) + 1
+    midB = div(B.stencil_length, 2) + 1
+
+    # make sure axes of differentiation are contained in the dimensions of f
+    @assert N1 < N2 <= M
+
+    # points where derivative will be taken (along their respective axes)
+    i  = idx[N1]
+    j  = idx[N2]
+
+    sum_ij = zero(T)
+
+    if midA <= i <= (NA-midA+1) && midB <= j <= (NB-midB+1)
+        @fastmath @inbounds for jj in 1:B.stencil_length
+            j_circ = j - (midB-jj)
+            Itmp   = Base.setindex(idx, j_circ, N2)
+            sum_i  = zero(T)
+            @inbounds for ii in 1:A.stencil_length
+                i_circ = i - (midA-ii)
+                I      = Base.setindex(Itmp, i_circ, N1)
+                sum_i += qA[ii] * qB[jj] * f[I...]
+            end
+            sum_ij += sum_i
+        end
+    else
+        @fastmath @inbounds for jj in 1:B.stencil_length
+            # imposing periodicity
+            j_circ = 1 + mod(j - (midB-jj) - 1, NB)
+            Itmp   = Base.setindex(idx, j_circ, N2)
+            sum_i  = zero(T)
+            @inbounds for ii in 1:A.stencil_length
+                # imposing periodicity
+                i_circ = 1 + mod(i - (midA-ii) - 1, NA)
+                I      = Base.setindex(Itmp, i_circ, N1)
+                sum_i += qA[ii] * qB[jj] * f[I...]
+            end
+            sum_ij += sum_i
+        end
+    end
+
+    sum_ij
 end

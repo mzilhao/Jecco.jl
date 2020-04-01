@@ -5,7 +5,7 @@ using LinearAlgebra
 using Parameters
 
 export AbstractCoord, Cartesian, GaussLobatto
-export CartCoord, SpectralCoord, Grid, delta
+export CartCoord, SpectralCoord, Grid
 export CenteredDiff, ChebDeriv
 
 export OpenPMDTimeSeries, get_field
@@ -17,5 +17,6 @@ include("output.jl")
 include("startup.jl")
 include("spectral.jl")
 include("KG_3_1/KG_3_1.jl")
+include("AdS5_3_1/AdS5_3_1.jl")
 
 end # module

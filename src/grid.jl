@@ -4,6 +4,12 @@ abstract type CoordType end
 abstract type Cartesian    <: CoordType end
 abstract type GaussLobatto <: CoordType end
 
+# TODO: consider making type of product of GaussLobatto grids? just need to
+# redefine derivative ops, it may be better than having the array of ugrids...
+# would have to do something about the inversion of the operator, though... it's
+# better to invert one 64 x 64 matrix than 4 matrices 16 x 16. so would have to
+# come up with a smart way of doing that as well...
+
 abstract type AbstractCoord{T,N,C} end
 
 coord_elem(A::AbstractCoord{T,N,C}) where {T,N,C} = T

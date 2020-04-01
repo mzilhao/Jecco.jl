@@ -19,11 +19,11 @@ function System(ucoord::AbstractCoord{T,1,GaussLobatto},
     Du  = ChebDeriv{1}(1, ucoord.min, ucoord.max, ucoord.nodes)
     Duu = ChebDeriv{1}(2, ucoord.min, ucoord.max, ucoord.nodes)
 
-    Dx  = CenteredDiff{2}(1, ord, delta(xcoord), xcoord.nodes)
-    Dxx = CenteredDiff{2}(2, ord, delta(xcoord), xcoord.nodes)
+    Dx  = CenteredDiff{2}(1, ord, Jecco.delta(xcoord), xcoord.nodes)
+    Dxx = CenteredDiff{2}(2, ord, Jecco.delta(xcoord), xcoord.nodes)
 
-    Dy  = CenteredDiff{3}(1, ord, delta(ycoord), ycoord.nodes)
-    Dyy = CenteredDiff{3}(2, ord, delta(ycoord), ycoord.nodes)
+    Dy  = CenteredDiff{3}(1, ord, Jecco.delta(ycoord), ycoord.nodes)
+    Dyy = CenteredDiff{3}(2, ord, Jecco.delta(ycoord), ycoord.nodes)
 
     System{typeof(grid), typeof(Du), typeof(Dx),
            typeof(Dy)}(grid, Du, Duu, Dx, Dxx, Dy, Dyy)
