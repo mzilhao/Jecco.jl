@@ -1,6 +1,7 @@
 
 import Base: *
 import LinearAlgebra: mul!
+using SparseArrays
 
 abstract type AbstractDerivOperator{T,N} end
 
@@ -264,7 +265,7 @@ function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S}, x::Abstr
     sum_ij
 end
 
-# and now for any Array. maybe we could even remove the method above
+# and now for any Array.
 
 function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S},
                                          f::AbstractArray{T,M},
@@ -315,3 +316,22 @@ function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S},
 
     sum_ij
 end
+
+
+# Casting to matrix types
+
+Base.copyto!(M::AbstractMatrix{T}, A::SpectralDeriv) where {T<:Real} =
+    copyto!(M, A.D)
+
+function copyto!(M::AbstractMatrix{T}, A::FiniteDiffDeriv) where {T<:Real}
+    for idx in CartesianIndices(M)
+        M[idx] = A[idx.I...]
+    end
+    M
+end
+
+LinearAlgebra.Array(A::AbstractDerivOperator{T,N}) where {T,N} =
+    copyto!(zeros(T, A.len, A.len), A)
+
+SparseArrays.SparseMatrixCSC(A::FiniteDiffDeriv{T,N,T2,S}) where {T,N,T2,S} =
+    copyto!(spzeros(T, A.len, A.len), A)
