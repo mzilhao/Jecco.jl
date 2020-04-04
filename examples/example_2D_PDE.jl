@@ -16,6 +16,8 @@ function getind2D(Nx::Int)
 end
 
 
+# https://en.wikipedia.org/wiki/Kronecker_product
+# https://arxiv.org/pdf/1801.01483.pdf
 function build_operators(hx, hy, Nx::Int, Ny::Int)
     ord = 4
 
@@ -55,7 +57,7 @@ hy = Jecco.delta(ycoord)
 Nx = xcoord.nodes
 Ny = ycoord.nodes
 
-Dx, Dy, Dxx, Dyy = build_operators(hx, hy, Nx, Ny)
+Dx, Dy, Dxx, Dyy, Dxy = build_operators(hx, hy, Nx, Ny)
 
 
 kx = 2*pi * nx / (x_max-x_min)
@@ -74,6 +76,8 @@ M = Nx * Ny
 A_mat = spzeros(M,M)
 b_vec = zeros(M)
 
+C     = zeros(M)
+
 for j in 1:Ny, i in 1:Nx
     # idx = ind2D(i,j)
     idx = ind2D[i,j]
@@ -82,12 +86,29 @@ for j in 1:Ny, i in 1:Nx
     yi  = ycoord[j]
 
     b_vec[idx] = source1(xi, yi, kx, ky)
+    C[idx] = (kx*kx + ky*ky)
 end
+
+
+# for kl in 1:M, ij in 1:M
+#     c = C[ij]
+#     A_mat[ij,kl] = Dxx[ij,kl] + Dyy[ij,kl] + Dx[ij,kl] + Dy[ij,kl] + c * I[ij,kl]
+# end
 
 
 for kl in 1:M, ij in 1:M
     A_mat[ij,kl] = Dxx[ij,kl] + Dyy[ij,kl]
 end
+
+
+# better to do: broadcast!(*, A_mat, Axy, Dxy)
+# for kl in 1:M, ij in 1:M
+#     axy = Axy[ij]
+#     A_mat[ij,kl] = axy * Dxy[ij,kl]
+# end
+
+A_mat = Dxx + Dyy + Dxy + C .* sparse(I, M, M)
+
 
 # f_test = similar(f_exact)
 # f_xx   = similar(f_exact)
