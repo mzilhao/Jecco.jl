@@ -25,8 +25,11 @@ Dxx_op = CenteredDiff{1}(2, ord, hx, Nx)
 Dx  = SparseMatrixCSC(Dx_op)
 Dxx = SparseMatrixCSC(Dxx_op)
 
+# TODO: building the operator this way takes longer than performing the LU
+# factorization below. see if there are better ways to do this.
 A_mat = Dxx + x .* Dx + x.^2 .* sparse(I, Nx, Nx)
-
 b_vec = source.(x)
 
-sol = A_mat \ b_vec
+A_fact = lu(A_mat)
+sol    = zero(b_vec)
+ldiv!(sol, A_fact, b_vec)
