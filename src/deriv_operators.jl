@@ -1,5 +1,5 @@
 
-import Base: *
+import Base: *, copyto!
 import LinearAlgebra: mul!
 using SparseArrays
 
@@ -320,7 +320,7 @@ end
 
 # Casting to matrix types
 
-Base.copyto!(M::AbstractMatrix{T}, A::SpectralDeriv) where {T<:Real} =
+copyto!(M::AbstractMatrix{T}, A::SpectralDeriv) where {T<:Real} =
     copyto!(M, A.D)
 
 function copyto!(M::AbstractMatrix{T}, A::FiniteDiffDeriv) where {T<:Real}
