@@ -124,7 +124,7 @@ Nested(systems::Vector) = [Nested(sys) for sys in systems]
 @inline star(g_yy, g_rr, g_ry, Fy, xi_y) = g_yy + (Fy + xi_y) *
     (-2*g_ry + (Fy + xi_y) * g_rr)
 
-@inline tildehat(g_xy, g_rr, g_rx, g_ry, Fx, Fy, xi_x, xi_y) =
+@inline cross(g_xy, g_rr, g_rx, g_ry, Fx, Fy, xi_x, xi_y) =
     g_xy - (Fx + xi_x) * g_ry - (Fy + xi_y) * (g_rx - (Fx + xi_x) * g_rr)
 
 
@@ -560,9 +560,9 @@ function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested:
                 aux.vars.Fxph  = hat(  Fxp_y,  Fxpp,  Fy, xi_y)
                 aux.vars.Fyph  = hat(  Fyp_y,  Fypp,  Fy, xi_y)
 
-                aux.vars.B2th  = tildehat(B2_xy, B2pp, B2p_x, B2p_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Gth   = tildehat( G_xy,  Gpp,  Gp_x,  Gp_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Sth   = tildehat( S_xy,  Spp,  Sp_x,  Sp_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.B2c  = cross(B2_xy, B2pp, B2p_x, B2p_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.Gc   = cross( G_xy,  Gpp,  Gp_x,  Gp_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.Sc   = cross( S_xy,  Spp,  Sp_x,  Sp_y, Fx, Fy, xi_x, xi_y)
 
                 Sd_outer_eq_coeff!(aux.ABCS, aux.vars)
 
@@ -774,9 +774,9 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested
                 aux.vars.Fxph  = hat(  Fxp_y,  Fxpp,  Fy, xi_y)
                 aux.vars.Fyph  = hat(  Fyp_y,  Fypp,  Fy, xi_y)
 
-                aux.vars.B2th  = tildehat(B2_xy, B2pp, B2p_x, B2p_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Gth   = tildehat( G_xy,  Gpp,  Gp_x,  Gp_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Sth   = tildehat( S_xy,  Spp,  Sp_x,  Sp_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.B2c  = cross(B2_xy, B2pp, B2p_x, B2p_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.Gc   = cross( G_xy,  Gpp,  Gp_x,  Gp_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.Sc   = cross( S_xy,  Spp,  Sp_x,  Sp_y, Fx, Fy, xi_x, xi_y)
 
                 B2d_outer_eq_coeff!(aux.ABCS, aux.vars)
 
@@ -991,9 +991,9 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nest
                 aux.vars.Fxph  = hat(  Fxp_y,  Fxpp,  Fy, xi_y)
                 aux.vars.Fyph  = hat(  Fyp_y,  Fypp,  Fy, xi_y)
 
-                aux.vars.B2th  = tildehat(B2_xy, B2pp, B2p_x, B2p_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Gth   = tildehat( G_xy,  Gpp,  Gp_x,  Gp_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Sth   = tildehat( S_xy,  Spp,  Sp_x,  Sp_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.B2c  = cross(B2_xy, B2pp, B2p_x, B2p_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.Gc   = cross( G_xy,  Gpp,  Gp_x,  Gp_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.Sc   = cross( S_xy,  Spp,  Sp_x,  Sp_y, Fx, Fy, xi_x, xi_y)
 
                 B1dGd_outer_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, aux.vars)
 
@@ -1221,10 +1221,10 @@ function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, neste
                 aux.vars.Fxph  = hat(  Fxp_y,  Fxpp,  Fy, xi_y)
                 aux.vars.Fyph  = hat(  Fyp_y,  Fypp,  Fy, xi_y)
 
-                aux.vars.B2th  = tildehat( B2_xy,  B2pp,  B2p_x,  B2p_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Gth   = tildehat(  G_xy,   Gpp,   Gp_x,   Gp_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Sth   = tildehat(  S_xy,   Spp,   Sp_x,   Sp_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.phith = tildehat(phi_xy, phipp, phip_x, phip_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.B2c  = cross( B2_xy,  B2pp,  B2p_x,  B2p_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.Gc   = cross(  G_xy,   Gpp,   Gp_x,   Gp_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.Sc   = cross(  S_xy,   Spp,   Sp_x,   Sp_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.phic = cross(phi_xy, phipp, phip_x, phip_y, Fx, Fy, xi_x, xi_y)
 
                 phid_outer_eq_coeff!(aux.ABCS, aux.vars)
 
@@ -1445,10 +1445,10 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gaug
                 aux.vars.Fxph  = hat(  Fxp_y,  Fxpp,  Fy, xi_y)
                 aux.vars.Fyph  = hat(  Fyp_y,  Fypp,  Fy, xi_y)
 
-                aux.vars.B2th  = tildehat( B2_xy,  B2pp,  B2p_x,  B2p_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Gth   = tildehat(  G_xy,   Gpp,   Gp_x,   Gp_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Sth   = tildehat(  S_xy,   Spp,   Sp_x,   Sp_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.phith = tildehat(phi_xy, phipp, phip_x, phip_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.B2c  = cross( B2_xy,  B2pp,  B2p_x,  B2p_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.Gc   = cross(  G_xy,   Gpp,   Gp_x,   Gp_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.Sc   = cross(  S_xy,   Spp,   Sp_x,   Sp_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.phic = cross(phi_xy, phipp, phip_x, phip_y, Fx, Fy, xi_x, xi_y)
 
                 A_outer_eq_coeff!(aux.ABCS, aux.vars)
 
