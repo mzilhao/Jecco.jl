@@ -32,8 +32,8 @@ mutable struct AllVarsOuter{T}
     B1p      :: T
     B1t      :: T
     B1h      :: T
-    B1b     :: T
-    B1s     :: T
+    B1b      :: T
+    B1s      :: T
     B1pt     :: T
     B1ph     :: T
 
@@ -41,8 +41,8 @@ mutable struct AllVarsOuter{T}
     B2p      :: T
     B2t      :: T
     B2h      :: T
-    B2b     :: T
-    B2s     :: T
+    B2b      :: T
+    B2s      :: T
     B2pt     :: T
     B2ph     :: T
 
@@ -50,8 +50,8 @@ mutable struct AllVarsOuter{T}
     Gp       :: T
     Gt       :: T
     Gh       :: T
-    Gb      :: T
-    Gs      :: T
+    Gb       :: T
+    Gs       :: T
     Gpt      :: T
     Gph      :: T
 
@@ -59,8 +59,8 @@ mutable struct AllVarsOuter{T}
     phip     :: T
     phit     :: T
     phih     :: T
-    phib    :: T
-    phis    :: T
+    phib     :: T
+    phis     :: T
     phipt    :: T
     phiph    :: T
 
@@ -68,8 +68,8 @@ mutable struct AllVarsOuter{T}
     Sp       :: T
     St       :: T
     Sh       :: T
-    Sb      :: T
-    Ss      :: T
+    Sb       :: T
+    Ss       :: T
     Spt      :: T
     Sph      :: T
 
@@ -77,8 +77,8 @@ mutable struct AllVarsOuter{T}
     Fxp      :: T
     Fxt      :: T
     Fxh      :: T
-    Fxb     :: T
-    Fxs     :: T
+    Fxb      :: T
+    Fxs      :: T
     Fxpt     :: T
     Fxph     :: T
 
@@ -86,8 +86,8 @@ mutable struct AllVarsOuter{T}
     Fyp      :: T
     Fyt      :: T
     Fyh      :: T
-    Fyb     :: T
-    Fys     :: T
+    Fyb      :: T
+    Fys      :: T
     Fypt     :: T
     Fyph     :: T
 
@@ -97,10 +97,10 @@ mutable struct AllVarsOuter{T}
     Gd       :: T
     phid     :: T
 
-    B2c     :: T
-    Gc      :: T
-    Sc      :: T
-    phic    :: T
+    B2c      :: T
+    Gc       :: T
+    Sc       :: T
+    phic     :: T
 end
 function AllVarsOuter{T}() where {T<:AbstractFloat}
     N = 1 + 5 + 8*7 + 5 + 4
@@ -286,8 +286,8 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     B1p    = vars.B1p
     B1t    = vars.B1t
     B1h    = vars.B1h
-    B1b   = vars.B1b
-    B1s   = vars.B1s
+    B1b    = vars.B1b
+    B1s    = vars.B1s
     B1pt   = vars.B1pt
     B1ph   = vars.B1ph
 
@@ -295,8 +295,8 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     B2p    = vars.B2p
     B2t    = vars.B2t
     B2h    = vars.B2h
-    B2b   = vars.B2b
-    B2s   = vars.B2s
+    B2b    = vars.B2b
+    B2s    = vars.B2s
     B2pt   = vars.B2pt
     B2ph   = vars.B2ph
 
@@ -304,8 +304,8 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     Gp     = vars.Gp
     Gt     = vars.Gt
     Gh     = vars.Gh
-    Gb    = vars.Gb
-    Gs    = vars.Gs
+    Gb     = vars.Gb
+    Gs     = vars.Gs
     Gpt    = vars.Gpt
     Gph    = vars.Gph
 
@@ -313,8 +313,8 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     phip   = vars.phip
     phit   = vars.phit
     phih   = vars.phih
-    phib  = vars.phib
-    phis  = vars.phis
+    phib   = vars.phib
+    phis   = vars.phis
     phipt  = vars.phipt
     phiph  = vars.phiph
 
@@ -322,8 +322,8 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
     Sp     = vars.Sp
     St     = vars.St
     Sh     = vars.Sh
-    Sb    = vars.Sb
-    Ss    = vars.Ss
+    Sb     = vars.Sb
+    Ss     = vars.Ss
     Spt    = vars.Spt
     Sph    = vars.Sph
 
