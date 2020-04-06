@@ -118,7 +118,7 @@ Nested(systems::Vector) = [Nested(sys) for sys in systems]
 @inline tilde(g_x, g_r, Fx, xi_x) = g_x - (Fx + xi_x) * g_r
 @inline hat(g_y, g_r, Fy, xi_y)   = g_y - (Fy + xi_y) * g_r
 
-@inline tilde2(g_xx, g_rr, g_rx, Fx, xi_x) = g_xx + (Fx + xi_x) *
+@inline bar(g_xx, g_rr, g_rx, Fx, xi_x) = g_xx + (Fx + xi_x) *
     (-2*g_rx + (Fx + xi_x) * g_rr)
 
 @inline star(g_yy, g_rr, g_ry, Fy, xi_y) = g_yy + (Fy + xi_y) *
@@ -532,11 +532,11 @@ function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested:
                 aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy, xi_y)
                 aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy, xi_y)
 
-                aux.vars.B1tt  = tilde2( B1_xx,  B1pp,  B1p_x,  Fx, xi_x)
-                aux.vars.B2tt  = tilde2( B2_xx,  B2pp,  B2p_x,  Fx, xi_x)
-                aux.vars.Gtt   = tilde2(  G_xx,   Gpp,   Gp_x,  Fx, xi_x)
-                aux.vars.phitt = tilde2(phi_xx, phipp, phip_x,  Fx, xi_x)
-                aux.vars.Stt   = tilde2(  S_xx,   Spp,   Sp_x,  Fx, xi_x)
+                aux.vars.B1b  = bar( B1_xx,  B1pp,  B1p_x,  Fx, xi_x)
+                aux.vars.B2b  = bar( B2_xx,  B2pp,  B2p_x,  Fx, xi_x)
+                aux.vars.Gb   = bar(  G_xx,   Gpp,   Gp_x,  Fx, xi_x)
+                aux.vars.phib = bar(phi_xx, phipp, phip_x,  Fx, xi_x)
+                aux.vars.Sb   = bar(  S_xx,   Spp,   Sp_x,  Fx, xi_x)
 
                 aux.vars.B1s  = star( B1_yy,  B1pp,  B1p_y,  Fy, xi_y)
                 aux.vars.B2s  = star( B2_yy,  B2pp,  B2p_y,  Fy, xi_y)
@@ -746,11 +746,11 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested
                 aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy, xi_y)
                 aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy, xi_y)
 
-                aux.vars.B1tt  = tilde2( B1_xx,  B1pp,  B1p_x,  Fx, xi_x)
-                aux.vars.B2tt  = tilde2( B2_xx,  B2pp,  B2p_x,  Fx, xi_x)
-                aux.vars.Gtt   = tilde2(  G_xx,   Gpp,   Gp_x,  Fx, xi_x)
-                aux.vars.phitt = tilde2(phi_xx, phipp, phip_x,  Fx, xi_x)
-                aux.vars.Stt   = tilde2(  S_xx,   Spp,   Sp_x,  Fx, xi_x)
+                aux.vars.B1b  = bar( B1_xx,  B1pp,  B1p_x,  Fx, xi_x)
+                aux.vars.B2b  = bar( B2_xx,  B2pp,  B2p_x,  Fx, xi_x)
+                aux.vars.Gb   = bar(  G_xx,   Gpp,   Gp_x,  Fx, xi_x)
+                aux.vars.phib = bar(phi_xx, phipp, phip_x,  Fx, xi_x)
+                aux.vars.Sb   = bar(  S_xx,   Spp,   Sp_x,  Fx, xi_x)
 
                 aux.vars.B1s  = star( B1_yy,  B1pp,  B1p_y,  Fy, xi_y)
                 aux.vars.B2s  = star( B2_yy,  B2pp,  B2p_y,  Fy, xi_y)
@@ -963,11 +963,11 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nest
                 aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy, xi_y)
                 aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy, xi_y)
 
-                aux.vars.B1tt  = tilde2( B1_xx,  B1pp,  B1p_x,  Fx, xi_x)
-                aux.vars.B2tt  = tilde2( B2_xx,  B2pp,  B2p_x,  Fx, xi_x)
-                aux.vars.Gtt   = tilde2(  G_xx,   Gpp,   Gp_x,  Fx, xi_x)
-                aux.vars.phitt = tilde2(phi_xx, phipp, phip_x,  Fx, xi_x)
-                aux.vars.Stt   = tilde2(  S_xx,   Spp,   Sp_x,  Fx, xi_x)
+                aux.vars.B1b  = bar( B1_xx,  B1pp,  B1p_x,  Fx, xi_x)
+                aux.vars.B2b  = bar( B2_xx,  B2pp,  B2p_x,  Fx, xi_x)
+                aux.vars.Gb   = bar(  G_xx,   Gpp,   Gp_x,  Fx, xi_x)
+                aux.vars.phib = bar(phi_xx, phipp, phip_x,  Fx, xi_x)
+                aux.vars.Sb   = bar(  S_xx,   Spp,   Sp_x,  Fx, xi_x)
 
                 aux.vars.B1s  = star( B1_yy,  B1pp,  B1p_y,  Fy, xi_y)
                 aux.vars.B2s  = star( B2_yy,  B2pp,  B2p_y,  Fy, xi_y)
@@ -1193,11 +1193,11 @@ function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, neste
                 aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy, xi_y)
                 aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy, xi_y)
 
-                aux.vars.B1tt  = tilde2( B1_xx,  B1pp,  B1p_x,  Fx, xi_x)
-                aux.vars.B2tt  = tilde2( B2_xx,  B2pp,  B2p_x,  Fx, xi_x)
-                aux.vars.Gtt   = tilde2(  G_xx,   Gpp,   Gp_x,  Fx, xi_x)
-                aux.vars.phitt = tilde2(phi_xx, phipp, phip_x,  Fx, xi_x)
-                aux.vars.Stt   = tilde2(  S_xx,   Spp,   Sp_x,  Fx, xi_x)
+                aux.vars.B1b  = bar( B1_xx,  B1pp,  B1p_x,  Fx, xi_x)
+                aux.vars.B2b  = bar( B2_xx,  B2pp,  B2p_x,  Fx, xi_x)
+                aux.vars.Gb   = bar(  G_xx,   Gpp,   Gp_x,  Fx, xi_x)
+                aux.vars.phib = bar(phi_xx, phipp, phip_x,  Fx, xi_x)
+                aux.vars.Sb   = bar(  S_xx,   Spp,   Sp_x,  Fx, xi_x)
 
                 aux.vars.B1s  = star( B1_yy,  B1pp,  B1p_y,  Fy, xi_y)
                 aux.vars.B2s  = star( B2_yy,  B2pp,  B2p_y,  Fy, xi_y)
@@ -1417,11 +1417,11 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gaug
                 aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy, xi_y)
                 aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy, xi_y)
 
-                aux.vars.B1tt  = tilde2( B1_xx,  B1pp,  B1p_x,  Fx, xi_x)
-                aux.vars.B2tt  = tilde2( B2_xx,  B2pp,  B2p_x,  Fx, xi_x)
-                aux.vars.Gtt   = tilde2(  G_xx,   Gpp,   Gp_x,  Fx, xi_x)
-                aux.vars.phitt = tilde2(phi_xx, phipp, phip_x,  Fx, xi_x)
-                aux.vars.Stt   = tilde2(  S_xx,   Spp,   Sp_x,  Fx, xi_x)
+                aux.vars.B1b  = bar( B1_xx,  B1pp,  B1p_x,  Fx, xi_x)
+                aux.vars.B2b  = bar( B2_xx,  B2pp,  B2p_x,  Fx, xi_x)
+                aux.vars.Gb   = bar(  G_xx,   Gpp,   Gp_x,  Fx, xi_x)
+                aux.vars.phib = bar(phi_xx, phipp, phip_x,  Fx, xi_x)
+                aux.vars.Sb   = bar(  S_xx,   Spp,   Sp_x,  Fx, xi_x)
 
                 aux.vars.B1s  = star( B1_yy,  B1pp,  B1p_y,  Fy, xi_y)
                 aux.vars.B2s  = star( B2_yy,  B2pp,  B2p_y,  Fy, xi_y)
