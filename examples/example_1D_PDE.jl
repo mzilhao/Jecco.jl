@@ -4,24 +4,48 @@ using LinearAlgebra
 using SparseArrays
 using Plots
 
-# return M_ij = x_i A_ij  (no sum in i)
-function mul_col(x::Vector, A::SparseMatrixCSC)
+# returns A_ij = x_i A_ij (no sum in i). note that A itself is also changed.
+# this is equivalent to the operation A = x .* A, but it's much more efficient
+function mul_col!(x::Vector, A::SparseMatrixCSC)
     @assert size(x)[1] == size(A)[1]
 
-    ii, jj, V = findnz(A)
-    @inbounds for idx in eachindex(V)
-        V[idx] *= x[ii[idx]]
+    rows = rowvals(A)
+    vals = nonzeros(A)
+    @inbounds for idx in eachindex(vals)
+        row = rows[idx]
+        vals[idx] *= x[row]
     end
-    sparse(ii,jj,V)
+    A
 end
 
 function build_operator(aa::Vector, Dxx::SparseMatrixCSC,
                         bb::Vector, Dx::SparseMatrixCSC, cc::Vector)
-    aaDxx = mul_col(aa, Dxx)
-    bbDx  = mul_col(bb, Dx)
+    mul_col!(aa, Dxx)
+    mul_col!(bb, Dx)
     ccId  = Diagonal(cc)
 
-    aaDxx + bbDx + ccId
+    Dxx + Dx + ccId
+end
+
+
+function build_operator2!(aa::Vector, Dxx::SparseMatrixCSC,
+                         bb::Vector, Dx::SparseMatrixCSC, cc::Vector)
+    mul_col!(aa, Dxx)
+    mul_col!(bb, Dx)
+    ccId = Diagonal(cc)
+
+    rows = rowvals(Dxx)
+    vals = nonzeros(Dxx)
+    m, n = size(Dxx)
+
+    # cf. https://docs.julialang.org/en/v1/stdlib/SparseArrays/#SparseArrays.nzrange
+    @inbounds for j = 1:n
+        @inbounds for i in nzrange(Dxx, j)
+            row = rows[i]
+            vals[i] += Dx[row,j] + ccId[row,j]
+        end
+    end
+    Dxx
 end
 
 source(x) = exp(-x^2) * (-2 + 3*x^2)
@@ -52,7 +76,9 @@ bb = copy(x)
 cc = x.^2
 
 # build operator A = Dxx + x Dx + x^2
-A_mat = build_operator(aa, Dxx, bb, Dx, cc)
+# A_mat = build_operator(aa, Dxx, bb, Dx, cc)
+A_mat = build_operator2!(aa, Dxx, bb, Dx, cc)
+
 b_vec = source.(x)
 
 A_fact = factorize(A_mat)
