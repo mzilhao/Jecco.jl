@@ -83,6 +83,16 @@ build_operator!(A_mat, Dx_tmp, aa, bb, cc)
 
 b_vec = source.(x)
 
+# since we're using periodic boundary conditions, the operator A_mat (just like
+# the Dx and Dxx operators) is strictly speaking not invertible (it has zero
+# determinant) since the solution is not unique. indeed, its LU decomposition
+# shouldn't even be defined. for some reason, however, the call to "lu" does in
+# fact factorize the matrix. in any case, to be safer, let's instead call
+# "factorize", which uses fancy algorithms to determine which is the best way to
+# factorize (and which performs a QR decomposition if the LU fails). the inverse
+# that is performed probably returns the minimum norm least squares solution, or
+# something similar. in any case, for our purposes here we mostly care about
+# getting a solution (not necessarily the minimum norm least squares one).
 A_fact = factorize(A_mat)
 sol    = A_fact \ b_vec
 
