@@ -20,13 +20,8 @@ function mul_col!(x::Vector, A::SparseMatrixCSC)
     A
 end
 
-
-#=
-build operator
-
-   axx Dxx + ayy Dyy + axy Dxy + bx Dx + by Dy + cc
-
-=#
+# returns axx Dxx + ayy Dyy + axy Dxy + bx Dx + by Dy + cc. note that this
+# function overwrites the input matrices to save memory
 function build_operator(Dxx::SparseMatrixCSC, Dyy::SparseMatrixCSC, Dxy::SparseMatrixCSC,
                         Dx::SparseMatrixCSC, Dy::SparseMatrixCSC,
                         axx::Vector, ayy::Vector, axy::Vector,
@@ -38,23 +33,17 @@ function build_operator(Dxx::SparseMatrixCSC, Dyy::SparseMatrixCSC, Dxy::SparseM
     mul_col!(by,  Dy)
     ccId = Diagonal(cc)
 
-    # rows = rowvals(Dxx)
-    # vals = nonzeros(Dxx)
-    # m, n = size(Dxx)
-
-    # # cf. https://docs.julialang.org/en/v1/stdlib/SparseArrays/#SparseArrays.nzrange
-    # @inbounds for j = 1:n
-    #     @inbounds for i in nzrange(Dxx, j)
-    #         row = rows[i]
-    #         vals[i] += Dx[row,j] + ccId[row,j]
-    #     end
-    # end
-    # Dxx
     Dxx + Dyy + Dxy + Dx + Dy + ccId
 end
 
-# https://en.wikipedia.org/wiki/Kronecker_product
-# https://arxiv.org/pdf/1801.01483.pdf
+#=
+use the Kronecker product (kron) to build the 2-dimensional derivation matrices
+from the 1-dimensional ones. see for instance:
+
+  https://en.wikipedia.org/wiki/Kronecker_product
+
+  https://arxiv.org/pdf/1801.01483.pdf (section 5)
+=#
 function deriv_operators(hx, hy, Nx::Int, Ny::Int, ord::Int)
     Dx_op  = CenteredDiff{1}(1, ord, hx, Nx)
     Dxx_op = CenteredDiff{1}(2, ord, hx, Nx)
@@ -71,15 +60,12 @@ function deriv_operators(hx, hy, Nx::Int, Ny::Int, ord::Int)
 end
 
 
-x_min            = -5.0
-x_max            =  5.0
-x_nodes          =  128
-# x_nodes          =  12
-y_min            = -5.0
-y_max            =  5.0
-y_nodes          =  64
-# y_nodes          =  4
-
+x_min    = -5.0
+x_max    =  5.0
+x_nodes  =  128
+y_min    = -5.0
+y_max    =  5.0
+y_nodes  =  64
 
 ord = 4
 
@@ -102,7 +88,6 @@ ind2D = LinearIndices(f0)
 
 M = Nx * Ny
 
-# A_mat = spzeros(M,M)
 b_vec = zeros(M)
 
 axx     = ones(M)
@@ -111,7 +96,6 @@ axy     = zeros(M)
 bx      = zeros(M)
 by      = zeros(M)
 cc      = zeros(M)
-
 
 for j in 1:Ny, i in 1:Nx
     idx = ind2D[i,j]
@@ -127,9 +111,19 @@ for j in 1:Ny, i in 1:Nx
     b_vec[idx] = source(xi, yi)
 end
 
+# build operator A = Dxx + Dyy + x y Dxy + x Dx + y Dy + (x^2 + y^2)
 A_mat = build_operator(Dxx, Dyy, Dxy, Dx, Dy, axx, ayy, axy, bx, by, cc)
 
-
+# since we're using periodic boundary conditions, the operator A_mat (just like
+# the Dx and Dxx operators) is strictly speaking not invertible (it has zero
+# determinant) since the solution is not unique. indeed, its LU decomposition
+# shouldn't even be defined. for some reason, however, the call to "lu" does in
+# fact factorize the matrix. in any case, to be safer, let's instead call
+# "factorize", which uses fancy algorithms to determine which is the best way to
+# factorize (and which performs a QR decomposition if the LU fails). the inverse
+# that is performed probably returns the minimum norm least squares solution, or
+# something similar. in any case, for our purposes here we mostly care about
+# getting a solution (not necessarily the minimum norm least squares one).
 A_fact = factorize(A_mat)
 sol    = A_fact \ b_vec
 
@@ -137,7 +131,7 @@ sol    = A_fact \ b_vec
     f0[idx] = sol[idx]
 end
 
-j_slice = div(Ny,2)
+j_slice = div(Ny,2) + 1
 x = xcoord[:]
 
 plot(x, f_exact[:,j_slice])
