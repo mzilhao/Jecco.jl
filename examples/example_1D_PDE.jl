@@ -18,18 +18,19 @@ function mul_col!(x::Vector, A::SparseMatrixCSC)
     A
 end
 
-function build_operator(aa::Vector, Dxx::SparseMatrixCSC,
-                        bb::Vector, Dx::SparseMatrixCSC, cc::Vector)
-    mul_col!(aa, Dxx)
-    mul_col!(bb, Dx)
-    ccId  = Diagonal(cc)
+#=
+build operator
 
-    Dxx + Dx + ccId
-end
+   aa Dxx + bb Dx + cc
 
-
-function build_operator2!(aa::Vector, Dxx::SparseMatrixCSC,
-                         bb::Vector, Dx::SparseMatrixCSC, cc::Vector)
+by overwriting Dxx with the returned value. the construction here is more
+efficient than directly summing the sparse arrays. note that this construction
+only works because we know that the returned array has the *same* sparsity
+pattern as Dxx! we couldn't, for instance, mutate Dx instead since the Dx array
+has zeros along the diagonal (which would be skipped in the construction below).
+=#
+function build_operator!(Dxx::SparseMatrixCSC, Dx::SparseMatrixCSC,
+                         aa::Vector, bb::Vector, cc::Vector)
     mul_col!(aa, Dxx)
     mul_col!(bb, Dx)
     ccId = Diagonal(cc)
@@ -67,17 +68,18 @@ ord = 4
 
 Dx_op  = CenteredDiff{1}(1, ord, hx, Nx)
 Dxx_op = CenteredDiff{1}(2, ord, hx, Nx)
-
-Dx  = SparseMatrixCSC(Dx_op)
-Dxx = SparseMatrixCSC(Dxx_op)
+Dx     = SparseMatrixCSC(Dx_op)
+Dxx    = SparseMatrixCSC(Dxx_op)
 
 aa = ones(Nx)
 bb = copy(x)
 cc = x.^2
 
+A_mat  = copy(Dxx)
+Dx_tmp = copy(Dx)
+
 # build operator A = Dxx + x Dx + x^2
-# A_mat = build_operator(aa, Dxx, bb, Dx, cc)
-A_mat = build_operator2!(aa, Dxx, bb, Dx, cc)
+build_operator!(A_mat, Dx_tmp, aa, bb, cc)
 
 b_vec = source.(x)
 
