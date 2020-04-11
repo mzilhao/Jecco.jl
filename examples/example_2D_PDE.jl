@@ -3,7 +3,55 @@ using Jecco
 using LinearAlgebra
 using SparseArrays
 using Plots
+
 source(x,y) = exp(-x^2 - y^2) * (-4 + 3 * (x^2 + y^2) + 4 * x^2 * y^2)
+
+# returns A_ij = x_i A_ij (no sum in i). note that A itself is also changed.
+# this is equivalent to the operation A = x .* A, but it's much more efficient
+function mul_col!(x::Vector, A::SparseMatrixCSC)
+    @assert size(x)[1] == size(A)[1]
+
+    rows = rowvals(A)
+    vals = nonzeros(A)
+    @inbounds for idx in eachindex(vals)
+        row = rows[idx]
+        vals[idx] *= x[row]
+    end
+    A
+end
+
+
+#=
+build operator
+
+   axx Dxx + ayy Dyy + axy Dxy + bx Dx + by Dy + cc
+
+=#
+function build_operator(Dxx::SparseMatrixCSC, Dyy::SparseMatrixCSC, Dxy::SparseMatrixCSC,
+                        Dx::SparseMatrixCSC, Dy::SparseMatrixCSC,
+                        axx::Vector, ayy::Vector, axy::Vector,
+                        bx::Vector, by::Vector, cc::Vector)
+    mul_col!(axx, Dxx)
+    mul_col!(ayy, Dyy)
+    mul_col!(axy, Dxy)
+    mul_col!(bx,  Dx)
+    mul_col!(by,  Dy)
+    ccId = Diagonal(cc)
+
+    # rows = rowvals(Dxx)
+    # vals = nonzeros(Dxx)
+    # m, n = size(Dxx)
+
+    # # cf. https://docs.julialang.org/en/v1/stdlib/SparseArrays/#SparseArrays.nzrange
+    # @inbounds for j = 1:n
+    #     @inbounds for i in nzrange(Dxx, j)
+    #         row = rows[i]
+    #         vals[i] += Dx[row,j] + ccId[row,j]
+    #     end
+    # end
+    # Dxx
+    Dxx + Dyy + Dxy + Dx + Dy + ccId
+end
 
 # https://en.wikipedia.org/wiki/Kronecker_product
 # https://arxiv.org/pdf/1801.01483.pdf
@@ -32,6 +80,8 @@ y_max            =  5.0
 y_nodes          =  64
 # y_nodes          =  4
 
+
+ord = 4
 
 xcoord  = CartCoord{1}("x", x_min, x_max, x_nodes, endpoint=false)
 ycoord  = CartCoord{2}("y", y_min, y_max, y_nodes, endpoint=false)
@@ -77,19 +127,7 @@ for j in 1:Ny, i in 1:Nx
     b_vec[idx] = source(xi, yi)
 end
 
-# TODO: improve this construction
-A_mat = axx .* Dxx + ayy .* Dyy + axy .* Dxy + bx .* Dx + by .* Dy + Diagonal(cc)
-
-# for kl in 1:M, ij in 1:M
-#     A_mat[ij,kl] = Dxx[ij,kl] + Dyy[ij,kl]
-# end
-
-
-# better to do: broadcast!(*, A_mat, Axy, Dxy)
-# for kl in 1:M, ij in 1:M
-#     axy = Axy[ij]
-#     A_mat[ij,kl] = axy * Dxy[ij,kl]
-# end
+A_mat = build_operator(Dxx, Dyy, Dxy, Dx, Dy, axx, ayy, axy, bx, by, cc)
 
 
 A_fact = factorize(A_mat)
