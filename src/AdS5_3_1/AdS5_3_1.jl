@@ -119,6 +119,9 @@ fh  = \hat f   = f_y - (Fy + xi_y) f_r
 mutable struct AllVars{T}
     u        :: T
 
+    phi0     :: T
+
+    xi       :: T
     xi_x     :: T
     xi_y     :: T
     xi_xx    :: T
@@ -200,7 +203,7 @@ mutable struct AllVars{T}
     phic     :: T
 end
 function AllVars{T}() where {T<:AbstractFloat}
-    N = 1 + 5 + 8*7 + 5 + 4
+    N = 2 + 6 + 8*7 + 5 + 4
     array = zeros(N)
     AllVars{T}(array...)
 end
@@ -271,6 +274,7 @@ include("system.jl")
 # include("initial_data.jl")
 include("potential.jl")
 # include("dphidt.jl")
+include("equation_inner_coeff.jl")
 include("equation_outer_coeff.jl")
 include("solve_nested.jl")
 # include("rhs.jl")
