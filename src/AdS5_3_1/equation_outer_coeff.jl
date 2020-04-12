@@ -10,7 +10,7 @@ Vp(phi) = 0.0
 # assuming
 # (A d_uu + B d_u + C Id) f = -S
 
-function S_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
+function S_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
     u   = vars.u
 
     B1p  = vars.B1p
@@ -113,7 +113,7 @@ function Fxy_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, var
 end
 
 
-function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
+function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
     u   = vars.u
 
     xi_xx  = vars.xi_xx
@@ -208,7 +208,7 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
 end
 
 
-function B2d_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
+function B2d_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
     u   = vars.u
 
     xi_xx  = vars.xi_xx
@@ -311,7 +311,7 @@ end
 # ( A11 d_uu B1d + A12 d_uu Gd + B11 d_u B1d + B12 d_u Gd + C11 B1d + C12 Gd ) = -S1
 # ( A21 d_uu B1d + A22 d_uu Gd + B21 d_u B1d + B22 d_u Gd + C21 B1d + C22 Gd ) = -S2
 
-function B1dGd_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::AllVarsOuter)
+function B1dGd_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::AllVars)
     u    = vars.u
 
     xi_xx  = vars.xi_xx
@@ -431,7 +431,7 @@ function B1dGd_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, v
 end
 
 
-function phid_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
+function phid_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
     u   = vars.u
 
     xi_xx  = vars.xi_xx
@@ -530,7 +530,7 @@ function phid_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
 end
 
 
-function A_outer_eq_coeff!(ABCS::Vector, vars::AllVarsOuter)
+function A_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
     u   = vars.u
 
     xi_xx  = vars.xi_xx

@@ -116,7 +116,7 @@ fh  = \hat f   = f_y - (Fy + xi_y) f_r
 
 =#
 
-mutable struct AllVarsOuter{T}
+mutable struct AllVars{T}
     u        :: T
 
     xi_x     :: T
@@ -199,10 +199,10 @@ mutable struct AllVarsOuter{T}
     Sc       :: T
     phic     :: T
 end
-function AllVarsOuter{T}() where {T<:AbstractFloat}
+function AllVars{T}() where {T<:AbstractFloat}
     N = 1 + 5 + 8*7 + 5 + 4
     array = zeros(N)
-    AllVarsOuter{T}(array...)
+    AllVars{T}(array...)
 end
 
 
