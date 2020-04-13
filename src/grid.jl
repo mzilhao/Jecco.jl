@@ -90,14 +90,13 @@ function Grid(coords::Tuple)
 end
 
 function Grid(coords::Vararg{AbstractCoord,N}) where {N}
-    ndim = length(coords)
-    Grid{typeof(coords)}(ndim, coords)
+    Grid{typeof(coords)}(coords)
 end
 
 function Grid(coord::AbstractCoord)
     ndim   = 1
     coords = (coord)
-    Grid{typeof(coords)}(ndim, coords)
+    Grid{typeof(coords)}(coords)
 end
 
 
