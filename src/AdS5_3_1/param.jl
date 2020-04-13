@@ -1,4 +1,7 @@
 
+
+# TODO: add phi0 param here
+
 @with_kw struct ParamBase
     which_potential :: String
 end
@@ -38,6 +41,9 @@ end
     Lx          :: Float64  = 1.0
     Ly          :: Float64  = 1.0
 end
+
+
+# TODO: add kappa param here
 
 @with_kw struct ParamEvol
     dt          :: Float64
