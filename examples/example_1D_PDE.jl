@@ -56,7 +56,7 @@ x_min   = -5.0
 x_max   = 5.0
 x_nodes = 256
 
-xcoord  = CartCoord{1}("x", x_min, x_max, x_nodes, endpoint=false)
+xcoord  = Cartesian{1}("x", x_min, x_max, x_nodes, endpoint=false)
 
 hx = Jecco.delta(xcoord)
 Nx = xcoord.nodes

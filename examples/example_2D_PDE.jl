@@ -69,8 +69,8 @@ y_nodes  =  64
 
 ord = 4
 
-xcoord  = CartCoord{1}("x", x_min, x_max, x_nodes, endpoint=false)
-ycoord  = CartCoord{2}("y", y_min, y_max, y_nodes, endpoint=false)
+xcoord  = Cartesian{1}("x", x_min, x_max, x_nodes, endpoint=false)
+ycoord  = Cartesian{2}("y", y_min, y_max, y_nodes, endpoint=false)
 
 hx = Jecco.delta(xcoord)
 hy = Jecco.delta(ycoord)
