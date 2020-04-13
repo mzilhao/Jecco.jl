@@ -1,42 +1,27 @@
 
-abstract type CoordType end
+abstract type AbstractCoord{N} end
 
-abstract type Cartesian    <: CoordType end
-abstract type GaussLobatto <: CoordType end
+coord_axis(A::AbstractCoord{N}) where{N} = N
 
-# TODO: consider making type of product of GaussLobatto grids? just need to
-# redefine derivative ops, it may be better than having the array of ugrids...
-# would have to do something about the inversion of the operator, though... it's
-# better to invert one 64 x 64 matrix than 4 matrices 16 x 16. so would have to
-# come up with a smart way of doing that as well...
-
-abstract type AbstractCoord{T,N,C} end
-
-coord_elem(A::AbstractCoord{T,N,C}) where {T,N,C} = T
-coord_axis(A::AbstractCoord{T,N,C}) where {T,N,C} = N
-coord_type(A::AbstractCoord{T,N,C}) where {T,N,C} = C
-
-function coord_type(name::String)
-    if name == "Cartesian"
-        return Cartesian
-    elseif name == "GaussLobatto"
-        return GaussLobatto
-    else
-        error("Unknown coord type")
-    end
-end
-
-
-struct Coord{T<:Real,N,C} <: AbstractCoord{T,N,C}
+struct CartesianCoord{T<:Real,N} <: AbstractCoord{N}
     name  :: String
     min   :: T
     max   :: T
     nodes :: Int
 end
 
-struct CartCoord{T,N} end
+struct GaussLobattoCoord{T<:Real,N} <: AbstractCoord{N}
+    name  :: String
+    min   :: T
+    max   :: T
+    nodes :: Int
+end
 
-function CartCoord{N}(name::String, xmin::T, xmax::T, nodes::Integer;
+coord_type(coord::CartesianCoord)    = "Cartesian"
+coord_type(coord::GaussLobattoCoord) = "GaussLobatto"
+
+struct Cartesian{N} end
+function Cartesian{N}(name::String, xmin::T, xmax::T, nodes::Integer;
                       endpoint::Bool=true) where {T<:Real,N}
     min_ = xmin
     if (!endpoint)
@@ -45,36 +30,32 @@ function CartCoord{N}(name::String, xmin::T, xmax::T, nodes::Integer;
     else
         max_ = xmax
     end
-    Coord{T,N,Cartesian}(name, min_, max_, nodes)
+    CartesianCoord{T,N}(name, min_, max_, nodes)
 end
-CartCoord(args...) = CartCoord{1}(args...)
+Cartesian(args...) = Cartesian{1}(args...)
 
-
-struct SpectralCoord{T,N} end
-
-function SpectralCoord{N}(name::String, xmin::T, xmax::T,
+struct GaussLobatto{N} end
+function GaussLobatto{N}(name::String, xmin::T, xmax::T,
                           nodes::Integer) where {T<:Real,N}
-    Coord{T,N,GaussLobatto}(name, xmin, xmax, nodes)
+    GaussLobattoCoord{T,N}(name, xmin, xmax, nodes)
 end
+GaussLobatto(args...) = GaussLobatto{1}(args...)
 
-SpectralCoord(args...) = SpectralCoord{1}(args...)
 
-
-@inline function delta(coord::AbstractCoord{T,N,Cartesian}) where {T<:Real,N}
+@inline function delta(coord::CartesianCoord) where {T<:Real,N}
     (coord.max - coord.min) / (coord.nodes - 1)
 end
 
 # a Gauss-Lobatto grid has non-uniform spacing. not sure if the best is to
 # return "missing", not define the method, or just have it return NaN, as now.
-@inline delta(coord::AbstractCoord{T,N,GaussLobatto}) where {T<:Real,N} = NaN
+@inline delta(coord::GaussLobattoCoord) = NaN
 
-
-@inline function Base.getindex(coord::AbstractCoord{T,N,Cartesian}, i::Int) where {T<:Real,N}
+@inline function Base.getindex(coord::CartesianCoord, i::Int)
     h = delta(coord)
     coord.min + (i - 1) * h
 end
 
-@inline function Base.getindex(coord::AbstractCoord{T,N,GaussLobatto}, j::Int) where {T<:Real,N}
+@inline function Base.getindex(coord::GaussLobattoCoord, j::Int)
     xmin  = coord.min
     xmax  = coord.max
     M     = coord.nodes - 1.0
@@ -89,11 +70,11 @@ end
 @inline Base.getindex(coord::AbstractCoord, ::Colon) = [coord[i] for i in 1:coord.nodes]
 
 
-struct Grid{T<:Real,A}
+struct Grid{A}
     ndim    :: Int
     coords  :: A
 
-    function Grid{T,A}(ndim, coords) where {T,A}
+    function Grid{A}(coords) where {A}
         ndim = length(coords)
         for a in 1:ndim
             @assert(coord_axis(coords[a]) == a, "wrong order in grid array")
@@ -101,25 +82,24 @@ struct Grid{T<:Real,A}
         new(ndim, coords)
     end
 end
+Grid(coords) = Grid{typeof(coords)}(coords)
 
 function Grid(coords::Tuple)
     ndim = length(coords)
-    T    = coord_elem(coords[1])
-    Grid{T,typeof(coords)}(ndim, coords)
+    Grid{typeof(coords)}(ndim, coords)
 end
 
 function Grid(coords::Vararg{AbstractCoord,N}) where {N}
     ndim = length(coords)
-    T    = coord_elem(coords[1])
-    Grid{T,typeof(coords)}(ndim, coords)
+    Grid{typeof(coords)}(ndim, coords)
 end
 
 function Grid(coord::AbstractCoord)
     ndim   = 1
     coords = (coord)
-    T      = coord_elem(coord)
-    Grid{T,typeof(coords)}(ndim, coords)
+    Grid{typeof(coords)}(ndim, coords)
 end
+
 
 @inline function Base.getindex(grid::Grid, idx::Vararg{Int,N}) where {N}
     [grid.coords[a][idx[a]] for a in 1:N]

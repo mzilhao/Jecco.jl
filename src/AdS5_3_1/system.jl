@@ -15,9 +15,10 @@ struct System{GT,G,Du,Dx,Dy} <: AbstractSystem{GT}
     Dyy    :: Dy
 end
 
-function System{GT}(ucoord::AbstractCoord{T,1,GaussLobatto},
-                    xcoord::AbstractCoord{T,2,Cartesian},
-                    ycoord::AbstractCoord{T,3,Cartesian}) where {T<:Real,GT<:GridType}
+# FIXME
+function System{GT}(ucoord::AbstractCoord,
+                    xcoord::AbstractCoord,
+                    ycoord::AbstractCoord) where {T<:Real,GT<:GridType}
     grid = Grid(ucoord, xcoord, ycoord)
 
     ord = 4
@@ -36,13 +37,13 @@ function System{GT}(ucoord::AbstractCoord{T,1,GaussLobatto},
 end
 
 function create_systems(p::ParamGrid)
-    u_inner_coord = SpectralCoord{1}("u", 0.0, p.u_outer_min, p.u_inner_nodes)
+    u_inner_coord = GaussLobattoCoord{1}("u", 0.0, p.u_outer_min, p.u_inner_nodes)
 
     N_outer_sys = p.u_outer_domains
     delta_udom  = (p.u_outer_max - p.u_outer_min) / N_outer_sys
 
     u_outer_coords =
-        [SpectralCoord{1}("u", p.u_outer_min + (i-1)*delta_udom,
+        [GaussLobattoCoord{1}("u", p.u_outer_min + (i-1)*delta_udom,
                           p.u_outer_min + i*delta_udom, p.u_outer_nodes)
          for i in 1:N_outer_sys]
 

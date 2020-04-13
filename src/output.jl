@@ -147,37 +147,25 @@ function write_dataset(grp::HDF5Group, fieldname::String, data::AbstractArray)
     dset
 end
 
-
-function openpmd_geometry(coord::AbstractCoord)
-    ctype = Jecco.coord_type(coord)
-    if ctype == Cartesian
-        geometry = "cartesian"
-    else
-        geometry = "other"
-    end
-    geometry
-end
+openpmd_geometry(coord::CartesianCoord) = "cartesian"
+openpmd_geometry(coord::GaussLobattoCoord) = "other"
 
 function openpmd_geometry(grid::Grid)
-    ctype = Jecco.coord_type(grid)
-    if all(ctype .== Cartesian)
+    geometries = [openpmd_geometry(coord) for coord in grid.coords]
+    if all(geometries .== "cartesian")
         geometry = "cartesian"
     else
         geometry = "other"
     end
     geometry
 end
-
-openpmd_gridtype(coord::CartCoord)    = "Cartesian"
-openpmd_gridtype(coord::GaussLobatto) = "GaussLobatto"
-openpmd_gridtype(grid::Grid) = [openpmd_gridtype(coord) for coord in grid.coords]
 
 function setup_openpmd_mesh(dset::HDF5Dataset, coord::AbstractCoord)
     attrs(dset)["geometry"]         = openpmd_geometry(coord)
     attrs(dset)["gridGlobalOffset"] = coord.min
     attrs(dset)["gridSpacing"]      = Jecco.delta(coord)
     attrs(dset)["gridMax"]          = coord.max
-    attrs(dset)["gridType"]         = openpmd_gridtype(coord)
+    attrs(dset)["gridType"]         = Jecco.coord_type(coord)
     attrs(dset)["axisLabels"]       = coord.name
     nothing
 end
@@ -186,7 +174,7 @@ function setup_openpmd_mesh(dset::HDF5Dataset, grid::Grid)
     mins      = Jecco.min(grid)
     deltas    = Jecco.delta(grid)
     maxs      = Jecco.max(grid)
-    gridtypes = string.(Jecco.coord_type(grid))
+    gridtypes = Jecco.coord_type(grid)
     names     = Jecco.name(grid)
 
     attrs(dset)["geometry"]         = openpmd_geometry(grid)

@@ -146,35 +146,35 @@ function read_dataset(grp::HDF5Group, var::String)
         names         = read(dset_attrs["axisLabels"])
         mins          = read(dset_attrs["gridGlobalOffset"])
         maxs          = read(dset_attrs["gridMax"])
-        gridtypes_str = read(dset_attrs["gridType"])
-        gridtypes     = Jecco.coord_type(gridtypes_str)
+        gridtypes     = read(dset_attrs["gridType"])
     else
         # remember to flip the order since HDF5 uses row-major order to store
         # arrays, as opposed to Julia's column-major order
         names         = read(dset_attrs["axisLabels"])[end:-1:1]
         mins          = read(dset_attrs["gridGlobalOffset"])[end:-1:1]
         maxs          = read(dset_attrs["gridMax"])[end:-1:1]
-        gridtypes_str = read(dset_attrs["gridType"])[end:-1:1]
-        gridtypes     = Jecco.coord_type.(gridtypes_str)
+        gridtypes     = read(dset_attrs["gridType"])[end:-1:1]
     end
 
-    grid = Grid{T}(names, mins, maxs, nodes, gridtypes)
+    grid = Grid(gridtypes, names, mins, maxs, nodes)
 
     func, grid
 end
 
-function Grid{T}(name::String, min::T, max::T, nodes::Int,
-                 coord_type::CoordType) where {T<:Real}
-    coord = Coord{T,1,coord_type}(name, min, max, nodes)
-    Grid(coord)
+function Grid(coord_types::Vector, names::Vector, mins::Vector, maxs::Vector,
+              nodess::Vector)
+    dim_ = length(names)
+    @assert(length(mins) == length(maxs) == length(nodess) == length(coord_types) == dim_)
+    coords = [Coord(coord_types[i], i, names[i], mins[i], maxs[i], nodess[i]) for i in 1:dim_]
+    Grid{typeof(coords)}(dim_, coords)
 end
 
-function Grid{T}(names::Vector, mins::Vector, maxs::Vector, nodes,
-                 coord_types::Vector) where {T<:Real}
-    dim_ = length(names)
-    @assert(length(mins) == length(maxs) == length(nodes) == length(coord_types) == dim_)
-
-    coords = [Jecco.Coord{T,i,coord_types[i]}(names[i], mins[i], maxs[i], nodes[i]) for i in 1:dim_]
-
-    Grid{T,typeof(coords)}(dim_, coords)
+function Coord(coord_type::String, N::Int, name::String, min::T, max::T, nodes::Int) where {T<:Real}
+    if coord_type == "Cartesian"
+        return CartesianCoord{T,N}(name, min, max, nodes)
+    elseif coord_type == "GaussLobatto"
+        return GaussLobattoCoord{T,N}(name, min, max, nodes)
+    else
+        error("Unknown coord type")
+    end
 end

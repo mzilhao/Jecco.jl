@@ -9,9 +9,10 @@ struct System{G,Du,Dx,Dy}
     Dyy    :: Dy
 end
 
-function System(ucoord::AbstractCoord{T,1,GaussLobatto},
-                xcoord::AbstractCoord{T,2,Cartesian},
-                ycoord::AbstractCoord{T,3,Cartesian}) where {T<:Real}
+# FIXME
+function System(ucoord::AbstractCoord,
+                xcoord::AbstractCoord,
+                ycoord::AbstractCoord)
     grid = Grid(ucoord, xcoord, ycoord)
 
     ord = 4
