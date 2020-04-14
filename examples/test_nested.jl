@@ -11,7 +11,10 @@ using LinearAlgebra
 # )
 
 function IDtest0(sys::AbstractSystem{Outer})
-    Nu, Nx, Ny = size(sys.grid)
+    Nu, Nx, Ny = size(sys)
+    ucoord = sys.ucoord
+    xcoord = sys.xcoord
+    ycoord = sys.ycoord
 
     B1  = zeros(Nu, Nx, Ny)
     B2  = zeros(Nu, Nx, Ny)
@@ -27,7 +30,9 @@ function IDtest0(sys::AbstractSystem{Outer})
     for j in 1:Ny
         for i in 1:Nx
             for a in 1:Nu
-                u,x,y = sys.grid[a,i,j]
+                u = ucoord[a]
+                x = xcoord[i]
+                y = ycoord[j]
                 B1[a,i,j]  = u^4 * b14
                 B2[a,i,j]  = u^4 * b24
                 phi[a,i,j] = phi0 * u + phi2 * u^3
@@ -40,7 +45,10 @@ function IDtest0(sys::AbstractSystem{Outer})
 end
 
 function IDtest0(sys::AbstractSystem{Inner})
-    Nu, Nx, Ny = size(sys.grid)
+    Nu, Nx, Ny = size(sys)
+    ucoord = sys.ucoord
+    xcoord = sys.xcoord
+    ycoord = sys.ycoord
 
     B1  = zeros(Nu, Nx, Ny)
     B2  = zeros(Nu, Nx, Ny)
@@ -56,7 +64,9 @@ function IDtest0(sys::AbstractSystem{Inner})
     for j in 1:Ny
         for i in 1:Nx
             for a in 1:Nu
-                u,x,y = sys.grid[a,i,j]
+                u = ucoord[a]
+                x = xcoord[i]
+                y = ycoord[j]
                 B1[a,i,j]  = b14
                 B2[a,i,j]  = b24
                 phi[a,i,j] = phi2
@@ -94,9 +104,10 @@ systems = Jecco.AdS5_3_1.create_systems(par_grid)
 
 sys = systems[2]
 
-# Nu, Nx, Ny = size(sys.grid)
-Nu_, Nx, Ny = size(sys.grid)
-u, x, y = sys.grid[:]
+Nu, Nx, Ny = size(sys)
+u = sys.ucoord[:]
+# x = sys.xcoord[:]
+# y = sys.ycoord[:]
 
 
 # Note: it's important that xi is defined on a 1*Nx*Ny grid, rather than a Nx*Ny

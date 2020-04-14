@@ -62,8 +62,10 @@ struct Nested{S,D,T<:Real}
     aux_acc :: Vector{Aux{T}}
 end
 function Nested(sys::System)
-    Nu, Nx, Ny = size(sys.grid)
-    uu, xx, yy = sys.grid[:]
+    Nu, Nx, Ny = size(sys)
+    uu = sys.ucoord[:]
+    xx = sys.xcoord[:]
+    yy = sys.ycoord[:]
 
     Du_B1    = zeros(Nu, Nx, Ny)
     Du_B2    = zeros(Nu, Nx, Ny)
