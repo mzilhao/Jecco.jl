@@ -3,14 +3,14 @@ abstract type AbstractCoord{N} end
 
 coord_axis(A::AbstractCoord{N}) where{N} = N
 
-struct CartesianCoord{T<:Real,N} <: AbstractCoord{N}
+struct CartesianCoord{N,T<:Real} <: AbstractCoord{N}
     name  :: String
     min   :: T
     max   :: T
     nodes :: Int
 end
 
-struct GaussLobattoCoord{T<:Real,N} <: AbstractCoord{N}
+struct GaussLobattoCoord{N,T<:Real} <: AbstractCoord{N}
     name  :: String
     min   :: T
     max   :: T
@@ -30,14 +30,14 @@ function Cartesian{N}(name::String, xmin::T, xmax::T, nodes::Integer;
     else
         max_ = xmax
     end
-    CartesianCoord{T,N}(name, min_, max_, nodes)
+    CartesianCoord{N,T}(name, min_, max_, nodes)
 end
 Cartesian(args...) = Cartesian{1}(args...)
 
 struct GaussLobatto{N} end
 function GaussLobatto{N}(name::String, xmin::T, xmax::T,
                           nodes::Integer) where {T<:Real,N}
-    GaussLobattoCoord{T,N}(name, xmin, xmax, nodes)
+    GaussLobattoCoord{N,T}(name, xmin, xmax, nodes)
 end
 GaussLobatto(args...) = GaussLobatto{1}(args...)
 
