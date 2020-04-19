@@ -154,7 +154,7 @@ of replacing the last line of the A_mat matrix and last entry of b_vec vector.
 
 =#
 
-function solve_S_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nested)
+function solve_S!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -186,12 +186,19 @@ function solve_S_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nes
                 u              = uu[a]
                 aux.vars.u     = u
 
+                # FIXME
+                # aux.vars.phi0  = 0.0
+
+                aux.vars.xi    = gauge.xi[1,i,j]
+
+                aux.vars.B1    = bulk.B1[a,i,j]
+                aux.vars.B2    = bulk.B2[a,i,j]
+                aux.vars.G     = bulk.G[a,i,j]
+                aux.vars.phi   = bulk.phi[a,i,j]
+
                 aux.vars.B1p   = -u*u * Du_B1[a,i,j]
                 aux.vars.B2p   = -u*u * Du_B2[a,i,j]
-
-                aux.vars.G     = bulk.G[a,i,j]
                 aux.vars.Gp    = -u*u * Du_G[a,i,j]
-
                 aux.vars.phip  = -u*u * Du_phi[a,i,j]
 
                 S_eq_coeff!(aux.ABCS, aux.vars)
@@ -1463,8 +1470,8 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gaug
     nothing
 end
 
-function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
-                             nested::Nested)
+function solve_nested!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
+                       nested::Nested)
     sys  = nested.sys
 
     Du_B1   = nested.Du_B1
@@ -1501,7 +1508,7 @@ function solve_nested_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge:
     end
 
     # solve for S
-    solve_S_outer!(bulk, BC, dBC, nested)
+    solve_S!(bulk, BC, dBC, gauge, nested)
 
     # take u-derivatives of S
     @sync begin
@@ -1573,10 +1580,10 @@ function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, gauge::GaugeVar
     # there is only one domain spanning this grid. If we ever change this
     # construction we must remember to make the appropriate changes here.
     for i in 2:Nsys-1
-        solve_nested_outer!(bulks[i], BCs[i], dBCs[i], gauge, nesteds[i])
+        solve_nested!(bulks[i], BCs[i], dBCs[i], gauge, nesteds[i])
         syncBCs!(BCs[i+1], dBCs[i+1], bulks[i], nesteds[i])
     end
-    solve_nested_outer!(bulks[Nsys], BCs[Nsys], dBCs[Nsys], gauge, nesteds[Nsys])
+    solve_nested!(bulks[Nsys], BCs[Nsys], dBCs[Nsys], gauge, nesteds[Nsys])
 
     nothing
 end

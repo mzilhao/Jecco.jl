@@ -159,5 +159,5 @@ BC   = BCs[2]
 dBC  = dBCs[2]
 nested = nesteds[2]
 
-# Jecco.AdS5_3_1.solve_S_outer!(bulk, BC, dBC, nested)
-# Jecco.AdS5_3_1.solve_A_outer!(bulk, BC, dBC, nested)
+# Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, nested)
+# Jecco.AdS5_3_1.solve_A_outer!(bulk, BC, dBC, gauge, nested)
