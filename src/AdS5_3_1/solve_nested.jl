@@ -182,14 +182,13 @@ function solve_S!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
             id  = Threads.threadid()
             aux = aux_acc[id]
 
+            # FIXME
+            # aux.vars.phi0  = 0.0
+            aux.vars.xi    = gauge.xi[1,i,j]
+
             @inbounds @simd for a in eachindex(uu)
                 u              = uu[a]
                 aux.vars.u     = u
-
-                # FIXME
-                # aux.vars.phi0  = 0.0
-
-                aux.vars.xi    = gauge.xi[1,i,j]
 
                 aux.vars.B1    = bulk.B1[a,i,j]
                 aux.vars.B2    = bulk.B2[a,i,j]
@@ -233,7 +232,7 @@ function solve_S!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
     nothing
 end
 
-function solve_Fxy_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars, nested::Nested)
+function solve_Fxy!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -266,6 +265,12 @@ function solve_Fxy_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Ga
             id  = Threads.threadid()
             aux = aux_acc[id]
 
+            # FIXME
+            # aux.varsFxy.phi0  = 0.0
+
+            # TODO: some of these operations below are not needed for the inner grid...
+
+            aux.varsFxy.xi    = gauge.xi[1,i,j]
             aux.varsFxy.xi_x  = Dx(gauge.xi, 1,i,j)
             aux.varsFxy.xi_y  = Dy(gauge.xi, 1,i,j)
 
@@ -1517,7 +1522,7 @@ function solve_nested!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gauge
     end
 
     # solve for Fx and Fy
-    solve_Fxy_outer!(bulk, BC, dBC, gauge, nested)
+    solve_Fxy!(bulk, BC, dBC, gauge, nested)
 
     # take u-derivatives of Fx and Fy
     @sync begin

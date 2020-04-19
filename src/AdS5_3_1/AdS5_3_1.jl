@@ -221,6 +221,7 @@ fpp = f_rr = 2u^3 f_u + u^4 f_uu
 mutable struct FxyVars{GT<:GridType,T<:Real}
     u        :: T
 
+    xi       :: T
     xi_x     :: T
     xi_y     :: T
 
@@ -262,7 +263,7 @@ mutable struct FxyVars{GT<:GridType,T<:Real}
     Sp_y     :: T
 end
 function FxyVars{GT,T}() where {GT<:GridType,T<:AbstractFloat}
-    N = 1 + 2 + 4*7 + 4
+    N = 1 + 3 + 4*7 + 4
     array = zeros(N)
     FxyVars{GT,T}(array...)
 end
