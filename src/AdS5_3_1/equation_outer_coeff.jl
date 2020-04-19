@@ -10,7 +10,7 @@ Vp(phi) = 0.0
 # assuming
 # (A d_uu + B d_u + C Id) f = -S
 
-function S_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
+function S_eq_coeff!(ABCS::Vector, vars::AllVars{Outer})
     u   = vars.u
 
     B1p  = vars.B1p
@@ -35,7 +35,7 @@ end
 # ( A11 d_uu Fx + A12 d_uu Fy + B11 d_u Fx + B12 d_u Fy + C11 Fx + C12 Fy ) = -S1
 # ( A21 d_uu Fx + A22 d_uu Fy + B21 d_u Fx + B22 d_u Fy + C21 Fx + C22 Fy ) = -S2
 
-function Fxy_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::FxyVars)
+function Fxy_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::FxyVars{Outer})
     u     = vars.u
 
     xi_x  = vars.xi_x
@@ -113,7 +113,7 @@ function Fxy_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, var
 end
 
 
-function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
+function Sd_eq_coeff!(ABCS::Vector, vars::AllVars{Outer})
     u   = vars.u
 
     xi_xx  = vars.xi_xx
@@ -208,7 +208,7 @@ function Sd_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
 end
 
 
-function B2d_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
+function B2d_eq_coeff!(ABCS::Vector, vars::AllVars{Outer})
     u   = vars.u
 
     xi_xx  = vars.xi_xx
@@ -311,7 +311,7 @@ end
 # ( A11 d_uu B1d + A12 d_uu Gd + B11 d_u B1d + B12 d_u Gd + C11 B1d + C12 Gd ) = -S1
 # ( A21 d_uu B1d + A22 d_uu Gd + B21 d_u B1d + B22 d_u Gd + C21 B1d + C22 Gd ) = -S2
 
-function B1dGd_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::AllVars)
+function B1dGd_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::AllVars{Outer})
     u    = vars.u
 
     xi_xx  = vars.xi_xx
@@ -431,7 +431,7 @@ function B1dGd_outer_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, v
 end
 
 
-function phid_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
+function phid_eq_coeff!(ABCS::Vector, vars::AllVars{Outer})
     u   = vars.u
 
     xi_xx  = vars.xi_xx
@@ -530,7 +530,7 @@ function phid_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
 end
 
 
-function A_outer_eq_coeff!(ABCS::Vector, vars::AllVars)
+function A_eq_coeff!(ABCS::Vector, vars::AllVars{Outer})
     u   = vars.u
 
     xi_xx  = vars.xi_xx

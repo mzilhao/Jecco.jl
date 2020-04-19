@@ -194,7 +194,7 @@ function solve_S_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, nested::Nes
 
                 aux.vars.phip  = -u*u * Du_phi[a,i,j]
 
-                S_outer_eq_coeff!(aux.ABCS, aux.vars)
+                S_eq_coeff!(aux.ABCS, aux.vars)
 
                 aux.b_vec[a]   = -aux.ABCS[4]
                 @inbounds @simd for aa in eachindex(uu)
@@ -310,7 +310,7 @@ function solve_Fxy_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Ga
                 aux.varsFxy.Sp_x  = -u2 * Dx(Du_S, a,i,j)
                 aux.varsFxy.Sp_y  = -u2 * Dy(Du_S, a,i,j)
 
-                Fxy_outer_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, aux.varsFxy)
+                Fxy_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, aux.varsFxy)
 
                 aux.b_vec2[a]    = -aux.SS[1]
                 aux.b_vec2[a+Nu] = -aux.SS[2]
@@ -545,7 +545,7 @@ function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested:
                 aux.vars.Gc   = cross( G_xy,  Gpp,  Gp_x,  Gp_y, Fx, Fy, xi_x, xi_y)
                 aux.vars.Sc   = cross( S_xy,  Spp,  Sp_x,  Sp_y, Fx, Fy, xi_x, xi_y)
 
-                Sd_outer_eq_coeff!(aux.ABCS, aux.vars)
+                Sd_eq_coeff!(aux.ABCS, aux.vars)
 
                 aux.b_vec[a]   = -aux.ABCS[4]
                 @inbounds @simd for aa in eachindex(uu)
@@ -759,7 +759,7 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested
                 aux.vars.Gc   = cross( G_xy,  Gpp,  Gp_x,  Gp_y, Fx, Fy, xi_x, xi_y)
                 aux.vars.Sc   = cross( S_xy,  Spp,  Sp_x,  Sp_y, Fx, Fy, xi_x, xi_y)
 
-                B2d_outer_eq_coeff!(aux.ABCS, aux.vars)
+                B2d_eq_coeff!(aux.ABCS, aux.vars)
 
                 aux.b_vec[a]   = -aux.ABCS[4]
                 @inbounds @simd for aa in eachindex(uu)
@@ -976,7 +976,7 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nest
                 aux.vars.Gc   = cross( G_xy,  Gpp,  Gp_x,  Gp_y, Fx, Fy, xi_x, xi_y)
                 aux.vars.Sc   = cross( S_xy,  Spp,  Sp_x,  Sp_y, Fx, Fy, xi_x, xi_y)
 
-                B1dGd_outer_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, aux.vars)
+                B1dGd_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, aux.vars)
 
                 aux.b_vec2[a]    = -aux.SS[1]
                 aux.b_vec2[a+Nu] = -aux.SS[2]
@@ -1207,7 +1207,7 @@ function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, neste
                 aux.vars.Sc   = cross(  S_xy,   Spp,   Sp_x,   Sp_y, Fx, Fy, xi_x, xi_y)
                 aux.vars.phic = cross(phi_xy, phipp, phip_x, phip_y, Fx, Fy, xi_x, xi_y)
 
-                phid_outer_eq_coeff!(aux.ABCS, aux.vars)
+                phid_eq_coeff!(aux.ABCS, aux.vars)
 
                 aux.b_vec[a]   = -aux.ABCS[4]
                 @inbounds @simd for aa in eachindex(uu)
@@ -1431,7 +1431,7 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gaug
                 aux.vars.Sc   = cross(  S_xy,   Spp,   Sp_x,   Sp_y, Fx, Fy, xi_x, xi_y)
                 aux.vars.phic = cross(phi_xy, phipp, phip_x, phip_y, Fx, Fy, xi_x, xi_y)
 
-                A_outer_eq_coeff!(aux.ABCS, aux.vars)
+                A_eq_coeff!(aux.ABCS, aux.vars)
 
                 aux.b_vec[a]   = -aux.ABCS[4]
                 @inbounds @simd for aa in eachindex(uu)
