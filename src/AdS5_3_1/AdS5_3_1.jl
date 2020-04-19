@@ -14,12 +14,9 @@ export Inner, Outer, AbstractSystem, System
 export BulkVars, BoundaryVars, GaugeVars
 
 
-# Note: in the future we may promote this to something like BulkVars{Ng,T}, to
-# dispatch on Ng (the type of equations to be solved on each grid)
-
 # TODO: remove d*dt fields from this struct ?
 
-struct BulkVars{T}
+struct BulkVars{GT<:GridType,T}
     B1     :: T
     B2     :: T
     G      :: T
@@ -39,11 +36,7 @@ struct BulkVars{T}
     dphidt :: T
 end
 
-BulkVars(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A, dB1dt, dB2dt,
-         dGdt, dphidt) = BulkVars{typeof(B1)}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d,
-                                              Gd, phid, Sd, A, dB1dt, dB2dt, dGdt, dphidt)
-
-function BulkVars(Nxx::Vararg)
+function BulkVars{GT}(Nxx::Vararg) where{GT<:GridType,T<:Real}
     B1     = zeros(Nxx...)
     B2     = copy(B1)
     G      = copy(B1)
@@ -62,12 +55,12 @@ function BulkVars(Nxx::Vararg)
     dGdt   = copy(B1)
     dphidt = copy(B1)
 
-    BulkVars{typeof(B1)}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A,
+    BulkVars{GT,typeof(B1)}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A,
                          dB1dt, dB2dt,dGdt, dphidt)
 end
 
-function BulkVars(B1::Array{T,N}, B2::Array{T,N}, G::Array{T,N},
-                  phi::Array{T,N}) where {T<:Number,N}
+function BulkVars{GT}(B1::Array{T,N}, B2::Array{T,N}, G::Array{T,N},
+                      phi::Array{T,N}) where {GT<:GridType,T<:Real,N}
     S      = similar(B1)
     Fx     = similar(B1)
     Fy     = similar(B1)
@@ -82,7 +75,7 @@ function BulkVars(B1::Array{T,N}, B2::Array{T,N}, G::Array{T,N},
     dGdt   = similar(B1)
     dphidt = similar(B1)
 
-    BulkVars{typeof(B1)}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A,
+    BulkVars{GT,typeof(B1)}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A,
                          dB1dt, dB2dt,dGdt, dphidt)
 end
 

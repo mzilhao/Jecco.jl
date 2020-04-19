@@ -1572,8 +1572,8 @@ function syncBCs!(BC::BulkVars, dBC::BulkVars, bulk::BulkVars, nested::Nested)
     nothing
 end
 
-function set_innerBCs!(BC::BulkVars, dBC::BulkVars, bulk::BulkVars, gauge::GaugeVars,
-                       nested::Nested)
+function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars{Inner},
+                       gauge::GaugeVars, nested::Nested)
 
     # FIXME: with scalar field this changes...
     BC.S  .= 0.0
@@ -1584,7 +1584,8 @@ end
 
 
 # TODO
-function set_outerBCs!(BC_out::BulkVars, dBC_out::BulkVars, BC_in::BulkVars, dBC_in::BulkVars)
+function set_outerBCs!(BC_out::BulkVars{Outer}, dBC_out::BulkVars{Outer},
+                       BC_in::BulkVars{Inner}, dBC_in::BulkVars{Inner})
 
 
     nothing
