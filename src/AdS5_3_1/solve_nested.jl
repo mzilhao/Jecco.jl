@@ -31,17 +31,17 @@ struct Aux{T<:Real}
         vars    = AllVars{T}()
         A_mat2  = zeros(T, 2*N, 2*N)
         b_vec2  = zeros(T, 2*N)
-        AA      = zeros(2,2)
-        BB      = zeros(2,2)
-        CC      = zeros(2,2)
-        SS      = zeros(2)
+        AA      = zeros(T, 2,2)
+        BB      = zeros(T, 2,2)
+        CC      = zeros(T, 2,2)
+        SS      = zeros(T, 2)
         varsFxy = FxyVars{T}()
         new(A_mat, b_vec, ABCS, vars, A_mat2, b_vec2, AA, BB, CC, SS, varsFxy)
     end
 end
 
-struct Nested{S,D,T<:Real}
-    sys     :: S
+struct Nested{GT,T<:Real,D}
+    sys     :: System{GT}
     uu      :: Vector{T}
     xx      :: Vector{T}
     yy      :: Vector{T}
@@ -66,29 +66,30 @@ function Nested(sys::System)
     uu = sys.ucoord[:]
     xx = sys.xcoord[:]
     yy = sys.ycoord[:]
+    T  = Jecco.coord_eltype(sys.ucoord)
 
-    Du_B1    = zeros(Nu, Nx, Ny)
-    Du_B2    = zeros(Nu, Nx, Ny)
-    Du_G     = zeros(Nu, Nx, Ny)
-    Du_phi   = zeros(Nu, Nx, Ny)
-    Du_S     = zeros(Nu, Nx, Ny)
-    Du_Fx    = zeros(Nu, Nx, Ny)
-    Du_Fy    = zeros(Nu, Nx, Ny)
-    Duu_B1   = zeros(Nu, Nx, Ny)
-    Duu_B2   = zeros(Nu, Nx, Ny)
-    Duu_G    = zeros(Nu, Nx, Ny)
-    Duu_phi  = zeros(Nu, Nx, Ny)
-    Duu_S    = zeros(Nu, Nx, Ny)
-    Duu_Fx   = zeros(Nu, Nx, Ny)
-    Duu_Fy   = zeros(Nu, Nx, Ny)
+    Du_B1    = zeros(T, Nu, Nx, Ny)
+    Du_B2    = zeros(T, Nu, Nx, Ny)
+    Du_G     = zeros(T, Nu, Nx, Ny)
+    Du_phi   = zeros(T, Nu, Nx, Ny)
+    Du_S     = zeros(T, Nu, Nx, Ny)
+    Du_Fx    = zeros(T, Nu, Nx, Ny)
+    Du_Fy    = zeros(T, Nu, Nx, Ny)
+    Duu_B1   = zeros(T, Nu, Nx, Ny)
+    Duu_B2   = zeros(T, Nu, Nx, Ny)
+    Duu_G    = zeros(T, Nu, Nx, Ny)
+    Duu_phi  = zeros(T, Nu, Nx, Ny)
+    Duu_S    = zeros(T, Nu, Nx, Ny)
+    Duu_Fx   = zeros(T, Nu, Nx, Ny)
+    Duu_Fy   = zeros(T, Nu, Nx, Ny)
 
     nt = Threads.nthreads()
     # pre-allocate thread-local aux quantities
     aux_acc = [Aux{eltype(uu)}(Nu) for _ in 1:nt]
 
-    Nested{typeof(sys),typeof(Du_B1),
-           eltype(uu)}(sys, uu, xx, yy, Du_B1, Du_B2, Du_G, Du_phi, Du_S, Du_Fx, Du_Fy,
-                       Duu_B1, Duu_B2, Duu_G, Duu_phi, Duu_S, Duu_Fx, Duu_Fy, aux_acc)
+    Nested{grid_type(sys),
+           T, typeof(Du_B1)}(sys, uu, xx, yy, Du_B1, Du_B2, Du_G, Du_phi, Du_S, Du_Fx, Du_Fy,
+                             Duu_B1, Duu_B2, Duu_G, Duu_phi, Duu_S, Duu_Fx, Duu_Fy, aux_acc)
 end
 
 Nested(systems::Vector) = [Nested(sys) for sys in systems]

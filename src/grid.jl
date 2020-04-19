@@ -1,16 +1,17 @@
 
-abstract type AbstractCoord{N} end
+abstract type AbstractCoord{N,T} end
 
-coord_axis(A::AbstractCoord{N}) where{N} = N
+coord_axis(A::AbstractCoord{N,T}) where{N,T} = N
+coord_eltype(A::AbstractCoord{N,T}) where{N,T} = T
 
-struct CartesianCoord{N,T<:Real} <: AbstractCoord{N}
+struct CartesianCoord{N,T<:Real} <: AbstractCoord{N,T}
     name  :: String
     min   :: T
     max   :: T
     nodes :: Int
 end
 
-struct GaussLobattoCoord{N,T<:Real} <: AbstractCoord{N}
+struct GaussLobattoCoord{N,T<:Real} <: AbstractCoord{N,T}
     name  :: String
     min   :: T
     max   :: T

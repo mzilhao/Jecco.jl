@@ -5,9 +5,10 @@ abstract type GridType end
 abstract type Inner <: GridType end
 abstract type Outer <: GridType end
 
-abstract type AbstractSystem{T} end
+abstract type AbstractSystem{GT} end
 
-# TODO: use traits for inner and outer ??
+grid_type(sys::AbstractSystem{GT}) where{GT<:GridType} = GT
+
 struct System{GT,Cu,Cx,Cy,Du,Dx,Dy} <: AbstractSystem{GT}
     ucoord :: Cu
     xcoord :: Cx
