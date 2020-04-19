@@ -3,11 +3,16 @@ module AdS5_3_1
 using Jecco
 using Parameters
 
+abstract type GridType end
+abstract type Inner <: GridType end
+abstract type Outer <: GridType end
+
 export ParamBase, ParamGrid, ParamID, ParamEvol, ParamIO
 export Potential
 export VV # this will contain the potential
 export Inner, Outer, AbstractSystem, System
 export BulkVars, BoundaryVars, GaugeVars
+
 
 # Note: in the future we may promote this to something like BulkVars{Ng,T}, to
 # dispatch on Ng (the type of equations to be solved on each grid)
@@ -116,7 +121,8 @@ fh  = \hat f   = f_y - (Fy + xi_y) f_r
 
 =#
 
-mutable struct AllVars{T}
+
+mutable struct AllVars{GT<:GridType,T<:Real}
     u        :: T
 
     phi0     :: T
@@ -202,10 +208,10 @@ mutable struct AllVars{T}
     Sc       :: T
     phic     :: T
 end
-function AllVars{T}() where {T<:AbstractFloat}
+function AllVars{GT,T}() where {GT<:GridType,T<:AbstractFloat}
     N = 2 + 6 + 8*7 + 5 + 4
     array = zeros(N)
-    AllVars{T}(array...)
+    AllVars{GT,T}(array...)
 end
 
 
@@ -219,7 +225,7 @@ fpp = f_rr = 2u^3 f_u + u^4 f_uu
 
 =#
 
-mutable struct FxyVars{T}
+mutable struct FxyVars{GT<:GridType,T<:Real}
     u        :: T
 
     xi_x     :: T
@@ -262,10 +268,10 @@ mutable struct FxyVars{T}
     Sp_x     :: T
     Sp_y     :: T
 end
-function FxyVars{T}() where {T<:AbstractFloat}
+function FxyVars{GT,T}() where {GT<:GridType,T<:AbstractFloat}
     N = 1 + 2 + 4*7 + 4
     array = zeros(N)
-    FxyVars{T}(array...)
+    FxyVars{GT,T}(array...)
 end
 
 

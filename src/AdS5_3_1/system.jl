@@ -1,10 +1,6 @@
 
 import Base: size
 
-abstract type GridType end
-abstract type Inner <: GridType end
-abstract type Outer <: GridType end
-
 abstract type AbstractSystem{GT} end
 
 grid_type(sys::AbstractSystem{GT}) where{GT<:GridType} = GT

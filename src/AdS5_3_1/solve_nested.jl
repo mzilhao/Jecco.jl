@@ -12,36 +12,36 @@ function solve_lin_system!(A_mat, b_vec)
     nothing
 end
 
-struct Aux{T<:Real}
+struct Aux{GT,T}
     A_mat   :: Matrix{T}
     b_vec   :: Vector{T}
     ABCS    :: Vector{T}
-    vars    :: AllVars{T}
+    vars    :: AllVars{GT,T}
     A_mat2  :: Matrix{T}
     b_vec2  :: Vector{T}
     AA      :: Matrix{T}
     BB      :: Matrix{T}
     CC      :: Matrix{T}
     SS      :: Vector{T}
-    varsFxy :: FxyVars{T}
-    function Aux{T}(N::Int) where {T<:Real}
+    varsFxy :: FxyVars{GT,T}
+    function Aux{GT,T}(N::Int) where {GT<:GridType,T<:Real}
         A_mat   = zeros(T, N, N)
         b_vec   = zeros(T, N)
         ABCS    = zeros(T, 4)
-        vars    = AllVars{T}()
+        vars    = AllVars{GT,T}()
         A_mat2  = zeros(T, 2*N, 2*N)
         b_vec2  = zeros(T, 2*N)
         AA      = zeros(T, 2,2)
         BB      = zeros(T, 2,2)
         CC      = zeros(T, 2,2)
         SS      = zeros(T, 2)
-        varsFxy = FxyVars{T}()
+        varsFxy = FxyVars{GT,T}()
         new(A_mat, b_vec, ABCS, vars, A_mat2, b_vec2, AA, BB, CC, SS, varsFxy)
     end
 end
 
-struct Nested{GT,T<:Real,D}
-    sys     :: System{GT}
+struct Nested{GT,S,T<:Real,D}
+    sys     :: S
     uu      :: Vector{T}
     xx      :: Vector{T}
     yy      :: Vector{T}
@@ -59,13 +59,14 @@ struct Nested{GT,T<:Real,D}
     Duu_S   :: D
     Duu_Fx  :: D
     Duu_Fy  :: D
-    aux_acc :: Vector{Aux{T}}
+    aux_acc :: Vector{Aux{GT,T}}
 end
 function Nested(sys::System)
     Nu, Nx, Ny = size(sys)
     uu = sys.ucoord[:]
     xx = sys.xcoord[:]
     yy = sys.ycoord[:]
+    GT = grid_type(sys)
     T  = Jecco.coord_eltype(sys.ucoord)
 
     Du_B1    = zeros(T, Nu, Nx, Ny)
@@ -85,9 +86,9 @@ function Nested(sys::System)
 
     nt = Threads.nthreads()
     # pre-allocate thread-local aux quantities
-    aux_acc = [Aux{eltype(uu)}(Nu) for _ in 1:nt]
+    aux_acc = [Aux{GT,T}(Nu) for _ in 1:nt]
 
-    Nested{grid_type(sys),
+    Nested{grid_type(sys), typeof(sys),
            T, typeof(Du_B1)}(sys, uu, xx, yy, Du_B1, Du_B2, Du_G, Du_phi, Du_S, Du_Fx, Du_Fy,
                              Duu_B1, Duu_B2, Duu_G, Duu_phi, Duu_S, Duu_Fx, Duu_Fy, aux_acc)
 end
