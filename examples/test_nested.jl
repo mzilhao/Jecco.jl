@@ -154,10 +154,17 @@ dBCs[2].A .= -2.0/(u0*u0*u0)
 
 Jecco.AdS5_3_1.solve_nested!(bulks, BCs, dBCs, gauge, nesteds)
 
-bulk = bulks[2]
-BC   = BCs[2]
-dBC  = dBCs[2]
-nested = nesteds[2]
-
 # Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, nested)
 # Jecco.AdS5_3_1.solve_A_outer!(bulk, BC, dBC, gauge, nested)
+
+i = 1
+
+bulk = bulks[i]
+BC   = BCs[i]
+dBC  = dBCs[i]
+nested = nesteds[i]
+
+BCs[i].S  .= 0.0
+dBCs[i].S .= 0.0
+
+Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, nested)
