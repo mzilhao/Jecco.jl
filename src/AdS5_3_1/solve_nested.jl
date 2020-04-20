@@ -154,7 +154,8 @@ of replacing the last line of the A_mat matrix and last entry of b_vec vector.
 
 =#
 
-function solve_S!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars, nested::Nested)
+function solve_S!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
+                  base::BaseVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -182,8 +183,7 @@ function solve_S!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
             id  = Threads.threadid()
             aux = aux_acc[id]
 
-            # FIXME
-            # aux.vars.phi0  = 0.0
+            aux.vars.phi0  = base.phi0
             aux.vars.xi    = gauge.xi[1,i,j]
 
             @inbounds @simd for a in eachindex(uu)
@@ -232,7 +232,8 @@ function solve_S!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
     nothing
 end
 
-function solve_Fxy!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars, nested::Nested)
+function solve_Fxy!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
+                    base::BaseVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -265,8 +266,7 @@ function solve_Fxy!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVar
             id  = Threads.threadid()
             aux = aux_acc[id]
 
-            # FIXME
-            # aux.varsFxy.phi0  = 0.0
+            aux.vars.phi0  = base.phi0
 
             # TODO: some of these operations below are not needed for the inner grid...
 
@@ -1476,7 +1476,7 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gaug
 end
 
 function solve_nested!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
-                       nested::Nested)
+                       base::BaseVars, nested::Nested)
     sys  = nested.sys
 
     Du_B1   = nested.Du_B1
@@ -1513,7 +1513,7 @@ function solve_nested!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gauge
     end
 
     # solve for S
-    solve_S!(bulk, BC, dBC, gauge, nested)
+    solve_S!(bulk, BC, dBC, gauge, base, nested)
 
     # take u-derivatives of S
     @sync begin
@@ -1522,7 +1522,7 @@ function solve_nested!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gauge
     end
 
     # solve for Fx and Fy
-    solve_Fxy!(bulk, BC, dBC, gauge, nested)
+    solve_Fxy!(bulk, BC, dBC, gauge, base, nested)
 
     # take u-derivatives of Fx and Fy
     @sync begin
@@ -1598,7 +1598,7 @@ end
 
 
 function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, gauge::GaugeVars,
-                       nesteds::Vector)
+                       base::BaseVars, nesteds::Vector)
     Nsys = length(nesteds)
 
     # We assume that the first entry on these arrays is the inner grid, and that
@@ -1611,10 +1611,10 @@ function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, gauge::GaugeVar
     set_outerBCs!(BCs[2], dBCs[2], BCs[1], dBCs[1])
 
     for i in 2:Nsys-1
-        solve_nested!(bulks[i], BCs[i], dBCs[i], gauge, nesteds[i])
+        solve_nested!(bulks[i], BCs[i], dBCs[i], gauge, base, nesteds[i])
         syncBCs!(BCs[i+1], dBCs[i+1], bulks[i], nesteds[i])
     end
-    solve_nested!(bulks[Nsys], BCs[Nsys], dBCs[Nsys], gauge, nesteds[Nsys])
+    solve_nested!(bulks[Nsys], BCs[Nsys], dBCs[Nsys], gauge, base, nesteds[Nsys])
 
     nothing
 end

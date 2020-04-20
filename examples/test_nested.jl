@@ -99,6 +99,9 @@ par_grid = ParamGrid(
 
 # TODO: make parameter
 kappa = 1.0
+phi0  = 0.0
+
+base  = BaseVars(phi0)
 
 systems = Jecco.AdS5_3_1.create_systems(par_grid)
 
@@ -152,9 +155,9 @@ BCs[2].phid .= -0.5 + u0*u0 * ( 1.0/3.0 - 1.5 * 0.01 )
 BCs[2].A  .= 1.0/(u0*u0)
 dBCs[2].A .= -2.0/(u0*u0*u0)
 
-Jecco.AdS5_3_1.solve_nested!(bulks, BCs, dBCs, gauge, nesteds)
+Jecco.AdS5_3_1.solve_nested!(bulks, BCs, dBCs, gauge, base, nesteds)
 
-# Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, nested)
+# Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, base, nested)
 # Jecco.AdS5_3_1.solve_A_outer!(bulk, BC, dBC, gauge, nested)
 
 i = 1
@@ -167,4 +170,4 @@ nested = nesteds[i]
 BCs[i].S  .= 0.0
 dBCs[i].S .= 0.0
 
-Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, nested)
+Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, base, nested)

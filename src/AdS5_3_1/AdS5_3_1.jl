@@ -11,7 +11,7 @@ export ParamBase, ParamGrid, ParamID, ParamEvol, ParamIO
 export Potential
 export VV # this will contain the potential
 export Inner, Outer, AbstractSystem, System
-export BulkVars, BoundaryVars, GaugeVars
+export BulkVars, BoundaryVars, GaugeVars, BaseVars
 
 
 # TODO: remove d*dt fields from this struct ?
@@ -92,6 +92,10 @@ end
 
 function setup(par_base)
     global VV = Potential(par_base)
+end
+
+struct BaseVars{T}
+    phi0  :: T
 end
 
 
