@@ -1578,7 +1578,7 @@ function syncBCs!(BC::BulkVars, dBC::BulkVars, bulk::BulkVars, nested::Nested)
 end
 
 function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars{Inner},
-                       gauge::GaugeVars, nested::Nested)
+                       boundary::BoundaryVars, gauge::GaugeVars, nested::Nested)
 
     # FIXME: with scalar field this changes...
     BC.S  .= 0.0
@@ -1597,15 +1597,15 @@ function set_outerBCs!(BC_out::BulkVars{Outer}, dBC_out::BulkVars{Outer},
 end
 
 
-function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, gauge::GaugeVars,
-                       base::BaseVars, nesteds::Vector)
+function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, boundary::BoundaryVars,
+                       gauge::GaugeVars,  base::BaseVars, nesteds::Vector)
     Nsys = length(nesteds)
 
     # We assume that the first entry on these arrays is the inner grid, and that
     # there is only one domain spanning this grid. If we ever change this
     # construction we must remember to make the appropriate changes here.
 
-    set_innerBCs!(BCs[1], dBCs[1], bulks[1], gauge, nesteds[1])
+    set_innerBCs!(BCs[1], dBCs[1], bulks[1], boundary, gauge, nesteds[1])
 
     # TODO: this function
     set_outerBCs!(BCs[2], dBCs[2], BCs[1], dBCs[1])

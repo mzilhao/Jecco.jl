@@ -113,14 +113,19 @@ u = sys.ucoord[:]
 # y = sys.ycoord[:]
 
 
-# Note: it's important that xi is defined on a 1*Nx*Ny grid, rather than a Nx*Ny
-# one, so that the same Dx and Dy differential operators defined for the bulk
-# quantities can also straightforwardly apply on xi. Remember that the axis
-# along which the operator applies is defined on the operator itself. So, by
-# defining things this way, the Dx operator (which acts along the 2nd index)
-# will also do the correct thing when acting on xi.
+# Note: it's important that xi, a4 and f2 are defined on a 1*Nx*Ny grid, rather
+# than a Nx*Ny one, so that the same Dx and Dy differential operators defined
+# for the bulk quantities can also straightforwardly apply on them. Remember that
+# the axis along which the operator applies is defined on the operator itself.
+# So, by defining things this way, the Dx operator (which acts along the 2nd
+# index) will also do the correct thing when acting on xi, a4 or f2.
 xi = zeros(Float64, 1, Nx, Ny)
 gauge = GaugeVars(xi, kappa)
+
+f2x = zeros(Float64, 1, Nx, Ny)
+f2y = zeros(Float64, 1, Nx, Ny)
+a4  = -ones(Float64, 1, Nx, Ny)
+boundary = BoundaryVars(a4, f2x, f2y)
 
 nested = Jecco.AdS5_3_1.Nested(sys)
 
@@ -155,7 +160,7 @@ BCs[2].phid .= -0.5 + u0*u0 * ( 1.0/3.0 - 1.5 * 0.01 )
 BCs[2].A  .= 1.0/(u0*u0)
 dBCs[2].A .= -2.0/(u0*u0*u0)
 
-Jecco.AdS5_3_1.solve_nested!(bulks, BCs, dBCs, gauge, base, nesteds)
+Jecco.AdS5_3_1.solve_nested!(bulks, BCs, dBCs, boundary, gauge, base, nesteds)
 
 # Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, base, nested)
 # Jecco.AdS5_3_1.solve_A_outer!(bulk, BC, dBC, gauge, nested)

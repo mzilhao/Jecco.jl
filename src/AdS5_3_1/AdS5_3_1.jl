@@ -104,6 +104,7 @@ struct BoundaryVars{T}
     fx2  :: T
     fy2  :: T
 end
+BoundaryVars(a4, fx2, fy2) = BoundaryVars{typeof(a4)}(a4, fx2, fy2)
 
 
 #= Notation
