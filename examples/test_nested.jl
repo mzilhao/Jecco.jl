@@ -97,9 +97,19 @@ par_grid = ParamGrid(
     u_inner_nodes    =  12,
 )
 
-# TODO: make parameter
-kappa = 1.0
-phi0  = 0.0
+par_base = ParamBase(
+    which_potential = "const",
+)
+
+par_evol = ParamEvol(
+    ODE_method = "AB3",
+    # ODE_method = "RK4",
+    dt      = 0.008,
+    tmax    = 1.0,
+)
+
+kappa = par_evol.kappa
+phi0  = par_base.phi0
 
 base  = BaseVars(phi0)
 
