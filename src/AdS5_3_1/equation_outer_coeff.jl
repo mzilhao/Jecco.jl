@@ -1,11 +1,6 @@
 
-# Vf(phi)  = VV(phi)
-# Vfp(phi) = ∂(VV)(phi)
-
-# FIXME
-V(phi) = -3.0
-Vp(phi) = 0.0
-
+V(phi)  = VV(phi)
+Vp(phi) = ∂(VV)(phi)
 
 # assuming
 # (A d_uu + B d_u + C Id) f = -S

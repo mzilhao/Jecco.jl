@@ -6,10 +6,6 @@ import Base.Threads.@threads
 import Base.Threads.@spawn
 using LinearAlgebra
 
-# par_base = ParamBase(
-#     which_potential = "square",
-# )
-
 function IDtest0(sys::AbstractSystem{Outer})
     Nu, Nx, Ny = size(sys)
     ucoord = sys.ucoord
@@ -98,7 +94,7 @@ par_grid = ParamGrid(
 )
 
 par_base = ParamBase(
-    which_potential = "const",
+    which_potential = :zero,
 )
 
 par_evol = ParamEvol(
@@ -107,6 +103,11 @@ par_evol = ParamEvol(
     dt      = 0.008,
     tmax    = 1.0,
 )
+
+
+# define potential
+Jecco.AdS5_3_1.setup(par_base)
+
 
 kappa = par_evol.kappa
 phi0  = par_base.phi0

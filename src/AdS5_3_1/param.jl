@@ -1,7 +1,6 @@
 
-
 @with_kw struct ParamBase
-    which_potential :: String
+    which_potential :: Symbol  = :zero
     phi0            :: Float64 = 0.0
 end
 
