@@ -1580,7 +1580,8 @@ function syncBCs!(BC::BulkVars, dBC::BulkVars, bulk::BulkVars, nested::Nested)
 end
 
 function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars{Inner},
-                       boundary::BoundaryVars, gauge::GaugeVars, base::BaseVars, nested::Nested)
+                       boundary::BoundaryVars, gauge::GaugeVars, base::BaseVars,
+                       nested::Nested{Inner})
     _, Nx, Ny = size(nested.sys)
 
     phi02 = base.phi0 * base.phi0
@@ -1606,16 +1607,29 @@ end
 
 # TODO
 function set_outerBCs!(BC::BulkVars{Outer}, dBC::BulkVars{Outer}, bulk::BulkVars{Inner},
-                       nested::Nested)
+                       gauge::GaugeVars, base::BaseVars, nested::Nested{Inner})
+    _, Nx, Ny = size(nested.sys)
+    phi0 = base.phi0
 
+    # we are here assuming that the inner and outer grids merely touch at the
+    # interface, so we pass the values at this point without any interpolation
+    u0 = nested.sys.ucoord[end]
 
-    u0 = 0.01
+    @fastmath @inbounds @threads for j in 1:Ny
+        @inbounds @simd for i in 1:Nx
+            lxi   = gauge.xi[1,i,j]
+            lS    = bulk.S[end,i,j]
+            lS_u  = nested.Du_S[end,i,j]
 
+            BC.S[i,j]  = S_inner_to_outer(lS, u0, lxi, phi0)
+            dBC.S[i,j] = S_u_inner_to_outer(lS_u, lS, u0, lxi, phi0)
+
+        end
+    end
+
+    # FIXME
     fx2_0 = 0.02
     fy2_0 = 0.1
-
-    BC.S  .= 1.0/u0
-    dBC.S .= -1.0/(u0*u0)
 
     BC.Fx .= fx2_0 * u0 * u0
     BC.Fy .= fy2_0 * u0 * u0
@@ -1651,7 +1665,7 @@ function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, boundary::Bound
     set_innerBCs!(BCs[1], dBCs[1], bulks[1], boundary, gauge, base, nesteds[1])
 
     # TODO: this function
-    set_outerBCs!(BCs[2], dBCs[2], bulks[1], nesteds[1])
+    set_outerBCs!(BCs[2], dBCs[2], bulks[1], gauge, base, nesteds[1])
 
     for i in 2:Nsys-1
         solve_nested!(bulks[i], BCs[i], dBCs[i], gauge, base, nesteds[i])
