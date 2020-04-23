@@ -1580,19 +1580,33 @@ function syncBCs!(BC::BulkVars, dBC::BulkVars, bulk::BulkVars, nested::Nested)
 end
 
 function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars{Inner},
-                       boundary::BoundaryVars, gauge::GaugeVars, nested::Nested)
+                       boundary::BoundaryVars, gauge::GaugeVars, base::BaseVars, nested::Nested)
+    _, Nx, Ny = size(nested.sys)
 
-    # FIXME: with scalar field this changes...
-    BC.S  .= 0.0
-    dBC.S .= 0.0
+    phi02 = base.phi0 * base.phi0
+    phi04 = phi02 * phi02
+
+    @fastmath @inbounds @threads for j in 1:Ny
+        @inbounds @simd for i in 1:Nx
+            lxi     = gauge.xi[1,i,j]
+            lphi    = bulk.phi[1,i,j]
+            lphi_u  = nested.Du_phi[1,i,j]
+
+            BC.S[i,j]  = phi04 * (1 - 18 * lphi) / 54
+            dBC.S[i,j] = phi02 * (12 * lxi * lxi * lxi +
+                                  phi02 * lxi * (18 * lphi - 5) -
+                                  24 * phi02 * lphi_u) / 90
+
+        end
+    end
 
     nothing
 end
 
 
 # TODO
-function set_outerBCs!(BC::BulkVars{Outer}, dBC::BulkVars{Outer},
-                       bulk::BulkVars{Inner}, nested::Nested)
+function set_outerBCs!(BC::BulkVars{Outer}, dBC::BulkVars{Outer}, bulk::BulkVars{Inner},
+                       nested::Nested)
 
 
     u0 = 0.01
@@ -1634,7 +1648,7 @@ function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, boundary::Bound
     # there is only one domain spanning this grid. If we ever change this
     # construction we must remember to make the appropriate changes here.
 
-    set_innerBCs!(BCs[1], dBCs[1], bulks[1], boundary, gauge, nesteds[1])
+    set_innerBCs!(BCs[1], dBCs[1], bulks[1], boundary, gauge, base, nesteds[1])
 
     # TODO: this function
     set_outerBCs!(BCs[2], dBCs[2], bulks[1], nesteds[1])
