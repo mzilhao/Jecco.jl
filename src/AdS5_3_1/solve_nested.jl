@@ -96,6 +96,7 @@ end
 
 Nested(systems::Vector) = [Nested(sys) for sys in systems]
 
+# FIXME: these are just for the outer grid.
 
 @inline tilde(g_x, g_r, Fx, xi_x) = g_x - (Fx + xi_x) * g_r
 @inline hat(g_y, g_r, Fy, xi_y)   = g_y - (Fy + xi_y) * g_r
@@ -1590,8 +1591,35 @@ end
 
 
 # TODO
-function set_outerBCs!(BC_out::BulkVars{Outer}, dBC_out::BulkVars{Outer},
-                       BC_in::BulkVars{Inner}, dBC_in::BulkVars{Inner})
+function set_outerBCs!(BC::BulkVars{Outer}, dBC::BulkVars{Outer},
+                       bulk::BulkVars{Inner}, nested::Nested)
+
+
+    u0 = 0.01
+
+    fx2_0 = 0.02
+    fy2_0 = 0.1
+
+    BC.S  .= 1.0/u0
+    dBC.S .= -1.0/(u0*u0)
+
+    BC.Fx .= fx2_0 * u0 * u0
+    BC.Fy .= fy2_0 * u0 * u0
+
+    dBC.Fx .= 2 * fx2_0 * u0
+    dBC.Fy .= 2 * fy2_0 * u0
+
+    BC.Sd .= 0.5/(u0*u0)
+
+    BC.B2d .= -2.0 * u0*u0*u0 * 0.02
+    BC.B1d .= -2.0 * u0*u0*u0 * 0.01
+
+    BC.Gd   .= 0.0
+    BC.phid .= -0.5 + u0*u0 * ( 1.0/3.0 - 1.5 * 0.01 )
+
+    BC.A  .= 1.0/(u0*u0)
+    dBC.A .= -2.0/(u0*u0*u0)
+
 
 
     nothing
@@ -1599,7 +1627,7 @@ end
 
 
 function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, boundary::BoundaryVars,
-                       gauge::GaugeVars,  base::BaseVars, nesteds::Vector)
+                       gauge::GaugeVars, base::BaseVars, nesteds::Vector)
     Nsys = length(nesteds)
 
     # We assume that the first entry on these arrays is the inner grid, and that
@@ -1609,7 +1637,7 @@ function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, boundary::Bound
     set_innerBCs!(BCs[1], dBCs[1], bulks[1], boundary, gauge, nesteds[1])
 
     # TODO: this function
-    set_outerBCs!(BCs[2], dBCs[2], BCs[1], dBCs[1])
+    set_outerBCs!(BCs[2], dBCs[2], bulks[1], nesteds[1])
 
     for i in 2:Nsys-1
         solve_nested!(bulks[i], BCs[i], dBCs[i], gauge, base, nesteds[i])
@@ -1618,4 +1646,20 @@ function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, boundary::Bound
     solve_nested!(bulks[Nsys], BCs[Nsys], dBCs[Nsys], gauge, base, nesteds[Nsys])
 
     nothing
+end
+
+function nested_solver(base::BaseVars, systems::Vector)
+    Nsys  = length(systems)
+    sys1  = systems[1]
+    T     = Jecco.coord_eltype(sys1.ucoord)
+    _, Nx, Ny = size(sys1)
+
+    nesteds = [Nested(sys) for sys in systems]
+    BCs     = [BulkVars(sys.gridtype, T, Nx, Ny) for sys in systems]
+    dBCs    = [BulkVars(sys.gridtype, T, Nx, Ny) for sys in systems]
+
+    function (bulks::Vector, boundary::BoundaryVars, gauge::GaugeVars)
+        solve_nested!(bulks, BCs, dBCs, boundary, gauge, base, nesteds)
+        nothing
+    end
 end
