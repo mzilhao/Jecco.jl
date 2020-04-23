@@ -4,40 +4,41 @@ using Jecco
 using Parameters
 
 abstract type GridType end
-abstract type Inner <: GridType end
-abstract type Outer <: GridType end
+struct Inner <: GridType end
+struct Outer <: GridType end
 
 export ParamBase, ParamGrid, ParamID, ParamEvol, ParamIO
 export Potential
 export VV # this will contain the potential
-export Inner, Outer, AbstractSystem, System
+export Inner, Outer, System
 export BulkVars, BoundaryVars, GaugeVars, BaseVars
 
 
 # TODO: remove d*dt fields from this struct ?
 
 struct BulkVars{GT<:GridType,T}
-    B1     :: T
-    B2     :: T
-    G      :: T
-    phi    :: T
-    S      :: T
-    Fx     :: T
-    Fy     :: T
-    B1d    :: T
-    B2d    :: T
-    Gd     :: T
-    phid   :: T
-    Sd     :: T
-    A      :: T
-    dB1dt  :: T
-    dB2dt  :: T
-    dGdt   :: T
-    dphidt :: T
+    gridtype :: GT
+    B1       :: T
+    B2       :: T
+    G        :: T
+    phi      :: T
+    S        :: T
+    Fx       :: T
+    Fy       :: T
+    B1d      :: T
+    B2d      :: T
+    Gd       :: T
+    phid     :: T
+    Sd       :: T
+    A        :: T
+    dB1dt    :: T
+    dB2dt    :: T
+    dGdt     :: T
+    dphidt   :: T
 end
 
-function BulkVars{GT}(Nxx::Vararg) where{GT<:GridType,T<:Real}
-    B1     = zeros(Nxx...)
+function BulkVars(gridtype::GT, ::Type{T}, Nxx::Vararg) where{GT<:GridType,T}
+    B1     = zeros(T, Nxx...)
     B2     = copy(B1)
     G      = copy(B1)
     phi    = copy(B1)
@@ -55,12 +56,11 @@ function BulkVars{GT}(Nxx::Vararg) where{GT<:GridType,T<:Real}
     dGdt   = copy(B1)
     dphidt = copy(B1)
 
-    BulkVars{GT,typeof(B1)}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A,
-                         dB1dt, dB2dt,dGdt, dphidt)
+    BulkVars{GT,typeof(B1)}(gridtype, B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A,
+                            dB1dt, dB2dt,dGdt, dphidt)
 end
 
-function BulkVars{GT}(B1::Array{T,N}, B2::Array{T,N}, G::Array{T,N},
-                      phi::Array{T,N}) where {GT<:GridType,T<:Real,N}
+function BulkVars(gridtype::GT, B1::T, B2::T, G::T, phi::T) where {GT<:GridType,T}
     S      = similar(B1)
     Fx     = similar(B1)
     Fy     = similar(B1)
@@ -75,8 +75,8 @@ function BulkVars{GT}(B1::Array{T,N}, B2::Array{T,N}, G::Array{T,N},
     dGdt   = similar(B1)
     dphidt = similar(B1)
 
-    BulkVars{GT,typeof(B1)}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A,
-                         dB1dt, dB2dt,dGdt, dphidt)
+    BulkVars{GT,T}(gridtype, B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A,
+                   dB1dt, dB2dt,dGdt, dphidt)
 end
 
 
@@ -121,6 +121,8 @@ fh  = \hat f   = f_y - (Fy + xi_y) f_r
 
 
 mutable struct AllVars{GT<:GridType,T<:Real}
+    gridtype :: GT
+
     u        :: T
 
     phi0     :: T
@@ -206,10 +208,10 @@ mutable struct AllVars{GT<:GridType,T<:Real}
     Sc       :: T
     phic     :: T
 end
-function AllVars{GT,T}() where {GT<:GridType,T<:AbstractFloat}
+function AllVars(gridtype::GT, ::Type{T}) where {GT<:GridType,T<:Real}
     N = 2 + 6 + 8*7 + 5 + 4
-    array = zeros(N)
-    AllVars{GT,T}(array...)
+    array = zeros(T,N)
+    AllVars{GT,T}(gridtype, array...)
 end
 
 
@@ -224,6 +226,8 @@ fpp = f_rr = 2u^3 f_u + u^4 f_uu
 =#
 
 mutable struct FxyVars{GT<:GridType,T<:Real}
+    gridtype :: GT
+
     u        :: T
 
     xi       :: T
@@ -267,10 +271,10 @@ mutable struct FxyVars{GT<:GridType,T<:Real}
     Sp_x     :: T
     Sp_y     :: T
 end
-function FxyVars{GT,T}() where {GT<:GridType,T<:AbstractFloat}
+function FxyVars(gridtype::GT, ::Type{T}) where {GT<:GridType,T<:Real}
     N = 1 + 3 + 4*7 + 4
-    array = zeros(N)
-    FxyVars{GT,T}(array...)
+    array = zeros(T,N)
+    FxyVars{GT,T}(gridtype, array...)
 end
 
 

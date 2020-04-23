@@ -6,7 +6,7 @@ import Base.Threads.@threads
 import Base.Threads.@spawn
 using LinearAlgebra
 
-function IDtest0(sys::AbstractSystem{Outer})
+function IDtest0(sys::System{Outer})
     Nu, Nx, Ny = size(sys)
     ucoord = sys.ucoord
     xcoord = sys.xcoord
@@ -37,10 +37,10 @@ function IDtest0(sys::AbstractSystem{Outer})
         end
     end
 
-    BulkVars{Outer}(B1, B2, G, phi)
+    BulkVars(sys.gridtype, B1, B2, G, phi)
 end
 
-function IDtest0(sys::AbstractSystem{Inner})
+function IDtest0(sys::System{Inner})
     Nu, Nx, Ny = size(sys)
     ucoord = sys.ucoord
     xcoord = sys.xcoord
@@ -71,7 +71,7 @@ function IDtest0(sys::AbstractSystem{Inner})
         end
     end
 
-    BulkVars{Inner}(B1, B2, G, phi)
+    BulkVars(sys.gridtype, B1, B2, G, phi)
 end
 
 IDtest0(systems::Vector{T}) where {T<:System} = [IDtest0(sys) for sys in systems]
@@ -143,8 +143,8 @@ nested = Jecco.AdS5_3_1.Nested(sys)
 bulks = IDtest0(systems)
 
 nesteds = [Jecco.AdS5_3_1.Nested(sys) for sys in systems]
-BCs     = [BulkVars{Jecco.AdS5_3_1.grid_type(sys)}(Nx, Ny) for sys in systems]
-dBCs    = [BulkVars{Jecco.AdS5_3_1.grid_type(sys)}(Nx, Ny) for sys in systems]
+BCs     = [BulkVars(sys.gridtype, Float64, Nx, Ny) for sys in systems]
+dBCs    = [BulkVars(sys.gridtype, Float64, Nx, Ny) for sys in systems]
 
 u0 = u[1]
 
