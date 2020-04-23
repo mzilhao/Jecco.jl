@@ -96,7 +96,7 @@ end
 
 Nested(systems::Vector) = [Nested(sys) for sys in systems]
 
-# FIXME: these are just for the outer grid.
+# FIXME: these are only valid for the outer grid.
 
 @inline tilde(g_x, g_r, Fx, xi_x) = g_x - (Fx + xi_x) * g_r
 @inline hat(g_y, g_r, Fy, xi_y)   = g_y - (Fy + xi_y) * g_r
@@ -1649,20 +1649,22 @@ function set_outerBCs!(BC::BulkVars{Outer}, dBC::BulkVars{Outer}, bulk::BulkVars
     dBC.A .= -2.0/(u0*u0*u0)
 
 
-
     nothing
 end
 
 
+
+# We assume that the first entry on these arrays is the inner grid, and that
+# there is only one domain spanning this grid. If we ever change this
+# construction we must remember to make the appropriate changes here.
 function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, boundary::BoundaryVars,
                        gauge::GaugeVars, base::BaseVars, nesteds::Vector)
     Nsys = length(nesteds)
 
-    # We assume that the first entry on these arrays is the inner grid, and that
-    # there is only one domain spanning this grid. If we ever change this
-    # construction we must remember to make the appropriate changes here.
-
     set_innerBCs!(BCs[1], dBCs[1], bulks[1], boundary, gauge, base, nesteds[1])
+
+    # TODO: uncomment once we have all inner grid functions
+    # solve_nested!(bulks[1], BCs[1], dBCs[1], gauge, base, nesteds[1])
 
     # TODO: this function
     set_outerBCs!(BCs[2], dBCs[2], bulks[1], gauge, base, nesteds[1])
