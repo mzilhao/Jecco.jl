@@ -58,73 +58,91 @@ function Fxy_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::Fxy
 
     B1    = vars.B1
     B1p   = vars.B1p
-    # B1_x  = vars.B1_x
-    # B1_y  = vars.B1_y
-    # B1pp  = vars.B1pp
-    # B1p_x = vars.B1p_x
-    # B1p_y = vars.B1p_y
+    B1_x  = vars.B1_x
+    B1_y  = vars.B1_y
+    B1pp  = vars.B1pp
+    B1p_x = vars.B1p_x
+    B1p_y = vars.B1p_y
 
     B2    = vars.B2
     B2p   = vars.B2p
-    # B2_x  = vars.B2_x
-    # B2_y  = vars.B2_y
-    # B2pp  = vars.B2pp
-    # B2p_x = vars.B2p_x
-    # B2p_y = vars.B2p_y
+    B2_x  = vars.B2_x
+    B2_y  = vars.B2_y
+    B2pp  = vars.B2pp
+    B2p_x = vars.B2p_x
+    B2p_y = vars.B2p_y
 
     G     = vars.G
     Gp    = vars.Gp
-    # G_x   = vars.G_x
-    # G_y   = vars.G_y
-    # Gpp   = vars.Gpp
-    # Gp_x  = vars.Gp_x
-    # Gp_y  = vars.Gp_y
+    G_x   = vars.G_x
+    G_y   = vars.G_y
+    Gpp   = vars.Gpp
+    Gp_x  = vars.Gp_x
+    Gp_y  = vars.Gp_y
 
     phi   = vars.phi
     phip  = vars.phip
-    # phi_x = vars.phi_x
-    # phi_y = vars.phi_y
+    phi_x = vars.phi_x
+    phi_y = vars.phi_y
 
     S     = vars.S
     Sp    = vars.Sp
-    # S_x   = vars.S_x
-    # S_y   = vars.S_y
-    # Spp   = vars.Spp
-    # Sp_x  = vars.Sp_x
-    # Sp_y  = vars.Sp_y
+    S_x   = vars.S_x
+    S_y   = vars.S_y
+    Spp   = vars.Spp
+    Sp_x  = vars.Sp_x
+    Sp_y  = vars.Sp_y
 
-    expB1u4  = exp(*(B1, u ^ 4))
-    cosh2Gu4 = cosh(*(2, G, u ^ 4))
-    sinh2Gu4 = sinh(*(2, G, u ^ 4))
+    u2 = u*u
+    u3 = u*u2
+    u4 = u2*u2
+    u5 = u4*u
+    u5 = u3*u2
+    u6 = u3*u3
+    u8 = u4*u4
 
-    coshGu4sq = cosh(*(G, u ^ 4)) ^ 2
+    expB1u4  = exp(*(B1, u4))
+    cosh2Gu4 = cosh(*(2, G, u4))
+    sinh2Gu4 = sinh(*(2, G, u4))
 
-    AA[1,1] = *(2/9, u ^ 4, (3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi))) ^ 2, expB1u4)
+    coshGu4sq = cosh(*(G, u4)) ^ 2
+    sinhGu4sq = sinh(*(G, u4)) ^ 2
+
+
+    AA[1,1] = *(2/9, u4, (3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) ^ 2, expB1u4)
+
     AA[1,2] = 0
+
+
+    BB[1,1] = *(u2, *(4/9, u, (3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) ^ 2, expB1u4) + *(2/9, u, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), 9 + *(-3, Sp, u3) + *(12, B2, u4) + *(12, u, xi) + *(21, S, u4) + *(phi0 ^ 2, u2, -5 + *(B2p, u3 + *(-1, xi, u4)) + *(-4, B2, u4) + *(6, u, xi) + *(-4, B1, u4, coshGu4sq) + *(4, B2, xi, u5) + *(B1p, u3, coshGu4sq, 1 + *(-1, u, xi)) + *(4, B1, xi, u5, coshGu4sq)) + *(-3, B2p, u3, 1 + *(S, u4) + *(u, xi)) + *(12, B1, u4, coshGu4sq) + *(12, B2, S, u8) + *(12, B2, xi, u5) + *(-3, B1p, u3, coshGu4sq, 1 + *(S, u4) + *(u, xi)) + *(12, B1, S, u8, coshGu4sq) + *(12, B1, xi, u5, coshGu4sq), expB1u4))
+
+    BB[1,2] = *(1/9, u6, (3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) ^ 2, *(2, Gp) + *(B1p, sinh2Gu4) + *(-4, u, *(2, G) + *(B1, sinh2Gu4)))
+
+
+    CC[1,1] = *(2/9, *(6, (*(3, u, 1 + *(S, u4) + *(u, xi)) + *(phi0 ^ 2, u3, -1 + *(u, xi))) ^ 2) + *(u2, *(-4, (-3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) ^ 2) + *((*(3, u, 1 + *(S, u4) + *(u, xi)) + *(phi0 ^ 2, u3, -1 + *(u, xi))) ^ 2, B2pp + *(4, (phi0 + *(u, phi0 ^ 3, *(-1, phip) + *(3, phi, u)) + *(-2, phi0, u, xi)) ^ 2) + *(u4, (Gp + *(-4, G, u)) ^ 2) + *(coshGu4sq, B1pp + *(4, u, *(-2, B1p) + *(5, B1, u))) + *(-8, B2p, u) + *(3, u4, (B2p + *(-4, B2, u)) ^ 2) + *(20, B2, u2) + *(u4, (B1p + *(-4, B1, u)) ^ 2, coshGu4sq) + *(u4, B1p + *(-4, B1, u), Gp + *(-4, G, u), sinh2Gu4)) + *(u2, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), *(12, Spp) + *(4, phi0 ^ 2, -2 + *(6, u, xi)) + *(72, u, *(-1, Sp) + *(2, S, u)) + *(-3, u, B2p + *(-4, B2, u), -3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(-3, u, coshGu4sq, B1p + *(-4, B1, u), -3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))))) + *(2, u2, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), -3 + *(-3, Sp, u3) + *(9, S, u4) + *(12, B2, u4) + *(phi0 ^ 2, u2, -1 + *(B2p, u3 + *(-1, xi, u4)) + *(-4, B2, u4) + *(2, u, xi) + *(-4, B1, u4, coshGu4sq) + *(4, B2, xi, u5) + *(B1p, u3, coshGu4sq, 1 + *(-1, u, xi)) + *(4, B1, xi, u5, coshGu4sq)) + *(-3, B2p, u3, 1 + *(S, u4) + *(u, xi)) + *(12, B1, u4, coshGu4sq) + *(12, B2, S, u8) + *(12, B2, xi, u5) + *(-3, B1p, u3, coshGu4sq, 1 + *(S, u4) + *(u, xi)) + *(12, B1, S, u8, coshGu4sq) + *(12, B1, xi, u5, coshGu4sq)), expB1u4)
+
+    CC[1,2] = *(1/9, u4, *(u, *(B1p, *(21 + *(-9, Sp, u3) + *(30, u, xi) + *(57, S, u4) + *(phi0 ^ 2, u2, -13 + *(16, u, xi) + *(-8, B1, u4, -1 + *(u, xi))) + *(-24, B1, u4, 1 + *(S, u4) + *(u, xi)), sinh2Gu4) + *(16, G, u4, sinhGu4sq, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)))) + *(-4, u, *(6, G, 4 + *(-3, Sp, u3) + *(7, u, xi) + *(16, S, u4) + *(8, B1, u4, sinhGu4sq, 1 + *(S, u4) + *(u, xi))) + *(-3, B1, -4 + *(-16, S, u4) + *(-7, u, xi) + *(3, Sp, u3) + *(4, B1, u4, 1 + *(S, u4) + *(u, xi)), sinh2Gu4) + *(2, G, phi0 ^ 2, u2, -10 + *(13, u, xi) + *(8, B1, u4, sinhGu4sq, -1 + *(u, xi))) + *(B1, phi0 ^ 2, u2, -10 + *(13, u, xi) + *(-4, B1, u4, -1 + *(u, xi)), sinh2Gu4)) + *(2, Gp, 21 + *(-9, Sp, u3) + *(30, u, xi) + *(57, S, u4) + *(phi0 ^ 2, u2, -13 + *(16, u, xi) + *(-2, B1p, u3, sinhGu4sq, -1 + *(u, xi)) + *(8, B1, u4, sinhGu4sq, -1 + *(u, xi))) + *(24, B1, u4, sinhGu4sq) + *(-6, B1p, u3, sinhGu4sq, 1 + *(S, u4) + *(u, xi)) + *(24, B1, S, u8, sinhGu4sq) + *(24, B1, xi, u5, sinhGu4sq)) + *(B1p ^ 2, u3, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), sinh2Gu4)) + *(-2, Gpp, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) + *(-1, B1pp, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), sinh2Gu4), 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)))
+
+
+    SS[1] = *(1/9, (*(3, u, 1 + *(S, u4) + *(u, xi)) + *(phi0 ^ 2, u3, -1 + *(u, xi))) ^ 2, *(2, Gp_y) + *(B1p_y, sinh2Gu4) + *(-8, G_y, u) + *(-2, B2p_x, expB1u4) + *(-8, xi_x, phi0 ^ 2, expB1u4) + *(-4, B1_y, u, sinh2Gu4) + *(-2, B1_y, Gp, u4) + *(-2, B1p_x, coshGu4sq, expB1u4) + *(8, B1_y, G, u5) + *(8, B2_x, u, expB1u4) + *(-1, B1_y, B1p, u4, sinh2Gu4) + *(-8, B1, G_y, u5, cosh2Gu4) + *(-6, B2_x, B2p, u4, expB1u4) + *(-2, G_x, Gp, u4, expB1u4) + *(2, B1p, G_y, u4, cosh2Gu4) + *(4, B1, B1_y, u5, sinh2Gu4) + *(8, B1_x, u, coshGu4sq, expB1u4) + *(8, G, G_x, u5, expB1u4) + *(8, phi_x, u, phi0 ^ 4, expB1u4) + *(24, B2, B2_x, u5, expB1u4) + *(-24, phi, xi_x, phi0 ^ 4, u2, expB1u4) + *(-16, phi_x, xi, phi0 ^ 4, u2, expB1u4) + *(-8, phi_x, phip, phi0 ^ 6, u2, expB1u4) + *(-2, B1_x, B1p, u4, coshGu4sq, expB1u4) + *(-2, B1p, G_x, u4, expB1u4, sinh2Gu4) + *(8, B1, B1_x, u5, coshGu4sq, expB1u4) + *(8, B1, G_x, u5, expB1u4, sinh2Gu4) + *(8, phip, u, xi_x, phi0 ^ 4, expB1u4) + *(16, u, xi, xi_x, phi0 ^ 2, expB1u4) + *(24, phi, phi_x, phi0 ^ 6, u3, expB1u4)) + *(1/9, u2, *(-2, *(12, Sp_x) + *(xi_x, phi0 ^ 2, -8 + *(-12, B2, u4) + *(3, B2p, u3) + *(-12, B1, u4, coshGu4sq) + *(3, B1p, u3, coshGu4sq)) + *(-9, S_x, u, 4 + *(-1, B2p, u3) + *(4, B2, u4) + *(-1, B1p, u3, coshGu4sq) + *(4, B1, u4, coshGu4sq)) + *(9, u, xi_x, B2p + *(B1p, coshGu4sq) + *(-4, u, B2 + *(B1, coshGu4sq))), expB1u4) + *(-3, u, *(xi_y, 3 + *(phi0 ^ 2, u2)) + *(3, S_y, u3), *(-2, Gp) + *(-1, B1p, sinh2Gu4) + *(8, G, u) + *(4, B1, u, sinh2Gu4)), 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) + *(2/9, xi_x, *(-4, (-3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) ^ 2) + *((*(3, u, 1 + *(S, u4) + *(u, xi)) + *(phi0 ^ 2, u3, -1 + *(u, xi))) ^ 2, B2pp + *(4, (phi0 + *(u, phi0 ^ 3, *(-1, phip) + *(3, phi, u)) + *(-2, phi0, u, xi)) ^ 2) + *(u4, (Gp + *(-4, G, u)) ^ 2) + *(coshGu4sq, B1pp + *(4, u, *(-2, B1p) + *(5, B1, u))) + *(-8, B2p, u) + *(3, u4, (B2p + *(-4, B2, u)) ^ 2) + *(20, B2, u2) + *(u4, (B1p + *(-4, B1, u)) ^ 2, coshGu4sq) + *(u4, B1p + *(-4, B1, u), Gp + *(-4, G, u), sinh2Gu4)) + *(u2, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), *(12, Spp) + *(4, phi0 ^ 2, -2 + *(6, u, xi)) + *(72, u, *(-1, Sp) + *(2, S, u)) + *(-3, u, B2p + *(-4, B2, u), -3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(-3, u, coshGu4sq, B1p + *(-4, B1, u), -3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi)))), expB1u4) + *(8/9, *(xi_x, 3 + *(phi0 ^ 2, u2)) + *(3, S_x, u3), 3 + *(phi0 ^ 2, u2 + *(-2, xi, u3)) + *(-9, S, u4) + *(3, Sp, u3), expB1u4) + *(-1/9, xi_y, u2, *(-1, u, *(B1p, *(15 + *(-9, Sp, u3) + *(24, u, xi) + *(51, S, u4) + *(phi0 ^ 2, u2, -11 + *(14, u, xi) + *(-8, B1, u4, -1 + *(u, xi))) + *(-24, B1, u4, 1 + *(S, u4) + *(u, xi)), sinh2Gu4) + *(16, G, u4, sinhGu4sq, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)))) + *(-4, u, *(6, G, 2 + *(-3, Sp, u3) + *(5, u, xi) + *(14, S, u4) + *(8, B1, u4, sinhGu4sq, 1 + *(S, u4) + *(u, xi))) + *(-3, B1, -2 + *(-14, S, u4) + *(-5, u, xi) + *(3, Sp, u3) + *(4, B1, u4, 1 + *(S, u4) + *(u, xi)), sinh2Gu4) + *(2, G, phi0 ^ 2, u2, -8 + *(11, u, xi) + *(8, B1, u4, sinhGu4sq, -1 + *(u, xi))) + *(B1, phi0 ^ 2, u2, -8 + *(11, u, xi) + *(-4, B1, u4, -1 + *(u, xi)), sinh2Gu4)) + *(2, Gp, 15 + *(-9, Sp, u3) + *(24, u, xi) + *(51, S, u4) + *(phi0 ^ 2, u2, -11 + *(14, u, xi) + *(-2, B1p, u3, sinhGu4sq, -1 + *(u, xi)) + *(8, B1, u4, sinhGu4sq, -1 + *(u, xi))) + *(24, B1, u4, sinhGu4sq) + *(-6, B1p, u3, sinhGu4sq, 1 + *(S, u4) + *(u, xi)) + *(24, B1, S, u8, sinhGu4sq) + *(24, B1, xi, u5, sinhGu4sq)) + *(B1p ^ 2, u3, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), sinh2Gu4)) + *(2, Gpp, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) + *(B1pp, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), sinh2Gu4), 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)))
+
+
     AA[2,1] = 0
-    AA[2,2] = *(2/9, u ^ 4, (3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi))) ^ 2)
+
+    AA[2,2] = *(2/9, u4, (3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) ^ 2)
 
 
-    BB[1,1] = *(2/9, u ^ 3, 3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi)), 15 + *(-1, phi0 ^ 2, u ^ 2) + *(-1, u ^ 3, *(3, Sp) + *(-2, xi, phi0 ^ 2)) + *(18, u, xi) + *(27, S, u ^ 4) + *(-1, u ^ 3, B2p + *(coshGu4sq, B1p + *(-4, B1, u)) + *(-4, B2, u), 3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi))) + *(6, phi0 ^ 2, u ^ 2, -1 + *(u, xi)), expB1u4)
+    BB[2,1] = *(1/9, u6, (3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) ^ 2, *(2, Gp) + *(-1, B1p + *(-4, B1, u), sinh2Gu4) + *(-8, G, u), expB1u4)
 
-    BB[1,2] = *(-1/9, u ^ 6, (3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi))) ^ 2, *(-2, Gp) + *(-1, B1p + *(-4, B1, u), sinh2Gu4) + *(8, G, u))
-
-    BB[2,1] = *(-1/9, u ^ 6, (3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi))) ^ 2, *(-2, Gp) + *(-1, B1p + *(-4, B1, u), sinh2Gu4) + *(8, G, u))
-
-    BB[2,2] = *(2/9, u ^ 3, 3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi)), 15 + *(-1, phi0 ^ 2, u ^ 2) + *(-1, u ^ 3, *(3, Sp) + *(-2, xi, phi0 ^ 2)) + *(18, u, xi) + *(27, S, u ^ 4) + *(-1, u ^ 3, B2p + *(-1, coshGu4sq, B1p + *(-4, B1, u)) + *(-4, B2, u), 3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi))) + *(6, phi0 ^ 2, u ^ 2, -1 + *(u, xi)))
+    BB[2,2] = *(2/9, u3, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), 15 + *(-3, Sp, u3) + *(12, B2, u4) + *(18, u, xi) + *(27, S, u4) + *(phi0 ^ 2, u2, -7 + *(B2p, u3 + *(-1, xi, u4)) + *(8, u, xi) + *(4, B2, u4, -1 + *(u, xi))) + *(-3, B2p, u3, 1 + *(S, u4) + *(u, xi)) + *(12, B2, S, u8) + *(12, B2, xi, u5) + *(u3, coshGu4sq, B1p + *(-4, B1, u), 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))))
 
 
-    CC[1,1] = *(2/9, *(6, (*(3, u, 1 + *(S, u ^ 4) + *(u, xi)) + *(phi0 ^ 2, u ^ 3, -1 + *(u, xi))) ^ 2) + *(u ^ 2, 3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi)), -6 + *(-42, Sp, u ^ 3) + *(-36, B2, u ^ 4) + *(9, B2p, u ^ 3) + *(162, S, u ^ 4) + *(phi0 ^ 2, u ^ 2, -10 + *(28, u, xi) + *(3, B2p, u ^ 3, 1 + *(-2, u, xi)) + *(12, B2, u ^ 4, -1 + *(2, u, xi))) + *(-27, B2p, S, u ^ 7) + *(108, B2, S, u ^ 8) + *(-3, u ^ 3, coshGu4sq, B1p + *(-4, B1, u), -3 + *(9, S, u ^ 4) + *(phi0 ^ 2, u ^ 2, -1 + *(2, u, xi)))) + *(-4, u ^ 2, -3 + *(9, S, u ^ 4) + *(phi0 ^ 2, u ^ 2, -1 + *(2, u, xi)), -3 + *(-3, Sp, u ^ 3) + *(9, S, u ^ 4) + *(phi0 ^ 2, u ^ 2, -1 + *(2, u, xi))) + *(2, u ^ 4, (3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi))) ^ 2, *(u, *(-3, B2p) + *(coshGu4sq, *(-1, B1p, 3 + *(2, B1, u ^ 4)) + *(2, B1, u, 7 + *(4, B1, u ^ 4))) + *(8, G ^ 2, u ^ 5) + *(14, B2, u) + *(24, B2 ^ 2, u ^ 5) + *(-6, B2, B2p, u ^ 4) + *(-2, G, Gp, u ^ 4) + *(-2, G, u ^ 4, B1p + *(-4, B1, u), sinh2Gu4)) + *(2, phi0 ^ 2, (1 + *(-2, u, xi)) ^ 2) + *(2, u, phi0 ^ 4, -1 + *(2, u, xi), phip + *(-6, phi, u)) + *(6, phi, phi0 ^ 6, u ^ 3, *(-1, phip) + *(3, phi, u))), expB1u4)
+    CC[2,1] = *(1/9, u4, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), *(*(3, B1pp, 1 + *(S, u4) + *(u, xi)) + *(B1p ^ 2, u4, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) + *(-1, B1p, u, 21 + *(-9, Sp, u3) + *(30, u, xi) + *(57, S, u4) + *(phi0 ^ 2, u2, -13 + *(16, u, xi) + *(8, B1, u4, -1 + *(u, xi))) + *(24, B1, u4, 1 + *(S, u4) + *(u, xi))) + *(4, B1, u2, 12 + *(-9, Sp, u3) + *(21, u, xi) + *(48, S, u4) + *(phi0 ^ 2, u2, -10 + *(13, u, xi) + *(4, B1, u4, -1 + *(u, xi))) + *(12, B1, u4, 1 + *(S, u4) + *(u, xi))) + *(B1pp, phi0 ^ 2, u2, -1 + *(u, xi)), sinh2Gu4) + *(-6, Gpp, 1 + *(S, u4) + *(u, xi)) + *(-8, G, u2, 12 + *(-9, Sp, u3) + *(21, u, xi) + *(48, S, u4) + *(phi0 ^ 2, u2, -10 + *(13, u, xi))) + *(2, Gp, u, 21 + *(-9, Sp, u3) + *(30, u, xi) + *(57, S, u4) + *(phi0 ^ 2, u2, -13 + *(16, u, xi))) + *(-2, Gpp, phi0 ^ 2, u2, -1 + *(u, xi)) + *(4, u4, sinhGu4sq, B1p + *(-4, B1, u), Gp + *(-4, G, u), 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))), expB1u4)
 
-    CC[1,2] = *(1/9, u ^ 5, 3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi)), *(*(B1p, 9 + *(18, u, xi) + *(45, S, u ^ 4) + *(phi0 ^ 2, u ^ 2, -9 + *(12, u, xi) + *(-4, B1, u ^ 4, -1 + *(u, xi))) + *(-12, B1, u ^ 4, 1 + *(S, u ^ 4) + *(u, xi))) + *(4, B1, u, -12 + *(-48, S, u ^ 4) + *(-21, u, xi) + *(phi0 ^ 2, u ^ 2, 10 + *(-13, u, xi) + *(4, B1, u ^ 4, -1 + *(u, xi))) + *(12, B1, u ^ 4, 1 + *(S, u ^ 4) + *(u, xi))), sinh2Gu4) + *(2, Gp, 9 + *(18, u, xi) + *(45, S, u ^ 4) + *(phi0 ^ 2, u ^ 2, -9 + *(12, u, xi) + *(-4, B1, u ^ 4, -1 + *(u, xi))) + *(-12, B1, u ^ 4, 1 + *(S, u ^ 4) + *(u, xi))) + *(8, G, u, -12 + *(-48, S, u ^ 4) + *(-21, u, xi) + *(phi0 ^ 2, u ^ 2, 10 + *(-13, u, xi) + *(4, B1, u ^ 4, -1 + *(u, xi))) + *(12, B1, u ^ 4, 1 + *(S, u ^ 4) + *(u, xi))) + *(8, G, u ^ 4, B1p + *(-4, B1, u), 3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi)), cosh2Gu4))
+    CC[2,2] = *(4/3, (*(3, u, 1 + *(S, u4) + *(u, xi)) + *(phi0 ^ 2, u3, -1 + *(u, xi))) ^ 2) + *(2/9, u2, *(-4, (-3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) ^ 2) + *((*(3, u, 1 + *(S, u4) + *(u, xi)) + *(phi0 ^ 2, u3, -1 + *(u, xi))) ^ 2, B2pp + *(4, (phi0 + *(u, phi0 ^ 3, *(-1, phip) + *(3, phi, u)) + *(-2, phi0, u, xi)) ^ 2) + *(u4, (Gp + *(-4, G, u)) ^ 2) + *(-1, coshGu4sq, B1pp + *(4, u, *(-2, B1p) + *(5, B1, u))) + *(-8, B2p, u) + *(3, u4, (B2p + *(-4, B2, u)) ^ 2) + *(20, B2, u2) + *(u4, (B1p + *(-4, B1, u)) ^ 2, coshGu4sq) + *(u4, B1p + *(-4, B1, u), *(-1, Gp) + *(4, G, u), sinh2Gu4)) + *(u2, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), *(12, Spp) + *(4, phi0 ^ 2, -2 + *(6, u, xi)) + *(72, u, *(-1, Sp) + *(2, S, u)) + *(-3, u, B2p + *(-4, B2, u), -3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(3, u, coshGu4sq, B1p + *(-4, B1, u), -3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))))) + *(-4/9, u2, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), 3 + *(phi0 ^ 2, u2 + *(u6, *(4, B2) + *(B2p, xi)) + *(-1, B2p, u5) + *(-2, xi, u3) + *(-4, B2, xi, u ^ 7)) + *(-12, B2, u4) + *(-9, S, u4) + *(3, Sp, u3) + *(-12, B2, S, u8) + *(-12, B2, xi, u5) + *(3, B2p, u3, 1 + *(S, u4) + *(u, xi)) + *(u3, coshGu4sq, *(-1, B1p) + *(4, B1, u), 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))))
 
-    CC[2,1] = *(1/9, u ^ 5, 3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi)), *(*(-1, B1p, 9 + *(18, u, xi) + *(45, S, u ^ 4) + *(phi0 ^ 2, u ^ 2, -9 + *(12, u, xi) + *(4, B1, u ^ 4, -1 + *(u, xi))) + *(12, B1, u ^ 4, 1 + *(S, u ^ 4) + *(u, xi))) + *(4, B1, u, 12 + *(21, u, xi) + *(48, S, u ^ 4) + *(phi0 ^ 2, u ^ 2, -10 + *(13, u, xi) + *(4, B1, u ^ 4, -1 + *(u, xi))) + *(12, B1, u ^ 4, 1 + *(S, u ^ 4) + *(u, xi))), sinh2Gu4) + *(2, Gp, 9 + *(18, u, xi) + *(45, S, u ^ 4) + *(phi0 ^ 2, u ^ 2, -9 + *(12, u, xi) + *(4, B1, u ^ 4, -1 + *(u, xi))) + *(12, B1, u ^ 4, 1 + *(S, u ^ 4) + *(u, xi))) + *(-8, G, u, 12 + *(21, u, xi) + *(48, S, u ^ 4) + *(phi0 ^ 2, u ^ 2, -10 + *(13, u, xi) + *(4, B1, u ^ 4, -1 + *(u, xi))) + *(12, B1, u ^ 4, 1 + *(S, u ^ 4) + *(u, xi))) + *(-8, G, u ^ 4, B1p + *(-4, B1, u), 3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi)), cosh2Gu4), expB1u4)
 
-    CC[2,2] = *(4/3, (*(3, u, 1 + *(S, u ^ 4) + *(u, xi)) + *(phi0 ^ 2, u ^ 3, -1 + *(u, xi))) ^ 2) + *(-8/9, u ^ 2, -3 + *(9, S, u ^ 4) + *(phi0 ^ 2, u ^ 2, -1 + *(2, u, xi)), -3 + *(-3, Sp, u ^ 3) + *(9, S, u ^ 4) + *(phi0 ^ 2, u ^ 2, -1 + *(2, u, xi))) + *(-2/9, u ^ 2, 3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi)), 6 + *(-162, S, u ^ 4) + *(-9, B2p, u ^ 3) + *(36, B2, u ^ 4) + *(42, Sp, u ^ 3) + *(phi0 ^ 2, u ^ 2, 10 + *(-28, u, xi) + *(3, B2p, u ^ 3, -1 + *(2, u, xi)) + *(12, B2, u ^ 4, 1 + *(-2, u, xi))) + *(-108, B2, S, u ^ 8) + *(27, B2p, S, u ^ 7) + *(-3, u ^ 3, coshGu4sq, B1p + *(-4, B1, u), -3 + *(9, S, u ^ 4) + *(phi0 ^ 2, u ^ 2, -1 + *(2, u, xi)))) + *(4/9, u ^ 4, (3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi))) ^ 2, *(u, *(-3, B2p) + *(coshGu4sq, *(B1p, 3 + *(-2, B1, u ^ 4)) + *(2, B1, u, -7 + *(4, B1, u ^ 4))) + *(8, G ^ 2, u ^ 5) + *(14, B2, u) + *(24, B2 ^ 2, u ^ 5) + *(-6, B2, B2p, u ^ 4) + *(-2, G, Gp, u ^ 4) + *(2, G, u ^ 4, B1p + *(-4, B1, u), sinh2Gu4)) + *(2, phi0 ^ 2, (1 + *(-2, u, xi)) ^ 2) + *(2, u, phi0 ^ 4, -1 + *(2, u, xi), phip + *(-6, phi, u)) + *(6, phi, phi0 ^ 6, u ^ 3, *(-1, phip) + *(3, phi, u)))
-
-    SS[1]   = *(-1/9, (*(3, u, 1 + *(S, u ^ 4) + *(u, xi)) + *(phi0 ^ 2, u ^ 3, -1 + *(u, xi))) ^ 2, *(-2, Ghp) + *(*(-1, B1hp) + *(B1h, u, 4 + *(B1p, u ^ 3) + *(-4, B1, u ^ 4)) + *(4, u, xi_y, *(B1p, -1 + *(B1, u ^ 4)) + *(B1, u, 5 + *(-4, B1, u ^ 4))), sinh2Gu4) + *(8, Gh, u) + *(-8, B1h, G, u ^ 5) + *(-8, Gp, u, xi_y) + *(2, B1h, Gp, u ^ 4) + *(40, G, xi_y, u ^ 2) + *(-32, B1, G, xi_y, u ^ 6) + *(-2, u ^ 4, B1p + *(-4, B1, u), Gh + *(4, G, u, xi_y), cosh2Gu4) + *(8, B1, Gp, xi_y, u ^ 5)) + *(2/9, *((*(3, u, 1 + *(S, u ^ 4) + *(u, xi)) + *(phi0 ^ 2, u ^ 3, -1 + *(u, xi))) ^ 2, *(-1, B2tp) + *(-1, coshGu4sq, B1tp + *(B1t, u, -4 + *(B1p, u ^ 3) + *(-4, B1, u ^ 4)) + *(4, u, xi_x, B1p + *(B1, B1p, u ^ 4) + *(-1, B1, u, 5 + *(4, B1, u ^ 4)))) + *(4, B2t, u) + *(-1, Gp, Gt, u ^ 4) + *(-4, B2p, u, xi_x) + *(-3, B2p, B2t, u ^ 4) + *(4, G, Gt, u ^ 5) + *(4, phit, u, phi0 ^ 4) + *(12, B2, B2t, u ^ 5) + *(16, xi_x, G ^ 2, u ^ 6) + *(20, B2, xi_x, u ^ 2) + *(48, xi_x, B2 ^ 2, u ^ 6) + *(u ^ 4, Gt + *(4, G, u, xi_x), *(-1, B1p) + *(4, B1, u), sinh2Gu4) + *(-12, B2, B2p, xi_x, u ^ 5) + *(-8, phit, xi, phi0 ^ 4, u ^ 2) + *(-8, u, xi, xi_x, phi0 ^ 2) + *(-4, G, Gp, xi_x, u ^ 5) + *(-4, phip, phit, phi0 ^ 6, u ^ 2) + *(12, phi, phit, phi0 ^ 6, u ^ 3) + *(12, phi, xi_x, phi0 ^ 4, u ^ 2) + *(16, xi_x, phi0 ^ 2, u ^ 2, xi ^ 2) + *(36, xi_x, phi ^ 2, phi0 ^ 6, u ^ 4) + *(-48, phi, xi, xi_x, phi0 ^ 4, u ^ 3) + *(-12, phi, phip, xi_x, phi0 ^ 6, u ^ 3) + *(8, phip, xi, xi_x, phi0 ^ 4, u ^ 2)) + *(-4, u ^ 3, *(3, St) + *(2, xi, xi_x, phi0 ^ 2) + *(9, S, u, xi_x), -3 + *(-3, Sp, u ^ 3) + *(9, S, u ^ 4) + *(phi0 ^ 2, u ^ 2, -1 + *(2, u, xi))) + *(3, u ^ 2, 3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi)), *(-4, Stp) + *(u, xi_x, *(-12, Sp) + *(S, *(48, u) + *(-9, B2p, u ^ 4) + *(36, B2, u ^ 5)) + *(2, xi, phi0 ^ 2, 4 + *(-1, B2p, u ^ 3) + *(4, B2, u ^ 4))) + *(3, St, u, 4 + *(-1, B2p, u ^ 3) + *(4, B2, u ^ 4)) + *(u ^ 4, coshGu4sq, *(-1, B1p) + *(4, B1, u), *(3, St) + *(2, xi, xi_x, phi0 ^ 2) + *(9, S, u, xi_x))), expB1u4) + *(-1/3, u ^ 6, *(-2, Gp) + *(-1, B1p + *(-4, B1, u), sinh2Gu4) + *(8, G, u), *(3, Sh) + *(2, xi, xi_y, phi0 ^ 2) + *(9, S, u, xi_y), 3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi)))
-
-    SS[2]   = *(2/9, (*(3, u, 1 + *(S, u ^ 4) + *(u, xi)) + *(phi0 ^ 2, u ^ 3, -1 + *(u, xi))) ^ 2, *(-1, B2hp) + *(B1hp, coshGu4sq) + *(u, *(4, B2h) + *(-1, coshGu4sq, *(B1h, 4 + *(B1p, u ^ 3) + *(-4, B1, u ^ 4)) + *(xi_y, *(4, B1p, -1 + *(B1, u ^ 4)) + *(4, B1, u, 5 + *(-4, B1, u ^ 4)))) + *(-4, B2p, xi_y) + *(4, phih, phi0 ^ 4) + *(-1, Gh, Gp, u ^ 3) + *(-8, xi, xi_y, phi0 ^ 2) + *(-3, B2h, B2p, u ^ 3) + *(4, G, Gh, u ^ 4) + *(12, B2, B2h, u ^ 4) + *(16, xi_y, G ^ 2, u ^ 5) + *(20, B2, u, xi_y) + *(48, xi_y, B2 ^ 2, u ^ 5) + *(u ^ 3, B1p + *(-4, B1, u), Gh + *(4, G, u, xi_y), sinh2Gu4) + *(-12, B2, B2p, xi_y, u ^ 4) + *(-8, phih, u, xi, phi0 ^ 4) + *(-4, G, Gp, xi_y, u ^ 4) + *(-4, phih, phip, u, phi0 ^ 6) + *(12, phi, phih, phi0 ^ 6, u ^ 2) + *(12, phi, u, xi_y, phi0 ^ 4) + *(16, u, xi_y, phi0 ^ 2, xi ^ 2) + *(36, xi_y, phi ^ 2, phi0 ^ 6, u ^ 3) + *(-48, phi, xi, xi_y, phi0 ^ 4, u ^ 2) + *(-12, phi, phip, xi_y, phi0 ^ 6, u ^ 2) + *(8, phip, u, xi, xi_y, phi0 ^ 4))) + *(-8/9, u ^ 3, *(3, Sh) + *(2, xi, xi_y, phi0 ^ 2) + *(9, S, u, xi_y), -3 + *(-3, Sp, u ^ 3) + *(9, S, u ^ 4) + *(phi0 ^ 2, u ^ 2, -1 + *(2, u, xi))) + *(-2/3, u ^ 2, 3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi)), *(4, Shp) + *(u, xi_y, *(12, Sp) + *(S, *(-48, u) + *(-36, B2, u ^ 5) + *(9, B2p, u ^ 4)) + *(2, xi, phi0 ^ 2, -4 + *(B2p, u ^ 3) + *(-4, B2, u ^ 4))) + *(-3, Sh, u, 4 + *(-1, B2p, u ^ 3) + *(4, B2, u ^ 4)) + *(u ^ 4, coshGu4sq, *(-1, B1p) + *(4, B1, u), *(3, Sh) + *(2, xi, xi_y, phi0 ^ 2) + *(9, S, u, xi_y))) + *(1/3, u ^ 2, *(3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi)), *(2, Gtp) + *(-1, B1tp + *(B1t, u, -4 + *(B1p, u ^ 3) + *(-4, B1, u ^ 4)) + *(4, u, xi_x, B1p + *(B1, B1p, u ^ 4) + *(-1, B1, u, 5 + *(4, B1, u ^ 4))), sinh2Gu4) + *(-8, Gt, u) + *(2, B1t, u ^ 4, Gp + *(-4, G, u)) + *(8, u, xi_x, Gp + *(B1, Gp, u ^ 4) + *(-1, G, u, 5 + *(4, B1, u ^ 4))) + *(-2, u ^ 4, B1p + *(-4, B1, u), Gt + *(4, G, u, xi_x), cosh2Gu4)) + *(-3, u ^ 4, *(-2, Gp) + *(B1p + *(-4, B1, u), sinh2Gu4) + *(8, G, u), *(3, St) + *(2, xi, xi_x, phi0 ^ 2) + *(9, S, u, xi_x)), 1 + *(S, u ^ 4) + *(u, xi) + *(1/3, phi0 ^ 2, u ^ 2, -1 + *(u, xi)), expB1u4)
+    SS[2] = *(1/9, (*(3, u, 1 + *(S, u4) + *(u, xi)) + *(phi0 ^ 2, u3, -1 + *(u, xi))) ^ 2, *(-2, B2p_y) + *(-8, xi_y, phi0 ^ 2) + *(2, B1p_y, coshGu4sq) + *(2, Gp_x, expB1u4) + *(8, B2_y, u) + *(-1, B1p_x, expB1u4, sinh2Gu4) + *(-8, B1_y, u, coshGu4sq) + *(-8, G_x, u, expB1u4) + *(-6, B2_y, B2p, u4) + *(-2, G_y, Gp, u4) + *(8, G, G_y, u5) + *(8, phi_y, u, phi0 ^ 4) + *(24, B2, B2_y, u5) + *(-24, phi, xi_y, phi0 ^ 4, u2) + *(-16, phi_y, xi, phi0 ^ 4, u2) + *(-8, B1, G_y, u5, sinh2Gu4) + *(-8, B1_x, G, u5, expB1u4) + *(-8, phi_y, phip, phi0 ^ 6, u2) + *(-2, B1_y, B1p, u4, coshGu4sq) + *(2, B1_x, Gp, u4, expB1u4) + *(2, B1p, G_y, u4, sinh2Gu4) + *(4, B1_x, u, expB1u4, sinh2Gu4) + *(8, B1, B1_y, u5, coshGu4sq) + *(8, phip, u, xi_y, phi0 ^ 4) + *(16, u, xi, xi_y, phi0 ^ 2) + *(24, phi, phi_y, phi0 ^ 6, u3) + *(-1, B1_x, B1p, u4, expB1u4, sinh2Gu4) + *(-2, B1p, G_x, u4, cosh2Gu4, expB1u4) + *(4, B1, B1_x, u5, expB1u4, sinh2Gu4) + *(8, B1, G_x, u5, cosh2Gu4, expB1u4)) + *(1/9, *(xi_y, 3 + *(phi0 ^ 2, u2)) + *(3, S_y, u3), 24 + *(-72, S, u4) + *(8, phi0 ^ 2, u2 + *(-2, xi, u3)) + *(24, Sp, u3)) + *(2/9, xi_y, *(-4, (-3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) ^ 2) + *((*(3, u, 1 + *(S, u4) + *(u, xi)) + *(phi0 ^ 2, u3, -1 + *(u, xi))) ^ 2, B2pp + *(4, (phi0 + *(u, phi0 ^ 3, *(-1, phip) + *(3, phi, u)) + *(-2, phi0, u, xi)) ^ 2) + *(u4, (Gp + *(-4, G, u)) ^ 2) + *(-1, coshGu4sq, B1pp + *(4, u, *(-2, B1p) + *(5, B1, u))) + *(-8, B2p, u) + *(3, u4, (B2p + *(-4, B2, u)) ^ 2) + *(20, B2, u2) + *(u4, (B1p + *(-4, B1, u)) ^ 2, coshGu4sq) + *(u4, B1p + *(-4, B1, u), *(-1, Gp) + *(4, G, u), sinh2Gu4)) + *(u2, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), *(12, Spp) + *(4, phi0 ^ 2, -2 + *(6, u, xi)) + *(72, u, *(-1, Sp) + *(2, S, u)) + *(-3, u, B2p + *(-4, B2, u), -3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(3, u, coshGu4sq, B1p + *(-4, B1, u), -3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))))) + *(1/3, u2, 1 + *(S, u4) + *(u, xi) + *(1/3, phi0 ^ 2, u2, -1 + *(u, xi)), *(-24, Sp_y) + *(16, xi_y, phi0 ^ 2) + *(72, S_y, u) + *(-6, u, B2p + *(-4, B2, u), *(xi_y, 3 + *(phi0 ^ 2, u2)) + *(3, S_y, u3)) + *(6, u, coshGu4sq, B1p + *(-4, B1, u), *(xi_y, 3 + *(phi0 ^ 2, u2)) + *(3, S_y, u3)) + *(6, u, Gp + *(-4, G, u), *(xi_x, 3 + *(phi0 ^ 2, u2)) + *(3, S_x, u3), expB1u4) + *(3, u, *(-1, B1p) + *(4, B1, u), *(xi_x, 3 + *(phi0 ^ 2, u2)) + *(3, S_x, u3), expB1u4, sinh2Gu4)) + *(1/9, xi_x, u2, *(u, *(-1, B1p, *(15 + *(-9, Sp, u3) + *(24, u, xi) + *(51, S, u4) + *(phi0 ^ 2, u2, -11 + *(14, u, xi) + *(8, B1, u4, -1 + *(u, xi))) + *(24, B1, u4, 1 + *(S, u4) + *(u, xi)), sinh2Gu4) + *(16, G, u4, sinhGu4sq, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)))) + *(4, u, *(6, G, -2 + *(-14, S, u4) + *(-5, u, xi) + *(3, Sp, u3) + *(8, B1, u4, sinhGu4sq, 1 + *(S, u4) + *(u, xi))) + *(3, B1, 2 + *(-3, Sp, u3) + *(5, u, xi) + *(14, S, u4) + *(4, B1, u4, 1 + *(S, u4) + *(u, xi)), sinh2Gu4) + *(2, G, phi0 ^ 2, u2, 8 + *(-11, u, xi) + *(8, B1, u4, sinhGu4sq, -1 + *(u, xi))) + *(B1, phi0 ^ 2, u2, -8 + *(11, u, xi) + *(4, B1, u4, -1 + *(u, xi)), sinh2Gu4)) + *(6, Gp, 5 + *(-3, Sp, u3) + *(8, u, xi) + *(17, S, u4) + *(-8, B1, u4, sinhGu4sq) + *(-8, B1, S, u8, sinhGu4sq) + *(-8, B1, xi, u5, sinhGu4sq) + *(2, B1p, u3, sinhGu4sq, 1 + *(S, u4) + *(u, xi))) + *(B1p ^ 2, u3, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), sinh2Gu4) + *(-2, Gp, phi0 ^ 2, u2, 11 + *(-14, u, xi) + *(-2, B1p, u3, sinhGu4sq, -1 + *(u, xi)) + *(8, B1, u4, sinhGu4sq, -1 + *(u, xi)))) + *(-2, Gpp, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) + *(B1pp, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), sinh2Gu4), 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), expB1u4)
 
     nothing
 end

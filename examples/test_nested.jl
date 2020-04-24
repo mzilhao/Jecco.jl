@@ -133,8 +133,13 @@ u = sys.ucoord[:]
 xi = zeros(Float64, 1, Nx, Ny)
 gauge = GaugeVars(xi, kappa)
 
-f2x = zeros(Float64, 1, Nx, Ny)
-f2y = zeros(Float64, 1, Nx, Ny)
+
+fx2_0 = 0.02
+fy2_0 = 0.1
+
+
+f2x = fx2_0 * ones(Float64, 1, Nx, Ny)
+f2y = fy2_0 * ones(Float64, 1, Nx, Ny)
 a4  = -ones(Float64, 1, Nx, Ny)
 boundary = BoundaryVars(a4, f2x, f2y)
 
@@ -150,9 +155,6 @@ BCs     = [BulkVars(sys.gridtype, Float64, Nx, Ny) for sys in systems]
 dBCs    = [BulkVars(sys.gridtype, Float64, Nx, Ny) for sys in systems]
 
 u0 = u[1]
-
-fx2_0 = 0.02
-fy2_0 = 0.1
 
 BCs[2].S  .= 1.0/u0
 dBCs[2].S .= -1.0/(u0*u0)
@@ -188,7 +190,5 @@ BC   = BCs[i]
 dBC  = dBCs[i]
 nested = nesteds[i]
 
-BCs[i].S  .= 0.0
-dBCs[i].S .= 0.0
-
 Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, base, nested)
+Jecco.AdS5_3_1.solve_Fxy!(bulk, BC, dBC, gauge, base, nested)

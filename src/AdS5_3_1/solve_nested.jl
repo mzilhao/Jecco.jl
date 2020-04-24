@@ -270,8 +270,6 @@ function solve_Fxy!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVar
 
             aux.vars.phi0  = base.phi0
 
-            # TODO: some of these operations below are not needed for the inner grid...
-
             aux.varsFxy.xi    = gauge.xi[1,i,j]
             aux.varsFxy.xi_x  = Dx(gauge.xi, 1,i,j)
             aux.varsFxy.xi_y  = Dy(gauge.xi, 1,i,j)
