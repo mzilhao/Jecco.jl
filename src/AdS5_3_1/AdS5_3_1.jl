@@ -230,6 +230,8 @@ mutable struct FxyVars{GT<:GridType,T<:Real}
 
     u        :: T
 
+    phi0     :: T
+
     xi       :: T
     xi_x     :: T
     xi_y     :: T
@@ -272,7 +274,7 @@ mutable struct FxyVars{GT<:GridType,T<:Real}
     Sp_y     :: T
 end
 function FxyVars(gridtype::GT, ::Type{T}) where {GT<:GridType,T<:Real}
-    N = 1 + 3 + 4*7 + 4
+    N = 2 + 3 + 4*7 + 4
     array = zeros(T,N)
     FxyVars{GT,T}(gridtype, array...)
 end

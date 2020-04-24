@@ -28,7 +28,7 @@ function S_eq_coeff!(ABCS::Vector, vars::AllVars{Inner})
     phi  = vars.phi
     phip = vars.phip
 
-    coshGu4sq = cosh(*(G, u ^ 4))
+    coshGu4sq = cosh(*(G, u ^ 4)) ^ 2
 
 
     ABCS[1] = *(6, u ^ 7)
@@ -97,6 +97,7 @@ function Fxy_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::Fxy
     cosh2Gu4 = cosh(*(2, G, u ^ 4))
     sinh2Gu4 = sinh(*(2, G, u ^ 4))
 
+    coshGu4sq = cosh(*(G, u ^ 4)) ^ 2
 
     AA[1,1] = *(2/9, u ^ 4, (3 + *(3, S, u ^ 4) + *(3, u, xi) + *(phi0 ^ 2, u ^ 2, -1 + *(u, xi))) ^ 2, expB1u4)
     AA[1,2] = 0
