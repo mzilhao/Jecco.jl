@@ -1584,19 +1584,55 @@ function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars
                        nested::Nested{Inner})
     _, Nx, Ny = size(nested.sys)
 
-    phi02 = base.phi0 * base.phi0
+    Dx  = nested.sys.Dx
+    Dy  = nested.sys.Dy
+
+    phi0  = base.phi0
+    phi02 = phi0 * phi0
+    phi03 = phi0 * phi02
     phi04 = phi02 * phi02
 
     @fastmath @inbounds @threads for j in 1:Ny
         @inbounds @simd for i in 1:Nx
-            lxi     = gauge.xi[1,i,j]
-            lphi    = bulk.phi[1,i,j]
-            lphi_u  = nested.Du_phi[1,i,j]
+            xi      = gauge.xi[1,i,j]
+            phi     = bulk.phi[1,i,j]
+            phi_u   = nested.Du_phi[1,i,j]
 
-            BC.S[i,j]  = phi04 * (1 - 18 * lphi) / 54
-            dBC.S[i,j] = phi02 * (12 * lxi * lxi * lxi +
-                                  phi02 * lxi * (18 * lphi - 5) -
-                                  24 * phi02 * lphi_u) / 90
+            phi_x   = Dx(bulk.phi, 1,i,j)
+            phi_y   = Dy(bulk.phi, 1,i,j)
+
+            xi_x    = Dx(gauge.xi, 1,i,j)
+            xi_y    = Dy(gauge.xi, 1,i,j)
+
+            fx2     = boundary.fx2[1,i,j]
+            fy2     = boundary.fy2[1,i,j]
+
+            b14_x   = Dx(bulk.B1,1,i,j)
+            b24_x   = Dx(bulk.B2,1,i,j)
+            phi_x   = Dx(bulk.phi,1,i,j)
+            g4_x    = Dx(bulk.G,1,i,j)
+
+            b14_y   = Dy(bulk.B1,1,i,j)
+            b24_y   = Dy(bulk.B2,1,i,j)
+            phi_y   = Dy(bulk.phi,1,i,j)
+            g4_y    = Dy(bulk.G,1,i,j)
+
+            # TODO: check if this is the correct definition for phi2
+            phi2_x  = phi03 * phi_x - 2 * phi0 * xi * xi_x
+            phi2_y  = phi03 * phi_y - 2 * phi0 * xi * xi_y
+
+            BC.S[i,j]  = phi04 * (1 - 18 * phi) / 54
+            dBC.S[i,j] = phi02 * (12 * xi * xi * xi +
+                                  phi02 * xi * (18 * phi - 5) -
+                                  24 * phi02 * phi_u) / 90
+
+            BC.Fx[i,j]  = fx2
+            dBC.Fx[i,j] = -2 * fx2 * xi - 12 / 15 * (b14_x + b24_x - g4_y) +
+                4/15 * phi0 * phi2_x
+
+            BC.Fy[i,j]  = fy2
+            dBC.Fy[i,j] = -2 * fy2 * xi - 12 / 15 * (-b14_y + b24_y - g4_x) +
+                4/15 * phi0 * phi2_y
 
         end
     end
