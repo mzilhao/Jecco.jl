@@ -207,9 +207,11 @@ mutable struct AllVars{GT<:GridType,T<:Real}
     Gc       :: T
     Sc       :: T
     phic     :: T
+
+    Spp      :: T
 end
 function AllVars(gridtype::GT, ::Type{T}) where {GT<:GridType,T<:Real}
-    N = 2 + 6 + 8*7 + 5 + 4
+    N = 2 + 6 + 8*7 + 5 + 4 + 1
     array = zeros(T,N)
     AllVars{GT,T}(gridtype, array...)
 end
