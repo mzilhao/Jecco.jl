@@ -1615,7 +1615,6 @@ function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars
             phi_y   = Dy(bulk.phi,1,i,j)
             g4_y    = Dy(bulk.G,1,i,j)
 
-            # TODO: check if this is the correct definition for phi2
             phi2_x  = phi03 * phi_x - 2 * phi0 * xi * xi_x
             phi2_y  = phi03 * phi_y - 2 * phi0 * xi * xi_y
 
@@ -1651,25 +1650,25 @@ function set_outerBCs!(BC::BulkVars{Outer}, dBC::BulkVars{Outer}, bulk::BulkVars
 
     @fastmath @inbounds @threads for j in 1:Ny
         @inbounds @simd for i in 1:Nx
-            lxi   = gauge.xi[1,i,j]
-            lS    = bulk.S[end,i,j]
-            lS_u  = nested.Du_S[end,i,j]
+            xi     = gauge.xi[1,i,j]
+            S      = bulk.S[end,i,j]
+            Fx     = bulk.Fx[end,i,j]
+            Fy     = bulk.Fy[end,i,j]
+            S_u    = nested.Du_S[end,i,j]
+            Fx_u   = nested.Du_Fx[end,i,j]
+            Fy_u   = nested.Du_Fy[end,i,j]
 
-            BC.S[i,j]  = S_inner_to_outer(lS, u0, lxi, phi0)
-            dBC.S[i,j] = S_u_inner_to_outer(lS_u, lS, u0, lxi, phi0)
+            BC.S[i,j]  = S_inner_to_outer(S, u0, xi, phi0)
+            dBC.S[i,j] = S_u_inner_to_outer(S_u, S, u0, xi, phi0)
 
+            BC.Fx[i,j]  = F_inner_to_outer(Fx, u0)
+            BC.Fy[i,j]  = F_inner_to_outer(Fy, u0)
+            dBC.Fx[i,j] = F_u_inner_to_outer(Fx_u, Fx, u0)
+            dBC.Fy[i,j] = F_u_inner_to_outer(Fy_u, Fy, u0)
         end
     end
 
     # FIXME
-    fx2_0 = 0.02
-    fy2_0 = 0.1
-
-    BC.Fx .= fx2_0 * u0 * u0
-    BC.Fy .= fy2_0 * u0 * u0
-
-    dBC.Fx .= 2 * fx2_0 * u0
-    dBC.Fy .= 2 * fy2_0 * u0
 
     BC.Sd .= 0.5/(u0*u0)
 
