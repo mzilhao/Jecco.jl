@@ -147,8 +147,10 @@ nested = Jecco.AdS5_3_1.Nested(sys)
 
 bulks = IDtest0(systems)
 
-# solve_nested = Jecco.AdS5_3_1.nested_solver(base, systems)
-# solve_nested(bulks, boundary, gauge)
+solve_nested = Jecco.AdS5_3_1.nested_solver(base, systems)
+solve_nested(bulks, boundary, gauge)
+
+
 
 nesteds = [Jecco.AdS5_3_1.Nested(sys) for sys in systems]
 BCs     = [BulkVars(sys.gridtype, Float64, Nx, Ny) for sys in systems]
@@ -188,11 +190,6 @@ BCs[2].phid .= -0.5 + u0*u0 * ( 1.0/3.0 - 1.5 * 0.01 )
 BCs[2].A  .= 1.0/(u0*u0)
 dBCs[2].A .= -2.0/(u0*u0*u0)
 
-# Jecco.AdS5_3_1.solve_nested!(bulks, BCs, dBCs, boundary, gauge, base, nesteds)
-
-# Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, base, nested)
-# Jecco.AdS5_3_1.solve_A_outer!(bulk, BC, dBC, gauge, nested)
-
 
 i = 2
 
@@ -203,3 +200,4 @@ nested = nesteds[i]
 
 Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, base, nested)
 Jecco.AdS5_3_1.solve_Fxy!(bulk, BC, dBC, gauge, base, nested)
+Jecco.AdS5_3_1.solve_Sd!(bulk, BC, gauge, base, nested)

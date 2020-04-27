@@ -371,7 +371,8 @@ function solve_Fxy!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVar
     nothing
 end
 
-function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested::Nested)
+function solve_Sd!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVars,
+                   nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -1559,7 +1560,7 @@ function solve_nested!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gauge
     end
 
     # solve for Sd
-    solve_Sd_outer!(bulk, BC, gauge, nested)
+    solve_Sd!(bulk, BC, gauge, base, nested)
 
     # solving for B2d, (B1d,Gd) and phid are independent processes. we can
     # therefore @spawn, here
