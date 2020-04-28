@@ -207,9 +207,11 @@ mutable struct AllVars{GT<:GridType,T<:Real}
     Gc       :: T
     Sc       :: T
     phic     :: T
+
+    Spp      :: T
 end
 function AllVars(gridtype::GT, ::Type{T}) where {GT<:GridType,T<:Real}
-    N = 2 + 6 + 8*7 + 5 + 4
+    N = 2 + 6 + 8*7 + 5 + 4 + 1
     array = zeros(T,N)
     AllVars{GT,T}(gridtype, array...)
 end
@@ -229,6 +231,8 @@ mutable struct FxyVars{GT<:GridType,T<:Real}
     gridtype :: GT
 
     u        :: T
+
+    phi0     :: T
 
     xi       :: T
     xi_x     :: T
@@ -272,7 +276,7 @@ mutable struct FxyVars{GT<:GridType,T<:Real}
     Sp_y     :: T
 end
 function FxyVars(gridtype::GT, ::Type{T}) where {GT<:GridType,T<:Real}
-    N = 1 + 3 + 4*7 + 4
+    N = 2 + 3 + 4*7 + 4
     array = zeros(T,N)
     FxyVars{GT,T}(gridtype, array...)
 end
@@ -285,6 +289,7 @@ include("potential.jl")
 # include("dphidt.jl")
 include("equation_inner_coeff.jl")
 include("equation_outer_coeff.jl")
+include("inner_to_outer.jl")
 include("solve_nested.jl")
 # include("rhs.jl")
 # include("run.jl")

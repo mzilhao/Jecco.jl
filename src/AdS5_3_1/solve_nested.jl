@@ -13,17 +13,17 @@ function solve_lin_system!(A_mat, b_vec)
 end
 
 struct Aux{GT<:GridType,T<:Real}
-    A_mat    :: Matrix{T}
-    b_vec    :: Vector{T}
-    ABCS     :: Vector{T}
-    vars     :: AllVars{GT,T}
-    A_mat2   :: Matrix{T}
-    b_vec2   :: Vector{T}
-    AA       :: Matrix{T}
-    BB       :: Matrix{T}
-    CC       :: Matrix{T}
-    SS       :: Vector{T}
-    varsFxy  :: FxyVars{GT,T}
+    A_mat   :: Matrix{T}
+    b_vec   :: Vector{T}
+    ABCS    :: Vector{T}
+    vars    :: AllVars{GT,T}
+    A_mat2  :: Matrix{T}
+    b_vec2  :: Vector{T}
+    AA      :: Matrix{T}
+    BB      :: Matrix{T}
+    CC      :: Matrix{T}
+    SS      :: Vector{T}
+    varsFxy :: FxyVars{GT,T}
     function Aux{GT,T}(gridtype::GT, N::Int) where {GT<:GridType,T<:Real}
         A_mat   = zeros(T, N, N)
         b_vec   = zeros(T, N)
@@ -41,25 +41,25 @@ struct Aux{GT<:GridType,T<:Real}
 end
 
 struct Nested{GT,S,T<:Real,D}
-    sys      :: S
-    uu       :: Vector{T}
-    xx       :: Vector{T}
-    yy       :: Vector{T}
-    Du_B1    :: D
-    Du_B2    :: D
-    Du_G     :: D
-    Du_phi   :: D
-    Du_S     :: D
-    Du_Fx    :: D
-    Du_Fy    :: D
-    Duu_B1   :: D
-    Duu_B2   :: D
-    Duu_G    :: D
-    Duu_phi  :: D
-    Duu_S    :: D
-    Duu_Fx   :: D
-    Duu_Fy   :: D
-    aux_acc  :: Vector{Aux{GT,T}}
+    sys     :: S
+    uu      :: Vector{T}
+    xx      :: Vector{T}
+    yy      :: Vector{T}
+    Du_B1   :: D
+    Du_B2   :: D
+    Du_G    :: D
+    Du_phi  :: D
+    Du_S    :: D
+    Du_Fx   :: D
+    Du_Fy   :: D
+    Duu_B1  :: D
+    Duu_B2  :: D
+    Duu_G   :: D
+    Duu_phi :: D
+    Duu_S   :: D
+    Duu_Fx  :: D
+    Duu_Fy  :: D
+    aux_acc :: Vector{Aux{GT,T}}
 end
 function Nested(sys::System)
     Nu, Nx, Ny = size(sys)
@@ -96,6 +96,7 @@ end
 
 Nested(systems::Vector) = [Nested(sys) for sys in systems]
 
+# FIXME: these are only valid for the outer grid.
 
 @inline tilde(g_x, g_r, Fx, xi_x) = g_x - (Fx + xi_x) * g_r
 @inline hat(g_y, g_r, Fy, xi_y)   = g_y - (Fy + xi_y) * g_r
@@ -269,8 +270,6 @@ function solve_Fxy!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVar
 
             aux.vars.phi0  = base.phi0
 
-            # TODO: some of these operations below are not needed for the inner grid...
-
             aux.varsFxy.xi    = gauge.xi[1,i,j]
             aux.varsFxy.xi_x  = Dx(gauge.xi, 1,i,j)
             aux.varsFxy.xi_y  = Dy(gauge.xi, 1,i,j)
@@ -372,7 +371,8 @@ function solve_Fxy!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVar
     nothing
 end
 
-function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested::Nested)
+function solve_Sd!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVars,
+                   nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -404,12 +404,17 @@ function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested:
 
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
-            id  = Threads.threadid()
-            aux = aux_acc[id]
+            id   = Threads.threadid()
+            aux  = aux_acc[id]
 
             xi_x = Dx(gauge.xi, 1,i,j)
             xi_y = Dy(gauge.xi, 1,i,j)
 
+            aux.vars.phi0  = base.phi0
+
+            aux.vars.xi    = gauge.xi[1,i,j]
+            aux.vars.xi_x  = xi_x
+            aux.vars.xi_y  = xi_y
             aux.vars.xi_xx = Dxx(gauge.xi, 1,i,j)
             aux.vars.xi_yy = Dyy(gauge.xi, 1,i,j)
             aux.vars.xi_xy = Dx(Dy, gauge.xi, 1,i,j)
@@ -491,7 +496,6 @@ function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested:
                 G_xy       = Dx(Dy, bulk.G,  a,i,j)
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
-
                 aux.vars.u     = u
 
                 aux.vars.B1    = bulk.B1[a,i,j]
@@ -510,53 +514,59 @@ function solve_Sd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested:
                 aux.vars.Fxp   = Fxp
                 aux.vars.Fyp   = Fyp
 
-                aux.vars.B1t   = tilde( B1_x, B1p,  Fx, xi_x)
-                aux.vars.B2t   = tilde( B2_x, B2p,  Fx, xi_x)
-                aux.vars.Gt    = tilde(  G_x,  Gp,  Fx, xi_x)
-                aux.vars.phit  = tilde(phi_x, phip, Fx, xi_x)
-                aux.vars.St    = tilde(  S_x,  Sp,  Fx, xi_x)
-                aux.vars.Fxt   = tilde( Fx_x, Fxp,  Fx, xi_x)
-                aux.vars.Fyt   = tilde( Fy_x, Fyp,  Fy, xi_x)
+                # FIXME
+                Fx_out = Fx
+                Fy_out = Fy
 
-                aux.vars.B1h   = hat( B1_y,  B1p,  Fy, xi_y)
-                aux.vars.B2h   = hat( B2_y,  B2p,  Fy, xi_y)
-                aux.vars.Gh    = hat(  G_y,   Gp,  Fy, xi_y)
-                aux.vars.phih  = hat(phi_y, phip,  Fy, xi_y)
-                aux.vars.Sh    = hat(  S_y,   Sp,  Fy, xi_y)
-                aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy, xi_y)
-                aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy, xi_y)
+                aux.vars.B1t   = tilde( B1_x, B1p,  Fx_out, xi_x)
+                aux.vars.B2t   = tilde( B2_x, B2p,  Fx_out, xi_x)
+                aux.vars.Gt    = tilde(  G_x,  Gp,  Fx_out, xi_x)
+                aux.vars.phit  = tilde(phi_x, phip, Fx_out, xi_x)
+                aux.vars.St    = tilde(  S_x,  Sp,  Fx_out, xi_x)
+                aux.vars.Fxt   = tilde( Fx_x, Fxp,  Fx_out, xi_x)
+                aux.vars.Fyt   = tilde( Fy_x, Fyp,  Fx_out, xi_x)
 
-                aux.vars.B1b  = bar( B1_xx,  B1pp,  B1p_x,  Fx, xi_x)
-                aux.vars.B2b  = bar( B2_xx,  B2pp,  B2p_x,  Fx, xi_x)
-                aux.vars.Gb   = bar(  G_xx,   Gpp,   Gp_x,  Fx, xi_x)
-                aux.vars.phib = bar(phi_xx, phipp, phip_x,  Fx, xi_x)
-                aux.vars.Sb   = bar(  S_xx,   Spp,   Sp_x,  Fx, xi_x)
+                aux.vars.B1h   = hat( B1_y,  B1p,  Fy_out, xi_y)
+                aux.vars.B2h   = hat( B2_y,  B2p,  Fy_out, xi_y)
+                aux.vars.Gh    = hat(  G_y,   Gp,  Fy_out, xi_y)
+                aux.vars.phih  = hat(phi_y, phip,  Fy_out, xi_y)
+                aux.vars.Sh    = hat(  S_y,   Sp,  Fy_out, xi_y)
+                aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy_out, xi_y)
+                aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy_out, xi_y)
 
-                aux.vars.B1s  = star( B1_yy,  B1pp,  B1p_y,  Fy, xi_y)
-                aux.vars.B2s  = star( B2_yy,  B2pp,  B2p_y,  Fy, xi_y)
-                aux.vars.Gs   = star(  G_yy,   Gpp,   Gp_y,  Fy, xi_y)
-                aux.vars.phis = star(phi_yy, phipp, phip_y,  Fy, xi_y)
-                aux.vars.Ss   = star(  S_yy,   Spp,   Sp_y,  Fy, xi_y)
+                aux.vars.B1b  = bar( B1_xx,  B1pp,  B1p_x,  Fx_out, xi_x)
+                aux.vars.B2b  = bar( B2_xx,  B2pp,  B2p_x,  Fx_out, xi_x)
+                aux.vars.Gb   = bar(  G_xx,   Gpp,   Gp_x,  Fx_out, xi_x)
+                aux.vars.phib = bar(phi_xx, phipp, phip_x,  Fx_out, xi_x)
+                aux.vars.Sb   = bar(  S_xx,   Spp,   Sp_x,  Fx_out, xi_x)
 
-                aux.vars.B1pt  = tilde(  B1p_x,  B1pp,  Fx, xi_x)
-                aux.vars.B2pt  = tilde(  B2p_x,  B2pp,  Fx, xi_x)
-                aux.vars.Gpt   = tilde(   Gp_x,   Gpp,  Fx, xi_x)
-                aux.vars.phipt = tilde( phip_x, phipp,  Fx, xi_x)
-                aux.vars.Spt   = tilde(   Sp_x,   Spp,  Fx, xi_x)
-                aux.vars.Fxpt  = tilde(  Fxp_x,  Fxpp,  Fx, xi_x)
-                aux.vars.Fypt  = tilde(  Fyp_x,  Fypp,  Fy, xi_x)
+                aux.vars.B1s  = star( B1_yy,  B1pp,  B1p_y,  Fy_out, xi_y)
+                aux.vars.B2s  = star( B2_yy,  B2pp,  B2p_y,  Fy_out, xi_y)
+                aux.vars.Gs   = star(  G_yy,   Gpp,   Gp_y,  Fy_out, xi_y)
+                aux.vars.phis = star(phi_yy, phipp, phip_y,  Fy_out, xi_y)
+                aux.vars.Ss   = star(  S_yy,   Spp,   Sp_y,  Fy_out, xi_y)
 
-                aux.vars.B1ph  = hat(  B1p_y,  B1pp,  Fy, xi_y)
-                aux.vars.B2ph  = hat(  B2p_y,  B2pp,  Fy, xi_y)
-                aux.vars.Gph   = hat(   Gp_y,   Gpp,  Fy, xi_y)
-                aux.vars.phiph = hat( phip_y, phipp,  Fy, xi_y)
-                aux.vars.Sph   = hat(   Sp_y,   Spp,  Fy, xi_y)
-                aux.vars.Fxph  = hat(  Fxp_y,  Fxpp,  Fy, xi_y)
-                aux.vars.Fyph  = hat(  Fyp_y,  Fypp,  Fy, xi_y)
+                aux.vars.B1pt  = tilde(  B1p_x,  B1pp,  Fx_out, xi_x)
+                aux.vars.B2pt  = tilde(  B2p_x,  B2pp,  Fx_out, xi_x)
+                aux.vars.Gpt   = tilde(   Gp_x,   Gpp,  Fx_out, xi_x)
+                aux.vars.phipt = tilde( phip_x, phipp,  Fx_out, xi_x)
+                aux.vars.Spt   = tilde(   Sp_x,   Spp,  Fx_out, xi_x)
+                aux.vars.Fxpt  = tilde(  Fxp_x,  Fxpp,  Fx_out, xi_x)
+                aux.vars.Fypt  = tilde(  Fyp_x,  Fypp,  Fx_out, xi_x)
 
-                aux.vars.B2c  = cross(B2_xy, B2pp, B2p_x, B2p_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Gc   = cross( G_xy,  Gpp,  Gp_x,  Gp_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Sc   = cross( S_xy,  Spp,  Sp_x,  Sp_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.B1ph  = hat(  B1p_y,  B1pp,  Fy_out, xi_y)
+                aux.vars.B2ph  = hat(  B2p_y,  B2pp,  Fy_out, xi_y)
+                aux.vars.Gph   = hat(   Gp_y,   Gpp,  Fy_out, xi_y)
+                aux.vars.phiph = hat( phip_y, phipp,  Fy_out, xi_y)
+                aux.vars.Sph   = hat(   Sp_y,   Spp,  Fy_out, xi_y)
+                aux.vars.Fxph  = hat(  Fxp_y,  Fxpp,  Fy_out, xi_y)
+                aux.vars.Fyph  = hat(  Fyp_y,  Fypp,  Fy_out, xi_y)
+
+                aux.vars.B2c  = cross(B2_xy, B2pp, B2p_x, B2p_y, Fx_out, Fy_out, xi_x, xi_y)
+                aux.vars.Gc   = cross( G_xy,  Gpp,  Gp_x,  Gp_y, Fx_out, Fy_out, xi_x, xi_y)
+                aux.vars.Sc   = cross( S_xy,  Spp,  Sp_x,  Sp_y, Fx_out, Fy_out, xi_x, xi_y)
+
+                aux.vars.Spp  = Spp
 
                 Sd_eq_coeff!(aux.ABCS, aux.vars)
 
@@ -724,53 +734,57 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested
                 aux.vars.Fxp   = Fxp
                 aux.vars.Fyp   = Fyp
 
-                aux.vars.B1t   = tilde( B1_x, B1p,  Fx, xi_x)
-                aux.vars.B2t   = tilde( B2_x, B2p,  Fx, xi_x)
-                aux.vars.Gt    = tilde(  G_x,  Gp,  Fx, xi_x)
-                aux.vars.phit  = tilde(phi_x, phip, Fx, xi_x)
-                aux.vars.St    = tilde(  S_x,  Sp,  Fx, xi_x)
-                aux.vars.Fxt   = tilde( Fx_x, Fxp,  Fx, xi_x)
-                aux.vars.Fyt   = tilde( Fy_x, Fyp,  Fy, xi_x)
+                # FIXME
+                Fx_out = Fx
+                Fy_out = Fy
 
-                aux.vars.B1h   = hat( B1_y,  B1p,  Fy, xi_y)
-                aux.vars.B2h   = hat( B2_y,  B2p,  Fy, xi_y)
-                aux.vars.Gh    = hat(  G_y,   Gp,  Fy, xi_y)
-                aux.vars.phih  = hat(phi_y, phip,  Fy, xi_y)
-                aux.vars.Sh    = hat(  S_y,   Sp,  Fy, xi_y)
-                aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy, xi_y)
-                aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy, xi_y)
+                aux.vars.B1t   = tilde( B1_x, B1p,  Fx_out, xi_x)
+                aux.vars.B2t   = tilde( B2_x, B2p,  Fx_out, xi_x)
+                aux.vars.Gt    = tilde(  G_x,  Gp,  Fx_out, xi_x)
+                aux.vars.phit  = tilde(phi_x, phip, Fx_out, xi_x)
+                aux.vars.St    = tilde(  S_x,  Sp,  Fx_out, xi_x)
+                aux.vars.Fxt   = tilde( Fx_x, Fxp,  Fx_out, xi_x)
+                aux.vars.Fyt   = tilde( Fy_x, Fyp,  Fx_out, xi_x)
 
-                aux.vars.B1b  = bar( B1_xx,  B1pp,  B1p_x,  Fx, xi_x)
-                aux.vars.B2b  = bar( B2_xx,  B2pp,  B2p_x,  Fx, xi_x)
-                aux.vars.Gb   = bar(  G_xx,   Gpp,   Gp_x,  Fx, xi_x)
-                aux.vars.phib = bar(phi_xx, phipp, phip_x,  Fx, xi_x)
-                aux.vars.Sb   = bar(  S_xx,   Spp,   Sp_x,  Fx, xi_x)
+                aux.vars.B1h   = hat( B1_y,  B1p,  Fy_out, xi_y)
+                aux.vars.B2h   = hat( B2_y,  B2p,  Fy_out, xi_y)
+                aux.vars.Gh    = hat(  G_y,   Gp,  Fy_out, xi_y)
+                aux.vars.phih  = hat(phi_y, phip,  Fy_out, xi_y)
+                aux.vars.Sh    = hat(  S_y,   Sp,  Fy_out, xi_y)
+                aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy_out, xi_y)
+                aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy_out, xi_y)
 
-                aux.vars.B1s  = star( B1_yy,  B1pp,  B1p_y,  Fy, xi_y)
-                aux.vars.B2s  = star( B2_yy,  B2pp,  B2p_y,  Fy, xi_y)
-                aux.vars.Gs   = star(  G_yy,   Gpp,   Gp_y,  Fy, xi_y)
-                aux.vars.phis = star(phi_yy, phipp, phip_y,  Fy, xi_y)
-                aux.vars.Ss   = star(  S_yy,   Spp,   Sp_y,  Fy, xi_y)
+                aux.vars.B1b  = bar( B1_xx,  B1pp,  B1p_x,  Fx_out, xi_x)
+                aux.vars.B2b  = bar( B2_xx,  B2pp,  B2p_x,  Fx_out, xi_x)
+                aux.vars.Gb   = bar(  G_xx,   Gpp,   Gp_x,  Fx_out, xi_x)
+                aux.vars.phib = bar(phi_xx, phipp, phip_x,  Fx_out, xi_x)
+                aux.vars.Sb   = bar(  S_xx,   Spp,   Sp_x,  Fx_out, xi_x)
 
-                aux.vars.B1pt  = tilde(  B1p_x,  B1pp,  Fx, xi_x)
-                aux.vars.B2pt  = tilde(  B2p_x,  B2pp,  Fx, xi_x)
-                aux.vars.Gpt   = tilde(   Gp_x,   Gpp,  Fx, xi_x)
-                aux.vars.phipt = tilde( phip_x, phipp,  Fx, xi_x)
-                aux.vars.Spt   = tilde(   Sp_x,   Spp,  Fx, xi_x)
-                aux.vars.Fxpt  = tilde(  Fxp_x,  Fxpp,  Fx, xi_x)
-                aux.vars.Fypt  = tilde(  Fyp_x,  Fypp,  Fy, xi_x)
+                aux.vars.B1s  = star( B1_yy,  B1pp,  B1p_y,  Fy_out, xi_y)
+                aux.vars.B2s  = star( B2_yy,  B2pp,  B2p_y,  Fy_out, xi_y)
+                aux.vars.Gs   = star(  G_yy,   Gpp,   Gp_y,  Fy_out, xi_y)
+                aux.vars.phis = star(phi_yy, phipp, phip_y,  Fy_out, xi_y)
+                aux.vars.Ss   = star(  S_yy,   Spp,   Sp_y,  Fy_out, xi_y)
 
-                aux.vars.B1ph  = hat(  B1p_y,  B1pp,  Fy, xi_y)
-                aux.vars.B2ph  = hat(  B2p_y,  B2pp,  Fy, xi_y)
-                aux.vars.Gph   = hat(   Gp_y,   Gpp,  Fy, xi_y)
-                aux.vars.phiph = hat( phip_y, phipp,  Fy, xi_y)
-                aux.vars.Sph   = hat(   Sp_y,   Spp,  Fy, xi_y)
-                aux.vars.Fxph  = hat(  Fxp_y,  Fxpp,  Fy, xi_y)
-                aux.vars.Fyph  = hat(  Fyp_y,  Fypp,  Fy, xi_y)
+                aux.vars.B1pt  = tilde(  B1p_x,  B1pp,  Fx_out, xi_x)
+                aux.vars.B2pt  = tilde(  B2p_x,  B2pp,  Fx_out, xi_x)
+                aux.vars.Gpt   = tilde(   Gp_x,   Gpp,  Fx_out, xi_x)
+                aux.vars.phipt = tilde( phip_x, phipp,  Fx_out, xi_x)
+                aux.vars.Spt   = tilde(   Sp_x,   Spp,  Fx_out, xi_x)
+                aux.vars.Fxpt  = tilde(  Fxp_x,  Fxpp,  Fx_out, xi_x)
+                aux.vars.Fypt  = tilde(  Fyp_x,  Fypp,  Fx_out, xi_x)
 
-                aux.vars.B2c  = cross(B2_xy, B2pp, B2p_x, B2p_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Gc   = cross( G_xy,  Gpp,  Gp_x,  Gp_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Sc   = cross( S_xy,  Spp,  Sp_x,  Sp_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.B1ph  = hat(  B1p_y,  B1pp,  Fy_out, xi_y)
+                aux.vars.B2ph  = hat(  B2p_y,  B2pp,  Fy_out, xi_y)
+                aux.vars.Gph   = hat(   Gp_y,   Gpp,  Fy_out, xi_y)
+                aux.vars.phiph = hat( phip_y, phipp,  Fy_out, xi_y)
+                aux.vars.Sph   = hat(   Sp_y,   Spp,  Fy_out, xi_y)
+                aux.vars.Fxph  = hat(  Fxp_y,  Fxpp,  Fy_out, xi_y)
+                aux.vars.Fyph  = hat(  Fyp_y,  Fypp,  Fy_out, xi_y)
+
+                aux.vars.B2c  = cross(B2_xy, B2pp, B2p_x, B2p_y, Fx_out, Fy_out, xi_x, xi_y)
+                aux.vars.Gc   = cross( G_xy,  Gpp,  Gp_x,  Gp_y, Fx_out, Fy_out, xi_x, xi_y)
+                aux.vars.Sc   = cross( S_xy,  Spp,  Sp_x,  Sp_y, Fx_out, Fy_out, xi_x, xi_y)
 
                 B2d_eq_coeff!(aux.ABCS, aux.vars)
 
@@ -941,53 +955,57 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nest
                 aux.vars.Fxp   = Fxp
                 aux.vars.Fyp   = Fyp
 
-                aux.vars.B1t   = tilde( B1_x, B1p,  Fx, xi_x)
-                aux.vars.B2t   = tilde( B2_x, B2p,  Fx, xi_x)
-                aux.vars.Gt    = tilde(  G_x,  Gp,  Fx, xi_x)
-                aux.vars.phit  = tilde(phi_x, phip, Fx, xi_x)
-                aux.vars.St    = tilde(  S_x,  Sp,  Fx, xi_x)
-                aux.vars.Fxt   = tilde( Fx_x, Fxp,  Fx, xi_x)
-                aux.vars.Fyt   = tilde( Fy_x, Fyp,  Fy, xi_x)
+                # FIXME
+                Fx_out = Fx
+                Fy_out = Fy
 
-                aux.vars.B1h   = hat( B1_y,  B1p,  Fy, xi_y)
-                aux.vars.B2h   = hat( B2_y,  B2p,  Fy, xi_y)
-                aux.vars.Gh    = hat(  G_y,   Gp,  Fy, xi_y)
-                aux.vars.phih  = hat(phi_y, phip,  Fy, xi_y)
-                aux.vars.Sh    = hat(  S_y,   Sp,  Fy, xi_y)
-                aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy, xi_y)
-                aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy, xi_y)
+                aux.vars.B1t   = tilde( B1_x, B1p,  Fx_out, xi_x)
+                aux.vars.B2t   = tilde( B2_x, B2p,  Fx_out, xi_x)
+                aux.vars.Gt    = tilde(  G_x,  Gp,  Fx_out, xi_x)
+                aux.vars.phit  = tilde(phi_x, phip, Fx_out, xi_x)
+                aux.vars.St    = tilde(  S_x,  Sp,  Fx_out, xi_x)
+                aux.vars.Fxt   = tilde( Fx_x, Fxp,  Fx_out, xi_x)
+                aux.vars.Fyt   = tilde( Fy_x, Fyp,  Fx_out, xi_x)
 
-                aux.vars.B1b  = bar( B1_xx,  B1pp,  B1p_x,  Fx, xi_x)
-                aux.vars.B2b  = bar( B2_xx,  B2pp,  B2p_x,  Fx, xi_x)
-                aux.vars.Gb   = bar(  G_xx,   Gpp,   Gp_x,  Fx, xi_x)
-                aux.vars.phib = bar(phi_xx, phipp, phip_x,  Fx, xi_x)
-                aux.vars.Sb   = bar(  S_xx,   Spp,   Sp_x,  Fx, xi_x)
+                aux.vars.B1h   = hat( B1_y,  B1p,  Fy_out, xi_y)
+                aux.vars.B2h   = hat( B2_y,  B2p,  Fy_out, xi_y)
+                aux.vars.Gh    = hat(  G_y,   Gp,  Fy_out, xi_y)
+                aux.vars.phih  = hat(phi_y, phip,  Fy_out, xi_y)
+                aux.vars.Sh    = hat(  S_y,   Sp,  Fy_out, xi_y)
+                aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy_out, xi_y)
+                aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy_out, xi_y)
 
-                aux.vars.B1s  = star( B1_yy,  B1pp,  B1p_y,  Fy, xi_y)
-                aux.vars.B2s  = star( B2_yy,  B2pp,  B2p_y,  Fy, xi_y)
-                aux.vars.Gs   = star(  G_yy,   Gpp,   Gp_y,  Fy, xi_y)
-                aux.vars.phis = star(phi_yy, phipp, phip_y,  Fy, xi_y)
-                aux.vars.Ss   = star(  S_yy,   Spp,   Sp_y,  Fy, xi_y)
+                aux.vars.B1b  = bar( B1_xx,  B1pp,  B1p_x,  Fx_out, xi_x)
+                aux.vars.B2b  = bar( B2_xx,  B2pp,  B2p_x,  Fx_out, xi_x)
+                aux.vars.Gb   = bar(  G_xx,   Gpp,   Gp_x,  Fx_out, xi_x)
+                aux.vars.phib = bar(phi_xx, phipp, phip_x,  Fx_out, xi_x)
+                aux.vars.Sb   = bar(  S_xx,   Spp,   Sp_x,  Fx_out, xi_x)
 
-                aux.vars.B1pt  = tilde(  B1p_x,  B1pp,  Fx, xi_x)
-                aux.vars.B2pt  = tilde(  B2p_x,  B2pp,  Fx, xi_x)
-                aux.vars.Gpt   = tilde(   Gp_x,   Gpp,  Fx, xi_x)
-                aux.vars.phipt = tilde( phip_x, phipp,  Fx, xi_x)
-                aux.vars.Spt   = tilde(   Sp_x,   Spp,  Fx, xi_x)
-                aux.vars.Fxpt  = tilde(  Fxp_x,  Fxpp,  Fx, xi_x)
-                aux.vars.Fypt  = tilde(  Fyp_x,  Fypp,  Fy, xi_x)
+                aux.vars.B1s  = star( B1_yy,  B1pp,  B1p_y,  Fy_out, xi_y)
+                aux.vars.B2s  = star( B2_yy,  B2pp,  B2p_y,  Fy_out, xi_y)
+                aux.vars.Gs   = star(  G_yy,   Gpp,   Gp_y,  Fy_out, xi_y)
+                aux.vars.phis = star(phi_yy, phipp, phip_y,  Fy_out, xi_y)
+                aux.vars.Ss   = star(  S_yy,   Spp,   Sp_y,  Fy_out, xi_y)
 
-                aux.vars.B1ph  = hat(  B1p_y,  B1pp,  Fy, xi_y)
-                aux.vars.B2ph  = hat(  B2p_y,  B2pp,  Fy, xi_y)
-                aux.vars.Gph   = hat(   Gp_y,   Gpp,  Fy, xi_y)
-                aux.vars.phiph = hat( phip_y, phipp,  Fy, xi_y)
-                aux.vars.Sph   = hat(   Sp_y,   Spp,  Fy, xi_y)
-                aux.vars.Fxph  = hat(  Fxp_y,  Fxpp,  Fy, xi_y)
-                aux.vars.Fyph  = hat(  Fyp_y,  Fypp,  Fy, xi_y)
+                aux.vars.B1pt  = tilde(  B1p_x,  B1pp,  Fx_out, xi_x)
+                aux.vars.B2pt  = tilde(  B2p_x,  B2pp,  Fx_out, xi_x)
+                aux.vars.Gpt   = tilde(   Gp_x,   Gpp,  Fx_out, xi_x)
+                aux.vars.phipt = tilde( phip_x, phipp,  Fx_out, xi_x)
+                aux.vars.Spt   = tilde(   Sp_x,   Spp,  Fx_out, xi_x)
+                aux.vars.Fxpt  = tilde(  Fxp_x,  Fxpp,  Fx_out, xi_x)
+                aux.vars.Fypt  = tilde(  Fyp_x,  Fypp,  Fx_out, xi_x)
 
-                aux.vars.B2c  = cross(B2_xy, B2pp, B2p_x, B2p_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Gc   = cross( G_xy,  Gpp,  Gp_x,  Gp_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Sc   = cross( S_xy,  Spp,  Sp_x,  Sp_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.B1ph  = hat(  B1p_y,  B1pp,  Fy_out, xi_y)
+                aux.vars.B2ph  = hat(  B2p_y,  B2pp,  Fy_out, xi_y)
+                aux.vars.Gph   = hat(   Gp_y,   Gpp,  Fy_out, xi_y)
+                aux.vars.phiph = hat( phip_y, phipp,  Fy_out, xi_y)
+                aux.vars.Sph   = hat(   Sp_y,   Spp,  Fy_out, xi_y)
+                aux.vars.Fxph  = hat(  Fxp_y,  Fxpp,  Fy_out, xi_y)
+                aux.vars.Fyph  = hat(  Fyp_y,  Fypp,  Fy_out, xi_y)
+
+                aux.vars.B2c  = cross(B2_xy, B2pp, B2p_x, B2p_y, Fx_out, Fy_out, xi_x, xi_y)
+                aux.vars.Gc   = cross( G_xy,  Gpp,  Gp_x,  Gp_y, Fx_out, Fy_out, xi_x, xi_y)
+                aux.vars.Sc   = cross( S_xy,  Spp,  Sp_x,  Sp_y, Fx_out, Fy_out, xi_x, xi_y)
 
                 B1dGd_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, aux.vars)
 
@@ -1171,54 +1189,58 @@ function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, neste
                 aux.vars.Fxp   = Fxp
                 aux.vars.Fyp   = Fyp
 
-                aux.vars.B1t   = tilde( B1_x, B1p,  Fx, xi_x)
-                aux.vars.B2t   = tilde( B2_x, B2p,  Fx, xi_x)
-                aux.vars.Gt    = tilde(  G_x,  Gp,  Fx, xi_x)
-                aux.vars.phit  = tilde(phi_x, phip, Fx, xi_x)
-                aux.vars.St    = tilde(  S_x,  Sp,  Fx, xi_x)
-                aux.vars.Fxt   = tilde( Fx_x, Fxp,  Fx, xi_x)
-                aux.vars.Fyt   = tilde( Fy_x, Fyp,  Fy, xi_x)
+                # FIXME
+                Fx_out = Fx
+                Fy_out = Fy
 
-                aux.vars.B1h   = hat( B1_y,  B1p,  Fy, xi_y)
-                aux.vars.B2h   = hat( B2_y,  B2p,  Fy, xi_y)
-                aux.vars.Gh    = hat(  G_y,   Gp,  Fy, xi_y)
-                aux.vars.phih  = hat(phi_y, phip,  Fy, xi_y)
-                aux.vars.Sh    = hat(  S_y,   Sp,  Fy, xi_y)
-                aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy, xi_y)
-                aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy, xi_y)
+                aux.vars.B1t   = tilde( B1_x, B1p,  Fx_out, xi_x)
+                aux.vars.B2t   = tilde( B2_x, B2p,  Fx_out, xi_x)
+                aux.vars.Gt    = tilde(  G_x,  Gp,  Fx_out, xi_x)
+                aux.vars.phit  = tilde(phi_x, phip, Fx_out, xi_x)
+                aux.vars.St    = tilde(  S_x,  Sp,  Fx_out, xi_x)
+                aux.vars.Fxt   = tilde( Fx_x, Fxp,  Fx_out, xi_x)
+                aux.vars.Fyt   = tilde( Fy_x, Fyp,  Fx_out, xi_x)
 
-                aux.vars.B1b  = bar( B1_xx,  B1pp,  B1p_x,  Fx, xi_x)
-                aux.vars.B2b  = bar( B2_xx,  B2pp,  B2p_x,  Fx, xi_x)
-                aux.vars.Gb   = bar(  G_xx,   Gpp,   Gp_x,  Fx, xi_x)
-                aux.vars.phib = bar(phi_xx, phipp, phip_x,  Fx, xi_x)
-                aux.vars.Sb   = bar(  S_xx,   Spp,   Sp_x,  Fx, xi_x)
+                aux.vars.B1h   = hat( B1_y,  B1p,  Fy_out, xi_y)
+                aux.vars.B2h   = hat( B2_y,  B2p,  Fy_out, xi_y)
+                aux.vars.Gh    = hat(  G_y,   Gp,  Fy_out, xi_y)
+                aux.vars.phih  = hat(phi_y, phip,  Fy_out, xi_y)
+                aux.vars.Sh    = hat(  S_y,   Sp,  Fy_out, xi_y)
+                aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy_out, xi_y)
+                aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy_out, xi_y)
 
-                aux.vars.B1s  = star( B1_yy,  B1pp,  B1p_y,  Fy, xi_y)
-                aux.vars.B2s  = star( B2_yy,  B2pp,  B2p_y,  Fy, xi_y)
-                aux.vars.Gs   = star(  G_yy,   Gpp,   Gp_y,  Fy, xi_y)
-                aux.vars.phis = star(phi_yy, phipp, phip_y,  Fy, xi_y)
-                aux.vars.Ss   = star(  S_yy,   Spp,   Sp_y,  Fy, xi_y)
+                aux.vars.B1b  = bar( B1_xx,  B1pp,  B1p_x,  Fx_out, xi_x)
+                aux.vars.B2b  = bar( B2_xx,  B2pp,  B2p_x,  Fx_out, xi_x)
+                aux.vars.Gb   = bar(  G_xx,   Gpp,   Gp_x,  Fx_out, xi_x)
+                aux.vars.phib = bar(phi_xx, phipp, phip_x,  Fx_out, xi_x)
+                aux.vars.Sb   = bar(  S_xx,   Spp,   Sp_x,  Fx_out, xi_x)
 
-                aux.vars.B1pt  = tilde(  B1p_x,  B1pp,  Fx, xi_x)
-                aux.vars.B2pt  = tilde(  B2p_x,  B2pp,  Fx, xi_x)
-                aux.vars.Gpt   = tilde(   Gp_x,   Gpp,  Fx, xi_x)
-                aux.vars.phipt = tilde( phip_x, phipp,  Fx, xi_x)
-                aux.vars.Spt   = tilde(   Sp_x,   Spp,  Fx, xi_x)
-                aux.vars.Fxpt  = tilde(  Fxp_x,  Fxpp,  Fx, xi_x)
-                aux.vars.Fypt  = tilde(  Fyp_x,  Fypp,  Fy, xi_x)
+                aux.vars.B1s  = star( B1_yy,  B1pp,  B1p_y,  Fy_out, xi_y)
+                aux.vars.B2s  = star( B2_yy,  B2pp,  B2p_y,  Fy_out, xi_y)
+                aux.vars.Gs   = star(  G_yy,   Gpp,   Gp_y,  Fy_out, xi_y)
+                aux.vars.phis = star(phi_yy, phipp, phip_y,  Fy_out, xi_y)
+                aux.vars.Ss   = star(  S_yy,   Spp,   Sp_y,  Fy_out, xi_y)
 
-                aux.vars.B1ph  = hat(  B1p_y,  B1pp,  Fy, xi_y)
-                aux.vars.B2ph  = hat(  B2p_y,  B2pp,  Fy, xi_y)
-                aux.vars.Gph   = hat(   Gp_y,   Gpp,  Fy, xi_y)
-                aux.vars.phiph = hat( phip_y, phipp,  Fy, xi_y)
-                aux.vars.Sph   = hat(   Sp_y,   Spp,  Fy, xi_y)
-                aux.vars.Fxph  = hat(  Fxp_y,  Fxpp,  Fy, xi_y)
-                aux.vars.Fyph  = hat(  Fyp_y,  Fypp,  Fy, xi_y)
+                aux.vars.B1pt  = tilde(  B1p_x,  B1pp,  Fx_out, xi_x)
+                aux.vars.B2pt  = tilde(  B2p_x,  B2pp,  Fx_out, xi_x)
+                aux.vars.Gpt   = tilde(   Gp_x,   Gpp,  Fx_out, xi_x)
+                aux.vars.phipt = tilde( phip_x, phipp,  Fx_out, xi_x)
+                aux.vars.Spt   = tilde(   Sp_x,   Spp,  Fx_out, xi_x)
+                aux.vars.Fxpt  = tilde(  Fxp_x,  Fxpp,  Fx_out, xi_x)
+                aux.vars.Fypt  = tilde(  Fyp_x,  Fypp,  Fx_out, xi_x)
 
-                aux.vars.B2c  = cross( B2_xy,  B2pp,  B2p_x,  B2p_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Gc   = cross(  G_xy,   Gpp,   Gp_x,   Gp_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Sc   = cross(  S_xy,   Spp,   Sp_x,   Sp_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.phic = cross(phi_xy, phipp, phip_x, phip_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.B1ph  = hat(  B1p_y,  B1pp,  Fy_out, xi_y)
+                aux.vars.B2ph  = hat(  B2p_y,  B2pp,  Fy_out, xi_y)
+                aux.vars.Gph   = hat(   Gp_y,   Gpp,  Fy_out, xi_y)
+                aux.vars.phiph = hat( phip_y, phipp,  Fy_out, xi_y)
+                aux.vars.Sph   = hat(   Sp_y,   Spp,  Fy_out, xi_y)
+                aux.vars.Fxph  = hat(  Fxp_y,  Fxpp,  Fy_out, xi_y)
+                aux.vars.Fyph  = hat(  Fyp_y,  Fypp,  Fy_out, xi_y)
+
+                aux.vars.B2c  = cross( B2_xy,  B2pp,  B2p_x,  B2p_y, Fx_out, Fy_out, xi_x, xi_y)
+                aux.vars.Gc   = cross(  G_xy,   Gpp,   Gp_x,   Gp_y, Fx_out, Fy_out, xi_x, xi_y)
+                aux.vars.Sc   = cross(  S_xy,   Spp,   Sp_x,   Sp_y, Fx_out, Fy_out, xi_x, xi_y)
+                aux.vars.phic = cross(phi_xy, phipp, phip_x, phip_y, Fx_out, Fy_out, xi_x, xi_y)
 
                 phid_eq_coeff!(aux.ABCS, aux.vars)
 
@@ -1395,54 +1417,58 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gaug
                 aux.vars.Fxp   = Fxp
                 aux.vars.Fyp   = Fyp
 
-                aux.vars.B1t   = tilde( B1_x, B1p,  Fx, xi_x)
-                aux.vars.B2t   = tilde( B2_x, B2p,  Fx, xi_x)
-                aux.vars.Gt    = tilde(  G_x,  Gp,  Fx, xi_x)
-                aux.vars.phit  = tilde(phi_x, phip, Fx, xi_x)
-                aux.vars.St    = tilde(  S_x,  Sp,  Fx, xi_x)
-                aux.vars.Fxt   = tilde( Fx_x, Fxp,  Fx, xi_x)
-                aux.vars.Fyt   = tilde( Fy_x, Fyp,  Fy, xi_x)
+                # FIXME
+                Fx_out = Fx
+                Fy_out = Fy
 
-                aux.vars.B1h   = hat( B1_y,  B1p,  Fy, xi_y)
-                aux.vars.B2h   = hat( B2_y,  B2p,  Fy, xi_y)
-                aux.vars.Gh    = hat(  G_y,   Gp,  Fy, xi_y)
-                aux.vars.phih  = hat(phi_y, phip,  Fy, xi_y)
-                aux.vars.Sh    = hat(  S_y,   Sp,  Fy, xi_y)
-                aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy, xi_y)
-                aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy, xi_y)
+                aux.vars.B1t   = tilde( B1_x, B1p,  Fx_out, xi_x)
+                aux.vars.B2t   = tilde( B2_x, B2p,  Fx_out, xi_x)
+                aux.vars.Gt    = tilde(  G_x,  Gp,  Fx_out, xi_x)
+                aux.vars.phit  = tilde(phi_x, phip, Fx_out, xi_x)
+                aux.vars.St    = tilde(  S_x,  Sp,  Fx_out, xi_x)
+                aux.vars.Fxt   = tilde( Fx_x, Fxp,  Fx_out, xi_x)
+                aux.vars.Fyt   = tilde( Fy_x, Fyp,  Fx_out, xi_x)
 
-                aux.vars.B1b  = bar( B1_xx,  B1pp,  B1p_x,  Fx, xi_x)
-                aux.vars.B2b  = bar( B2_xx,  B2pp,  B2p_x,  Fx, xi_x)
-                aux.vars.Gb   = bar(  G_xx,   Gpp,   Gp_x,  Fx, xi_x)
-                aux.vars.phib = bar(phi_xx, phipp, phip_x,  Fx, xi_x)
-                aux.vars.Sb   = bar(  S_xx,   Spp,   Sp_x,  Fx, xi_x)
+                aux.vars.B1h   = hat( B1_y,  B1p,  Fy_out, xi_y)
+                aux.vars.B2h   = hat( B2_y,  B2p,  Fy_out, xi_y)
+                aux.vars.Gh    = hat(  G_y,   Gp,  Fy_out, xi_y)
+                aux.vars.phih  = hat(phi_y, phip,  Fy_out, xi_y)
+                aux.vars.Sh    = hat(  S_y,   Sp,  Fy_out, xi_y)
+                aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy_out, xi_y)
+                aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy_out, xi_y)
 
-                aux.vars.B1s  = star( B1_yy,  B1pp,  B1p_y,  Fy, xi_y)
-                aux.vars.B2s  = star( B2_yy,  B2pp,  B2p_y,  Fy, xi_y)
-                aux.vars.Gs   = star(  G_yy,   Gpp,   Gp_y,  Fy, xi_y)
-                aux.vars.phis = star(phi_yy, phipp, phip_y,  Fy, xi_y)
-                aux.vars.Ss   = star(  S_yy,   Spp,   Sp_y,  Fy, xi_y)
+                aux.vars.B1b  = bar( B1_xx,  B1pp,  B1p_x,  Fx_out, xi_x)
+                aux.vars.B2b  = bar( B2_xx,  B2pp,  B2p_x,  Fx_out, xi_x)
+                aux.vars.Gb   = bar(  G_xx,   Gpp,   Gp_x,  Fx_out, xi_x)
+                aux.vars.phib = bar(phi_xx, phipp, phip_x,  Fx_out, xi_x)
+                aux.vars.Sb   = bar(  S_xx,   Spp,   Sp_x,  Fx_out, xi_x)
 
-                aux.vars.B1pt  = tilde(  B1p_x,  B1pp,  Fx, xi_x)
-                aux.vars.B2pt  = tilde(  B2p_x,  B2pp,  Fx, xi_x)
-                aux.vars.Gpt   = tilde(   Gp_x,   Gpp,  Fx, xi_x)
-                aux.vars.phipt = tilde( phip_x, phipp,  Fx, xi_x)
-                aux.vars.Spt   = tilde(   Sp_x,   Spp,  Fx, xi_x)
-                aux.vars.Fxpt  = tilde(  Fxp_x,  Fxpp,  Fx, xi_x)
-                aux.vars.Fypt  = tilde(  Fyp_x,  Fypp,  Fy, xi_x)
+                aux.vars.B1s  = star( B1_yy,  B1pp,  B1p_y,  Fy_out, xi_y)
+                aux.vars.B2s  = star( B2_yy,  B2pp,  B2p_y,  Fy_out, xi_y)
+                aux.vars.Gs   = star(  G_yy,   Gpp,   Gp_y,  Fy_out, xi_y)
+                aux.vars.phis = star(phi_yy, phipp, phip_y,  Fy_out, xi_y)
+                aux.vars.Ss   = star(  S_yy,   Spp,   Sp_y,  Fy_out, xi_y)
 
-                aux.vars.B1ph  = hat(  B1p_y,  B1pp,  Fy, xi_y)
-                aux.vars.B2ph  = hat(  B2p_y,  B2pp,  Fy, xi_y)
-                aux.vars.Gph   = hat(   Gp_y,   Gpp,  Fy, xi_y)
-                aux.vars.phiph = hat( phip_y, phipp,  Fy, xi_y)
-                aux.vars.Sph   = hat(   Sp_y,   Spp,  Fy, xi_y)
-                aux.vars.Fxph  = hat(  Fxp_y,  Fxpp,  Fy, xi_y)
-                aux.vars.Fyph  = hat(  Fyp_y,  Fypp,  Fy, xi_y)
+                aux.vars.B1pt  = tilde(  B1p_x,  B1pp,  Fx_out, xi_x)
+                aux.vars.B2pt  = tilde(  B2p_x,  B2pp,  Fx_out, xi_x)
+                aux.vars.Gpt   = tilde(   Gp_x,   Gpp,  Fx_out, xi_x)
+                aux.vars.phipt = tilde( phip_x, phipp,  Fx_out, xi_x)
+                aux.vars.Spt   = tilde(   Sp_x,   Spp,  Fx_out, xi_x)
+                aux.vars.Fxpt  = tilde(  Fxp_x,  Fxpp,  Fx_out, xi_x)
+                aux.vars.Fypt  = tilde(  Fyp_x,  Fypp,  Fx_out, xi_x)
 
-                aux.vars.B2c  = cross( B2_xy,  B2pp,  B2p_x,  B2p_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Gc   = cross(  G_xy,   Gpp,   Gp_x,   Gp_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.Sc   = cross(  S_xy,   Spp,   Sp_x,   Sp_y, Fx, Fy, xi_x, xi_y)
-                aux.vars.phic = cross(phi_xy, phipp, phip_x, phip_y, Fx, Fy, xi_x, xi_y)
+                aux.vars.B1ph  = hat(  B1p_y,  B1pp,  Fy_out, xi_y)
+                aux.vars.B2ph  = hat(  B2p_y,  B2pp,  Fy_out, xi_y)
+                aux.vars.Gph   = hat(   Gp_y,   Gpp,  Fy_out, xi_y)
+                aux.vars.phiph = hat( phip_y, phipp,  Fy_out, xi_y)
+                aux.vars.Sph   = hat(   Sp_y,   Spp,  Fy_out, xi_y)
+                aux.vars.Fxph  = hat(  Fxp_y,  Fxpp,  Fy_out, xi_y)
+                aux.vars.Fyph  = hat(  Fyp_y,  Fypp,  Fy_out, xi_y)
+
+                aux.vars.B2c  = cross( B2_xy,  B2pp,  B2p_x,  B2p_y, Fx_out, Fy_out, xi_x, xi_y)
+                aux.vars.Gc   = cross(  G_xy,   Gpp,   Gp_x,   Gp_y, Fx_out, Fy_out, xi_x, xi_y)
+                aux.vars.Sc   = cross(  S_xy,   Spp,   Sp_x,   Sp_y, Fx_out, Fy_out, xi_x, xi_y)
+                aux.vars.phic = cross(phi_xy, phipp, phip_x, phip_y, Fx_out, Fy_out, xi_x, xi_y)
 
                 A_eq_coeff!(aux.ABCS, aux.vars)
 
@@ -1534,7 +1560,7 @@ function solve_nested!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gauge
     end
 
     # solve for Sd
-    solve_Sd_outer!(bulk, BC, gauge, nested)
+    solve_Sd!(bulk, BC, gauge, base, nested)
 
     # solving for B2d, (B1d,Gd) and phid are independent processes. we can
     # therefore @spawn, here
@@ -1579,37 +1605,129 @@ function syncBCs!(BC::BulkVars, dBC::BulkVars, bulk::BulkVars, nested::Nested)
 end
 
 function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars{Inner},
-                       boundary::BoundaryVars, gauge::GaugeVars, nested::Nested)
+                       boundary::BoundaryVars, gauge::GaugeVars, base::BaseVars,
+                       nested::Nested{Inner})
+    _, Nx, Ny = size(nested.sys)
 
-    # FIXME: with scalar field this changes...
-    BC.S  .= 0.0
-    dBC.S .= 0.0
+    Dx  = nested.sys.Dx
+    Dy  = nested.sys.Dy
+
+    phi0  = base.phi0
+    phi02 = phi0 * phi0
+    phi03 = phi0 * phi02
+    phi04 = phi02 * phi02
+
+    @fastmath @inbounds @threads for j in 1:Ny
+        @inbounds @simd for i in 1:Nx
+            xi      = gauge.xi[1,i,j]
+            phi     = bulk.phi[1,i,j]
+            phi_u   = nested.Du_phi[1,i,j]
+
+            phi_x   = Dx(bulk.phi, 1,i,j)
+            phi_y   = Dy(bulk.phi, 1,i,j)
+
+            xi_x    = Dx(gauge.xi, 1,i,j)
+            xi_y    = Dy(gauge.xi, 1,i,j)
+
+            fx2     = boundary.fx2[1,i,j]
+            fy2     = boundary.fy2[1,i,j]
+
+            b14_x   = Dx(bulk.B1,1,i,j)
+            b24_x   = Dx(bulk.B2,1,i,j)
+            phi_x   = Dx(bulk.phi,1,i,j)
+            g4_x    = Dx(bulk.G,1,i,j)
+
+            b14_y   = Dy(bulk.B1,1,i,j)
+            b24_y   = Dy(bulk.B2,1,i,j)
+            phi_y   = Dy(bulk.phi,1,i,j)
+            g4_y    = Dy(bulk.G,1,i,j)
+
+            phi2_x  = phi03 * phi_x - 2 * phi0 * xi * xi_x
+            phi2_y  = phi03 * phi_y - 2 * phi0 * xi * xi_y
+
+            BC.S[i,j]  = phi04 * (1 - 18 * phi) / 54
+            dBC.S[i,j] = phi02 * (12 * xi * xi * xi +
+                                  phi02 * xi * (18 * phi - 5) -
+                                  24 * phi02 * phi_u) / 90
+
+            BC.Fx[i,j]  = fx2
+            dBC.Fx[i,j] = -2 * fx2 * xi - 12 / 15 * (b14_x + b24_x - g4_y) +
+                4/15 * phi0 * phi2_x
+
+            BC.Fy[i,j]  = fy2
+            dBC.Fy[i,j] = -2 * fy2 * xi - 12 / 15 * (-b14_y + b24_y - g4_x) +
+                4/15 * phi0 * phi2_y
+
+        end
+    end
 
     nothing
 end
 
 
 # TODO
-function set_outerBCs!(BC_out::BulkVars{Outer}, dBC_out::BulkVars{Outer},
-                       BC_in::BulkVars{Inner}, dBC_in::BulkVars{Inner})
+function set_outerBCs!(BC::BulkVars{Outer}, dBC::BulkVars{Outer}, bulk::BulkVars{Inner},
+                       gauge::GaugeVars, base::BaseVars, nested::Nested{Inner})
+    _, Nx, Ny = size(nested.sys)
+    phi0 = base.phi0
+
+    # we are here assuming that the inner and outer grids merely touch at the
+    # interface, so we pass the values at this point without any interpolation
+    u0 = nested.sys.ucoord[end]
+
+    @fastmath @inbounds @threads for j in 1:Ny
+        @inbounds @simd for i in 1:Nx
+            xi     = gauge.xi[1,i,j]
+            S      = bulk.S[end,i,j]
+            Fx     = bulk.Fx[end,i,j]
+            Fy     = bulk.Fy[end,i,j]
+            S_u    = nested.Du_S[end,i,j]
+            Fx_u   = nested.Du_Fx[end,i,j]
+            Fy_u   = nested.Du_Fy[end,i,j]
+
+            BC.S[i,j]  = S_inner_to_outer(S, u0, xi, phi0)
+            dBC.S[i,j] = S_u_inner_to_outer(S_u, S, u0, xi, phi0)
+
+            BC.Fx[i,j]  = F_inner_to_outer(Fx, u0)
+            BC.Fy[i,j]  = F_inner_to_outer(Fy, u0)
+            dBC.Fx[i,j] = F_u_inner_to_outer(Fx_u, Fx, u0)
+            dBC.Fy[i,j] = F_u_inner_to_outer(Fy_u, Fy, u0)
+        end
+    end
+
+    # FIXME
+
+    BC.Sd .= 0.5/(u0*u0)
+
+    BC.B2d .= -2.0 * u0*u0*u0 * 0.02
+    BC.B1d .= -2.0 * u0*u0*u0 * 0.01
+
+    BC.Gd   .= 0.0
+    BC.phid .= -0.5 + u0*u0 * ( 1.0/3.0 - 1.5 * 0.01 )
+
+    BC.A  .= 1.0/(u0*u0)
+    dBC.A .= -2.0/(u0*u0*u0)
 
 
     nothing
 end
 
 
+
+# We assume that the first entry on these arrays is the inner grid, and that
+# there is only one domain spanning this grid. If we ever change this
+# construction we must remember to make the appropriate changes here.
 function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, boundary::BoundaryVars,
-                       gauge::GaugeVars,  base::BaseVars, nesteds::Vector)
+                       gauge::GaugeVars, base::BaseVars, nesteds::Vector)
     Nsys = length(nesteds)
 
-    # We assume that the first entry on these arrays is the inner grid, and that
-    # there is only one domain spanning this grid. If we ever change this
-    # construction we must remember to make the appropriate changes here.
+    set_innerBCs!(BCs[1], dBCs[1], bulks[1], boundary, gauge, base, nesteds[1])
 
-    set_innerBCs!(BCs[1], dBCs[1], bulks[1], boundary, gauge, nesteds[1])
+    # TODO: uncomment once we have all inner grid functions
+    # solve_nested!(bulks[1], BCs[1], dBCs[1], gauge, base, nesteds[1])
 
     # TODO: this function
-    set_outerBCs!(BCs[2], dBCs[2], BCs[1], dBCs[1])
+    set_outerBCs!(BCs[2], dBCs[2], bulks[1], gauge, base, nesteds[1])
 
     for i in 2:Nsys-1
         solve_nested!(bulks[i], BCs[i], dBCs[i], gauge, base, nesteds[i])
@@ -1618,4 +1736,20 @@ function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, boundary::Bound
     solve_nested!(bulks[Nsys], BCs[Nsys], dBCs[Nsys], gauge, base, nesteds[Nsys])
 
     nothing
+end
+
+function nested_solver(base::BaseVars, systems::Vector)
+    Nsys  = length(systems)
+    sys1  = systems[1]
+    T     = Jecco.coord_eltype(sys1.ucoord)
+    _, Nx, Ny = size(sys1)
+
+    nesteds = [Nested(sys) for sys in systems]
+    BCs     = [BulkVars(sys.gridtype, T, Nx, Ny) for sys in systems]
+    dBCs    = [BulkVars(sys.gridtype, T, Nx, Ny) for sys in systems]
+
+    function (bulks::Vector, boundary::BoundaryVars, gauge::GaugeVars)
+        solve_nested!(bulks, BCs, dBCs, boundary, gauge, base, nesteds)
+        nothing
+    end
 end
