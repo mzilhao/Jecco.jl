@@ -133,6 +133,56 @@ struct SVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
 end
 
 
+struct FxyVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
+    gridtype :: GT
+
+    u        :: T
+
+    phi0     :: T
+
+    xi       :: T
+    xi_x     :: T
+    xi_y     :: T
+
+    B1       :: T
+    B1p      :: T
+    B1_x     :: T
+    B1_y     :: T
+    B1pp     :: T
+    B1p_x    :: T
+    B1p_y    :: T
+
+    B2       :: T
+    B2p      :: T
+    B2_x     :: T
+    B2_y     :: T
+    B2pp     :: T
+    B2p_x    :: T
+    B2p_y    :: T
+
+    G        :: T
+    Gp       :: T
+    G_x      :: T
+    G_y      :: T
+    Gpp      :: T
+    Gp_x     :: T
+    Gp_y     :: T
+
+    phi      :: T
+    phip     :: T
+    phi_x    :: T
+    phi_y    :: T
+
+    S        :: T
+    Sp       :: T
+    S_x      :: T
+    S_y      :: T
+    Spp      :: T
+    Sp_x     :: T
+    Sp_y     :: T
+end
+
+
 #= Notation
 
 for any function f we're using the following notation (let _x denote partial
@@ -252,60 +302,6 @@ fp  = f_r  = -u^2 f_u
 fpp = f_rr = 2u^3 f_u + u^4 f_uu
 
 =#
-
-mutable struct FxyVars{GT<:GridType,T<:Real}
-    gridtype :: GT
-
-    u        :: T
-
-    phi0     :: T
-
-    xi       :: T
-    xi_x     :: T
-    xi_y     :: T
-
-    B1       :: T
-    B1p      :: T
-    B1_x     :: T
-    B1_y     :: T
-    B1pp     :: T
-    B1p_x    :: T
-    B1p_y    :: T
-
-    B2       :: T
-    B2p      :: T
-    B2_x     :: T
-    B2_y     :: T
-    B2pp     :: T
-    B2p_x    :: T
-    B2p_y    :: T
-
-    G        :: T
-    Gp       :: T
-    Gpp      :: T
-    G_x      :: T
-    G_y      :: T
-    Gp_x     :: T
-    Gp_y     :: T
-
-    phi      :: T
-    phip     :: T
-    phi_x    :: T
-    phi_y    :: T
-
-    S        :: T
-    Sp       :: T
-    S_x      :: T
-    S_y      :: T
-    Spp      :: T
-    Sp_x     :: T
-    Sp_y     :: T
-end
-function FxyVars(gridtype::GT, ::Type{T}) where {GT<:GridType,T<:Real}
-    N = 2 + 3 + 4*7 + 4
-    array = zeros(T,N)
-    FxyVars{GT,T}(gridtype, array...)
-end
 
 
 include("param.jl")

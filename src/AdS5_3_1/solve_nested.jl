@@ -23,7 +23,7 @@ struct Aux{GT<:GridType,T<:Real}
     BB      :: Matrix{T}
     CC      :: Matrix{T}
     SS      :: Vector{T}
-    varsFxy :: FxyVars{GT,T}
+    # varsFxy :: FxyVars{GT,T}
     function Aux{GT,T}(gridtype::GT, N::Int) where {GT<:GridType,T<:Real}
         A_mat   = zeros(T, N, N)
         b_vec   = zeros(T, N)
@@ -35,8 +35,8 @@ struct Aux{GT<:GridType,T<:Real}
         BB      = zeros(T, 2,2)
         CC      = zeros(T, 2,2)
         SS      = zeros(T, 2)
-        varsFxy = FxyVars(gridtype,T)
-        new(A_mat, b_vec, ABCS, vars, A_mat2, b_vec2, AA, BB, CC, SS, varsFxy)
+        # varsFxy = FxyVars(gridtype,T)
+        new(A_mat, b_vec, ABCS, vars, A_mat2, b_vec2, AA, BB, CC, SS)
     end
 end
 
@@ -269,11 +269,11 @@ function solve_Fxy!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVar
             id  = Threads.threadid()
             aux = aux_acc[id]
 
-            aux.vars.phi0  = base.phi0
+            phi0  = base.phi0
 
-            aux.varsFxy.xi    = gauge.xi[1,i,j]
-            aux.varsFxy.xi_x  = Dx(gauge.xi, 1,i,j)
-            aux.varsFxy.xi_y  = Dy(gauge.xi, 1,i,j)
+            xi    = gauge.xi[1,i,j]
+            xi_x  = Dx(gauge.xi, 1,i,j)
+            xi_y  = Dy(gauge.xi, 1,i,j)
 
             @inbounds @simd for a in eachindex(uu)
                 u          = uu[a]
@@ -281,49 +281,57 @@ function solve_Fxy!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVar
                 u3         = u * u2
                 u4         = u2 * u2
 
-                aux.varsFxy.u     = u
+                B1    = bulk.B1[a,i,j]
+                B1p   = -u2 * Du_B1[a,i,j]
+                B1_x  = Dx(bulk.B1, a,i,j)
+                B1_y  = Dy(bulk.B1, a,i,j)
+                B1pp  = 2*u3 * Du_B1[a,i,j] + u4 * Duu_B1[a,i,j]
+                B1p_x = -u2 * Dx(Du_B1, a,i,j)
+                B1p_y = -u2 * Dy(Du_B1, a,i,j)
 
-                aux.varsFxy.B1    = bulk.B1[a,i,j]
-                aux.varsFxy.B1p   = -u2 * Du_B1[a,i,j]
-                aux.varsFxy.B1_x  = Dx(bulk.B1, a,i,j)
-                aux.varsFxy.B1_y  = Dy(bulk.B1, a,i,j)
-                aux.varsFxy.B1pp  = 2*u3 * Du_B1[a,i,j] + u4 * Duu_B1[a,i,j]
-                aux.varsFxy.B1p_x = -u2 * Dx(Du_B1, a,i,j)
-                aux.varsFxy.B1p_y = -u2 * Dy(Du_B1, a,i,j)
+                B2    = bulk.B2[a,i,j]
+                B2p   = -u2 * Du_B2[a,i,j]
+                B2_x  = Dx(bulk.B2, a,i,j)
+                B2_y  = Dy(bulk.B2, a,i,j)
+                B2pp  = 2*u3 * Du_B2[a,i,j] + u4 * Duu_B2[a,i,j]
+                B2p_x = -u2 * Dx(Du_B2, a,i,j)
+                B2p_y = -u2 * Dy(Du_B2, a,i,j)
 
-                aux.varsFxy.B2    = bulk.B2[a,i,j]
-                aux.varsFxy.B2p   = -u2 * Du_B2[a,i,j]
-                aux.varsFxy.B2_x  = Dx(bulk.B2, a,i,j)
-                aux.varsFxy.B2_y  = Dy(bulk.B2, a,i,j)
-                aux.varsFxy.B2pp  = 2*u3 * Du_B2[a,i,j] + u4 * Duu_B2[a,i,j]
-                aux.varsFxy.B2p_x = -u2 * Dx(Du_B2, a,i,j)
-                aux.varsFxy.B2p_y = -u2 * Dy(Du_B2, a,i,j)
+                G     = bulk.G[a,i,j]
+                Gp    = -u2 * Du_G[a,i,j]
+                G_x   = Dx(bulk.G, a,i,j)
+                G_y   = Dy(bulk.G, a,i,j)
+                Gpp   = 2*u3 * Du_G[a,i,j] + u4 * Duu_G[a,i,j]
+                Gp_x  = -u2 * Dx(Du_G, a,i,j)
+                Gp_y  = -u2 * Dy(Du_G, a,i,j)
 
-                aux.varsFxy.G     = bulk.G[a,i,j]
-                aux.varsFxy.Gp    = -u2 * Du_G[a,i,j]
-                aux.varsFxy.G_x   = Dx(bulk.G, a,i,j)
-                aux.varsFxy.G_y   = Dy(bulk.G, a,i,j)
-                aux.varsFxy.Gpp   = 2*u3 * Du_G[a,i,j] + u4 * Duu_G[a,i,j]
-                aux.varsFxy.Gp_x  = -u2 * Dx(Du_G, a,i,j)
-                aux.varsFxy.Gp_y  = -u2 * Dy(Du_G, a,i,j)
+                phi   = bulk.phi[a,i,j]
+                phip  = -u2 * Du_phi[a,i,j]
+                phi_x = Dx(bulk.phi, a,i,j)
+                phi_y = Dy(bulk.phi, a,i,j)
+                # phipp   = 2*u3 * Du_phi[a,i,j] + u4 * Duu_phi[a,i,j]
+                # phip_x  = -u2 * Dx(Du_phi, a,i,j)
+                # phip_y  = -u2 * Dy(Du_phi, a,i,j)
 
-                aux.varsFxy.phi   = bulk.phi[a,i,j]
-                aux.varsFxy.phip  = -u2 * Du_phi[a,i,j]
-                aux.varsFxy.phi_x = Dx(bulk.phi, a,i,j)
-                aux.varsFxy.phi_y = Dy(bulk.phi, a,i,j)
-                # aux.varsFxy.phipp   = 2*u3 * Du_phi[a,i,j] + u4 * Duu_phi[a,i,j]
-                # aux.varsFxy.phip_x  = -u2 * Dx(Du_phi, a,i,j)
-                # aux.varsFxy.phip_y  = -u2 * Dy(Du_phi, a,i,j)
+                S     = bulk.S[a,i,j]
+                Sp    = -u2 * Du_S[a,i,j]
+                S_x   = Dx(bulk.S, a,i,j)
+                S_y   = Dy(bulk.S, a,i,j)
+                Spp   = 2*u3 * Du_S[a,i,j] + u4 * Duu_S[a,i,j]
+                Sp_x  = -u2 * Dx(Du_S, a,i,j)
+                Sp_y  = -u2 * Dy(Du_S, a,i,j)
 
-                aux.varsFxy.S     = bulk.S[a,i,j]
-                aux.varsFxy.Sp    = -u2 * Du_S[a,i,j]
-                aux.varsFxy.S_x   = Dx(bulk.S, a,i,j)
-                aux.varsFxy.S_y   = Dy(bulk.S, a,i,j)
-                aux.varsFxy.Spp   = 2*u3 * Du_S[a,i,j] + u4 * Duu_S[a,i,j]
-                aux.varsFxy.Sp_x  = -u2 * Dx(Du_S, a,i,j)
-                aux.varsFxy.Sp_y  = -u2 * Dy(Du_S, a,i,j)
+                vars = FxyVars(
+                    sys.gridtype, u, phi0,
+                    xi, xi_x, xi_y,
+                    B1    , B1p   , B1_x  , B1_y  , B1pp  , B1p_x , B1p_y ,
+                    B2    , B2p   , B2_x  , B2_y  , B2pp  , B2p_x , B2p_y ,
+                    G     , Gp    , G_x   , G_y   , Gpp   , Gp_x  , Gp_y  ,
+                    phi   , phip  , phi_x , phi_y ,
+                    S     , Sp    , S_x   , S_y   , Spp   , Sp_x  , Sp_y
+                )
 
-                Fxy_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, aux.varsFxy)
+                Fxy_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, vars)
 
                 aux.b_vec2[a]    = -aux.SS[1]
                 aux.b_vec2[a+Nu] = -aux.SS[2]
@@ -1549,8 +1557,8 @@ function solve_nested!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gauge
         @spawn mul!(Duu_S,  Duu, bulk.S)
     end
 
-    # # solve for Fx and Fy
-    # solve_Fxy!(bulk, BC, dBC, gauge, base, nested)
+    # solve for Fx and Fy
+    solve_Fxy!(bulk, BC, dBC, gauge, base, nested)
 
     # # take u-derivatives of Fx and Fy
     # @sync begin
