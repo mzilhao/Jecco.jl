@@ -107,6 +107,32 @@ end
 BoundaryVars(a4, fx2, fy2) = BoundaryVars{typeof(a4)}(a4, fx2, fy2)
 
 
+abstract type AbstractVars{GT<:GridType,T<:Real} end
+
+
+struct SVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
+    gridtype :: GT
+
+    u        :: T
+
+    phi0     :: T
+
+    xi       :: T
+
+    B1       :: T
+    B1p      :: T
+
+    B2       :: T
+    B2p      :: T
+
+    G        :: T
+    Gp       :: T
+
+    phi      :: T
+    phip     :: T
+end
+
+
 #= Notation
 
 for any function f we're using the following notation (let _x denote partial

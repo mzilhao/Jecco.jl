@@ -10,7 +10,7 @@
 # assuming
 # (A d_uu + B d_u + C Id) f = -S
 
-function S_eq_coeff!(ABCS::Vector, vars::AllVars{Inner})
+function S_eq_coeff!(ABCS::Vector, vars::SVars{Inner})
     u    = vars.u
     phi0 = vars.phi0
 

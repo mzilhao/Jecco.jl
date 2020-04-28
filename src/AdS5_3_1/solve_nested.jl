@@ -185,24 +185,25 @@ function solve_S!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
             id  = Threads.threadid()
             aux = aux_acc[id]
 
-            aux.vars.phi0  = base.phi0
-            aux.vars.xi    = gauge.xi[1,i,j]
+            phi0  = base.phi0
+            xi    = gauge.xi[1,i,j]
 
             @inbounds @simd for a in eachindex(uu)
-                u              = uu[a]
-                aux.vars.u     = u
+                u     = uu[a]
 
-                aux.vars.B1    = bulk.B1[a,i,j]
-                aux.vars.B2    = bulk.B2[a,i,j]
-                aux.vars.G     = bulk.G[a,i,j]
-                aux.vars.phi   = bulk.phi[a,i,j]
+                B1    = bulk.B1[a,i,j]
+                B2    = bulk.B2[a,i,j]
+                G     = bulk.G[a,i,j]
+                phi   = bulk.phi[a,i,j]
 
-                aux.vars.B1p   = -u*u * Du_B1[a,i,j]
-                aux.vars.B2p   = -u*u * Du_B2[a,i,j]
-                aux.vars.Gp    = -u*u * Du_G[a,i,j]
-                aux.vars.phip  = -u*u * Du_phi[a,i,j]
+                B1p   = -u*u * Du_B1[a,i,j]
+                B2p   = -u*u * Du_B2[a,i,j]
+                Gp    = -u*u * Du_G[a,i,j]
+                phip  = -u*u * Du_phi[a,i,j]
 
-                S_eq_coeff!(aux.ABCS, aux.vars)
+                vars = SVars(sys.gridtype, u, phi0, xi, B1, B1p, B2, B2p, G, Gp, phi, phip)
+
+                S_eq_coeff!(aux.ABCS, vars)
 
                 aux.b_vec[a]   = -aux.ABCS[4]
                 @inbounds @simd for aa in eachindex(uu)
@@ -1548,30 +1549,30 @@ function solve_nested!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gauge
         @spawn mul!(Duu_S,  Duu, bulk.S)
     end
 
-    # solve for Fx and Fy
-    solve_Fxy!(bulk, BC, dBC, gauge, base, nested)
+    # # solve for Fx and Fy
+    # solve_Fxy!(bulk, BC, dBC, gauge, base, nested)
 
-    # take u-derivatives of Fx and Fy
-    @sync begin
-        @spawn mul!(Du_Fx,   Du,  bulk.Fx)
-        @spawn mul!(Du_Fy,   Du,  bulk.Fy)
-        @spawn mul!(Duu_Fx,  Duu, bulk.Fx)
-        @spawn mul!(Duu_Fy,  Duu, bulk.Fy)
-    end
+    # # take u-derivatives of Fx and Fy
+    # @sync begin
+    #     @spawn mul!(Du_Fx,   Du,  bulk.Fx)
+    #     @spawn mul!(Du_Fy,   Du,  bulk.Fy)
+    #     @spawn mul!(Duu_Fx,  Duu, bulk.Fx)
+    #     @spawn mul!(Duu_Fy,  Duu, bulk.Fy)
+    # end
 
-    # solve for Sd
-    solve_Sd!(bulk, BC, gauge, base, nested)
+    # # solve for Sd
+    # solve_Sd!(bulk, BC, gauge, base, nested)
 
-    # solving for B2d, (B1d,Gd) and phid are independent processes. we can
-    # therefore @spawn, here
-    @sync begin
-        @spawn solve_B2d_outer!(bulk, BC, gauge, nested)
-        @spawn solve_B1dGd_outer!(bulk, BC, gauge, nested)
-        @spawn solve_phid_outer!(bulk, BC, gauge, nested)
-    end
+    # # solving for B2d, (B1d,Gd) and phid are independent processes. we can
+    # # therefore @spawn, here
+    # @sync begin
+    #     @spawn solve_B2d_outer!(bulk, BC, gauge, nested)
+    #     @spawn solve_B1dGd_outer!(bulk, BC, gauge, nested)
+    #     @spawn solve_phid_outer!(bulk, BC, gauge, nested)
+    # end
 
-    # solve for A
-    solve_A_outer!(bulk, BC, dBC, gauge, nested)
+    # # solve for A
+    # solve_A_outer!(bulk, BC, dBC, gauge, nested)
 
     nothing
 end

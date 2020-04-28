@@ -5,7 +5,7 @@ Vp(phi) = ∂(VV)(phi)
 # assuming
 # (A d_uu + B d_u + C Id) f = -S
 
-function S_eq_coeff!(ABCS::Vector, vars::AllVars{Outer})
+function S_eq_coeff!(ABCS::Vector, vars::SVars{Outer})
     u   = vars.u
 
     B1p  = vars.B1p

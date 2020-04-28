@@ -199,5 +199,7 @@ dBC  = dBCs[i]
 nested = nesteds[i]
 
 Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, base, nested)
-Jecco.AdS5_3_1.solve_Fxy!(bulk, BC, dBC, gauge, base, nested)
-Jecco.AdS5_3_1.solve_Sd!(bulk, BC, gauge, base, nested)
+# Jecco.AdS5_3_1.solve_Fxy!(bulk, BC, dBC, gauge, base, nested)
+# Jecco.AdS5_3_1.solve_Sd!(bulk, BC, gauge, base, nested)
+
+
