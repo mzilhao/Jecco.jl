@@ -2,6 +2,59 @@
 V(phi)  = VV(phi)
 Vp(phi) = ∂(VV)(phi)
 
+
+#= tilde, hat, etc, definitions
+
+We use these macros as shorthand notation. For instance
+
+  @tilde_outer("B1")
+  @hat_outer("B2")
+
+should expand to
+
+  B1t = B1_x - (Fx + xi_x) * B1p
+  B2h = B2_y - (Fy + xi_y) * B2p
+
+etc.
+
+=#
+macro tilde_outer(fname::String)
+    ft    = Symbol(fname, "t")
+    f_x   = Symbol(fname, "_x")
+    fp    = Symbol(fname, "p")
+    return esc( :($ft = $f_x - (Fx + xi_x) * $fp) )
+end
+macro hat_outer(fname::String)
+    fh    = Symbol(fname, "h")
+    f_y   = Symbol(fname, "_y")
+    fp    = Symbol(fname, "p")
+    return esc( :($fh = $f_y - (Fy + xi_y) * $fp) )
+end
+macro bar_outer(fname::String)
+    fb    = Symbol(fname, "b")
+    f_xx  = Symbol(fname, "_xx")
+    fpp   = Symbol(fname, "pp")
+    fp_x  = Symbol(fname, "p_x")
+    return esc( :($fb = $f_xx + (Fx + xi_x) * ( -2*($fp_x) + (Fx + xi_x) * ($fpp) )) )
+end
+macro star_outer(fname::String)
+    fs    = Symbol(fname, "s")
+    f_yy  = Symbol(fname, "_yy")
+    fpp   = Symbol(fname, "pp")
+    fp_y  = Symbol(fname, "p_y")
+    return esc( :($fs = $f_yy + (Fy + xi_y) * ( -2*($fp_y) + (Fy + xi_y) * ($fpp) )) )
+end
+macro cross_outer(fname::String)
+    fc    = Symbol(fname, "c")
+    f_xy  = Symbol(fname, "_xy")
+    fpp   = Symbol(fname, "pp")
+    fp_x  = Symbol(fname, "p_x")
+    fp_y  = Symbol(fname, "p_y")
+    return esc( :($fc = $f_xy  - (Fx + xi_x) * ($fp_y) -
+                  (Fy + xi_y) * ( $fp_x - (Fx + xi_x) * ($fpp) ) ) )
+end
+
+
 # assuming
 # (A d_uu + B d_u + C Id) f = -S
 
@@ -108,79 +161,126 @@ function Fxy_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::Fxy
 end
 
 
-function Sd_eq_coeff!(ABCS::Vector, vars::AllVars{Outer})
+function Sd_eq_coeff!(ABCS::Vector, vars::SdVars{Outer})
     u   = vars.u
 
+    xi_x   = vars.xi_x
+    xi_y   = vars.xi_y
     xi_xx  = vars.xi_xx
-    xi_xy  = vars.xi_xy
     xi_yy  = vars.xi_yy
+    xi_xy  = vars.xi_xy
 
     B1     = vars.B1
-    B1p    = vars.B1p
-    B1t    = vars.B1t
-    B1h    = vars.B1h
-    B1b    = vars.B1b
-    B1s    = vars.B1s
-    B1pt   = vars.B1pt
-    B1ph   = vars.B1ph
-
     B2     = vars.B2
-    B2p    = vars.B2p
-    B2t    = vars.B2t
-    B2h    = vars.B2h
-    B2b    = vars.B2b
-    B2s    = vars.B2s
-    B2pt   = vars.B2pt
-    B2ph   = vars.B2ph
-
     G      = vars.G
-    Gp     = vars.Gp
-    Gt     = vars.Gt
-    Gh     = vars.Gh
-    Gb     = vars.Gb
-    Gs     = vars.Gs
-    Gpt    = vars.Gpt
-    Gph    = vars.Gph
-
     phi    = vars.phi
-    phip   = vars.phip
-    phit   = vars.phit
-    phih   = vars.phih
-    phib   = vars.phib
-    phis   = vars.phis
-    phipt  = vars.phipt
-    phiph  = vars.phiph
-
     S      = vars.S
-    Sp     = vars.Sp
-    St     = vars.St
-    Sh     = vars.Sh
-    Sb     = vars.Sb
-    Ss     = vars.Ss
-    Spt    = vars.Spt
-    Sph    = vars.Sph
-
     Fx     = vars.Fx
-    Fxp    = vars.Fxp
-    Fxt    = vars.Fxt
-    Fxh    = vars.Fxh
-    # Fxb   = vars.Fxb
-    # Fxs   = vars.Fxs
-    Fxpt   = vars.Fxpt
-    Fxph   = vars.Fxph
-
     Fy     = vars.Fy
-    Fyp    = vars.Fyp
-    Fyt    = vars.Fyt
-    Fyh    = vars.Fyh
-    # Fyb   = vars.Fyb
-    # Fys   = vars.Fys
-    Fypt   = vars.Fypt
-    Fyph   = vars.Fyph
 
-    B2c   = vars.B2c
-    Gc    = vars.Gc
-    Sc    = vars.Sc
+    B1p    = vars.B1p
+    B2p    = vars.B2p
+    Gp     = vars.Gp
+    phip   = vars.phip
+    Sp     = vars.Sp
+    Fxp    = vars.Fxp
+    Fyp    = vars.Fyp
+
+    B1pp   = vars.B1pp
+    B2pp   = vars.B2pp
+    Gpp    = vars.Gpp
+    phipp  = vars.phipp
+    Spp    = vars.Spp
+    Fxpp   = vars.Fxpp
+    Fypp   = vars.Fypp
+
+    B1_x   = vars.B1_x
+    B2_x   = vars.B2_x
+    G_x    = vars.G_x
+    phi_x  = vars.phi_x
+    S_x    = vars.S_x
+    Fx_x   = vars.Fx_x
+    Fy_x   = vars.Fy_x
+
+    B1_y   = vars.B1_y
+    B2_y   = vars.B2_y
+    G_y    = vars.G_y
+    phi_y  = vars.phi_y
+    S_y    = vars.S_y
+    Fx_y   = vars.Fx_y
+    Fy_y   = vars.Fy_y
+
+    B1p_x  = vars.B1p_x
+    B2p_x  = vars.B2p_x
+    Gp_x   = vars.Gp_x
+    phip_x = vars.phip_x
+    Sp_x   = vars.Sp_x
+    Fxp_x  = vars.Fxp_x
+    Fyp_x  = vars.Fyp_x
+
+    B1p_y  = vars.B1p_y
+    B2p_y  = vars.B2p_y
+    Gp_y   = vars.Gp_y
+    phip_y = vars.phip_y
+    Sp_y   = vars.Sp_y
+    Fxp_y  = vars.Fxp_y
+    Fyp_y  = vars.Fyp_y
+
+    B1_xx  = vars.B1_xx
+    B2_xx  = vars.B2_xx
+    G_xx   = vars.G_xx
+    phi_xx = vars.phi_xx
+    S_xx   = vars.S_xx
+
+    B1_yy  = vars.B1_yy
+    B2_yy  = vars.B2_yy
+    G_yy   = vars.G_yy
+    phi_yy = vars.phi_yy
+    S_yy   = vars.S_yy
+
+    B2_xy  = vars.B2_xy
+    G_xy   = vars.G_xy
+    S_xy   = vars.S_xy
+
+
+    @tilde_outer("B1")
+    @tilde_outer("B2")
+    @tilde_outer("G")
+    @tilde_outer("phi")
+    @tilde_outer("S")
+    @tilde_outer("Fx")
+    @tilde_outer("Fy")
+
+    @hat_outer("B1")
+    @hat_outer("B2")
+    @hat_outer("G")
+    @hat_outer("phi")
+    @hat_outer("S")
+    @hat_outer("Fx")
+    @hat_outer("Fy")
+
+    @bar_outer("B1")
+    @bar_outer("B2")
+    @bar_outer("G")
+    @bar_outer("phi")
+    @bar_outer("S")
+
+    @star_outer("B1")
+    @star_outer("B2")
+    @star_outer("G")
+    @star_outer("phi")
+    @star_outer("S")
+
+    @tilde_outer("Fxp")
+    @tilde_outer("Fyp")
+
+    @hat_outer("Fxp")
+    @hat_outer("Fyp")
+
+    @cross_outer("B2")
+    @cross_outer("G")
+    @cross_outer("S")
+
 
     expB1   = exp(B1)
     expB2   = exp(B2)
