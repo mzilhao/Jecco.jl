@@ -191,7 +191,7 @@ BCs[2].A  .= 1.0/(u0*u0)
 dBCs[2].A .= -2.0/(u0*u0*u0)
 
 
-i = 2
+i = 1
 
 bulk = bulks[i]
 BC   = BCs[i]
@@ -200,6 +200,6 @@ nested = nesteds[i]
 
 Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, base, nested)
 Jecco.AdS5_3_1.solve_Fxy!(bulk, BC, dBC, gauge, base, nested)
-Jecco.AdS5_3_1.solve_Sd!(bulk, BC, gauge, base, nested)
+# Jecco.AdS5_3_1.solve_Sd!(bulk, BC, gauge, base, nested)
 
-Jecco.AdS5_3_1.solve_B2d_outer!(bulk, BC, gauge, base, nested)
+# Jecco.AdS5_3_1.solve_B2d_outer!(bulk, BC, gauge, base, nested)
