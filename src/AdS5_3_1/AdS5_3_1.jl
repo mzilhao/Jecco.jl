@@ -132,7 +132,7 @@ struct SVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
     phip     :: T
 end
 
-struct FxyVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
+struct FVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
     gridtype :: GT
 
     u        :: T
@@ -541,129 +541,6 @@ struct AVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
     phi_xy   :: T
     S_xy     :: T
 end
-
-
-
-
-#= Notation
-
-for any function f we're using the following notation (let _x denote partial
-derivative with respect to x)
-
-fp  = f_r = -u^2 f_u
-fd  = \dot f
-ft  = \tilde f = f_x - (Fx + xi_x) f_r
-fh  = \hat f   = f_y - (Fy + xi_y) f_r
-
-=#
-
-
-mutable struct AllVars{GT<:GridType,T<:Real}
-    gridtype :: GT
-
-    u        :: T
-
-    phi0     :: T
-
-    xi       :: T
-    xi_x     :: T
-    xi_y     :: T
-    xi_xx    :: T
-    xi_xy    :: T
-    xi_yy    :: T
-
-    B1       :: T
-    B1p      :: T
-    B1t      :: T
-    B1h      :: T
-    B1b      :: T
-    B1s      :: T
-    B1pt     :: T
-    B1ph     :: T
-
-    B2       :: T
-    B2p      :: T
-    B2t      :: T
-    B2h      :: T
-    B2b      :: T
-    B2s      :: T
-    B2pt     :: T
-    B2ph     :: T
-
-    G        :: T
-    Gp       :: T
-    Gt       :: T
-    Gh       :: T
-    Gb       :: T
-    Gs       :: T
-    Gpt      :: T
-    Gph      :: T
-
-    phi      :: T
-    phip     :: T
-    phit     :: T
-    phih     :: T
-    phib     :: T
-    phis     :: T
-    phipt    :: T
-    phiph    :: T
-
-    S        :: T
-    Sp       :: T
-    St       :: T
-    Sh       :: T
-    Sb       :: T
-    Ss       :: T
-    Spt      :: T
-    Sph      :: T
-
-    Fx       :: T
-    Fxp      :: T
-    Fxt      :: T
-    Fxh      :: T
-    Fxb      :: T
-    Fxs      :: T
-    Fxpt     :: T
-    Fxph     :: T
-
-    Fy       :: T
-    Fyp      :: T
-    Fyt      :: T
-    Fyh      :: T
-    Fyb      :: T
-    Fys      :: T
-    Fypt     :: T
-    Fyph     :: T
-
-    Sd       :: T
-    B1d      :: T
-    B2d      :: T
-    Gd       :: T
-    phid     :: T
-
-    B2c      :: T
-    Gc       :: T
-    Sc       :: T
-    phic     :: T
-
-    Spp      :: T
-end
-function AllVars(gridtype::GT, ::Type{T}) where {GT<:GridType,T<:Real}
-    N = 2 + 6 + 8*7 + 5 + 4 + 1
-    array = zeros(T,N)
-    AllVars{GT,T}(gridtype, array...)
-end
-
-
-#= Notation
-
-for any function f we're using the following convention: _x denotes partial
-derivative with respect to x and
-
-fp  = f_r  = -u^2 f_u
-fpp = f_rr = 2u^3 f_u + u^4 f_uu
-
-=#
 
 
 include("param.jl")

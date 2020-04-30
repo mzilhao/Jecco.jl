@@ -16,27 +16,23 @@ struct Aux{GT<:GridType,T<:Real}
     A_mat   :: Matrix{T}
     b_vec   :: Vector{T}
     ABCS    :: Vector{T}
-    vars    :: AllVars{GT,T}
     A_mat2  :: Matrix{T}
     b_vec2  :: Vector{T}
     AA      :: Matrix{T}
     BB      :: Matrix{T}
     CC      :: Matrix{T}
     SS      :: Vector{T}
-    # varsFxy :: FxyVars{GT,T}
     function Aux{GT,T}(gridtype::GT, N::Int) where {GT<:GridType,T<:Real}
         A_mat   = zeros(T, N, N)
         b_vec   = zeros(T, N)
         ABCS    = zeros(T, 4)
-        vars    = AllVars(gridtype,T)
         A_mat2  = zeros(T, 2*N, 2*N)
         b_vec2  = zeros(T, 2*N)
         AA      = zeros(T, 2,2)
         BB      = zeros(T, 2,2)
         CC      = zeros(T, 2,2)
         SS      = zeros(T, 2)
-        # varsFxy = FxyVars(gridtype,T)
-        new(A_mat, b_vec, ABCS, vars, A_mat2, b_vec2, AA, BB, CC, SS)
+        new(A_mat, b_vec, ABCS, A_mat2, b_vec2, AA, BB, CC, SS)
     end
 end
 
@@ -96,19 +92,6 @@ end
 
 Nested(systems::Vector) = [Nested(sys) for sys in systems]
 
-# FIXME: these are only valid for the outer grid.
-
-@inline tilde(g_x, g_r, Fx, xi_x) = g_x - (Fx + xi_x) * g_r
-@inline hat(g_y, g_r, Fy, xi_y)   = g_y - (Fy + xi_y) * g_r
-
-@inline bar(g_xx, g_rr, g_rx, Fx, xi_x) = g_xx + (Fx + xi_x) *
-    (-2*g_rx + (Fx + xi_x) * g_rr)
-
-@inline star(g_yy, g_rr, g_ry, Fy, xi_y) = g_yy + (Fy + xi_y) *
-    (-2*g_ry + (Fy + xi_y) * g_rr)
-
-@inline cross(g_xy, g_rr, g_rx, g_ry, Fx, Fy, xi_x, xi_y) =
-    g_xy - (Fx + xi_x) * g_ry - (Fy + xi_y) * (g_rx - (Fx + xi_x) * g_rr)
 
 
 #= Notes
@@ -321,7 +304,7 @@ function solve_Fxy!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVar
                 Sp_x  = -u2 * Dx(Du_S, a,i,j)
                 Sp_y  = -u2 * Dy(Du_S, a,i,j)
 
-                vars = FxyVars(
+                vars = FVars(
                     sys.gridtype, u, phi0,
                     xi, xi_x, xi_y,
                     B1    , B1p   , B1_x  , B1_y  , B1pp  , B1p_x , B1p_y ,
