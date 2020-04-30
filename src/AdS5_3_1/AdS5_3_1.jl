@@ -270,6 +270,95 @@ struct SdVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
 end
 
 
+struct BdVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
+    gridtype :: GT
+
+    phi0     :: T
+
+    u        :: T
+
+    xi       :: T
+    xi_x     :: T
+    xi_y     :: T
+    xi_xx    :: T
+    xi_yy    :: T
+    xi_xy    :: T
+
+    B1       :: T
+    B2       :: T
+    G        :: T
+    phi      :: T
+    S        :: T
+    Fx       :: T
+    Fy       :: T
+    Sd       :: T
+
+    B1p      :: T
+    B2p      :: T
+    Gp       :: T
+    phip     :: T
+    Sp       :: T
+    Fxp      :: T
+    Fyp      :: T
+
+    B1pp     :: T
+    B2pp     :: T
+    Gpp      :: T
+    phipp    :: T
+    Spp      :: T
+    Fxpp     :: T
+    Fypp     :: T
+
+    B1_x     :: T
+    B2_x     :: T
+    G_x      :: T
+    phi_x    :: T
+    S_x      :: T
+    Fx_x     :: T
+    Fy_x     :: T
+
+    B1_y     :: T
+    B2_y     :: T
+    G_y      :: T
+    phi_y    :: T
+    S_y      :: T
+    Fx_y     :: T
+    Fy_y     :: T
+
+    B1p_x    :: T
+    B2p_x    :: T
+    Gp_x     :: T
+    phip_x   :: T
+    Sp_x     :: T
+    Fxp_x    :: T
+    Fyp_x    :: T
+
+    B1p_y    :: T
+    B2p_y    :: T
+    Gp_y     :: T
+    phip_y   :: T
+    Sp_y     :: T
+    Fxp_y    :: T
+    Fyp_y    :: T
+
+    B1_xx    :: T
+    B2_xx    :: T
+    G_xx     :: T
+    phi_xx   :: T
+    S_xx     :: T
+
+    B1_yy    :: T
+    B2_yy    :: T
+    G_yy     :: T
+    phi_yy   :: T
+    S_yy     :: T
+
+    B2_xy    :: T
+    G_xy     :: T
+    S_xy     :: T
+end
+
+
 
 
 #= Notation
