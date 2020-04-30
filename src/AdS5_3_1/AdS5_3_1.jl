@@ -270,7 +270,7 @@ struct SdVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
 end
 
 
-struct BdVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
+struct BdGphiVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
     gridtype :: GT
 
     phi0     :: T

@@ -675,7 +675,7 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::
                 G_xy       = Dx(Dy, bulk.G,  a,i,j)
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
-                vars = BdVars(
+                vars = BdGphiVars(
                     sys.gridtype, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
                     B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
                     B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
@@ -716,7 +716,8 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::
     nothing
 end
 
-function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nested::Nested)
+function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVars,
+                            nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -753,21 +754,29 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nest
             id  = Threads.threadid()
             aux = aux_acc[id]
 
-            xi_x = Dx(gauge.xi, 1,i,j)
-            xi_y = Dy(gauge.xi, 1,i,j)
+            phi0  = base.phi0
 
-            aux.vars.xi_xx = Dxx(gauge.xi, 1,i,j)
-            aux.vars.xi_yy = Dyy(gauge.xi, 1,i,j)
-            aux.vars.xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+            xi    = gauge.xi[1,i,j]
+            xi_x  = Dx(gauge.xi, 1,i,j)
+            xi_y  = Dy(gauge.xi, 1,i,j)
+            xi_xx = Dxx(gauge.xi, 1,i,j)
+            xi_yy = Dyy(gauge.xi, 1,i,j)
+            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
             @inbounds @simd for a in eachindex(uu)
-                u          = uu[a]
-                u2         = u * u
-                u3         = u * u2
-                u4         = u2 * u2
+                u     = uu[a]
+                u2    = u * u
+                u3    = u * u2
+                u4    = u2 * u2
 
-                Fx         = bulk.Fx[a,i,j]
-                Fy         = bulk.Fy[a,i,j]
+                B1    = bulk.B1[a,i,j]
+                B2    = bulk.B2[a,i,j]
+                G     = bulk.G[a,i,j]
+                phi   = bulk.phi[a,i,j]
+                S     = bulk.S[a,i,j]
+                Fx    = bulk.Fx[a,i,j]
+                Fy    = bulk.Fy[a,i,j]
+                Sd    = bulk.Sd[a,i,j]
 
                 # r derivatives
 
@@ -786,7 +795,6 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nest
                 Spp        = 2*u3 * Du_S[a,i,j]   + u4 * Duu_S[a,i,j]
                 Fxpp       = 2*u3 * Du_Fx[a,i,j]  + u4 * Duu_Fx[a,i,j]
                 Fypp       = 2*u3 * Du_Fy[a,i,j]  + u4 * Duu_Fy[a,i,j]
-
 
                 # x and y derivatives
 
@@ -838,79 +846,21 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, nest
                 G_xy       = Dx(Dy, bulk.G,  a,i,j)
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
+                vars = BdGphiVars(
+                    sys.gridtype, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+                    B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
+                    B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
+                    B1pp   ,    B2pp   ,    Gpp    ,    phipp  ,    Spp    ,    Fxpp   ,    Fypp   ,
+                    B1_x   ,    B2_x   ,    G_x    ,    phi_x  ,    S_x    ,    Fx_x   ,    Fy_x   ,
+                    B1_y   ,    B2_y   ,    G_y    ,    phi_y  ,    S_y    ,    Fx_y   ,    Fy_y   ,
+                    B1p_x  ,    B2p_x  ,    Gp_x   ,    phip_x ,    Sp_x   ,    Fxp_x  ,    Fyp_x  ,
+                    B1p_y  ,    B2p_y  ,    Gp_y   ,    phip_y ,    Sp_y   ,    Fxp_y  ,    Fyp_y  ,
+                    B1_xx  ,    B2_xx  ,    G_xx   ,    phi_xx ,    S_xx   ,
+                    B1_yy  ,    B2_yy  ,    G_yy   ,    phi_yy ,    S_yy   ,
+                                B2_xy  ,    G_xy   ,                S_xy
+                )
 
-                aux.vars.u     = u
-
-                aux.vars.B1    = bulk.B1[a,i,j]
-                aux.vars.B2    = bulk.B2[a,i,j]
-                aux.vars.G     = bulk.G[a,i,j]
-                aux.vars.phi   = bulk.phi[a,i,j]
-                aux.vars.S     = bulk.S[a,i,j]
-                aux.vars.Fx    = bulk.Fx[a,i,j]
-                aux.vars.Fy    = bulk.Fy[a,i,j]
-                aux.vars.Sd    = bulk.Sd[a,i,j]
-
-                aux.vars.B1p   = B1p
-                aux.vars.B2p   = B2p
-                aux.vars.Gp    = Gp
-                aux.vars.phip  = phip
-                aux.vars.Sp    = Sp
-                aux.vars.Fxp   = Fxp
-                aux.vars.Fyp   = Fyp
-
-                # FIXME
-                Fx_out = Fx
-                Fy_out = Fy
-
-                aux.vars.B1t   = tilde( B1_x, B1p,  Fx_out, xi_x)
-                aux.vars.B2t   = tilde( B2_x, B2p,  Fx_out, xi_x)
-                aux.vars.Gt    = tilde(  G_x,  Gp,  Fx_out, xi_x)
-                aux.vars.phit  = tilde(phi_x, phip, Fx_out, xi_x)
-                aux.vars.St    = tilde(  S_x,  Sp,  Fx_out, xi_x)
-                aux.vars.Fxt   = tilde( Fx_x, Fxp,  Fx_out, xi_x)
-                aux.vars.Fyt   = tilde( Fy_x, Fyp,  Fx_out, xi_x)
-
-                aux.vars.B1h   = hat( B1_y,  B1p,  Fy_out, xi_y)
-                aux.vars.B2h   = hat( B2_y,  B2p,  Fy_out, xi_y)
-                aux.vars.Gh    = hat(  G_y,   Gp,  Fy_out, xi_y)
-                aux.vars.phih  = hat(phi_y, phip,  Fy_out, xi_y)
-                aux.vars.Sh    = hat(  S_y,   Sp,  Fy_out, xi_y)
-                aux.vars.Fxh   = hat( Fx_y,  Fxp,  Fy_out, xi_y)
-                aux.vars.Fyh   = hat( Fy_y,  Fyp,  Fy_out, xi_y)
-
-                aux.vars.B1b  = bar( B1_xx,  B1pp,  B1p_x,  Fx_out, xi_x)
-                aux.vars.B2b  = bar( B2_xx,  B2pp,  B2p_x,  Fx_out, xi_x)
-                aux.vars.Gb   = bar(  G_xx,   Gpp,   Gp_x,  Fx_out, xi_x)
-                aux.vars.phib = bar(phi_xx, phipp, phip_x,  Fx_out, xi_x)
-                aux.vars.Sb   = bar(  S_xx,   Spp,   Sp_x,  Fx_out, xi_x)
-
-                aux.vars.B1s  = star( B1_yy,  B1pp,  B1p_y,  Fy_out, xi_y)
-                aux.vars.B2s  = star( B2_yy,  B2pp,  B2p_y,  Fy_out, xi_y)
-                aux.vars.Gs   = star(  G_yy,   Gpp,   Gp_y,  Fy_out, xi_y)
-                aux.vars.phis = star(phi_yy, phipp, phip_y,  Fy_out, xi_y)
-                aux.vars.Ss   = star(  S_yy,   Spp,   Sp_y,  Fy_out, xi_y)
-
-                aux.vars.B1pt  = tilde(  B1p_x,  B1pp,  Fx_out, xi_x)
-                aux.vars.B2pt  = tilde(  B2p_x,  B2pp,  Fx_out, xi_x)
-                aux.vars.Gpt   = tilde(   Gp_x,   Gpp,  Fx_out, xi_x)
-                aux.vars.phipt = tilde( phip_x, phipp,  Fx_out, xi_x)
-                aux.vars.Spt   = tilde(   Sp_x,   Spp,  Fx_out, xi_x)
-                aux.vars.Fxpt  = tilde(  Fxp_x,  Fxpp,  Fx_out, xi_x)
-                aux.vars.Fypt  = tilde(  Fyp_x,  Fypp,  Fx_out, xi_x)
-
-                aux.vars.B1ph  = hat(  B1p_y,  B1pp,  Fy_out, xi_y)
-                aux.vars.B2ph  = hat(  B2p_y,  B2pp,  Fy_out, xi_y)
-                aux.vars.Gph   = hat(   Gp_y,   Gpp,  Fy_out, xi_y)
-                aux.vars.phiph = hat( phip_y, phipp,  Fy_out, xi_y)
-                aux.vars.Sph   = hat(   Sp_y,   Spp,  Fy_out, xi_y)
-                aux.vars.Fxph  = hat(  Fxp_y,  Fxpp,  Fy_out, xi_y)
-                aux.vars.Fyph  = hat(  Fyp_y,  Fypp,  Fy_out, xi_y)
-
-                aux.vars.B2c  = cross(B2_xy, B2pp, B2p_x, B2p_y, Fx_out, Fy_out, xi_x, xi_y)
-                aux.vars.Gc   = cross( G_xy,  Gpp,  Gp_x,  Gp_y, Fx_out, Fy_out, xi_x, xi_y)
-                aux.vars.Sc   = cross( S_xy,  Spp,  Sp_x,  Sp_y, Fx_out, Fy_out, xi_x, xi_y)
-
-                B1dGd_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, aux.vars)
+                B1dGd_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, vars)
 
                 aux.b_vec2[a]    = -aux.SS[1]
                 aux.b_vec2[a+Nu] = -aux.SS[2]
@@ -1473,8 +1423,8 @@ function solve_nested!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gauge
     # therefore @spawn, here
     @sync begin
         @spawn solve_B2d_outer!(bulk, BC, gauge, base, nested)
-    #     @spawn solve_B1dGd_outer!(bulk, BC, gauge, nested)
-    #     @spawn solve_phid_outer!(bulk, BC, gauge, nested)
+        @spawn solve_B1dGd_outer!(bulk, BC, gauge, base, nested)
+    #     @spawn solve_phid_outer!(bulk, BC, gauge, base, nested)
     end
 
     # # solve for A
