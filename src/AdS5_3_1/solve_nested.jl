@@ -162,13 +162,14 @@ function solve_S!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
     # Dy  = sys.Dy
     # Dyy = sys.Dyy
 
+    phi0  = base.phi0
+
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
             id  = Threads.threadid()
             aux = aux_acc[id]
 
-            phi0  = base.phi0
-            xi    = gauge.xi[1,i,j]
+            xi  = gauge.xi[1,i,j]
 
             @inbounds @simd for a in eachindex(uu)
                 u     = uu[a]
@@ -244,6 +245,8 @@ function solve_Fxy!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVar
     Dy  = sys.Dy
     Dyy = sys.Dyy
 
+    phi0  = base.phi0
+
     Nu = length(uu)
 
     @fastmath @inbounds @threads for j in eachindex(yy)
@@ -251,17 +254,15 @@ function solve_Fxy!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVar
             id  = Threads.threadid()
             aux = aux_acc[id]
 
-            phi0  = base.phi0
-
             xi    = gauge.xi[1,i,j]
             xi_x  = Dx(gauge.xi, 1,i,j)
             xi_y  = Dy(gauge.xi, 1,i,j)
 
             @inbounds @simd for a in eachindex(uu)
-                u          = uu[a]
-                u2         = u * u
-                u3         = u * u2
-                u4         = u2 * u2
+                u     = uu[a]
+                u2    = u * u
+                u3    = u * u2
+                u4    = u2 * u2
 
                 B1    = bulk.B1[a,i,j]
                 B1p   = -u2 * Du_B1[a,i,j]
@@ -392,12 +393,12 @@ function solve_Sd!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVar
     Dy  = sys.Dy
     Dyy = sys.Dyy
 
+    phi0  = base.phi0
+
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
             id   = Threads.threadid()
             aux  = aux_acc[id]
-
-            phi0  = base.phi0
 
             xi    = gauge.xi[1,i,j]
             xi_x  = Dx(gauge.xi, 1,i,j)
@@ -529,7 +530,8 @@ function solve_Sd!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVar
     nothing
 end
 
-function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVars, nested::Nested)
+function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVars,
+                          nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -559,12 +561,12 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::
     Dy  = sys.Dy
     Dyy = sys.Dyy
 
+    phi0  = base.phi0
+
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
             id  = Threads.threadid()
             aux = aux_acc[id]
-
-            phi0  = base.phi0
 
             xi    = gauge.xi[1,i,j]
             xi_x  = Dx(gauge.xi, 1,i,j)
@@ -728,14 +730,14 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base
     Dy  = sys.Dy
     Dyy = sys.Dyy
 
+    phi0  = base.phi0
+
     Nu = length(uu)
 
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
             id  = Threads.threadid()
             aux = aux_acc[id]
-
-            phi0  = base.phi0
 
             xi    = gauge.xi[1,i,j]
             xi_x  = Dx(gauge.xi, 1,i,j)
@@ -911,12 +913,12 @@ function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base:
     Dy  = sys.Dy
     Dyy = sys.Dyy
 
+    phi0  = base.phi0
+
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
             id  = Threads.threadid()
             aux = aux_acc[id]
-
-            phi0  = base.phi0
 
             xi    = gauge.xi[1,i,j]
             xi_x  = Dx(gauge.xi, 1,i,j)
@@ -1081,12 +1083,12 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gaug
     Dy  = sys.Dy
     Dyy = sys.Dyy
 
+    phi0  = base.phi0
+
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
             id  = Threads.threadid()
             aux = aux_acc[id]
-
-            phi0  = base.phi0
 
             xi    = gauge.xi[1,i,j]
             xi_x  = Dx(gauge.xi, 1,i,j)
