@@ -306,11 +306,13 @@ function solve_Fxy!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVar
 
                 vars = FVars(
                     phi0, u, xi, xi_x, xi_y,
-                    B1    , B1p   , B1_x  , B1_y  , B1pp  , B1p_x , B1p_y ,
-                    B2    , B2p   , B2_x  , B2_y  , B2pp  , B2p_x , B2p_y ,
-                    G     , Gp    , G_x   , G_y   , Gpp   , Gp_x  , Gp_y  ,
-                    phi   , phip  , phi_x , phi_y ,
-                    S     , Sp    , S_x   , S_y   , Spp   , Sp_x  , Sp_y
+                    B1     ,    B2     ,    G      ,    phi    ,    S      ,
+                    B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,
+                    B1pp   ,    B2pp   ,    Gpp    ,                Spp    ,
+                    B1_x   ,    B2_x   ,    G_x    ,    phi_x  ,    S_x    ,
+                    B1_y   ,    B2_y   ,    G_y    ,    phi_y  ,    S_y    ,
+                    B1p_x  ,    B2p_x  ,    Gp_x   ,                Sp_x   ,
+                    B1p_y  ,    B2p_y  ,    Gp_y   ,                Sp_y
                 )
 
                 Fxy_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, vars, sys.gridtype)

@@ -139,40 +139,42 @@ struct FVars{T<:Real} <: AbstractVars{T}
     xi_y     :: T
 
     B1       :: T
-    B1p      :: T
-    B1_x     :: T
-    B1_y     :: T
-    B1pp     :: T
-    B1p_x    :: T
-    B1p_y    :: T
-
     B2       :: T
-    B2p      :: T
-    B2_x     :: T
-    B2_y     :: T
-    B2pp     :: T
-    B2p_x    :: T
-    B2p_y    :: T
-
     G        :: T
-    Gp       :: T
-    G_x      :: T
-    G_y      :: T
-    Gpp      :: T
-    Gp_x     :: T
-    Gp_y     :: T
-
     phi      :: T
-    phip     :: T
-    phi_x    :: T
-    phi_y    :: T
-
     S        :: T
+
+    B1p      :: T
+    B2p      :: T
+    Gp       :: T
+    phip     :: T
     Sp       :: T
-    S_x      :: T
-    S_y      :: T
+
+    B1pp     :: T
+    B2pp     :: T
+    Gpp      :: T
     Spp      :: T
+
+    B1_x     :: T
+    B2_x     :: T
+    G_x      :: T
+    phi_x    :: T
+    S_x      :: T
+
+    B1_y     :: T
+    B2_y     :: T
+    G_y      :: T
+    phi_y    :: T
+    S_y      :: T
+
+    B1p_x    :: T
+    B2p_x    :: T
+    Gp_x     :: T
     Sp_x     :: T
+
+    B1p_y    :: T
+    B2p_y    :: T
+    Gp_y     :: T
     Sp_y     :: T
 end
 

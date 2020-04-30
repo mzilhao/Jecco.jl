@@ -78,55 +78,22 @@ function S_eq_coeff!(ABCS::Vector, vars::SVars, ::Outer)
     nothing
 end
 
-
 # this is a coupled equation for Fx and Fy. the notation used is
 #
 # ( A11 d_uu Fx + A12 d_uu Fy + B11 d_u Fx + B12 d_u Fy + C11 Fx + C12 Fy ) = -S1
 # ( A21 d_uu Fx + A22 d_uu Fy + B21 d_u Fx + B22 d_u Fy + C21 Fx + C22 Fy ) = -S2
 
 function Fxy_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::FVars, ::Outer)
-    u     = vars.u
-
-    xi_x  = vars.xi_x
-    xi_y  = vars.xi_y
-
-    B1    = vars.B1
-    B1p   = vars.B1p
-    B1_x  = vars.B1_x
-    B1_y  = vars.B1_y
-    B1pp  = vars.B1pp
-    B1p_x = vars.B1p_x
-    B1p_y = vars.B1p_y
-
-    B2    = vars.B2
-    B2p   = vars.B2p
-    B2_x  = vars.B2_x
-    B2_y  = vars.B2_y
-    B2pp  = vars.B2pp
-    B2p_x = vars.B2p_x
-    B2p_y = vars.B2p_y
-
-    G     = vars.G
-    Gp    = vars.Gp
-    G_x   = vars.G_x
-    G_y   = vars.G_y
-    Gpp   = vars.Gpp
-    Gp_x  = vars.Gp_x
-    Gp_y  = vars.Gp_y
-
-    phi   = vars.phi
-    phip  = vars.phip
-    phi_x = vars.phi_x
-    phi_y = vars.phi_y
-
-    S     = vars.S
-    Sp    = vars.Sp
-    S_x   = vars.S_x
-    S_y   = vars.S_y
-    Spp   = vars.Spp
-    Sp_x  = vars.Sp_x
-    Sp_y  = vars.Sp_y
-
+    @unpack (
+        phi0, u, xi, xi_x, xi_y,
+        B1     ,    B2     ,    G      ,    phi    ,    S      ,
+        B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,
+        B1pp   ,    B2pp   ,    Gpp    ,                Spp    ,
+        B1_x   ,    B2_x   ,    G_x    ,    phi_x  ,    S_x    ,
+        B1_y   ,    B2_y   ,    G_y    ,    phi_y  ,    S_y    ,
+        B1p_x  ,    B2p_x  ,    Gp_x   ,                Sp_x   ,
+        B1p_y  ,    B2p_y  ,    Gp_y   ,                Sp_y   ,
+    ) = vars
 
     expB1   = exp(B1)
     sinhG   = sinh(G)
