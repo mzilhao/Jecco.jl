@@ -1,4 +1,5 @@
 
+
 V(phi)  = VV(phi)
 Vp(phi) = ∂(VV)(phi)
 
@@ -162,86 +163,19 @@ end
 
 
 function Sd_eq_coeff!(ABCS::Vector, vars::SdVars, ::Outer)
-    u   = vars.u
-
-    xi_x   = vars.xi_x
-    xi_y   = vars.xi_y
-    xi_xx  = vars.xi_xx
-    xi_yy  = vars.xi_yy
-    xi_xy  = vars.xi_xy
-
-    B1     = vars.B1
-    B2     = vars.B2
-    G      = vars.G
-    phi    = vars.phi
-    S      = vars.S
-    Fx     = vars.Fx
-    Fy     = vars.Fy
-
-    B1p    = vars.B1p
-    B2p    = vars.B2p
-    Gp     = vars.Gp
-    phip   = vars.phip
-    Sp     = vars.Sp
-    Fxp    = vars.Fxp
-    Fyp    = vars.Fyp
-
-    B1pp   = vars.B1pp
-    B2pp   = vars.B2pp
-    Gpp    = vars.Gpp
-    phipp  = vars.phipp
-    Spp    = vars.Spp
-    Fxpp   = vars.Fxpp
-    Fypp   = vars.Fypp
-
-    B1_x   = vars.B1_x
-    B2_x   = vars.B2_x
-    G_x    = vars.G_x
-    phi_x  = vars.phi_x
-    S_x    = vars.S_x
-    Fx_x   = vars.Fx_x
-    Fy_x   = vars.Fy_x
-
-    B1_y   = vars.B1_y
-    B2_y   = vars.B2_y
-    G_y    = vars.G_y
-    phi_y  = vars.phi_y
-    S_y    = vars.S_y
-    Fx_y   = vars.Fx_y
-    Fy_y   = vars.Fy_y
-
-    B1p_x  = vars.B1p_x
-    B2p_x  = vars.B2p_x
-    Gp_x   = vars.Gp_x
-    phip_x = vars.phip_x
-    Sp_x   = vars.Sp_x
-    Fxp_x  = vars.Fxp_x
-    Fyp_x  = vars.Fyp_x
-
-    B1p_y  = vars.B1p_y
-    B2p_y  = vars.B2p_y
-    Gp_y   = vars.Gp_y
-    phip_y = vars.phip_y
-    Sp_y   = vars.Sp_y
-    Fxp_y  = vars.Fxp_y
-    Fyp_y  = vars.Fyp_y
-
-    B1_xx  = vars.B1_xx
-    B2_xx  = vars.B2_xx
-    G_xx   = vars.G_xx
-    phi_xx = vars.phi_xx
-    S_xx   = vars.S_xx
-
-    B1_yy  = vars.B1_yy
-    B2_yy  = vars.B2_yy
-    G_yy   = vars.G_yy
-    phi_yy = vars.phi_yy
-    S_yy   = vars.S_yy
-
-    B2_xy  = vars.B2_xy
-    G_xy   = vars.G_xy
-    S_xy   = vars.S_xy
-
+    @unpack (
+        phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+        B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,
+        B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
+        B1pp   ,    B2pp   ,    Gpp    ,    phipp  ,    Spp    ,    Fxpp   ,    Fypp   ,
+        B1_x   ,    B2_x   ,    G_x    ,    phi_x  ,    S_x    ,    Fx_x   ,    Fy_x   ,
+        B1_y   ,    B2_y   ,    G_y    ,    phi_y  ,    S_y    ,    Fx_y   ,    Fy_y   ,
+        B1p_x  ,    B2p_x  ,    Gp_x   ,    phip_x ,    Sp_x   ,    Fxp_x  ,    Fyp_x  ,
+        B1p_y  ,    B2p_y  ,    Gp_y   ,    phip_y ,    Sp_y   ,    Fxp_y  ,    Fyp_y  ,
+        B1_xx  ,    B2_xx  ,    G_xx   ,    phi_xx ,    S_xx   ,
+        B1_yy  ,    B2_yy  ,    G_yy   ,    phi_yy ,    S_yy   ,
+                    B2_xy  ,    G_xy   ,                S_xy
+    ) = vars
 
     @tilde_outer("B1")
     @tilde_outer("B2")
@@ -304,88 +238,19 @@ end
 
 
 function B2d_eq_coeff!(ABCS::Vector, vars::BdGVars, ::Outer)
-    u   = vars.u
-
-    xi     = vars.xi
-    xi_x   = vars.xi_x
-    xi_y   = vars.xi_y
-    xi_xx  = vars.xi_xx
-    xi_yy  = vars.xi_yy
-    xi_xy  = vars.xi_xy
-
-    B1     = vars.B1
-    B2     = vars.B2
-    G      = vars.G
-    phi    = vars.phi
-    S      = vars.S
-    Fx     = vars.Fx
-    Fy     = vars.Fy
-    Sd     = vars.Sd
-
-    B1p    = vars.B1p
-    B2p    = vars.B2p
-    Gp     = vars.Gp
-    phip   = vars.phip
-    Sp     = vars.Sp
-    Fxp    = vars.Fxp
-    Fyp    = vars.Fyp
-
-    B1pp   = vars.B1pp
-    B2pp   = vars.B2pp
-    Gpp    = vars.Gpp
-    phipp  = vars.phipp
-    Spp    = vars.Spp
-    Fxpp   = vars.Fxpp
-    Fypp   = vars.Fypp
-
-    B1_x   = vars.B1_x
-    B2_x   = vars.B2_x
-    G_x    = vars.G_x
-    phi_x  = vars.phi_x
-    S_x    = vars.S_x
-    Fx_x   = vars.Fx_x
-    Fy_x   = vars.Fy_x
-
-    B1_y   = vars.B1_y
-    B2_y   = vars.B2_y
-    G_y    = vars.G_y
-    phi_y  = vars.phi_y
-    S_y    = vars.S_y
-    Fx_y   = vars.Fx_y
-    Fy_y   = vars.Fy_y
-
-    B1p_x  = vars.B1p_x
-    B2p_x  = vars.B2p_x
-    Gp_x   = vars.Gp_x
-    phip_x = vars.phip_x
-    Sp_x   = vars.Sp_x
-    Fxp_x  = vars.Fxp_x
-    Fyp_x  = vars.Fyp_x
-
-    B1p_y  = vars.B1p_y
-    B2p_y  = vars.B2p_y
-    Gp_y   = vars.Gp_y
-    phip_y = vars.phip_y
-    Sp_y   = vars.Sp_y
-    Fxp_y  = vars.Fxp_y
-    Fyp_y  = vars.Fyp_y
-
-    B1_xx  = vars.B1_xx
-    B2_xx  = vars.B2_xx
-    G_xx   = vars.G_xx
-    phi_xx = vars.phi_xx
-    S_xx   = vars.S_xx
-
-    B1_yy  = vars.B1_yy
-    B2_yy  = vars.B2_yy
-    G_yy   = vars.G_yy
-    phi_yy = vars.phi_yy
-    S_yy   = vars.S_yy
-
-    B2_xy  = vars.B2_xy
-    G_xy   = vars.G_xy
-    S_xy   = vars.S_xy
-
+    @unpack (
+        phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+        B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
+        B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
+        B1pp   ,    B2pp   ,    Gpp    ,    phipp  ,    Spp    ,    Fxpp   ,    Fypp   ,
+        B1_x   ,    B2_x   ,    G_x    ,    phi_x  ,    S_x    ,    Fx_x   ,    Fy_x   ,
+        B1_y   ,    B2_y   ,    G_y    ,    phi_y  ,    S_y    ,    Fx_y   ,    Fy_y   ,
+        B1p_x  ,    B2p_x  ,    Gp_x   ,    phip_x ,    Sp_x   ,    Fxp_x  ,    Fyp_x  ,
+        B1p_y  ,    B2p_y  ,    Gp_y   ,    phip_y ,    Sp_y   ,    Fxp_y  ,    Fyp_y  ,
+        B1_xx  ,    B2_xx  ,    G_xx   ,    phi_xx ,    S_xx   ,
+        B1_yy  ,    B2_yy  ,    G_yy   ,    phi_yy ,    S_yy   ,
+                    B2_xy  ,    G_xy   ,                S_xy
+    ) = vars
 
     @tilde_outer("B1")
     @tilde_outer("B2")
@@ -453,88 +318,19 @@ end
 # ( A21 d_uu B1d + A22 d_uu Gd + B21 d_u B1d + B22 d_u Gd + C21 B1d + C22 Gd ) = -S2
 
 function B1dGd_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::BdGVars, ::Outer)
-    u    = vars.u
-
-    xi     = vars.xi
-    xi_x   = vars.xi_x
-    xi_y   = vars.xi_y
-    xi_xx  = vars.xi_xx
-    xi_yy  = vars.xi_yy
-    xi_xy  = vars.xi_xy
-
-    B1     = vars.B1
-    B2     = vars.B2
-    G      = vars.G
-    phi    = vars.phi
-    S      = vars.S
-    Fx     = vars.Fx
-    Fy     = vars.Fy
-    Sd     = vars.Sd
-
-    B1p    = vars.B1p
-    B2p    = vars.B2p
-    Gp     = vars.Gp
-    phip   = vars.phip
-    Sp     = vars.Sp
-    Fxp    = vars.Fxp
-    Fyp    = vars.Fyp
-
-    B1pp   = vars.B1pp
-    B2pp   = vars.B2pp
-    Gpp    = vars.Gpp
-    phipp  = vars.phipp
-    Spp    = vars.Spp
-    Fxpp   = vars.Fxpp
-    Fypp   = vars.Fypp
-
-    B1_x   = vars.B1_x
-    B2_x   = vars.B2_x
-    G_x    = vars.G_x
-    phi_x  = vars.phi_x
-    S_x    = vars.S_x
-    Fx_x   = vars.Fx_x
-    Fy_x   = vars.Fy_x
-
-    B1_y   = vars.B1_y
-    B2_y   = vars.B2_y
-    G_y    = vars.G_y
-    phi_y  = vars.phi_y
-    S_y    = vars.S_y
-    Fx_y   = vars.Fx_y
-    Fy_y   = vars.Fy_y
-
-    B1p_x  = vars.B1p_x
-    B2p_x  = vars.B2p_x
-    Gp_x   = vars.Gp_x
-    phip_x = vars.phip_x
-    Sp_x   = vars.Sp_x
-    Fxp_x  = vars.Fxp_x
-    Fyp_x  = vars.Fyp_x
-
-    B1p_y  = vars.B1p_y
-    B2p_y  = vars.B2p_y
-    Gp_y   = vars.Gp_y
-    phip_y = vars.phip_y
-    Sp_y   = vars.Sp_y
-    Fxp_y  = vars.Fxp_y
-    Fyp_y  = vars.Fyp_y
-
-    B1_xx  = vars.B1_xx
-    B2_xx  = vars.B2_xx
-    G_xx   = vars.G_xx
-    phi_xx = vars.phi_xx
-    S_xx   = vars.S_xx
-
-    B1_yy  = vars.B1_yy
-    B2_yy  = vars.B2_yy
-    G_yy   = vars.G_yy
-    phi_yy = vars.phi_yy
-    S_yy   = vars.S_yy
-
-    B2_xy  = vars.B2_xy
-    G_xy   = vars.G_xy
-    S_xy   = vars.S_xy
-
+    @unpack (
+        phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+        B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
+        B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
+        B1pp   ,    B2pp   ,    Gpp    ,    phipp  ,    Spp    ,    Fxpp   ,    Fypp   ,
+        B1_x   ,    B2_x   ,    G_x    ,    phi_x  ,    S_x    ,    Fx_x   ,    Fy_x   ,
+        B1_y   ,    B2_y   ,    G_y    ,    phi_y  ,    S_y    ,    Fx_y   ,    Fy_y   ,
+        B1p_x  ,    B2p_x  ,    Gp_x   ,    phip_x ,    Sp_x   ,    Fxp_x  ,    Fyp_x  ,
+        B1p_y  ,    B2p_y  ,    Gp_y   ,    phip_y ,    Sp_y   ,    Fxp_y  ,    Fyp_y  ,
+        B1_xx  ,    B2_xx  ,    G_xx   ,    phi_xx ,    S_xx   ,
+        B1_yy  ,    B2_yy  ,    G_yy   ,    phi_yy ,    S_yy   ,
+                    B2_xy  ,    G_xy   ,                S_xy
+    ) = vars
 
     @tilde_outer("B1")
     @tilde_outer("B2")
@@ -619,89 +415,19 @@ end
 
 
 function phid_eq_coeff!(ABCS::Vector, vars::phidVars, ::Outer)
-    u   = vars.u
-
-    xi     = vars.xi
-    xi_x   = vars.xi_x
-    xi_y   = vars.xi_y
-    xi_xx  = vars.xi_xx
-    xi_yy  = vars.xi_yy
-    xi_xy  = vars.xi_xy
-
-    B1     = vars.B1
-    B2     = vars.B2
-    G      = vars.G
-    phi    = vars.phi
-    S      = vars.S
-    Fx     = vars.Fx
-    Fy     = vars.Fy
-    Sd     = vars.Sd
-
-    B1p    = vars.B1p
-    B2p    = vars.B2p
-    Gp     = vars.Gp
-    phip   = vars.phip
-    Sp     = vars.Sp
-    Fxp    = vars.Fxp
-    Fyp    = vars.Fyp
-
-    B1pp   = vars.B1pp
-    B2pp   = vars.B2pp
-    Gpp    = vars.Gpp
-    phipp  = vars.phipp
-    Spp    = vars.Spp
-    Fxpp   = vars.Fxpp
-    Fypp   = vars.Fypp
-
-    B1_x   = vars.B1_x
-    B2_x   = vars.B2_x
-    G_x    = vars.G_x
-    phi_x  = vars.phi_x
-    S_x    = vars.S_x
-    Fx_x   = vars.Fx_x
-    Fy_x   = vars.Fy_x
-
-    B1_y   = vars.B1_y
-    B2_y   = vars.B2_y
-    G_y    = vars.G_y
-    phi_y  = vars.phi_y
-    S_y    = vars.S_y
-    Fx_y   = vars.Fx_y
-    Fy_y   = vars.Fy_y
-
-    B1p_x  = vars.B1p_x
-    B2p_x  = vars.B2p_x
-    Gp_x   = vars.Gp_x
-    phip_x = vars.phip_x
-    Sp_x   = vars.Sp_x
-    Fxp_x  = vars.Fxp_x
-    Fyp_x  = vars.Fyp_x
-
-    B1p_y  = vars.B1p_y
-    B2p_y  = vars.B2p_y
-    Gp_y   = vars.Gp_y
-    phip_y = vars.phip_y
-    Sp_y   = vars.Sp_y
-    Fxp_y  = vars.Fxp_y
-    Fyp_y  = vars.Fyp_y
-
-    B1_xx  = vars.B1_xx
-    B2_xx  = vars.B2_xx
-    G_xx   = vars.G_xx
-    phi_xx = vars.phi_xx
-    S_xx   = vars.S_xx
-
-    B1_yy  = vars.B1_yy
-    B2_yy  = vars.B2_yy
-    G_yy   = vars.G_yy
-    phi_yy = vars.phi_yy
-    S_yy   = vars.S_yy
-
-    B2_xy  = vars.B2_xy
-    G_xy   = vars.G_xy
-    phi_xy = vars.phi_xy
-    S_xy   = vars.S_xy
-
+    @unpack (
+        phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+        B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
+        B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
+        B1pp   ,    B2pp   ,    Gpp    ,    phipp  ,    Spp    ,    Fxpp   ,    Fypp   ,
+        B1_x   ,    B2_x   ,    G_x    ,    phi_x  ,    S_x    ,    Fx_x   ,    Fy_x   ,
+        B1_y   ,    B2_y   ,    G_y    ,    phi_y  ,    S_y    ,    Fx_y   ,    Fy_y   ,
+        B1p_x  ,    B2p_x  ,    Gp_x   ,    phip_x ,    Sp_x   ,    Fxp_x  ,    Fyp_x  ,
+        B1p_y  ,    B2p_y  ,    Gp_y   ,    phip_y ,    Sp_y   ,    Fxp_y  ,    Fyp_y  ,
+        B1_xx  ,    B2_xx  ,    G_xx   ,    phi_xx ,    S_xx   ,
+        B1_yy  ,    B2_yy  ,    G_yy   ,    phi_yy ,    S_yy   ,
+                    B2_xy  ,    G_xy   ,    phi_xy,     S_xy
+    ) = vars
 
     @tilde_outer("B1")
     @tilde_outer("B2")
@@ -765,93 +491,19 @@ end
 
 
 function A_eq_coeff!(ABCS::Vector, vars::AVars, ::Outer)
-    u   = vars.u
-
-    xi     = vars.xi
-    xi_x   = vars.xi_x
-    xi_y   = vars.xi_y
-    xi_xx  = vars.xi_xx
-    xi_yy  = vars.xi_yy
-    xi_xy  = vars.xi_xy
-
-    B1     = vars.B1
-    B2     = vars.B2
-    G      = vars.G
-    phi    = vars.phi
-    S      = vars.S
-    Fx     = vars.Fx
-    Fy     = vars.Fy
-    Sd     = vars.Sd
-    B1d    = vars.B1d
-    B2d    = vars.B2d
-    Gd     = vars.Gd
-    phid   = vars.phid
-
-    B1p    = vars.B1p
-    B2p    = vars.B2p
-    Gp     = vars.Gp
-    phip   = vars.phip
-    Sp     = vars.Sp
-    Fxp    = vars.Fxp
-    Fyp    = vars.Fyp
-
-    B1pp   = vars.B1pp
-    B2pp   = vars.B2pp
-    Gpp    = vars.Gpp
-    phipp  = vars.phipp
-    Spp    = vars.Spp
-    Fxpp   = vars.Fxpp
-    Fypp   = vars.Fypp
-
-    B1_x   = vars.B1_x
-    B2_x   = vars.B2_x
-    G_x    = vars.G_x
-    phi_x  = vars.phi_x
-    S_x    = vars.S_x
-    Fx_x   = vars.Fx_x
-    Fy_x   = vars.Fy_x
-
-    B1_y   = vars.B1_y
-    B2_y   = vars.B2_y
-    G_y    = vars.G_y
-    phi_y  = vars.phi_y
-    S_y    = vars.S_y
-    Fx_y   = vars.Fx_y
-    Fy_y   = vars.Fy_y
-
-    B1p_x  = vars.B1p_x
-    B2p_x  = vars.B2p_x
-    Gp_x   = vars.Gp_x
-    phip_x = vars.phip_x
-    Sp_x   = vars.Sp_x
-    Fxp_x  = vars.Fxp_x
-    Fyp_x  = vars.Fyp_x
-
-    B1p_y  = vars.B1p_y
-    B2p_y  = vars.B2p_y
-    Gp_y   = vars.Gp_y
-    phip_y = vars.phip_y
-    Sp_y   = vars.Sp_y
-    Fxp_y  = vars.Fxp_y
-    Fyp_y  = vars.Fyp_y
-
-    B1_xx  = vars.B1_xx
-    B2_xx  = vars.B2_xx
-    G_xx   = vars.G_xx
-    phi_xx = vars.phi_xx
-    S_xx   = vars.S_xx
-
-    B1_yy  = vars.B1_yy
-    B2_yy  = vars.B2_yy
-    G_yy   = vars.G_yy
-    phi_yy = vars.phi_yy
-    S_yy   = vars.S_yy
-
-    B2_xy  = vars.B2_xy
-    G_xy   = vars.G_xy
-    phi_xy = vars.phi_xy
-    S_xy   = vars.S_xy
-
+    @unpack (
+        phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+        B1   , B2   , G   , phi   , S    , Fx    , Fy    , Sd, B1d, B2d, Gd, phid,
+        B1p  , B2p  , Gp  , phip  , Sp   , Fxp   , Fyp   ,
+        B1pp , B2pp , Gpp , phipp , Spp  , Fxpp  , Fypp  ,
+        B1_x , B2_x , G_x , phi_x , S_x  , Fx_x  , Fy_x  ,
+        B1_y , B2_y , G_y , phi_y , S_y  , Fx_y  , Fy_y  ,
+        B1p_x, B2p_x, Gp_x, phip_x, Sp_x , Fxp_x , Fyp_x ,
+        B1p_y, B2p_y, Gp_y, phip_y, Sp_y , Fxp_y , Fyp_y ,
+        B1_xx, B2_xx, G_xx, phi_xx, S_xx ,
+        B1_yy, B2_yy, G_yy, phi_yy, S_yy ,
+               B2_xy, G_xy, phi_xy, S_xy
+    ) = vars
 
     @tilde_outer("B1")
     @tilde_outer("B2")
