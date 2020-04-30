@@ -107,15 +107,12 @@ end
 BoundaryVars(a4, fx2, fy2) = BoundaryVars{typeof(a4)}(a4, fx2, fy2)
 
 
-abstract type AbstractVars{GT<:GridType,T<:Real} end
+abstract type AbstractVars{T<:Real} end
 
-
-struct SVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
-    gridtype :: GT
+struct SVars{T<:Real} <: AbstractVars{T}
+    phi0     :: T
 
     u        :: T
-
-    phi0     :: T
 
     xi       :: T
 
@@ -132,12 +129,10 @@ struct SVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
     phip     :: T
 end
 
-struct FVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
-    gridtype :: GT
+struct FVars{T<:Real} <: AbstractVars{T}
+    phi0     :: T
 
     u        :: T
-
-    phi0     :: T
 
     xi       :: T
     xi_x     :: T
@@ -182,9 +177,7 @@ struct FVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
 end
 
 
-struct SdVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
-    gridtype :: GT
-
+struct SdVars{T<:Real} <: AbstractVars{T}
     phi0     :: T
 
     u        :: T
@@ -270,9 +263,7 @@ struct SdVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
 end
 
 
-struct BdGVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
-    gridtype :: GT
-
+struct BdGVars{T<:Real} <: AbstractVars{T}
     phi0     :: T
 
     u        :: T
@@ -359,9 +350,7 @@ struct BdGVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
 end
 
 
-struct phidVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
-    gridtype :: GT
-
+struct phidVars{T<:Real} <: AbstractVars{T}
     phi0     :: T
 
     u        :: T
@@ -449,9 +438,7 @@ struct phidVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
 end
 
 
-struct AVars{GT<:GridType,T<:Real} <: AbstractVars{GT,T}
-    gridtype :: GT
-
+struct AVars{T<:Real} <: AbstractVars{T}
     phi0     :: T
 
     u        :: T

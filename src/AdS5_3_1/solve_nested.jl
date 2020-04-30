@@ -12,7 +12,7 @@ function solve_lin_system!(A_mat, b_vec)
     nothing
 end
 
-struct Aux{GT<:GridType,T<:Real}
+struct Aux{T<:Real}
     A_mat   :: Matrix{T}
     b_vec   :: Vector{T}
     ABCS    :: Vector{T}
@@ -22,7 +22,7 @@ struct Aux{GT<:GridType,T<:Real}
     BB      :: Matrix{T}
     CC      :: Matrix{T}
     SS      :: Vector{T}
-    function Aux{GT,T}(gridtype::GT, N::Int) where {GT<:GridType,T<:Real}
+    function Aux{T}(N::Int) where {T<:Real}
         A_mat   = zeros(T, N, N)
         b_vec   = zeros(T, N)
         ABCS    = zeros(T, 4)
@@ -36,7 +36,7 @@ struct Aux{GT<:GridType,T<:Real}
     end
 end
 
-struct Nested{GT,S,T<:Real,D}
+struct Nested{S,T<:Real,D}
     sys     :: S
     uu      :: Vector{T}
     xx      :: Vector{T}
@@ -55,14 +55,13 @@ struct Nested{GT,S,T<:Real,D}
     Duu_S   :: D
     Duu_Fx  :: D
     Duu_Fy  :: D
-    aux_acc :: Vector{Aux{GT,T}}
+    aux_acc :: Vector{Aux{T}}
 end
 function Nested(sys::System)
     Nu, Nx, Ny = size(sys)
     uu = sys.ucoord[:]
     xx = sys.xcoord[:]
     yy = sys.ycoord[:]
-    GT = typeof(sys.gridtype)
     T  = Jecco.coord_eltype(sys.ucoord)
 
     Du_B1    = zeros(T, Nu, Nx, Ny)
@@ -82,12 +81,12 @@ function Nested(sys::System)
 
     nt = Threads.nthreads()
     # pre-allocate thread-local aux quantities
-    aux_acc = [Aux{GT,T}(sys.gridtype, Nu) for _ in 1:nt]
+    aux_acc = [Aux{T}(Nu) for _ in 1:nt]
 
-    Nested{GT,typeof(sys),T,typeof(Du_B1)}(sys, uu, xx, yy, Du_B1,
-                               Du_B2, Du_G, Du_phi, Du_S, Du_Fx,
-                               Du_Fy, Duu_B1, Duu_B2, Duu_G, Duu_phi,
-                               Duu_S, Duu_Fx, Duu_Fy, aux_acc)
+    Nested{typeof(sys),T,typeof(Du_B1)}(sys, uu, xx, yy, Du_B1,
+                                        Du_B2, Du_G, Du_phi, Du_S, Du_Fx,
+                                        Du_Fy, Duu_B1, Duu_B2, Duu_G, Duu_phi,
+                                        Duu_S, Duu_Fx, Duu_Fy, aux_acc)
 end
 
 Nested(systems::Vector) = [Nested(sys) for sys in systems]
@@ -184,9 +183,9 @@ function solve_S!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
                 Gp    = -u*u * Du_G[a,i,j]
                 phip  = -u*u * Du_phi[a,i,j]
 
-                vars = SVars(sys.gridtype, u, phi0, xi, B1, B1p, B2, B2p, G, Gp, phi, phip)
+                vars = SVars(phi0, u, xi, B1, B1p, B2, B2p, G, Gp, phi, phip)
 
-                S_eq_coeff!(aux.ABCS, vars)
+                S_eq_coeff!(aux.ABCS, vars, sys.gridtype)
 
                 aux.b_vec[a]   = -aux.ABCS[4]
                 @inbounds @simd for aa in eachindex(uu)
@@ -305,8 +304,7 @@ function solve_Fxy!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVar
                 Sp_y  = -u2 * Dy(Du_S, a,i,j)
 
                 vars = FVars(
-                    sys.gridtype, u, phi0,
-                    xi, xi_x, xi_y,
+                    phi0, u, xi, xi_x, xi_y,
                     B1    , B1p   , B1_x  , B1_y  , B1pp  , B1p_x , B1p_y ,
                     B2    , B2p   , B2_x  , B2_y  , B2pp  , B2p_x , B2p_y ,
                     G     , Gp    , G_x   , G_y   , Gpp   , Gp_x  , Gp_y  ,
@@ -314,7 +312,7 @@ function solve_Fxy!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVar
                     S     , Sp    , S_x   , S_y   , Spp   , Sp_x  , Sp_y
                 )
 
-                Fxy_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, vars)
+                Fxy_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, vars, sys.gridtype)
 
                 aux.b_vec2[a]    = -aux.SS[1]
                 aux.b_vec2[a+Nu] = -aux.SS[2]
@@ -491,7 +489,7 @@ function solve_Sd!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVar
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
                 vars = SdVars(
-                    sys.gridtype, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+                    phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
                     B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,
                     B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
                     B1pp   ,    B2pp   ,    Gpp    ,    phipp  ,    Spp    ,    Fxpp   ,    Fypp   ,
@@ -504,7 +502,7 @@ function solve_Sd!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVar
                                 B2_xy  ,    G_xy   ,                S_xy
                 )
 
-                Sd_eq_coeff!(aux.ABCS, vars)
+                Sd_eq_coeff!(aux.ABCS, vars, sys.gridtype)
 
                 aux.b_vec[a]   = -aux.ABCS[4]
                 @inbounds @simd for aa in eachindex(uu)
@@ -659,7 +657,7 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
                 vars = BdGVars(
-                    sys.gridtype, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+                    phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
                     B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
                     B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
                     B1pp   ,    B2pp   ,    Gpp    ,    phipp  ,    Spp    ,    Fxpp   ,    Fypp   ,
@@ -672,7 +670,7 @@ function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::
                                 B2_xy  ,    G_xy   ,                S_xy
                 )
 
-                B2d_eq_coeff!(aux.ABCS, vars)
+                B2d_eq_coeff!(aux.ABCS, vars, sys.gridtype)
 
                 aux.b_vec[a]   = -aux.ABCS[4]
                 @inbounds @simd for aa in eachindex(uu)
@@ -830,7 +828,7 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
                 vars = BdGVars(
-                    sys.gridtype, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+                    phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
                     B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
                     B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
                     B1pp   ,    B2pp   ,    Gpp    ,    phipp  ,    Spp    ,    Fxpp   ,    Fypp   ,
@@ -843,7 +841,7 @@ function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base
                                 B2_xy  ,    G_xy   ,                S_xy
                 )
 
-                B1dGd_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, vars)
+                B1dGd_eq_coeff!(aux.AA, aux.BB, aux.CC, aux.SS, vars, sys.gridtype)
 
                 aux.b_vec2[a]    = -aux.SS[1]
                 aux.b_vec2[a+Nu] = -aux.SS[2]
@@ -1012,7 +1010,7 @@ function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base:
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
                 vars = phidVars(
-                    sys.gridtype, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+                    phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
                     B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
                     B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
                     B1pp   ,    B2pp   ,    Gpp    ,    phipp  ,    Spp    ,    Fxpp   ,    Fypp   ,
@@ -1025,7 +1023,7 @@ function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base:
                                 B2_xy  ,    G_xy   ,    phi_xy,     S_xy
                 )
 
-                phid_eq_coeff!(aux.ABCS, vars)
+                phid_eq_coeff!(aux.ABCS, vars, sys.gridtype)
 
                 aux.b_vec[a]   = -aux.ABCS[4]
                 @inbounds @simd for aa in eachindex(uu)
@@ -1186,7 +1184,7 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gaug
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
                 vars = AVars(
-                    sys.gridtype, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+                    phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
                     B1   , B2   , G   , phi   , S    , Fx    , Fy    , Sd, B1d, B2d, Gd, phid,
                     B1p  , B2p  , Gp  , phip  , Sp   , Fxp   , Fyp   ,
                     B1pp , B2pp , Gpp , phipp , Spp  , Fxpp  , Fypp  ,
@@ -1199,7 +1197,7 @@ function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gaug
                            B2_xy, G_xy, phi_xy, S_xy
                 )
 
-                A_eq_coeff!(aux.ABCS, vars)
+                A_eq_coeff!(aux.ABCS, vars, sys.gridtype)
 
                 aux.b_vec[a]   = -aux.ABCS[4]
                 @inbounds @simd for aa in eachindex(uu)
@@ -1335,7 +1333,7 @@ end
 
 function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars{Inner},
                        boundary::BoundaryVars, gauge::GaugeVars, base::BaseVars,
-                       nested::Nested{Inner})
+                       nested::Nested)
     _, Nx, Ny = size(nested.sys)
 
     Dx  = nested.sys.Dx
@@ -1396,7 +1394,7 @@ end
 
 # TODO
 function set_outerBCs!(BC::BulkVars{Outer}, dBC::BulkVars{Outer}, bulk::BulkVars{Inner},
-                       gauge::GaugeVars, base::BaseVars, nested::Nested{Inner})
+                       gauge::GaugeVars, base::BaseVars, nested::Nested)
     _, Nx, Ny = size(nested.sys)
     phi0 = base.phi0
 
