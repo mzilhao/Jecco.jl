@@ -176,9 +176,9 @@ solve_nested(bulks, boundary, gauge)
 # dBCs[2].A .= -2.0/(u0*u0*u0)
 
 
-i = 1
+i = 2
 
-u = sys.ucoord[:]
+u = systems[i].ucoord[:]
 
 bulk = bulks[i]
 BC   = BCs[i]

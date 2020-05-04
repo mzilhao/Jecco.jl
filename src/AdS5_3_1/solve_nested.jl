@@ -1360,7 +1360,9 @@ function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars
             xi_x    = Dx(gauge.xi, 1,i,j)
             xi_y    = Dy(gauge.xi, 1,i,j)
 
+            b14     = bulk.B1[1,i,j]
             b24     = bulk.B2[1,i,j]
+            g4      = bulk.G[1,i,j]
 
             a4      = boundary.a4[1,i,j]
 
@@ -1396,7 +1398,8 @@ function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars
             BC.Sd[i,j] = a4 / 2
 
             BC.B2d[i,j] = -2 * b24
-
+            BC.B1d[i,j] = -2 * b14
+            BC.Gd[i,j]  = -2 * g4
 
         end
     end
@@ -1418,9 +1421,15 @@ function set_outerBCs!(BC::BulkVars{Outer}, dBC::BulkVars{Outer}, bulk::BulkVars
     @fastmath @inbounds @threads for j in 1:Ny
         @inbounds @simd for i in 1:Nx
             xi     = gauge.xi[1,i,j]
+
             S      = bulk.S[end,i,j]
             Fx     = bulk.Fx[end,i,j]
             Fy     = bulk.Fy[end,i,j]
+            Sd     = bulk.Sd[end,i,j]
+            B1d    = bulk.B1d[end,i,j]
+            B2d    = bulk.B2d[end,i,j]
+            Gd     = bulk.Gd[end,i,j]
+
             S_u    = nested.Du_S[end,i,j]
             Fx_u   = nested.Du_Fx[end,i,j]
             Fy_u   = nested.Du_Fy[end,i,j]
@@ -1432,17 +1441,18 @@ function set_outerBCs!(BC::BulkVars{Outer}, dBC::BulkVars{Outer}, bulk::BulkVars
             BC.Fy[i,j]  = F_inner_to_outer(Fy, u0)
             dBC.Fx[i,j] = F_u_inner_to_outer(Fx_u, Fx, u0)
             dBC.Fy[i,j] = F_u_inner_to_outer(Fy_u, Fy, u0)
+
+            BC.Sd[i,j]  = Sd_inner_to_outer(Sd, u0, xi, phi0)
+
+            # B1d, B2d, and Gd transform in the same way
+            BC.B2d[i,j] = Bd_inner_to_outer(B2d, u0)
+            BC.B1d[i,j] = Bd_inner_to_outer(B1d, u0)
+            BC.Gd[i,j]  = Bd_inner_to_outer(Gd, u0)
         end
     end
 
     # FIXME
 
-    BC.Sd .= 0.5/(u0*u0)
-
-    BC.B2d .= -2.0 * u0*u0*u0 * 0.02
-    BC.B1d .= -2.0 * u0*u0*u0 * 0.01
-
-    BC.Gd   .= 0.0
     BC.phid .= -0.5 + u0*u0 * ( 1.0/3.0 - 1.5 * 0.01 )
 
     BC.A  .= 1.0/(u0*u0)
