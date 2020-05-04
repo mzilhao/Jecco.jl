@@ -116,10 +116,10 @@ base  = BaseVars(phi0)
 
 systems = Jecco.AdS5_3_1.create_systems(par_grid)
 
-sys = systems[2]
+sys = systems[1]
 
-Nu, Nx, Ny = size(sys)
-u = sys.ucoord[:]
+_, Nx, Ny = size(sys)
+# u = sys.ucoord[:]
 # x = sys.xcoord[:]
 # y = sys.ycoord[:]
 
@@ -143,8 +143,6 @@ f2y = fy2_0 * ones(Float64, 1, Nx, Ny)
 a4  = -ones(Float64, 1, Nx, Ny)
 boundary = BoundaryVars(a4, f2x, f2y)
 
-nested = Jecco.AdS5_3_1.Nested(sys)
-
 bulks = IDtest0(systems)
 
 solve_nested = Jecco.AdS5_3_1.nested_solver(base, systems)
@@ -152,54 +150,44 @@ solve_nested(bulks, boundary, gauge)
 
 
 
-nesteds = [Jecco.AdS5_3_1.Nested(sys) for sys in systems]
-BCs     = [BulkVars(sys.gridtype, Float64, Nx, Ny) for sys in systems]
-dBCs    = [BulkVars(sys.gridtype, Float64, Nx, Ny) for sys in systems]
+# nesteds = [Jecco.AdS5_3_1.Nested(sys) for sys in systems]
+# BCs     = [BulkVars(sys.gridtype, Float64, Nx, Ny) for sys in systems]
+# dBCs    = [BulkVars(sys.gridtype, Float64, Nx, Ny) for sys in systems]
 
 
-Jecco.AdS5_3_1.set_innerBCs!(BCs[1], dBCs[1], bulks[1], boundary, gauge, base, nesteds[1])
+# Jecco.AdS5_3_1.set_innerBCs!(BCs[1], dBCs[1], bulks[1], boundary, gauge, base, nesteds[1])
 
 
+# Jecco.AdS5_3_1.set_outerBCs!(BCs[2], dBCs[2], bulks[1], gauge, base, nesteds[1])
+
+
+# u0 = u[1]
+
+
+# BCs[2].Sd .= 0.5/(u0*u0)
+
+# BCs[2].B2d .= -2.0 * u0*u0*u0 * 0.02
+# BCs[2].B1d .= -2.0 * u0*u0*u0 * 0.01
+
+# BCs[2].Gd   .= 0.0
+# BCs[2].phid .= -0.5 + u0*u0 * ( 1.0/3.0 - 1.5 * 0.01 )
+
+# BCs[2].A  .= 1.0/(u0*u0)
+# dBCs[2].A .= -2.0/(u0*u0*u0)
 
 
 i = 1
+
+u = sys.ucoord[:]
 
 bulk = bulks[i]
 BC   = BCs[i]
 dBC  = dBCs[i]
 nested = nesteds[i]
 
-Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, base, nested)
-Jecco.AdS5_3_1.solve_Fxy!(bulk, BC, dBC, gauge, base, nested)
+bulk.B2d[:,1,1]
 
-
-Jecco.AdS5_3_1.set_outerBCs!(BCs[2], dBCs[2], bulks[1], gauge, base, nesteds[1])
-
-
-u0 = u[1]
-
-
-BCs[2].Sd .= 0.5/(u0*u0)
-
-BCs[2].B2d .= -2.0 * u0*u0*u0 * 0.02
-BCs[2].B1d .= -2.0 * u0*u0*u0 * 0.01
-
-BCs[2].Gd   .= 0.0
-BCs[2].phid .= -0.5 + u0*u0 * ( 1.0/3.0 - 1.5 * 0.01 )
-
-BCs[2].A  .= 1.0/(u0*u0)
-dBCs[2].A .= -2.0/(u0*u0*u0)
-
-
-i = 1
-
-bulk = bulks[i]
-BC   = BCs[i]
-dBC  = dBCs[i]
-nested = nesteds[i]
-
-Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, base, nested)
-Jecco.AdS5_3_1.solve_Fxy!(bulk, BC, dBC, gauge, base, nested)
+# Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, base, nested)
+# Jecco.AdS5_3_1.solve_Fxy!(bulk, BC, dBC, gauge, base, nested)
 # Jecco.AdS5_3_1.solve_Sd!(bulk, BC, gauge, base, nested)
-
-# Jecco.AdS5_3_1.solve_B2d_outer!(bulk, BC, gauge, base, nested)
+# Jecco.AdS5_3_1.solve_B2d!(bulk, BC, gauge, base, nested)

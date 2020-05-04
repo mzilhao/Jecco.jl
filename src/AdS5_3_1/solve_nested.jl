@@ -532,8 +532,8 @@ function solve_Sd!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVar
     nothing
 end
 
-function solve_B2d_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVars,
-                          nested::Nested)
+function solve_B2d!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVars,
+                    nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -1296,13 +1296,13 @@ function solve_nested!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gauge
     # solving for B2d, (B1d,Gd) and phid are independent processes. we can
     # therefore @spawn, here
     @sync begin
-        @spawn solve_B2d_outer!(bulk, BC, gauge, base, nested)
-        @spawn solve_B1dGd_outer!(bulk, BC, gauge, base, nested)
-        @spawn solve_phid_outer!(bulk, BC, gauge, base, nested)
+        @spawn solve_B2d!(bulk, BC, gauge, base, nested)
+        # @spawn solve_B1dGd!(bulk, BC, gauge, base, nested)
+        # @spawn solve_phid!(bulk, BC, gauge, base, nested)
     end
 
     # # solve for A
-    solve_A_outer!(bulk, BC, dBC, gauge, base, nested)
+    # solve_A!(bulk, BC, dBC, gauge, base, nested)
 
     nothing
 end
@@ -1360,6 +1360,10 @@ function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars
             xi_x    = Dx(gauge.xi, 1,i,j)
             xi_y    = Dy(gauge.xi, 1,i,j)
 
+            b24     = bulk.B2[1,i,j]
+
+            a4      = boundary.a4[1,i,j]
+
             fx2     = boundary.fx2[1,i,j]
             fy2     = boundary.fy2[1,i,j]
 
@@ -1388,6 +1392,11 @@ function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars
             BC.Fy[i,j]  = fy2
             dBC.Fy[i,j] = -2 * fy2 * xi - 12 / 15 * (-b14_y + b24_y - g4_x) +
                 4/15 * phi0 * phi2_y
+
+            BC.Sd[i,j] = a4 / 2
+
+            BC.B2d[i,j] = -2 * b24
+
 
         end
     end
@@ -1454,8 +1463,7 @@ function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, boundary::Bound
 
     set_innerBCs!(BCs[1], dBCs[1], bulks[1], boundary, gauge, base, nesteds[1])
 
-    # TODO: uncomment once we have all inner grid functions
-    # solve_nested!(bulks[1], BCs[1], dBCs[1], gauge, base, nesteds[1])
+    solve_nested!(bulks[1], BCs[1], dBCs[1], gauge, base, nesteds[1])
 
     # TODO: this function
     set_outerBCs!(BCs[2], dBCs[2], bulks[1], gauge, base, nesteds[1])
