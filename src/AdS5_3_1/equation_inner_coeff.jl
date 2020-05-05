@@ -494,7 +494,6 @@ function phid_eq_coeff!(ABCS::Vector, vars::phidVars, ::Inner)
 
     # @hat_inner("Fxp")
     # @hat_inner("Fyp")
-    @hat_inner("phi")
 
     # @cross_inner("B2")
     # @cross_inner("G")
@@ -512,12 +511,6 @@ function phid_eq_coeff!(ABCS::Vector, vars::phidVars, ::Inner)
 
     coshGu4 = cosh(*(G, u4))
     sinhGu4 = sinh(*(G, u4))
-
-    tanhGu4 = tanh(*(G, u4))
-    sechGu4 = sech(*(G, u4))
-
-    cosh2Gu4 = cosh(*(2, G, u4))
-    sinh2Gu4 = sinh(*(2, G, u4))
 
     expB1u4 = exp(*(B1, u4))
     expB2u4 = exp(*(B2, u4))
