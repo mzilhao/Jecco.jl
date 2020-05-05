@@ -884,8 +884,8 @@ function solve_B1dGd!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::Base
     nothing
 end
 
-function solve_phid_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVars,
-                           nested::Nested)
+function solve_phid!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVars,
+                     nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -1298,7 +1298,7 @@ function solve_nested!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gauge
     @sync begin
         @spawn solve_B2d!(bulk, BC, gauge, base, nested)
         @spawn solve_B1dGd!(bulk, BC, gauge, base, nested)
-        # @spawn solve_phid!(bulk, BC, gauge, base, nested)
+        @spawn solve_phid!(bulk, BC, gauge, base, nested)
     end
 
     # # solve for A
@@ -1404,6 +1404,23 @@ function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars
         end
     end
 
+    # separate the phid case, since the if statement may prevent loop
+    # vectorization
+    @fastmath @inbounds for j in 1:Ny
+        @inbounds for i in 1:Nx
+            xi      = gauge.xi[1,i,j]
+            phi     = bulk.phi[1,i,j]
+            phi2    = phi03 * phi   - phi0 * xi * xi
+
+            if abs(phi03) > 1e-9
+                BC.phid[i,j] = 1/3 - 3/2 * phi2 / phi03
+            else
+                BC.phid[i,j] = 0
+            end
+
+        end
+    end
+
     nothing
 end
 
@@ -1429,6 +1446,7 @@ function set_outerBCs!(BC::BulkVars{Outer}, dBC::BulkVars{Outer}, bulk::BulkVars
             B1d    = bulk.B1d[end,i,j]
             B2d    = bulk.B2d[end,i,j]
             Gd     = bulk.Gd[end,i,j]
+            phid   = bulk.phid[end,i,j]
 
             S_u    = nested.Du_S[end,i,j]
             Fx_u   = nested.Du_Fx[end,i,j]
@@ -1448,16 +1466,13 @@ function set_outerBCs!(BC::BulkVars{Outer}, dBC::BulkVars{Outer}, bulk::BulkVars
             BC.B2d[i,j] = Bd_inner_to_outer(B2d, u0)
             BC.B1d[i,j] = Bd_inner_to_outer(B1d, u0)
             BC.Gd[i,j]  = Bd_inner_to_outer(Gd, u0)
+
+            BC.phid[i,j] = phid_inner_to_outer(phid, u0, phi0)
         end
     end
 
-    # FIXME
-
-    BC.phid .= -0.5 + u0*u0 * ( 1.0/3.0 - 1.5 * 0.01 )
-
     BC.A  .= 1.0/(u0*u0)
     dBC.A .= -2.0/(u0*u0*u0)
-
 
     nothing
 end

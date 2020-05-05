@@ -14,3 +14,6 @@
     1/(2*u*u) + xi/u + xi*xi/2 - phi0*phi0/6 + u*u * Sd_in
 
 @inline Bd_inner_to_outer(Bd_in, u) = u*u*u * Bd_in
+
+@inline phid_inner_to_outer(phid_in, u, phi0) =
+    -phi0/2 + u*u * phi0*phi0*phi0 * phid_in
