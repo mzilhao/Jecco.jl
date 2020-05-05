@@ -333,3 +333,114 @@ function B2d_eq_coeff!(ABCS::Vector, vars::BdGVars, ::Inner)
 
     nothing
 end
+
+
+# this is another coupled equation, for B1d and Gd. the notation used is
+#
+# ( A11 d_uu B1d + A12 d_uu Gd + B11 d_u B1d + B12 d_u Gd + C11 B1d + C12 Gd ) = -S1
+# ( A21 d_uu B1d + A22 d_uu Gd + B21 d_u B1d + B22 d_u Gd + C21 B1d + C22 Gd ) = -S2
+
+function B1dGd_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::BdGVars, ::Inner)
+    @unpack (
+        phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+        B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
+        B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
+        B1pp   ,    B2pp   ,    Gpp    ,    phipp  ,    Spp    ,    Fxpp   ,    Fypp   ,
+        B1_x   ,    B2_x   ,    G_x    ,    phi_x  ,    S_x    ,    Fx_x   ,    Fy_x   ,
+        B1_y   ,    B2_y   ,    G_y    ,    phi_y  ,    S_y    ,    Fx_y   ,    Fy_y   ,
+        B1p_x  ,    B2p_x  ,    Gp_x   ,    phip_x ,    Sp_x   ,    Fxp_x  ,    Fyp_x  ,
+        B1p_y  ,    B2p_y  ,    Gp_y   ,    phip_y ,    Sp_y   ,    Fxp_y  ,    Fyp_y  ,
+        B1_xx  ,    B2_xx  ,    G_xx   ,    phi_xx ,    S_xx   ,
+        B1_yy  ,    B2_yy  ,    G_yy   ,    phi_yy ,    S_yy   ,
+                    B2_xy  ,    G_xy   ,                S_xy
+    ) = vars
+
+    @tilde_inner("B1")
+    @tilde_inner("B2")
+    @tilde_inner("G")
+    @tilde_inner("phi")
+    @tilde_inner("S")
+    @tilde_inner("Fx")
+    @tilde_inner("Fy")
+
+    @hat_inner("B1")
+    @hat_inner("B2")
+    @hat_inner("G")
+    @hat_inner("phi")
+    @hat_inner("S")
+    @hat_inner("Fx")
+    @hat_inner("Fy")
+
+    @bar_inner("B1")
+    @bar_inner("B2")
+    @bar_inner("G")
+    @bar_inner("phi")
+    @bar_inner("S")
+
+    @star_inner("B1")
+    @star_inner("B2")
+    @star_inner("G")
+    @star_inner("phi")
+    @star_inner("S")
+
+    @tilde_inner("Fxp")
+    @tilde_inner("Fyp")
+
+    @hat_inner("Fxp")
+    @hat_inner("Fyp")
+
+    @cross_inner("B2")
+    @cross_inner("G")
+    @cross_inner("S")
+
+    u2 = u*u
+    u3 = u*u2
+    u4 = u2*u2
+    u5 = u4*u
+    u5 = u3*u2
+    u6 = u3*u3
+    u8 = u4*u4
+
+    coshGu4 = cosh(*(G, u4))
+    sinhGu4 = sinh(*(G, u4))
+
+    tanhGu4 = tanh(*(G, u4))
+    sechGu4 = sech(*(G, u4))
+
+    cosh2Gu4 = cosh(*(2, G, u4))
+    sinh2Gu4 = sinh(*(2, G, u4))
+
+    expB1u4 = exp(*(B1, u4))
+    expB2u4 = exp(*(B2, u4))
+
+
+    AA[1,1] = 0
+    AA[1,2] = 0
+
+
+    BB[1,1] = *(-4/27, u2, (3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) ^ 4, expB1u4)
+    BB[1,2] = 0
+
+
+    CC[1,1] = *(-2/27, u, (3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) ^ 3, 9 + *(-9, Sp, u3) + *(18, u, xi) + *(45, S, u4) + *(3, phi0 ^ 2, u2, -3 + *(4, u, xi)) + *(-2, u3, Gp + *(-4, G, u), 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), tanhGu4), expB1u4)
+
+    CC[1,2] = *(4/27, (*(3, u, 1 + *(S, u4) + *(u, xi)) + *(phi0 ^ 2, u3, -1 + *(u, xi))) ^ 4, B1p + *(-4, B1, u), expB1u4, tanhGu4)
+
+
+    SS[1] = *(1/9, (3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) ^ 3, B1p + *(-4, B1, u), *(3, (1 + *(u, xi)) ^ 2) + *(-1, phi0 ^ 2, u2) + *(6, Sd, u4), expB1u4) + *(4/3, u5, *(-1, (*(Fy, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(u, *(3, Sh) + *(2, xi, xi_y, phi0 ^ 2) + *(9, S, u, xi_y))) ^ 2) + *((*(Fx, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(u, *(3, St) + *(2, xi, xi_x, phi0 ^ 2) + *(9, S, u, xi_x))) ^ 2, exp(*(2, B1, u4))), expB2u4, sechGu4) + *(-2/3, u2, 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi)), *(Fyh, 3 + *(phi0 ^ 2, u2 + *(-2, xi, u3)) + *(-9, S, u4) + *(3, Sp, u3)) + *(*(Fxt, -3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(u, *(3, Sb) + *(Fx, *(-1, xi_x, 6 + *(-54, S, u4) + *(6, Sp, u3) + *(12, B2, u4) + *(-72, B2, S, u8)) + *(6, St, u3 + *(2, B2, u ^ 7)) + *(B2t, u3, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(2, Fxp, u, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(2, xi_x, phi0 ^ 2, u2, 1 + *(2, B2, u4), -1 + *(4, u, xi))) + *(-3, Sp, xi_xx) + *(2, phi0 ^ 2, xi_x ^ 2) + *(2, xi, xi_xx, phi0 ^ 2) + *(2, Fx ^ 2, u2, 3 + *(-3, Sp, u3) + *(9, S, u4) + *(xi, phi0 ^ 2, u3) + *(2, B2, u4, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi)))) + *(3, B2t, St, u4) + *(6, Fxp, St, u2) + *(9, S, u, xi_xx) + *(18, St, u, xi_x) + *(36, S, u2, xi_x ^ 2) + *(6, u, xi, phi0 ^ 2, xi_x ^ 2) + *(9, B2t, S, xi_x, u5) + *(12, B2, St, xi_x, u5) + *(18, Fxp, S, xi_x, u3) + *(36, B2, S, u6, xi_x ^ 2) + *(2, B2t, xi, xi_x, phi0 ^ 2, u4) + *(4, Fxp, xi, xi_x, phi0 ^ 2, u2) + *(8, B2, xi, phi0 ^ 2, u5, xi_x ^ 2)), exp(*(2, B1, u4))) + *(-1, u, *(3, Ss) + *(Fy, *(-1, xi_y, 6 + *(-54, S, u4) + *(6, Sp, u3) + *(12, B2, u4) + *(-72, B2, S, u8)) + *(6, Sh, u3 + *(2, B2, u ^ 7)) + *(B2h, u3, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(2, Fyp, u, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(2, xi_y, phi0 ^ 2, u2, 1 + *(2, B2, u4), -1 + *(4, u, xi))) + *(-3, Sp, xi_yy) + *(2, phi0 ^ 2, xi_y ^ 2) + *(2, xi, xi_yy, phi0 ^ 2) + *(2, Fy ^ 2, u2, 3 + *(-3, Sp, u3) + *(9, S, u4) + *(xi, phi0 ^ 2, u3) + *(2, B2, u4, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi)))) + *(3, B2h, Sh, u4) + *(6, Fyp, Sh, u2) + *(9, S, u, xi_yy) + *(18, Sh, u, xi_y) + *(36, S, u2, xi_y ^ 2) + *(6, u, xi, phi0 ^ 2, xi_y ^ 2) + *(9, B2h, S, xi_y, u5) + *(12, B2, Sh, xi_y, u5) + *(18, Fyp, S, xi_y, u3) + *(36, B2, S, u6, xi_y ^ 2) + *(2, B2h, xi, xi_y, phi0 ^ 2, u4) + *(4, Fyp, xi, xi_y, phi0 ^ 2, u2) + *(8, B2, xi, phi0 ^ 2, u5, xi_y ^ 2)) + *(u4, *(Fx, Gh, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(Fy, Gt, 3 + *(phi0 ^ 2, u2 + *(-2, xi, u3)) + *(-9, S, u4)) + *(Gh, u, *(3, St) + *(2, xi, xi_x, phi0 ^ 2) + *(9, S, u, xi_x)) + *(-1, Gt, u, *(3, Sh) + *(2, xi, xi_y, phi0 ^ 2) + *(9, S, u, xi_y)) + *(12, G, u2, *(St, xi_y) + *(-1, Sh, xi_x)) + *(-4, Fx, G, u, *(xi_y, 3 + *(phi0 ^ 2, u2)) + *(3, Sh, u3)) + *(4, Fy, G, u, *(xi_x, 3 + *(phi0 ^ 2, u2)) + *(3, St, u3)), expB1u4), expB2u4, sechGu4) + *(-1/3, u, (3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) ^ 2, *(2, Fyph) + *(*(-2, Fxpt) + *(u, *(Fxt, 4 + *(-2, B2p, u3) + *(8, B2, u4)) + *(u, Fxp ^ 2) + *(-4, Fxp, xi_x) + *(2, B2b, u) + *(4, B2t ^ 2, u5) + *(16, Fx ^ 2, u3) + *(-8, Fx, Fxp, u2) + *(-4, B2p, Fx ^ 2, u6) + *(-2, B2p, u, xi_xx) + *(-2, B2t, Fxp, u3) + *(4, Fx ^ 2, phi0 ^ 2, u5) + *(4, phi0 ^ 6, phit ^ 2, u3) + *(8, B2, xi_xx, u2) + *(12, Fx, u, xi_x) + *(16, B2t, xi_x, u2) + *(20, B2t, Fx, u4) + *(40, B2, u3, xi_x ^ 2) + *(64, B2 ^ 2, Fx ^ 2, u ^ 11) + *(64, B2 ^ 2, u ^ 7, xi_x ^ 2) + *(72, B2, Fx ^ 2, u ^ 7) + *(-16, xi, Fx ^ 2, phi0 ^ 2, u6) + *(-8, B2, Fx, Fxp, u6) + *(-8, B2, Fxp, xi_x, u4) + *(-4, B2p, Fx, xi_x, u4) + *(8, Fx, phit, phi0 ^ 4, u4) + *(16, Fx ^ 2, phi0 ^ 2, u ^ 7, xi ^ 2) + *(16, phi0 ^ 2, u3, xi ^ 2, xi_x ^ 2) + *(24, phi, Fx ^ 2, phi0 ^ 4, u ^ 7) + *(32, B2, B2t, Fx, u8) + *(32, B2, B2t, xi_x, u6) + *(36, Fx ^ 2, phi ^ 2, phi0 ^ 6, u ^ 9) + *(36, phi ^ 2, phi0 ^ 6, u5, xi_x ^ 2) + *(112, B2, Fx, xi_x, u5) + *(128, Fx, xi_x, B2 ^ 2, u ^ 9) + *(-48, phi, xi, Fx ^ 2, phi0 ^ 4, u8) + *(-48, phi, xi, phi0 ^ 4, u4, xi_x ^ 2) + *(-16, Fx, phit, xi, phi0 ^ 4, u5) + *(-16, Fx, xi, xi_x, phi0 ^ 2, u4) + *(-16, phit, xi, xi_x, phi0 ^ 4, u3) + *(24, Fx, phi, phit, phi0 ^ 6, u6) + *(24, Fx, phi, xi_x, phi0 ^ 4, u5) + *(24, phi, phit, xi_x, phi0 ^ 6, u4) + *(32, Fx, xi_x, phi0 ^ 2, u5, xi ^ 2) + *(72, Fx, xi_x, phi ^ 2, phi0 ^ 6, u ^ 7) + *(-96, Fx, phi, xi, xi_x, phi0 ^ 4, u6)), exp(*(2, B1, u4))) + *(-1, u, *(Fyh, 4 + *(-2, B2p, u3) + *(8, B2, u4)) + *(u, Fyp ^ 2) + *(-4, Fyp, xi_y) + *(2, B2s, u) + *(4, B2h ^ 2, u5) + *(16, Fy ^ 2, u3) + *(-8, Fy, Fyp, u2) + *(-4, B2p, Fy ^ 2, u6) + *(-2, B2h, Fyp, u3) + *(-2, B2p, u, xi_yy) + *(4, Fy ^ 2, phi0 ^ 2, u5) + *(4, phi0 ^ 6, phih ^ 2, u3) + *(8, B2, xi_yy, u2) + *(12, Fy, u, xi_y) + *(16, B2h, xi_y, u2) + *(20, B2h, Fy, u4) + *(40, B2, u3, xi_y ^ 2) + *(64, B2 ^ 2, Fy ^ 2, u ^ 11) + *(64, B2 ^ 2, u ^ 7, xi_y ^ 2) + *(72, B2, Fy ^ 2, u ^ 7) + *(-16, xi, Fy ^ 2, phi0 ^ 2, u6) + *(-8, B2, Fy, Fyp, u6) + *(-8, B2, Fyp, xi_y, u4) + *(-4, B2p, Fy, xi_y, u4) + *(8, Fy, phih, phi0 ^ 4, u4) + *(16, Fy ^ 2, phi0 ^ 2, u ^ 7, xi ^ 2) + *(16, phi0 ^ 2, u3, xi ^ 2, xi_y ^ 2) + *(24, phi, Fy ^ 2, phi0 ^ 4, u ^ 7) + *(32, B2, B2h, Fy, u8) + *(32, B2, B2h, xi_y, u6) + *(36, Fy ^ 2, phi ^ 2, phi0 ^ 6, u ^ 9) + *(36, phi ^ 2, phi0 ^ 6, u5, xi_y ^ 2) + *(112, B2, Fy, xi_y, u5) + *(128, Fy, xi_y, B2 ^ 2, u ^ 9) + *(-48, phi, xi, Fy ^ 2, phi0 ^ 4, u8) + *(-48, phi, xi, phi0 ^ 4, u4, xi_y ^ 2) + *(-16, Fy, phih, xi, phi0 ^ 4, u5) + *(-16, Fy, xi, xi_y, phi0 ^ 2, u4) + *(-16, phih, xi, xi_y, phi0 ^ 4, u3) + *(24, Fy, phi, phih, phi0 ^ 6, u6) + *(24, Fy, phi, xi_y, phi0 ^ 4, u5) + *(24, phi, phih, xi_y, phi0 ^ 6, u4) + *(32, Fy, xi_y, phi0 ^ 2, u5, xi ^ 2) + *(72, Fy, xi_y, phi ^ 2, phi0 ^ 6, u ^ 7) + *(-96, Fy, phi, xi, xi_y, phi0 ^ 4, u6)) + *(2, u4, *(Fxh, Gp) + *(Fyp, Gt) + *(-1, Fxp, Gh + *(4, G, u, xi_y + *(Fy, u2))) + *(-1, Fyt, Gp) + *(B2t, Gh, u2) + *(-1, B2h, Gt, u2) + *(-4, Fxh, G, u) + *(-2, Fy, Gt, u) + *(2, Fx, Gh, u) + *(4, Fyt, G, u) + *(-4, B2, Fy, Gt, u5) + *(-4, B2, Gt, xi_y, u3) + *(-4, B2h, Fx, G, u5) + *(-4, B2h, G, xi_x, u3) + *(-2, Fy, Gp, u, xi_x) + *(2, Fx, Gp, u, xi_y) + *(4, B2, Fx, Gh, u5) + *(4, B2, Gh, xi_x, u3) + *(4, B2t, Fy, G, u5) + *(4, B2t, G, xi_y, u3) + *(4, Fx, Fyp, G, u3) + *(4, Fyp, G, u, xi_x), expB1u4), expB2u4, sechGu4)
+
+
+    AA[2,1] = 0
+    AA[2,2] = 0
+
+    BB[2,1] = 0
+    BB[2,2] = *(-4/27, u2, (3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) ^ 4, expB1u4)
+
+    CC[2,1] = *(-2/27, (*(3, u, 1 + *(S, u4) + *(u, xi)) + *(phi0 ^ 2, u3, -1 + *(u, xi))) ^ 4, B1p + *(-4, B1, u), expB1u4, sinh2Gu4)
+
+    CC[2,2] = *(-2/9, u, (3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) ^ 3, 3 + *(-3, Sp, u3) + *(6, u, xi) + *(15, S, u4) + *(phi0 ^ 2, u2, -3 + *(4, u, xi)), expB1u4)
+
+    SS[2] = *(-1/3, u, (3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) ^ 2, *(*(-2, Fyph) + *(u, *(Fyh, 4 + *(-2, B2p, u3) + *(8, B2, u4)) + *(u, Fyp ^ 2) + *(-4, Fyp, xi_y) + *(2, B2s, u) + *(4, B2h ^ 2, u5) + *(16, Fy ^ 2, u3) + *(-8, Fy, Fyp, u2) + *(-4, B2p, Fy ^ 2, u6) + *(-2, B2h, Fyp, u3) + *(-2, B2p, u, xi_yy) + *(4, Fy ^ 2, phi0 ^ 2, u5) + *(4, phi0 ^ 6, phih ^ 2, u3) + *(8, B2, xi_yy, u2) + *(12, Fy, u, xi_y) + *(16, B2h, xi_y, u2) + *(20, B2h, Fy, u4) + *(40, B2, u3, xi_y ^ 2) + *(64, B2 ^ 2, Fy ^ 2, u ^ 11) + *(64, B2 ^ 2, u ^ 7, xi_y ^ 2) + *(72, B2, Fy ^ 2, u ^ 7) + *(-16, xi, Fy ^ 2, phi0 ^ 2, u6) + *(-8, B2, Fy, Fyp, u6) + *(-8, B2, Fyp, xi_y, u4) + *(-4, B2p, Fy, xi_y, u4) + *(8, Fy, phih, phi0 ^ 4, u4) + *(16, Fy ^ 2, phi0 ^ 2, u ^ 7, xi ^ 2) + *(16, phi0 ^ 2, u3, xi ^ 2, xi_y ^ 2) + *(24, phi, Fy ^ 2, phi0 ^ 4, u ^ 7) + *(32, B2, B2h, Fy, u8) + *(32, B2, B2h, xi_y, u6) + *(36, Fy ^ 2, phi ^ 2, phi0 ^ 6, u ^ 9) + *(36, phi ^ 2, phi0 ^ 6, u5, xi_y ^ 2) + *(112, B2, Fy, xi_y, u5) + *(128, Fy, xi_y, B2 ^ 2, u ^ 9) + *(-48, phi, xi, Fy ^ 2, phi0 ^ 4, u8) + *(-48, phi, xi, phi0 ^ 4, u4, xi_y ^ 2) + *(-16, Fy, phih, xi, phi0 ^ 4, u5) + *(-16, Fy, xi, xi_y, phi0 ^ 2, u4) + *(-16, phih, xi, xi_y, phi0 ^ 4, u3) + *(24, Fy, phi, phih, phi0 ^ 6, u6) + *(24, Fy, phi, xi_y, phi0 ^ 4, u5) + *(24, phi, phih, xi_y, phi0 ^ 6, u4) + *(32, Fy, xi_y, phi0 ^ 2, u5, xi ^ 2) + *(72, Fy, xi_y, phi ^ 2, phi0 ^ 6, u ^ 7) + *(-96, Fy, phi, xi, xi_y, phi0 ^ 4, u6)) + *(*(-2, Fxpt) + *(u, *(Fxt, 4 + *(-2, B2p, u3) + *(8, B2, u4)) + *(u, Fxp ^ 2) + *(-4, Fxp, xi_x) + *(2, B2b, u) + *(4, B2t ^ 2, u5) + *(16, Fx ^ 2, u3) + *(-8, Fx, Fxp, u2) + *(-4, B2p, Fx ^ 2, u6) + *(-2, B2p, u, xi_xx) + *(-2, B2t, Fxp, u3) + *(4, Fx ^ 2, phi0 ^ 2, u5) + *(4, phi0 ^ 6, phit ^ 2, u3) + *(8, B2, xi_xx, u2) + *(12, Fx, u, xi_x) + *(16, B2t, xi_x, u2) + *(20, B2t, Fx, u4) + *(40, B2, u3, xi_x ^ 2) + *(64, B2 ^ 2, Fx ^ 2, u ^ 11) + *(64, B2 ^ 2, u ^ 7, xi_x ^ 2) + *(72, B2, Fx ^ 2, u ^ 7) + *(-16, xi, Fx ^ 2, phi0 ^ 2, u6) + *(-8, B2, Fx, Fxp, u6) + *(-8, B2, Fxp, xi_x, u4) + *(-4, B2p, Fx, xi_x, u4) + *(8, Fx, phit, phi0 ^ 4, u4) + *(16, Fx ^ 2, phi0 ^ 2, u ^ 7, xi ^ 2) + *(16, phi0 ^ 2, u3, xi ^ 2, xi_x ^ 2) + *(24, phi, Fx ^ 2, phi0 ^ 4, u ^ 7) + *(32, B2, B2t, Fx, u8) + *(32, B2, B2t, xi_x, u6) + *(36, Fx ^ 2, phi ^ 2, phi0 ^ 6, u ^ 9) + *(36, phi ^ 2, phi0 ^ 6, u5, xi_x ^ 2) + *(112, B2, Fx, xi_x, u5) + *(128, Fx, xi_x, B2 ^ 2, u ^ 9) + *(-48, phi, xi, Fx ^ 2, phi0 ^ 4, u8) + *(-48, phi, xi, phi0 ^ 4, u4, xi_x ^ 2) + *(-16, Fx, phit, xi, phi0 ^ 4, u5) + *(-16, Fx, xi, xi_x, phi0 ^ 2, u4) + *(-16, phit, xi, xi_x, phi0 ^ 4, u3) + *(24, Fx, phi, phit, phi0 ^ 6, u6) + *(24, Fx, phi, xi_x, phi0 ^ 4, u5) + *(24, phi, phit, xi_x, phi0 ^ 6, u4) + *(32, Fx, xi_x, phi0 ^ 2, u5, xi ^ 2) + *(72, Fx, xi_x, phi ^ 2, phi0 ^ 6, u ^ 7) + *(-96, Fx, phi, xi, xi_x, phi0 ^ 4, u6)), exp(*(2, B1, u4))), expB2u4, sinhGu4) + *(2, Fxph + Fypt + *(-1, u, *(Fxh, 2 + *(B1p, u3) + *(-1, B2p, u3) + *(-4, B1, u4) + *(4, B2, u4)) + *(Fyt, 2 + *(-1, B1p, u3) + *(-1, B2p, u3) + *(4, B1, u4) + *(4, B2, u4)) + *(-2, Fxp, xi_y) + *(-2, Fyp, xi_x) + *(2, B2c, u) + *(B1h, B2t, u5) + *(B1t, Fyp, u3) + *(Fxp, Fyp, u) + *(-1, B1h, Fxp, u3) + *(-1, B1t, B2h, u5) + *(-1, B2h, Fxp, u3) + *(-1, B2t, Fyp, u3) + *(-4, Fx, Fyp, u2) + *(-4, Fxp, Fy, u2) + *(-2, B1t, Fy, u4) + *(-2, B2p, u, xi_xy) + *(2, B1h, Fx, u4) + *(4, B2h, B2t, u5) + *(6, Fx, u, xi_y) + *(6, Fy, u, xi_x) + *(8, B2, xi_xy, u2) + *(8, B2h, xi_x, u2) + *(8, B2t, xi_y, u2) + *(10, B2h, Fx, u4) + *(10, B2t, Fy, u4) + *(16, Fx, Fy, u3) + *(-4, B1, B2h, Fx, u8) + *(-4, B1, B2h, xi_x, u6) + *(-4, B1, Fxp, Fy, u6) + *(-4, B1, Fxp, xi_y, u4) + *(-4, B1t, B2, Fy, u8) + *(-4, B1t, B2, xi_y, u6) + *(-4, B2, Fx, Fyp, u6) + *(-4, B2, Fxp, Fy, u6) + *(-4, B2, Fxp, xi_y, u4) + *(-4, B2, Fyp, xi_x, u4) + *(-4, B2p, Fx, Fy, u6) + *(-2, B1p, Fy, xi_x, u4) + *(-2, B2p, Fx, xi_y, u4) + *(-2, B2p, Fy, xi_x, u4) + *(2, B1p, Fx, xi_y, u4) + *(4, B1, B2t, Fy, u8) + *(4, B1, B2t, xi_y, u6) + *(4, B1, Fx, Fyp, u6) + *(4, B1, Fyp, xi_x, u4) + *(4, B1h, B2, Fx, u8) + *(4, B1h, B2, xi_x, u6) + *(4, Fx, Fy, phi0 ^ 2, u5) + *(4, Fx, phih, phi0 ^ 4, u4) + *(4, Fy, phit, phi0 ^ 4, u4) + *(4, phih, phit, phi0 ^ 6, u3) + *(16, B2, B2h, Fx, u8) + *(16, B2, B2h, xi_x, u6) + *(16, B2, B2t, Fy, u8) + *(16, B2, B2t, xi_y, u6) + *(40, B2, xi_x, xi_y, u3) + *(56, B2, Fx, xi_y, u5) + *(56, B2, Fy, xi_x, u5) + *(64, Fx, Fy, B2 ^ 2, u ^ 11) + *(64, Fx, xi_y, B2 ^ 2, u ^ 9) + *(64, Fy, xi_x, B2 ^ 2, u ^ 9) + *(64, xi_x, xi_y, B2 ^ 2, u ^ 7) + *(72, B2, Fx, Fy, u ^ 7) + *(-16, Fx, Fy, xi, phi0 ^ 2, u6) + *(-8, Fx, phih, xi, phi0 ^ 4, u5) + *(-8, Fx, xi, xi_y, phi0 ^ 2, u4) + *(-8, Fy, phit, xi, phi0 ^ 4, u5) + *(-8, Fy, xi, xi_x, phi0 ^ 2, u4) + *(-8, phih, xi, xi_x, phi0 ^ 4, u3) + *(-8, phit, xi, xi_y, phi0 ^ 4, u3) + *(12, Fx, phi, phih, phi0 ^ 6, u6) + *(12, Fx, phi, xi_y, phi0 ^ 4, u5) + *(12, Fy, phi, phit, phi0 ^ 6, u6) + *(12, Fy, phi, xi_x, phi0 ^ 4, u5) + *(12, phi, phih, xi_x, phi0 ^ 6, u4) + *(12, phi, phit, xi_y, phi0 ^ 6, u4) + *(16, Fx, Fy, phi0 ^ 2, u ^ 7, xi ^ 2) + *(16, Fx, xi_y, phi0 ^ 2, u5, xi ^ 2) + *(16, Fy, xi_x, phi0 ^ 2, u5, xi ^ 2) + *(16, xi_x, xi_y, phi0 ^ 2, u3, xi ^ 2) + *(24, Fx, Fy, phi, phi0 ^ 4, u ^ 7) + *(36, Fx, Fy, phi ^ 2, phi0 ^ 6, u ^ 9) + *(36, Fx, xi_y, phi ^ 2, phi0 ^ 6, u ^ 7) + *(36, Fy, xi_x, phi ^ 2, phi0 ^ 6, u ^ 7) + *(36, xi_x, xi_y, phi ^ 2, phi0 ^ 6, u5) + *(-48, Fx, Fy, phi, xi, phi0 ^ 4, u8) + *(-48, Fx, phi, xi, xi_y, phi0 ^ 4, u6) + *(-48, Fy, phi, xi, xi_x, phi0 ^ 4, u6) + *(-48, phi, xi, xi_x, xi_y, phi0 ^ 4, u4)), coshGu4, exp(*(u4, B1 + B2)))) + *(2/3, u2, *(*(Fxh, -3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(Fyt, -3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(u, *(6, Sc) + *(-6, Fx, xi_y) + *(-6, Fy, xi_x) + *(-6, Sp, xi_xy) + *(-6, Fx, Fyp, u) + *(-3, B1h, Fx, u3) + *(-3, B1t, Sh, u4) + *(-3, B2h, Fx, u3) + *(-3, B2t, Fy, u3) + *(2, Fxp, u, *(Fy, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(u, *(3, Sh) + *(2, xi, xi_y, phi0 ^ 2) + *(9, S, u, xi_y))) + *(3, B1h, St, u4) + *(3, B1t, Fy, u3) + *(3, B2h, St, u4) + *(3, B2t, Sh, u4) + *(4, xi, xi_xy, phi0 ^ 2) + *(4, xi_x, xi_y, phi0 ^ 2) + *(6, Fx, Sh, u3) + *(6, Fy, St, u3) + *(6, Fyp, St, u2) + *(12, Fx, Fy, u2) + *(18, S, u, xi_xy) + *(18, Sh, u, xi_x) + *(18, St, u, xi_y) + *(B1t, Fy, phi0 ^ 2, u5) + *(-1, B1h, Fx, phi0 ^ 2, u5) + *(-1, B2h, Fx, phi0 ^ 2, u5) + *(-1, B2t, Fy, phi0 ^ 2, u5) + *(-24, B2, Fx, Fy, u6) + *(-12, B1, Fx, Sh, u ^ 7) + *(-12, B1, Fx, xi_y, u4) + *(-12, B1, Sh, xi_x, u5) + *(-12, B2, Fx, xi_y, u4) + *(-12, B2, Fy, xi_x, u4) + *(-12, Fx, Fy, Sp, u5) + *(-9, B1t, Fy, S, u ^ 7) + *(-9, B1t, S, xi_y, u5) + *(-6, Fx, Sp, xi_y, u3) + *(-6, Fy, Sp, xi_x, u3) + *(-2, Fx, Fyp, phi0 ^ 2, u3) + *(-2, Fx, xi_y, phi0 ^ 2, u2) + *(-2, Fy, xi_x, phi0 ^ 2, u2) + *(9, B1h, Fx, S, u ^ 7) + *(9, B1h, S, xi_x, u5) + *(9, B2h, Fx, S, u ^ 7) + *(9, B2h, S, xi_x, u5) + *(9, B2t, Fy, S, u ^ 7) + *(9, B2t, S, xi_y, u5) + *(12, B1, Fy, St, u ^ 7) + *(12, B1, Fy, xi_x, u4) + *(12, B1, St, xi_y, u5) + *(12, B2, Fx, Sh, u ^ 7) + *(12, B2, Fy, St, u ^ 7) + *(12, B2, Sh, xi_x, u5) + *(12, B2, St, xi_y, u5) + *(18, Fx, Fyp, S, u5) + *(18, Fyp, S, xi_x, u3) + *(36, Fx, Fy, S, u6) + *(54, Fx, S, xi_y, u4) + *(54, Fy, S, xi_x, u4) + *(72, S, xi_x, xi_y, u2) + *(-8, B2, Fx, Fy, phi0 ^ 2, u8) + *(-4, B1, Fx, xi_y, phi0 ^ 2, u6) + *(-4, B2, Fx, xi_y, phi0 ^ 2, u6) + *(-4, B2, Fy, xi_x, phi0 ^ 2, u6) + *(-2, B1t, Fy, xi, phi0 ^ 2, u6) + *(-2, B1t, xi, xi_y, phi0 ^ 2, u4) + *(2, B1h, Fx, xi, phi0 ^ 2, u6) + *(2, B1h, xi, xi_x, phi0 ^ 2, u4) + *(2, B2h, Fx, xi, phi0 ^ 2, u6) + *(2, B2h, xi, xi_x, phi0 ^ 2, u4) + *(2, B2t, Fy, xi, phi0 ^ 2, u6) + *(2, B2t, xi, xi_y, phi0 ^ 2, u4) + *(4, B1, Fy, xi_x, phi0 ^ 2, u6) + *(4, Fx, Fy, xi, phi0 ^ 2, u5) + *(4, Fx, Fyp, xi, phi0 ^ 2, u4) + *(4, Fyp, xi, xi_x, phi0 ^ 2, u2) + *(8, Fx, xi, xi_y, phi0 ^ 2, u3) + *(8, Fy, xi, xi_x, phi0 ^ 2, u3) + *(12, u, xi, xi_x, xi_y, phi0 ^ 2) + *(72, B2, Fx, Fy, S, u ^ 10) + *(72, B2, Fx, S, xi_y, u8) + *(72, B2, Fy, S, xi_x, u8) + *(72, B2, S, xi_x, xi_y, u6) + *(16, B2, Fx, Fy, xi, phi0 ^ 2, u ^ 9) + *(16, B2, Fx, xi, xi_y, phi0 ^ 2, u ^ 7) + *(16, B2, Fy, xi, xi_x, phi0 ^ 2, u ^ 7) + *(16, B2, xi, xi_x, xi_y, phi0 ^ 2, u5)), coshGu4, exp(*(u4, B1 + B2))) + *(-1, *(Fyh, -3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(u, *(3, Ss) + *(Fy, *(-1, xi_y, 6 + *(-54, S, u4) + *(6, Sp, u3) + *(12, B2, u4) + *(-72, B2, S, u8)) + *(6, Sh, u3 + *(2, B2, u ^ 7)) + *(B2h, u3, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(2, Fyp, u, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(2, xi_y, phi0 ^ 2, u2, 1 + *(2, B2, u4), -1 + *(4, u, xi))) + *(-3, Sp, xi_yy) + *(2, phi0 ^ 2, xi_y ^ 2) + *(2, xi, xi_yy, phi0 ^ 2) + *(2, Fy ^ 2, u2, 3 + *(-3, Sp, u3) + *(9, S, u4) + *(xi, phi0 ^ 2, u3) + *(2, B2, u4, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi)))) + *(3, B2h, Sh, u4) + *(6, Fyp, Sh, u2) + *(9, S, u, xi_yy) + *(18, Sh, u, xi_y) + *(36, S, u2, xi_y ^ 2) + *(6, u, xi, phi0 ^ 2, xi_y ^ 2) + *(9, B2h, S, xi_y, u5) + *(12, B2, Sh, xi_y, u5) + *(18, Fyp, S, xi_y, u3) + *(36, B2, S, u6, xi_y ^ 2) + *(2, B2h, xi, xi_y, phi0 ^ 2, u4) + *(4, Fyp, xi, xi_y, phi0 ^ 2, u2) + *(8, B2, xi, phi0 ^ 2, u5, xi_y ^ 2)) + *(Fxt, -3 + *(-3, Sp, u3) + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi)), exp(*(2, B1, u4))) + *(u, *(3, Sb) + *(Fx, *(-1, xi_x, 6 + *(-54, S, u4) + *(6, Sp, u3) + *(12, B2, u4) + *(-72, B2, S, u8)) + *(6, St, u3 + *(2, B2, u ^ 7)) + *(B2t, u3, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(2, Fxp, u, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(2, xi_x, phi0 ^ 2, u2, 1 + *(2, B2, u4), -1 + *(4, u, xi))) + *(-3, Sp, xi_xx) + *(2, phi0 ^ 2, xi_x ^ 2) + *(2, xi, xi_xx, phi0 ^ 2) + *(2, Fx ^ 2, u2, 3 + *(-3, Sp, u3) + *(9, S, u4) + *(xi, phi0 ^ 2, u3) + *(2, B2, u4, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi)))) + *(3, B2t, St, u4) + *(6, Fxp, St, u2) + *(9, S, u, xi_xx) + *(18, St, u, xi_x) + *(36, S, u2, xi_x ^ 2) + *(6, u, xi, phi0 ^ 2, xi_x ^ 2) + *(9, B2t, S, xi_x, u5) + *(12, B2, St, xi_x, u5) + *(18, Fxp, S, xi_x, u3) + *(36, B2, S, u6, xi_x ^ 2) + *(2, B2t, xi, xi_x, phi0 ^ 2, u4) + *(4, Fxp, xi, xi_x, phi0 ^ 2, u2) + *(8, B2, xi, phi0 ^ 2, u5, xi_x ^ 2), exp(*(2, B1, u4))), expB2u4, sinhGu4), 3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) + *(4/3, u5, *((*(Fy, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(u, *(3, Sh) + *(2, xi, xi_y, phi0 ^ 2) + *(9, S, u, xi_y))) ^ 2, sinhGu4) + *((*(Fx, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(u, *(3, St) + *(2, xi, xi_x, phi0 ^ 2) + *(9, S, u, xi_x))) ^ 2, exp(*(2, B1, u4)), sinhGu4) + *(-2, *(Fx, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(u, *(3, St) + *(2, xi, xi_x, phi0 ^ 2) + *(9, S, u, xi_x)), *(Fy, -3 + *(9, S, u4) + *(phi0 ^ 2, u2, -1 + *(2, u, xi))) + *(u, *(3, Sh) + *(2, xi, xi_y, phi0 ^ 2) + *(9, S, u, xi_y)), coshGu4, expB1u4), expB2u4) + *(1/9, (3 + *(3, S, u4) + *(3, u, xi) + *(phi0 ^ 2, u2, -1 + *(u, xi))) ^ 3, Gp + *(-4, G, u), *(3, (1 + *(u, xi)) ^ 2) + *(-1, phi0 ^ 2, u2) + *(6, Sd, u4), expB1u4)
+
+    nothing
+end

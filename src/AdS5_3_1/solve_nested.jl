@@ -701,8 +701,8 @@ function solve_B2d!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVa
     nothing
 end
 
-function solve_B1dGd_outer!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVars,
-                            nested::Nested)
+function solve_B1dGd!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVars,
+                      nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -1297,7 +1297,7 @@ function solve_nested!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gauge
     # therefore @spawn, here
     @sync begin
         @spawn solve_B2d!(bulk, BC, gauge, base, nested)
-        # @spawn solve_B1dGd!(bulk, BC, gauge, base, nested)
+        @spawn solve_B1dGd!(bulk, BC, gauge, base, nested)
         # @spawn solve_phid!(bulk, BC, gauge, base, nested)
     end
 

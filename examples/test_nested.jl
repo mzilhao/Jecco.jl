@@ -181,13 +181,8 @@ i = 2
 u = systems[i].ucoord[:]
 
 bulk = bulks[i]
-BC   = BCs[i]
-dBC  = dBCs[i]
-nested = nesteds[i]
+# BC   = BCs[i]
+# dBC  = dBCs[i]
+# nested = nesteds[i]
 
-bulk.B2d[:,1,1]
-
-# Jecco.AdS5_3_1.solve_S!(bulk, BC, dBC, gauge, base, nested)
-# Jecco.AdS5_3_1.solve_Fxy!(bulk, BC, dBC, gauge, base, nested)
-# Jecco.AdS5_3_1.solve_Sd!(bulk, BC, gauge, base, nested)
-# Jecco.AdS5_3_1.solve_B2d!(bulk, BC, gauge, base, nested)
+bulk.Gd[:,1,1]
