@@ -186,4 +186,4 @@ bulk = bulks[i]
 # dBC  = dBCs[i]
 # nested = nesteds[i]
 
-bulk.Gd[:,1,1]
+bulk.A[:,1,1]

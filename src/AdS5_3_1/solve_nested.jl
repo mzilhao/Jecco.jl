@@ -1060,8 +1060,8 @@ function solve_phid!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseV
     nothing
 end
 
-function solve_A_outer!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
-                        base::BaseVars, nested::Nested)
+function solve_A!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
+                  base::BaseVars, nested::Nested)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -1307,8 +1307,8 @@ function solve_nested!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::Gauge
         @spawn solve_phid!(bulk, BC, gauge, base, nested)
     end
 
-    # # solve for A
-    # solve_A!(bulk, BC, dBC, gauge, base, nested)
+    # solve for A
+    solve_A!(bulk, BC, dBC, gauge, base, nested)
 
     nothing
 end
@@ -1407,6 +1407,8 @@ function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars
             BC.B1d[i,j] = -2 * b14
             BC.Gd[i,j]  = -2 * g4
 
+            BC.A[i,j]  = a4
+            dBC.A[i,j] = -2 * a4 * xi
         end
     end
 
@@ -1431,11 +1433,11 @@ function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars
     nothing
 end
 
-
-# TODO
 function set_outerBCs!(BC::BulkVars{Outer}, dBC::BulkVars{Outer}, bulk::BulkVars{Inner},
                        gauge::GaugeVars, base::BaseVars, nested::Nested)
-    _, Nx, Ny = size(nested.sys)
+    Nu, Nx, Ny = size(nested.sys)
+    Du = nested.sys.Du
+
     phi0 = base.phi0
 
     # we are here assuming that the inner and outer grids merely touch at the
@@ -1454,10 +1456,12 @@ function set_outerBCs!(BC::BulkVars{Outer}, dBC::BulkVars{Outer}, bulk::BulkVars
             B2d    = bulk.B2d[end,i,j]
             Gd     = bulk.Gd[end,i,j]
             phid   = bulk.phid[end,i,j]
+            A      = bulk.A[end,i,j]
 
             S_u    = nested.Du_S[end,i,j]
             Fx_u   = nested.Du_Fx[end,i,j]
             Fy_u   = nested.Du_Fy[end,i,j]
+            A_u    = Du(bulk.A, Nu,i,j)
 
             BC.S[i,j]  = S_inner_to_outer(S, u0, xi, phi0)
             dBC.S[i,j] = S_u_inner_to_outer(S_u, S, u0, xi, phi0)
@@ -1475,11 +1479,11 @@ function set_outerBCs!(BC::BulkVars{Outer}, dBC::BulkVars{Outer}, bulk::BulkVars
             BC.Gd[i,j]  = Bd_inner_to_outer(Gd, u0)
 
             BC.phid[i,j] = phid_inner_to_outer(phid, u0, phi0)
+
+            BC.A[i,j]  = A_inner_to_outer(A, u0, xi, phi0)
+            dBC.A[i,j] = A_u_inner_to_outer(A_u, A, u0, xi, phi0)
         end
     end
-
-    BC.A  .= 1.0/(u0*u0)
-    dBC.A .= -2.0/(u0*u0*u0)
 
     nothing
 end
@@ -1497,7 +1501,6 @@ function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, boundary::Bound
 
     solve_nested!(bulks[1], BCs[1], dBCs[1], gauge, base, nesteds[1])
 
-    # TODO: this function
     set_outerBCs!(BCs[2], dBCs[2], bulks[1], gauge, base, nesteds[1])
 
     for i in 2:Nsys-1
