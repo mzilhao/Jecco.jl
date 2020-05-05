@@ -917,6 +917,12 @@ function solve_phid!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseV
 
     phi0  = base.phi0
 
+    # if phi0 = 0 set phid to zero and return
+    if abs(phi0) < 1e-9
+        fill!(bulk.phid, 0)
+        return
+    end
+
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
             id  = Threads.threadid()
@@ -1406,18 +1412,19 @@ function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars
 
     # separate the phid case, since the if statement may prevent loop
     # vectorization
+
+    if abs(phi0) < 1e-9
+        fill!(BC.phid, 0)
+        return
+    end
+
     @fastmath @inbounds for j in 1:Ny
-        @inbounds for i in 1:Nx
+        @inbounds @simd for i in 1:Nx
             xi      = gauge.xi[1,i,j]
             phi     = bulk.phi[1,i,j]
-            phi2    = phi03 * phi   - phi0 * xi * xi
+            phi2    = phi03 * phi - phi0 * xi * xi
 
-            if abs(phi03) > 1e-9
-                BC.phid[i,j] = 1/3 - 3/2 * phi2 / phi03
-            else
-                BC.phid[i,j] = 0
-            end
-
+            BC.phid[i,j] = 1/3 - 3/2 * phi2 / phi03
         end
     end
 

@@ -95,7 +95,7 @@ par_grid = ParamGrid(
 
 par_base = ParamBase(
     which_potential = :zero,
-    phi0            = 1.0,
+    phi0            = 0.0,
 )
 
 par_evol = ParamEvol(
