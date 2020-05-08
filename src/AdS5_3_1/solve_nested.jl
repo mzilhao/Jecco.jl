@@ -1357,6 +1357,8 @@ function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars
     @fastmath @inbounds @threads for j in 1:Ny
         @inbounds @simd for i in 1:Nx
             xi      = gauge.xi[1,i,j]
+            xi3     = xi*xi*xi
+
             phi     = bulk.phi[1,i,j]
             phi_u   = nested.Du_phi[1,i,j]
 
@@ -1375,6 +1377,9 @@ function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars
             fx2     = boundary.fx2[1,i,j]
             fy2     = boundary.fy2[1,i,j]
 
+            fx2_x   = Dx(boundary.fx2, 1,i,j)
+            fy2_y   = Dy(boundary.fy2, 1,i,j)
+
             b14_x   = Dx(bulk.B1,1,i,j)
             b24_x   = Dx(bulk.B2,1,i,j)
             phi_x   = Dx(bulk.phi,1,i,j)
@@ -1385,11 +1390,12 @@ function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars
             phi_y   = Dy(bulk.phi,1,i,j)
             g4_y    = Dy(bulk.G,1,i,j)
 
+            phi2    = phi03 * phi - phi0 * xi * xi
             phi2_x  = phi03 * phi_x - 2 * phi0 * xi * xi_x
             phi2_y  = phi03 * phi_y - 2 * phi0 * xi * xi_y
 
             BC.S[i,j]  = phi04 * (1 - 18 * phi) / 54
-            dBC.S[i,j] = phi02 * (12 * xi * xi * xi +
+            dBC.S[i,j] = phi02 * (-12 * xi3 +
                                   phi02 * xi * (18 * phi - 5) -
                                   24 * phi02 * phi_u) / 90
 
@@ -1408,7 +1414,9 @@ function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars
             BC.Gd[i,j]  = -2 * g4
 
             BC.A[i,j]  = a4
-            dBC.A[i,j] = -2 * a4 * xi
+            dBC.A[i,j] = -2 * xi * a4 - 2 * phi0 * xi * phi2 -
+                2/3 * (phi02 * xi3 + fx2_x + fy2_y + phi04 * phi_u)
+
         end
     end
 
