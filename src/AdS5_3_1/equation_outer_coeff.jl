@@ -3,9 +3,9 @@
 # V(phi)  = VV(phi)
 # Vp(phi) = ∂(VV)(phi)
 
-# FIXME
-U(phi)  = 0
-Up(phi) = 0
+# FIXME. defined in the inner_coeff script.
+# U(phi)  = 0
+# Up(phi) = 0
 
 
 #= tilde, hat, etc, definitions
