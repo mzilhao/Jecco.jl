@@ -93,11 +93,6 @@ par_grid = ParamGrid(
     u_inner_nodes    =  12,
 )
 
-par_base = ParamBase(
-    which_potential = :zero,
-    phi0            = 0.0,
-)
-
 par_evol = ParamEvol(
     ODE_method = "AB3",
     # ODE_method = "RK4",
@@ -106,14 +101,15 @@ par_evol = ParamEvol(
 )
 
 
-# define potential
-Jecco.AdS5_3_1.setup(par_base)
+
+potential   = ZeroPotential()
+phi0        = 0.0
+
+base  = BaseVars(potential, phi0)
 
 
 kappa = par_evol.kappa
-phi0  = par_base.phi0
 
-base  = BaseVars(phi0)
 
 systems = Jecco.AdS5_3_1.create_systems(par_grid)
 

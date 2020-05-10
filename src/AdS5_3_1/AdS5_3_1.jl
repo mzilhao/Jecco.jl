@@ -8,8 +8,7 @@ struct Inner <: GridType end
 struct Outer <: GridType end
 
 export ParamBase, ParamGrid, ParamID, ParamEvol, ParamIO
-export Potential
-export VV # this will contain the potential
+export Potential, ZeroPotential
 export Inner, Outer, System
 export BulkVars, BoundaryVars, GaugeVars, BaseVars
 
@@ -89,13 +88,9 @@ function GaugeVars(xi::Array{T,N}, kappa::T) where {T<:Number,N}
     GaugeVars{typeof(xi), typeof(kappa)}(xi, kappa)
 end
 
-
-function setup(par_base)
-    global VV = Potential(par_base)
-end
-
-struct BaseVars{T}
-    phi0  :: T
+struct BaseVars{PT,T}
+    potential :: PT
+    phi0      :: T
 end
 
 
@@ -179,7 +174,9 @@ struct FVars{T<:Real} <: AbstractVars{T}
 end
 
 
-struct SdVars{T<:Real} <: AbstractVars{T}
+struct SdVars{T<:Real,PT} <: AbstractVars{T}
+    potential:: PT
+
     phi0     :: T
 
     u        :: T
@@ -352,7 +349,9 @@ struct BdGVars{T<:Real} <: AbstractVars{T}
 end
 
 
-struct phidVars{T<:Real} <: AbstractVars{T}
+struct phidVars{T<:Real,PT} <: AbstractVars{T}
+    potential:: PT
+
     phi0     :: T
 
     u        :: T
@@ -440,7 +439,9 @@ struct phidVars{T<:Real} <: AbstractVars{T}
 end
 
 
-struct AVars{T<:Real} <: AbstractVars{T}
+struct AVars{T<:Real,PT} <: AbstractVars{T}
+    potential:: PT
+
     phi0     :: T
 
     u        :: T

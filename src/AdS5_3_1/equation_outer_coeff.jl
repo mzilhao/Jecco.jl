@@ -1,13 +1,4 @@
 
-
-# V(phi)  = VV(phi)
-# Vp(phi) = ∂(VV)(phi)
-
-# FIXME. defined in the inner_coeff script.
-# U(phi)  = 0
-# Up(phi) = 0
-
-
 #= tilde, hat, etc, definitions
 
 We use these macros as shorthand notation. For instance
@@ -135,7 +126,7 @@ end
 
 function Sd_eq_coeff!(ABCS::Vector, vars::SdVars, ::Outer)
     @unpack (
-        phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+        potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
         B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,
         B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
         B1pp   ,    B2pp   ,    Gpp    ,    phipp  ,    Spp    ,    Fxpp   ,    Fypp   ,
@@ -186,7 +177,7 @@ function Sd_eq_coeff!(ABCS::Vector, vars::SdVars, ::Outer)
     @cross_outer("G")
     @cross_outer("S")
 
-    VV  = -3 - 3/2 * phi0 * u * (1 - 2*u*xi) + u*u*u*u * U(phi)
+    VV  = -3 - 3/2 * phi0 * u * (1 - 2*u*xi) + u*u*u*u * UU(phi, potential)
 
     # VVp = -3 * phi0*u * (1 - u*xi + phi0*phi0 * u*u * phi) + u*u*u * Up(phi)
 
@@ -390,7 +381,7 @@ end
 
 function phid_eq_coeff!(ABCS::Vector, vars::phidVars, ::Outer)
     @unpack (
-        phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+        potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
         B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
         B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
         B1pp   ,    B2pp   ,    Gpp    ,    phipp  ,    Spp    ,    Fxpp   ,    Fypp   ,
@@ -442,9 +433,9 @@ function phid_eq_coeff!(ABCS::Vector, vars::phidVars, ::Outer)
     # @cross_outer("S")
     @cross_outer("phi")
 
-    # VV  = -3 - 3/2 * phi0 * u * (1 - 2*u*xi) + u*u*u*u * U(phi)
+    # VV  = -3 - 3/2 * phi0 * u * (1 - 2*u*xi) + u*u*u*u * UU(phi, potential)
 
-    VVp = -3 * phi0*u * (1 - u*xi + phi0*phi0 * u*u * phi) + u*u*u * Up(phi)
+    VVp = -3 * phi0*u * (1 - u*xi + phi0*phi0 * u*u * phi) + u*u*u * UUp(phi, potential)
 
 
 
@@ -471,7 +462,7 @@ end
 
 function A_eq_coeff!(ABCS::Vector, vars::AVars, ::Outer)
     @unpack (
-        phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+        potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
         B1   , B2   , G   , phi   , S    , Fx    , Fy    , Sd, B1d, B2d, Gd, phid,
         B1p  , B2p  , Gp  , phip  , Sp   , Fxp   , Fyp   ,
         B1pp , B2pp , Gpp , phipp , Spp  , Fxpp  , Fypp  ,
@@ -523,7 +514,7 @@ function A_eq_coeff!(ABCS::Vector, vars::AVars, ::Outer)
     @cross_outer("S")
     @cross_outer("phi")
 
-    VV  = -3 - 3/2 * phi0 * u * (1 - 2*u*xi) + u*u*u*u * U(phi)
+    VV  = -3 - 3/2 * phi0 * u * (1 - 2*u*xi) + u*u*u*u * UU(phi, potential)
 
     # VVp = -3 * phi0*u * (1 - u*xi + phi0*phi0 * u*u * phi) + u*u*u * Up(phi)
 

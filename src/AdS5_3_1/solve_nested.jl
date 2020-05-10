@@ -395,7 +395,8 @@ function solve_Sd!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVar
     Dy  = sys.Dy
     Dyy = sys.Dyy
 
-    phi0  = base.phi0
+    potential = base.potential
+    phi0      = base.phi0
 
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
@@ -492,7 +493,7 @@ function solve_Sd!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseVar
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
                 vars = SdVars(
-                    phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+                    potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
                     B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,
                     B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
                     B1pp   ,    B2pp   ,    Gpp    ,    phipp  ,    Spp    ,    Fxpp   ,    Fypp   ,
@@ -915,7 +916,8 @@ function solve_phid!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseV
     Dy  = sys.Dy
     Dyy = sys.Dyy
 
-    phi0  = base.phi0
+    potential = base.potential
+    phi0      = base.phi0
 
     # if phi0 = 0 set phid to zero and return
     if abs(phi0) < 1e-9
@@ -1020,7 +1022,7 @@ function solve_phid!(bulk::BulkVars, BC::BulkVars, gauge::GaugeVars, base::BaseV
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
                 vars = phidVars(
-                    phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+                    potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
                     B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
                     B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
                     B1pp   ,    B2pp   ,    Gpp    ,    phipp  ,    Spp    ,    Fxpp   ,    Fypp   ,
@@ -1091,7 +1093,8 @@ function solve_A!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
     Dy  = sys.Dy
     Dyy = sys.Dyy
 
-    phi0  = base.phi0
+    potential = base.potential
+    phi0      = base.phi0
 
     @fastmath @inbounds @threads for j in eachindex(yy)
         @inbounds for i in eachindex(xx)
@@ -1194,7 +1197,7 @@ function solve_A!(bulk::BulkVars, BC::BulkVars, dBC::BulkVars, gauge::GaugeVars,
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
                 vars = AVars(
-                    phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+                    potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
                     B1   , B2   , G   , phi   , S    , Fx    , Fy    , Sd, B1d, B2d, Gd, phid,
                     B1p  , B2p  , Gp  , phip  , Sp   , Fxp   , Fyp   ,
                     B1pp , B2pp , Gpp , phipp , Spp  , Fxpp  , Fypp  ,
