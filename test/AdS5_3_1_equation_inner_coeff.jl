@@ -11,11 +11,11 @@ BB    = zeros(2,2)
 CC    = zeros(2,2)
 SS    = zeros(2)
 
-svars  = Jecco.AdS5_3_1.SVars(ones(11)...)
-fvars  = Jecco.AdS5_3_1.FVars(ones(37)...)
-sdvars = Jecco.AdS5_3_1.SdVars(ZeroPotential(), ones(70)...)
-
-bdgvars = Jecco.AdS5_3_1.BdGVars(ones(71)...)
+svars    = Jecco.AdS5_3_1.SVars(ones(11)...)
+fvars    = Jecco.AdS5_3_1.FVars(ones(37)...)
+sdvars   = Jecco.AdS5_3_1.SdVars(ZeroPotential(), ones(70)...)
+bdgvars  = Jecco.AdS5_3_1.BdGVars(ones(71)...)
+phidvars = Jecco.AdS5_3_1.phidVars(ZeroPotential(), ones(72)...)
 
 
 @testset "S equation inner grid coefficients:" begin
@@ -58,5 +58,12 @@ end
     @test all( SS .≈ [-143418.3032738444, -58153.507064913196] )
 end
 @btime Jecco.AdS5_3_1.B1dGd_eq_coeff!($AA, $BB, $CC, $SS, $bdgvars, Inner())
+
+@testset "phid equations inner grid coefficients:" begin
+    Jecco.AdS5_3_1.phid_eq_coeff!(ABCS, phidvars, Inner())
+
+    @test all( ABCS .≈ [0.0, -587.1488749471532, -1565.7303331924084, 12974.144452661105] )
+end
+@btime Jecco.AdS5_3_1.phid_eq_coeff!($ABCS, $phidvars, Inner())
 
 nothing
