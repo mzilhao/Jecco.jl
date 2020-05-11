@@ -11,8 +11,9 @@ BB    = zeros(2,2)
 CC    = zeros(2,2)
 SS    = zeros(2)
 
-svars = Jecco.AdS5_3_1.SVars(ones(11)...)
-fvars = Jecco.AdS5_3_1.FVars(ones(37)...)
+svars  = Jecco.AdS5_3_1.SVars(ones(11)...)
+fvars  = Jecco.AdS5_3_1.FVars(ones(37)...)
+sdvars = Jecco.AdS5_3_1.SdVars(ZeroPotential(), ones(70)...)
 
 
 @testset "S equation inner grid coefficients:" begin
@@ -31,3 +32,10 @@ end
     @test all( SS .≈ [9577.64621761626, 3981.7746343640238])
 end
 @btime Jecco.AdS5_3_1.Fxy_eq_coeff!($AA, $BB, $CC, $SS, $fvars, Inner())
+
+@testset "Sd equation inner grid coefficients:" begin
+    Jecco.AdS5_3_1.Sd_eq_coeff!(ABCS, sdvars, Inner())
+
+    @test all( ABCS .≈ [0.0, -880.7233124207306, -2544.311791437666, 279203.2839670398] )
+end
+@btime Jecco.AdS5_3_1.Sd_eq_coeff!($ABCS, $sdvars, Inner())
