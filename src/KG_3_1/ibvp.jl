@@ -1,5 +1,5 @@
 
-using DifferentialEquations
+using OrdinaryDiffEq
 
 function unpack_dom(ucoord)
     Nsys = length(ucoord)
