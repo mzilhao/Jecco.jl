@@ -9,41 +9,17 @@ abstract type IBVP{T} end
     AH_pos        :: T   = 1.0
 end
 
-# struct EvolVars{GT<:GridType,T}
-#     gridtype :: GT
-#     B1       :: T
-#     B2       :: T
-#     G        :: T
-#     phi      :: T
-#     a4       :: T
-#     fx2      :: T
-#     fy2      :: T
-#     xi       :: T
-# end
-
-"""
-Needs a field f
-"""
-abstract type AbstractEvolVars end
-
-
-struct EvolVars{A} <: AbstractEvolVars
-    f :: A
-    function EvolVars(B1::T1, B2::T1, G::T1, phi::T1, a4::T2, fx2::T2, fy2::T2, xi::T2) where {T1,T2}
-        f = VectorOfArray([B1, B2, G, phi, a4, fx2, fy2, xi])
-        new{typeof(f)}(f)
-    end
+struct EvolVars{GT<:GridType,T}
+    gridtype :: GT
+    B1       :: T
+    B2       :: T
+    G        :: T
+    phi      :: T
+    a4       :: T
+    fx2      :: T
+    fy2      :: T
+    xi       :: T
 end
-
-getB1(f::EvolVars)   = f.f[1]
-getB2(f::EvolVars)   = f.f[2]
-getG(f::EvolVars)    = f.f[3]
-getphi(f::EvolVars)  = f.f[4]
-geta4(f::EvolVars)   = f.f[5]
-getfx2(f::EvolVars)  = f.f[6]
-getfy2(f::EvolVars)  = f.f[7]
-getxi(f::EvolVars)   = f.f[8]
-
 
 function init!(f::EvolVars, sys::System, ibvp::BlackBrane)
     # Nu, Nx, Ny = size(sys)
@@ -56,14 +32,14 @@ function init!(f::EvolVars, sys::System, ibvp::BlackBrane)
 
     xi0 = (-a40)^0.25 - 1/AH_pos
 
-    B1  = getB1(f)
-    B2  = getB2(f)
-    G   = getG(f)
-    phi = getphi(f)
-    a4  = geta4(f)
-    fx2 = getfx2(f)
-    fy2 = getfy2(f)
-    xi  = getxi(f)
+    B1  = f.B1
+    B2  = f.B2
+    G   = f.G
+    phi = f.phi
+    a4  = f.a4
+    fx2 = f.fx2
+    fy2 = f.fy2
+    xi  = f.xi
 
     fill!(B1,  0)
     fill!(B2,  0)
@@ -97,6 +73,8 @@ function init(sys::System, ibvp::IBVP{T}) where{T}
     fy2 = zeros(T, 1, Nx, Ny)
     xi  = zeros(T, 1, Nx, Ny)
 
-    f = EvolVars(B1, B2, G, phi, a4, fx2, fy2, xi)
+    f = EvolVars(sys.gridtype, B1, B2, G, phi, a4, fx2, fy2, xi)
     init!(f, sys, ibvp)
 end
+
+init(systems::Vector, ibvp::IBVP) = [init(sys, ibvp) for sys in systems]
