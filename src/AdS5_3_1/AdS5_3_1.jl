@@ -10,6 +10,7 @@ struct Outer <: GridType end
 
 export ParamBase, Grid3D, ParamID, ParamEvol, ParamIO
 export Potential, ZeroPotential
+export BlackBrane, init!, init
 export Inner, Outer, System
 export BulkVars, BoundaryVars, GaugeVars, BaseVars
 
