@@ -2,6 +2,7 @@ module AdS5_3_1
 
 using Jecco
 using Parameters
+using RecursiveArrayTools
 
 abstract type GridType end
 struct Inner <: GridType end
@@ -535,7 +536,7 @@ end
 
 include("param.jl")
 include("system.jl")
-# include("initial_data.jl")
+include("initial_data.jl")
 include("potential.jl")
 # include("dphidt.jl")
 include("equation_inner_coeff.jl")
