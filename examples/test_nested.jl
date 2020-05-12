@@ -77,7 +77,7 @@ end
 IDtest0(systems::Vector{T}) where {T<:System} = [IDtest0(sys) for sys in systems]
 
 
-par_grid = ParamGrid(
+par_grid = Grid3D(
     x_min            = -5.0,
     x_max            =  5.0,
     x_nodes          =  128,
@@ -111,7 +111,7 @@ base  = BaseVars(potential, phi0)
 kappa = par_evol.kappa
 
 
-systems = Jecco.AdS5_3_1.create_systems(par_grid)
+systems = Jecco.AdS5_3_1.Systems(par_grid)
 
 sys = systems[1]
 

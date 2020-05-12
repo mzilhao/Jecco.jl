@@ -1,21 +1,17 @@
 
 import Base: size
 
-
-#= Grid
-
-We use a 3D grid with the following configuration. x and y are periodic
-coordinates, uniformly spaced. The u coordinate is split into an "inner" and
-"outer" portion; we therefore will have an inner and an outer grid. The outer
-grid is further decomposed into several u-domains, and in each of these domains
-the u-direction uses Gauss-Lobatto points.
+"""
+3D grid with the following configuration. x and y are periodic coordinates,
+uniformly spaced. The u coordinate is split into an "inner" and "outer" portion;
+we therefore will have an inner and an outer grid. The outer grid is further
+decomposed into several u-domains, and in each of these domains the u-direction
+uses Gauss-Lobatto points.
 
 Since the boundary conditions for the nested system are always specified at u=0,
 the inner grid necessarily starts at u=0 and finishes at u=u_outer_min.
-
-=#
-
-@with_kw struct ParamGrid
+"""
+@with_kw struct Grid3D
     x_min            :: Float64
     x_max            :: Float64
     x_nodes          :: Int
@@ -28,6 +24,8 @@ the inner grid necessarily starts at u=0 and finishes at u=u_outer_min.
     u_outer_nodes    :: Int # number of points per domain
     u_inner_nodes    :: Int
 end
+
+# TODO: add a new method "Grid" acting on the above type
 
 
 struct System{GT,Cu,Cx,Cy,Du,Dx,Dy}
@@ -62,7 +60,7 @@ end
 
 size(sys::System) = (sys.ucoord.nodes, sys.xcoord.nodes, sys.ycoord.nodes)
 
-function create_systems(p::ParamGrid)
+function Systems(p::Grid3D)
     u_inner_coord = GaussLobatto{1}("u", 0.0, p.u_outer_min, p.u_inner_nodes)
 
     N_outer_sys = p.u_outer_domains

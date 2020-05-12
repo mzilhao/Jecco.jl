@@ -8,7 +8,7 @@ abstract type GridType end
 struct Inner <: GridType end
 struct Outer <: GridType end
 
-export ParamBase, ParamGrid, ParamID, ParamEvol, ParamIO
+export ParamBase, Grid3D, ParamID, ParamEvol, ParamIO
 export Potential, ZeroPotential
 export Inner, Outer, System
 export BulkVars, BoundaryVars, GaugeVars, BaseVars
