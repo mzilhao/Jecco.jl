@@ -7,19 +7,19 @@ using HDF5
     umax   = 2.0
     unodes = 16
 
-    ucoord = SpectralCoord("u", umin, umax, unodes)
+    ucoord = GaussLobatto("u", umin, umax, unodes)
 
     xmin   = -10.0
     xmax   =  10.0
     xnodes =  20
 
-    xcoord = CartCoord{2}("x", xmin, xmax, xnodes, endpoint=false)
+    xcoord = Cartesian{2}("x", xmin, xmax, xnodes, endpoint=false)
 
     ymin   = -20.0
     ymax   =  20.0
     ynodes =  20
 
-    ycoord = CartCoord{3}("y", ymin, ymax, ynodes, endpoint=false)
+    ycoord = Cartesian{3}("y", ymin, ymax, ynodes, endpoint=false)
 
     f     = [0.5 * x1.^2 .* cos.(x2) .* sin.(x3) for x1 in ucoord[:], x2 in xcoord[:], x3 in ycoord[:]]
     g     = [666 for x1 in ucoord[:], x2 in xcoord[:], x3 in ycoord[:]]
@@ -29,7 +29,7 @@ using HDF5
     mins      = Jecco.min(grid)
     deltas    = Jecco.delta(grid)
     maxs      = Jecco.max(grid)
-    gridtypes = string.(Jecco.coord_type(grid))
+    gridtypes = Jecco.coord_type(grid)
     names     = Jecco.name(grid)
 
 

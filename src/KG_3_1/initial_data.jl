@@ -10,7 +10,7 @@ function initial_data(sys, p::ParamID)
 end
 
 function uniform2D(sys::System, p::ParamID)
-    Nu, Nx, Ny = size(sys.grid)
+    Nu, Nx, Ny = size(sys)
 
     phif  = zeros(Nu, Nx, Ny)
 
@@ -34,7 +34,10 @@ sine2D(x, y, Lx::Real, Ly::Real, kx::Integer, ky::Integer) =
              sin( 2*π * kx / Lx * x ) * sin( 2*π * ky / Ly * y )
 
 function sine2D(sys::System, p::ParamID)
-    Nu, Nx, Ny = size(sys.grid)
+    Nu, Nx, Ny = size(sys)
+    ucoord = sys.ucoord
+    xcoord = sys.xcoord
+    ycoord = sys.ycoord
 
     phif  = zeros(Nu, Nx, Ny)
 
@@ -47,7 +50,9 @@ function sine2D(sys::System, p::ParamID)
     for j in 1:Ny
         for i in 1:Nx
             for a in 1:Nu
-                u,x,y = sys.grid[a,i,j]
+                u = ucoord[a]
+                x = xcoord[i]
+                y = ycoord[j]
                 phif[a,i,j] = sine2D(x, y, Lx, Ly, kx, ky)
             end
         end
@@ -59,6 +64,6 @@ end
 sine2D(systems::Array, p::ParamID) = [sine2D(sys, p) for sys in systems]
 
 function ones2D(sys::System)
-    Nu, Nx, Ny = size(sys.grid)
+    Nu, Nx, Ny = size(sys)
     ones(Nx, Ny)
 end

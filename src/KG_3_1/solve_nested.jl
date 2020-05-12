@@ -38,8 +38,10 @@ struct Nested{S,D,T<:Real}
     aux_acc :: Vector{Aux{T}}
 end
 function Nested(sys::System)
-    Nu, Nx, Ny = size(sys.grid)
-    uu, xx, yy = sys.grid[:]
+    Nu, Nx, Ny = size(sys)
+    uu   = sys.ucoord[:]
+    xx   = sys.xcoord[:]
+    yy   = sys.ycoord[:]
 
     Du_phi    = zeros(Nu, Nx, Ny)
     Dxx_phi   = zeros(Nu, Nx, Ny)

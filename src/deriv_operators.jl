@@ -1,11 +1,14 @@
 
-import Base: *
+import Base: *, copyto!
 import LinearAlgebra: mul!
+using SparseArrays
 
 abstract type AbstractDerivOperator{T,N} end
 
-D1_42_weights() = [1.0, -8.0, 0.0, 8.0, -1.0] ./ 12.0
+D1_21_weights() = [-1.0,  0.0, 1.0] ./ 2.0
+D2_21_weights() = [ 1.0, -2.0, 1.0]
 
+D1_42_weights() = [ 1.0, -8.0,   0.0,  8.0, -1.0] ./ 12.0
 D2_42_weights() = [-1.0, 16.0, -30.0, 16.0, -1.0] ./ 12.0
 
 
@@ -34,19 +37,26 @@ function CenteredDiff{N}(derivative_order::Int,
     stencil_length = derivative_order + approximation_order - 1 +
         (derivative_order+approximation_order)%2
 
-
     # TODO: this can all be improved...
 
-    if approximation_order != 4
-        error("approximation_order not implemented yet")
-    end
-
-    if derivative_order == 1
-        weights = D1_42_weights()
-    elseif derivative_order == 2
-        weights = D2_42_weights()
+    if approximation_order == 2
+        if derivative_order == 1
+            weights = D1_21_weights()
+        elseif derivative_order == 2
+            weights = D2_21_weights()
+        else
+            error("derivative_order not implemented yet")
+        end
+    elseif approximation_order == 4
+        if derivative_order == 1
+            weights = D1_42_weights()
+        elseif derivative_order == 2
+            weights = D2_42_weights()
+        else
+            error("derivative_order not implemented yet")
+        end
     else
-        error("derivative_order not implemented yet")
+        error("approximation_order not implemented yet")
     end
 
     stencil_coefs = (1/dx^derivative_order) .* weights
@@ -264,7 +274,7 @@ function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S}, x::Abstr
     sum_ij
 end
 
-# and now for any Array. maybe we could even remove the method above
+# and now for any Array.
 
 function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S},
                                          f::AbstractArray{T,M},
@@ -315,3 +325,22 @@ function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S},
 
     sum_ij
 end
+
+
+# Casting to matrix types
+
+copyto!(M::AbstractMatrix{T}, A::SpectralDeriv) where {T<:Real} =
+    copyto!(M, A.D)
+
+function copyto!(M::AbstractMatrix{T}, A::FiniteDiffDeriv) where {T<:Real}
+    for idx in CartesianIndices(M)
+        M[idx] = A[idx.I...]
+    end
+    M
+end
+
+LinearAlgebra.Array(A::AbstractDerivOperator{T,N}) where {T,N} =
+    copyto!(zeros(T, A.len, A.len), A)
+
+SparseArrays.SparseMatrixCSC(A::FiniteDiffDeriv{T,N,T2,S}) where {T,N,T2,S} =
+    copyto!(spzeros(T, A.len, A.len), A)

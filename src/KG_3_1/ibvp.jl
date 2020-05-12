@@ -37,7 +37,7 @@ function ibvp(par_grid::ParamGrid, par_id::ParamID,
     systems = Jecco.KG_3_1.create_systems(par_grid)
     Nsys    = length(systems)
 
-    ucoords = [systems[i].grid.coords[1] for i in 1:Nsys]
+    ucoords = [systems[i].ucoord for i in 1:Nsys]
     unpack  = unpack_dom(ucoords)
 
     phi0s = initial_data(systems, par_id)
@@ -66,7 +66,7 @@ function ibvp(par_grid::ParamGrid, par_id::ParamID,
 
     phis = unpack(ID)
     fieldnames = ["phi c=$i" for i in 1:Nsys]
-    grids      = [systems[i].grid for i in 1:Nsys]
+    grids      = [Grid([sys.ucoord, sys.xcoord, sys.ycoord]) for sys in systems]
     fields     = [Jecco.Field(fieldnames[i], phis[i], grids[i]) for i in 1:Nsys]
 
     out  = Jecco.Output(par_io.folder, par_io.prefix, par_io.out_every, tinfo;

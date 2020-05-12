@@ -1,6 +1,7 @@
 
 @with_kw struct ParamBase
-    which_potential :: String
+    which_potential :: Symbol  = :zero
+    phi0            :: Float64 = 0.0
 end
 
 
@@ -39,10 +40,12 @@ end
     Ly          :: Float64  = 1.0
 end
 
+
 @with_kw struct ParamEvol
     dt          :: Float64
     tmax        :: Float64
     ODE_method  :: String   = "RK4"
+    kappa       :: Float64  = 1.0
 end
 
 @with_kw struct ParamIO
