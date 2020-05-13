@@ -54,6 +54,8 @@ getfx2s(f::ArrayPartition) = f.x[6]
 getfy2s(f::ArrayPartition) = f.x[7]
 getxis(f::ArrayPartition)  = f.x[8]
 
+unpack(f::ArrayPartition) = f.x
+
 
 function init!(f::EvolVars, sys::System, ibvp::BlackBrane)
     # Nu, Nx, Ny = size(sys)
