@@ -93,12 +93,12 @@ par_grid = Grid3D(
     u_inner_nodes    =  12,
 )
 
-par_evol = ParamEvol(
-    ODE_method = "AB3",
-    # ODE_method = "RK4",
-    dt      = 0.008,
-    tmax    = 1.0,
-)
+# par_evol = ParamEvol(
+#     ODE_method = "AB3",
+#     # ODE_method = "RK4",
+#     dt      = 0.008,
+#     tmax    = 1.0,
+# )
 
 
 
@@ -108,7 +108,7 @@ phi0        = 0.0
 base  = BaseVars(potential, phi0)
 
 
-kappa = par_evol.kappa
+kappa = 1.0
 
 
 systems = Jecco.AdS5_3_1.Systems(par_grid)

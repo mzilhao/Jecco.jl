@@ -9,63 +9,6 @@ abstract type IBVP{T} end
     AH_pos        :: T   = 1.0
 end
 
-struct EvolVars{T}
-    B1       :: T
-    B2       :: T
-    G        :: T
-    phi      :: T
-    a4       :: T
-    fx2      :: T
-    fy2      :: T
-    xi       :: T
-end
-
-getB1(evol::EvolVars)  = evol.B1
-getB2(evol::EvolVars)  = evol.B2
-getG(evol::EvolVars)   = evol.G
-getphi(evol::EvolVars) = evol.phi
-geta4(evol::EvolVars)  = evol.a4
-getfx2(evol::EvolVars) = evol.fx2
-getfy2(evol::EvolVars) = evol.fy2
-getxi(evol::EvolVars)  = evol.xi
-
-getB1(evols::AbstractVector{EvolVars{T}})  where T = VectorOfArray([evol.B1  for evol in evols])
-getB2(evols::AbstractVector{EvolVars{T}})  where T = VectorOfArray([evol.B2  for evol in evols])
-getG(evols::AbstractVector{EvolVars{T}})   where T = VectorOfArray([evol.G   for evol in evols])
-getphi(evols::AbstractVector{EvolVars{T}}) where T = VectorOfArray([evol.phi for evol in evols])
-geta4(evols::AbstractVector{EvolVars{T}})  where T = VectorOfArray([evol.a4  for evol in evols])
-getfx2(evols::AbstractVector{EvolVars{T}}) where T = VectorOfArray([evol.fx2 for evol in evols])
-getfy2(evols::AbstractVector{EvolVars{T}}) where T = VectorOfArray([evol.fy2 for evol in evols])
-getxi(evols::AbstractVector{EvolVars{T}})  where T = VectorOfArray([evol.xi  for evol in evols])
-
-pack(B1s, B2s, Gs, phis, a4s, fx2s, fy2s, xis) =
-    ArrayPartition(B1s, B2s, Gs, phis, a4s, fx2s, fy2s, xis)
-
-function pack(evols::AbstractVector{EvolVars{T}}) where T
-    B1s  = getB1(evols)
-    B2s  = getB2(evols)
-    Gs   = getG(evols)
-    phis = getphi(evols)
-    a4s  = geta4(evols)
-    fx2s = getfx2(evols)
-    fy2s = getfy2(evols)
-    xis  = getxi(evols)
-    pack(B1s, B2s, Gs, phis, a4s, fx2s, fy2s, xis)
-end
-
-
-getB1(f::ArrayPartition)  = f.x[1]
-getB2(f::ArrayPartition)  = f.x[2]
-getG(f::ArrayPartition)   = f.x[3]
-getphi(f::ArrayPartition) = f.x[4]
-geta4(f::ArrayPartition)  = f.x[5]
-getfx2(f::ArrayPartition) = f.x[6]
-getfy2(f::ArrayPartition) = f.x[7]
-getxi(f::ArrayPartition)  = f.x[8]
-
-unpack(f::ArrayPartition) = f.x
-
-
 function init!(f::EvolVars, sys::System, ibvp::BlackBrane)
     # Nu, Nx, Ny = size(sys)
     # ucoord = sys.ucoord
