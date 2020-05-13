@@ -32,6 +32,19 @@ getxis(evols::AbstractVector{EvolVars{T}})  where T = VectorOfArray([evol.xi  fo
 pack(B1s, B2s, Gs, phis, a4s, fx2s, fy2s, xis) =
     ArrayPartition(B1s, B2s, Gs, phis, a4s, fx2s, fy2s, xis)
 
+function pack(evols::AbstractVector{EvolVars{T}}) where T
+    B1s  = getB1s(evols)
+    B2s  = getB2s(evols)
+    Gs   = getGs(evols)
+    phis = getphis(evols)
+    a4s  = geta4s(evols)
+    fx2s = getfx2s(evols)
+    fy2s = getfy2s(evols)
+    xis  = getxis(evols)
+    pack(B1s, B2s, Gs, phis, a4s, fx2s, fy2s, xis)
+end
+
+
 getB1s(f::ArrayPartition)  = f.x[1]
 getB2s(f::ArrayPartition)  = f.x[2]
 getGs(f::ArrayPartition)   = f.x[3]
