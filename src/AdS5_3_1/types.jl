@@ -1,4 +1,9 @@
 
+abstract type GridType end
+struct Inner <: GridType end
+struct Outer <: GridType end
+
+
 struct EvolVars{T}
     B1       :: T
     B2       :: T
@@ -42,7 +47,6 @@ function pack(evols::AbstractVector{EvolVars{T}}) where T
     xis  = getxi(evols)
     pack(B1s, B2s, Gs, phis, a4s, fx2s, fy2s, xis)
 end
-
 
 getB1(f::ArrayPartition)  = f.x[1]
 getB2(f::ArrayPartition)  = f.x[2]
