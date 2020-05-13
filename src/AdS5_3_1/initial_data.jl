@@ -1,9 +1,4 @@
 
-"""
-Extend this type for different initial conditions
-"""
-abstract type IBVP{T} end
-
 @with_kw struct BlackBrane{T} <: IBVP{T}
     energy_dens   :: T   = 1.0
     AH_pos        :: T   = 1.0

@@ -3,6 +3,16 @@ abstract type GridType end
 struct Inner <: GridType end
 struct Outer <: GridType end
 
+"""
+Extend this type for different potential choices
+"""
+abstract type Potential end
+
+"""
+Extend this type for different initial conditions
+"""
+abstract type IBVP{T} end
+
 
 struct EvolVars{T}
     B1       :: T
