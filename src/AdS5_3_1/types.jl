@@ -145,9 +145,7 @@ end
 BoundaryVars(a4, fx2, fy2) = BoundaryVars{typeof(a4)}(a4, fx2, fy2)
 
 
-abstract type AbstractVars{T<:Real} end
-
-struct SVars{T<:Real} <: AbstractVars{T}
+struct SVars{T<:Real}
     phi0     :: T
 
     u        :: T
@@ -167,7 +165,7 @@ struct SVars{T<:Real} <: AbstractVars{T}
     phip     :: T
 end
 
-struct FVars{T<:Real} <: AbstractVars{T}
+struct FVars{T<:Real}
     phi0     :: T
 
     u        :: T
@@ -217,7 +215,7 @@ struct FVars{T<:Real} <: AbstractVars{T}
 end
 
 
-struct SdVars{T<:Real,PT} <: AbstractVars{T}
+struct SdVars{T<:Real,PT}
     potential:: PT
 
     phi0     :: T
@@ -305,7 +303,7 @@ struct SdVars{T<:Real,PT} <: AbstractVars{T}
 end
 
 
-struct BdGVars{T<:Real} <: AbstractVars{T}
+struct BdGVars{T<:Real}
     phi0     :: T
 
     u        :: T
@@ -392,7 +390,7 @@ struct BdGVars{T<:Real} <: AbstractVars{T}
 end
 
 
-struct phidVars{T<:Real,PT} <: AbstractVars{T}
+struct phidVars{T<:Real,PT}
     potential:: PT
 
     phi0     :: T
@@ -482,7 +480,7 @@ struct phidVars{T<:Real,PT} <: AbstractVars{T}
 end
 
 
-struct AVars{T<:Real,PT} <: AbstractVars{T}
+struct AVars{T<:Real,PT}
     potential:: PT
 
     phi0     :: T
