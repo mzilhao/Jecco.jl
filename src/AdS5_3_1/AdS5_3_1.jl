@@ -4,13 +4,6 @@ using Jecco
 using Parameters
 using RecursiveArrayTools
 
-export ParamBase, Grid3D, ParamID #, ParamEvol, ParamIO
-export Potential, ZeroPotential
-export BlackBrane, init!, init
-export Inner, Outer, System
-export EvolVars
-export BulkVars, BoundaryVars, GaugeVars, BaseVars
-
 
 include("types.jl")
 
@@ -27,5 +20,14 @@ include("solve_nested.jl")
 # include("rhs.jl")
 # include("run.jl")
 # include("ibvp.jl")
+
+
+export ParamBase, Grid3D, ParamID #, ParamEvol, ParamIO
+export Potential, ZeroPotential
+export BlackBrane, init!, init
+export Inner, Outer, System
+export EvolVars
+export BulkVars, BoundaryVars, GaugeVars, BaseVars
+
 
 end
