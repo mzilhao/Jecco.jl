@@ -9,8 +9,7 @@ abstract type IBVP{T} end
     AH_pos        :: T   = 1.0
 end
 
-struct EvolVars{GT<:GridType,T}
-    gridtype :: GT
+struct EvolVars{T}
     B1       :: T
     B2       :: T
     G        :: T
@@ -20,6 +19,28 @@ struct EvolVars{GT<:GridType,T}
     fy2      :: T
     xi       :: T
 end
+
+getB1s(evols::AbstractVector{EvolVars{T}})  where T = VectorOfArray([evol.B1  for evol in evols])
+getB2s(evols::AbstractVector{EvolVars{T}})  where T = VectorOfArray([evol.B2  for evol in evols])
+getGs(evols::AbstractVector{EvolVars{T}})   where T = VectorOfArray([evol.G   for evol in evols])
+getphis(evols::AbstractVector{EvolVars{T}}) where T = VectorOfArray([evol.phi for evol in evols])
+geta4s(evols::AbstractVector{EvolVars{T}})  where T = VectorOfArray([evol.a4  for evol in evols])
+getfx2s(evols::AbstractVector{EvolVars{T}}) where T = VectorOfArray([evol.fx2 for evol in evols])
+getfy2s(evols::AbstractVector{EvolVars{T}}) where T = VectorOfArray([evol.fy2 for evol in evols])
+getxis(evols::AbstractVector{EvolVars{T}})  where T = VectorOfArray([evol.xi  for evol in evols])
+
+pack(B1s, B2s, Gs, phis, a4s, fx2s, fy2s, xis) =
+    ArrayPartition(B1s, B2s, Gs, phis, a4s, fx2s, fy2s, xis)
+
+getB1s(f::ArrayPartition)  = f.x[1]
+getB2s(f::ArrayPartition)  = f.x[2]
+getGs(f::ArrayPartition)   = f.x[3]
+getphis(f::ArrayPartition) = f.x[4]
+geta4s(f::ArrayPartition)  = f.x[5]
+getfx2s(f::ArrayPartition) = f.x[6]
+getfy2s(f::ArrayPartition) = f.x[7]
+getxis(f::ArrayPartition)  = f.x[8]
+
 
 function init!(f::EvolVars, sys::System, ibvp::BlackBrane)
     # Nu, Nx, Ny = size(sys)
@@ -73,7 +94,7 @@ function init(sys::System, ibvp::IBVP{T}) where{T}
     fy2 = zeros(T, 1, Nx, Ny)
     xi  = zeros(T, 1, Nx, Ny)
 
-    f = EvolVars(sys.gridtype, B1, B2, G, phi, a4, fx2, fy2, xi)
+    f = EvolVars(B1, B2, G, phi, a4, fx2, fy2, xi)
     init!(f, sys, ibvp)
 end
 
