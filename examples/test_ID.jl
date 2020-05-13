@@ -31,17 +31,17 @@ systems = Jecco.AdS5_3_1.Systems(par_grid)
 
 evols = Jecco.AdS5_3_1.init(systems, BlackBrane())
 
-# B1s  = Jecco.AdS5_3_1.getB1s(evols)
-# B2s  = Jecco.AdS5_3_1.getB2s(evols)
-# Gs   = Jecco.AdS5_3_1.getGs(evols)
-# phis = Jecco.AdS5_3_1.getphis(evols)
-# a4s  = Jecco.AdS5_3_1.geta4s(evols)
-# fx2s = Jecco.AdS5_3_1.getfx2s(evols)
-# fy2s = Jecco.AdS5_3_1.getfy2s(evols)
-# xis  = Jecco.AdS5_3_1.getxis(evols)
+# B1s  = Jecco.AdS5_3_1.getB1(evols)
+# B2s  = Jecco.AdS5_3_1.getB2(evols)
+# Gs   = Jecco.AdS5_3_1.getG(evols)
+# phis = Jecco.AdS5_3_1.getphi(evols)
+# a4s  = Jecco.AdS5_3_1.geta4(evols)
+# fx2s = Jecco.AdS5_3_1.getfx2(evols)
+# fy2s = Jecco.AdS5_3_1.getfy2(evols)
+# xis  = Jecco.AdS5_3_1.getxi(evols)
 
 # f = Jecco.AdS5_3_1.pack(B1s, B2s, Gs, phis, a4s, fx2s, fy2s, xis)
 
 f = Jecco.AdS5_3_1.pack(evols)
 
-B1s_ = Jecco.AdS5_3_1.getB1s(f)
+B1s_ = Jecco.AdS5_3_1.getB1(f)
