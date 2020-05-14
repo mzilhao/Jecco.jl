@@ -4,7 +4,7 @@
     AH_pos        :: T   = 1.0
 end
 
-function init!(f::EvolVars, sys::System, ibvp::BlackBrane)
+function init_data!(f::EvolVars, sys::System, ibvp::BlackBrane)
     # Nu, Nx, Ny = size(sys)
     # ucoord = sys.ucoord
     # xcoord = sys.xcoord
@@ -36,7 +36,7 @@ function init!(f::EvolVars, sys::System, ibvp::BlackBrane)
     f
 end
 
-function init(sys::System, ibvp::IBVP{T}) where{T}
+function init_data(sys::System, ibvp::IBVP{T}) where{T}
     Nu, Nx, Ny = size(sys)
 
     B1  = zeros(T, Nu, Nx, Ny)
@@ -57,7 +57,7 @@ function init(sys::System, ibvp::IBVP{T}) where{T}
     xi  = zeros(T, 1, Nx, Ny)
 
     f = EvolVars(B1, B2, G, phi, a4, fx2, fy2, xi)
-    init!(f, sys, ibvp)
+    init_data!(f, sys, ibvp)
 end
 
-init(systems::Vector, ibvp::IBVP) = [init(sys, ibvp) for sys in systems]
+init_data(systems::Vector, ibvp::IBVP) = [init_data(sys, ibvp) for sys in systems]

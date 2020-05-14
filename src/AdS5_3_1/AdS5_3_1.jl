@@ -22,7 +22,7 @@ include("solve_nested.jl")
 
 export Grid3D
 export Potential, ZeroPotential
-export BlackBrane, init!, init
+export BlackBrane, init_data!, init_data
 export Inner, Outer, System
 export EvolVars
 export BulkVars, BoundaryVars, GaugeVars, BaseVars

@@ -2,6 +2,9 @@
 using Jecco
 using Jecco.AdS5_3_1
 
+using OrdinaryDiffEq
+# using RecursiveArrayTools
+
 par_grid = Grid3D(
     x_min            = -5.0,
     x_max            =  5.0,
@@ -19,29 +22,42 @@ par_grid = Grid3D(
 )
 
 
-potential   = ZeroPotential()
-phi0        = 0.0
-
-base  = BaseVars(potential, phi0)
-
 systems = Jecco.AdS5_3_1.Systems(par_grid)
 
-# sys = systems[1]
-# evol  = Jecco.AdS5_3_1.init(sys, BlackBrane())
+ibvp  = BlackBrane()
 
-evols = Jecco.AdS5_3_1.init(systems, BlackBrane())
+evols = init_data(systems, ibvp)
 
-# B1s  = Jecco.AdS5_3_1.getB1(evols)
-# B2s  = Jecco.AdS5_3_1.getB2(evols)
-# Gs   = Jecco.AdS5_3_1.getG(evols)
-# phis = Jecco.AdS5_3_1.getphi(evols)
-# a4s  = Jecco.AdS5_3_1.geta4(evols)
-# fx2s = Jecco.AdS5_3_1.getfx2(evols)
-# fy2s = Jecco.AdS5_3_1.getfy2(evols)
-# xis  = Jecco.AdS5_3_1.getxi(evols)
 
-# f = Jecco.AdS5_3_1.pack(B1s, B2s, Gs, phis, a4s, fx2s, fy2s, xis)
+abstract type AbstractEvolEq end
 
-f = Jecco.AdS5_3_1.pack(evols)
+struct EvolTest0 <: AbstractEvolEq end
 
-B1s_ = Jecco.AdS5_3_1.getB1(f)
+
+function get_evol_t!(evol_t::EvolVars, evol::EvolVars, sys, ::EvolTest0)
+    evol_t.B1  .= 0
+    evol_t.B2  .= 0
+    evol_t.G   .= 0
+    evol_t.phi .= 0
+    evol_t.a4  .= 0
+    evol_t.fx2 .= 0
+    evol_t.fy2 .= 0
+    evol_t.xi  .= 0
+    nothing
+end
+
+function rhs!(df, f, (sys, evoleq), t)
+    get_evol_t!(df, f, sys, evoleq)
+    nothing
+end
+
+evol = evols[1]
+sys  = systems[1]
+
+evoleq = EvolTest0()
+
+evol_dt = similar(evol)
+
+tspan = (0.0, 0.1)
+
+prob  = ODEProblem(rhs!, evol, tspan, (sys, evoleq))
