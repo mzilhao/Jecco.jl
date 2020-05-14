@@ -24,6 +24,20 @@ struct EvolVars{T} <: AbstractVector{T}
     fy2 :: Array{T,3}
     xi  :: Array{T,3}
 end
+
+"""
+    EvolVars{T}(undef, Nu, Nx, Ny)
+
+Construct a container of uninitialized Arrays to hold all the variables that are
+evolved in time: B1, B2, G, phi, a4, fx2, fy2, xi.
+
+xi, a4 and fx2, fy2 are automatically defined on a `(1,Nx,Ny)` grid, rather than
+a `(Nx,Ny)` one, so that the same Dx and Dy differential operators defined for
+the bulk quantities can also straightforwardly apply on them. Remember that the
+axis along which the operator applies is defined on the operator itself. So, by
+defining things this way, the Dx operator (which acts along the 2nd index) will
+also do the correct thing when acting on a4, fx2, fy2 and xi.
+"""
 function EvolVars{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Real}
     B1  = Array{T}(undef, Nu, Nx, Ny)
     B2  = Array{T}(undef, Nu, Nx, Ny)

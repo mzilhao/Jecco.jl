@@ -38,26 +38,8 @@ end
 
 function init_data(sys::System, ibvp::IBVP{T}) where{T}
     Nu, Nx, Ny = size(sys)
-
-    B1  = zeros(T, Nu, Nx, Ny)
-    B2  = zeros(T, Nu, Nx, Ny)
-    G   = zeros(T, Nu, Nx, Ny)
-    phi = zeros(T, Nu, Nx, Ny)
-
-    # Note: it's important that xi, a4 and f2 are defined on a 1*Nx*Ny grid,
-    # rather than a Nx*Ny one, so that the same Dx and Dy differential operators
-    # defined for the bulk quantities can also straightforwardly apply on them.
-    # Remember that the axis along which the operator applies is defined on the
-    # operator itself. So, by defining things this way, the Dx operator (which
-    # acts along the 2nd index) will also do the correct thing when acting on
-    # xi, a4 or f2.
-    a4  = zeros(T, 1, Nx, Ny)
-    fx2 = zeros(T, 1, Nx, Ny)
-    fy2 = zeros(T, 1, Nx, Ny)
-    xi  = zeros(T, 1, Nx, Ny)
-
-    f = EvolVars(B1, B2, G, phi, a4, fx2, fy2, xi)
-    init_data!(f, sys, ibvp)
+    ff = EvolVars{T}(undef, Nu, Nx, Ny)
+    init_data!(ff, sys, ibvp)
 end
 
 init_data(systems::Vector, ibvp::IBVP) = [init_data(sys, ibvp) for sys in systems]
