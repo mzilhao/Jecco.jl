@@ -34,7 +34,7 @@ abstract type AbstractEvolEq end
 struct EvolTest0 <: AbstractEvolEq end
 
 
-function get_evol_t!(evol_t::EvolVars, evol::EvolVars, sys, ::EvolTest0)
+function get_evol_t!(evol_t::EvolVars, evol::EvolVars, sys::System, ::EvolTest0)
     evol_t.B1  .= 0
     evol_t.B2  .= 0
     evol_t.G   .= 0
@@ -58,6 +58,14 @@ evoleq = EvolTest0()
 
 evol_dt = similar(evol)
 
-tspan = (0.0, 0.1)
+dt0 = 0.001
+tspan = (0.0, 0.01)
 
 prob  = ODEProblem(rhs!, evol, tspan, (sys, evoleq))
+
+integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
+
+for (f,t) in tuples(integrator)
+    B1  = Jecco.AdS5_3_1.getB1(f)
+    @show t, B1[1]
+end

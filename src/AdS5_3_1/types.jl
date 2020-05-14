@@ -50,6 +50,9 @@ function EvolVars{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Re
     EvolVars{T}(B1, B2, G, phi, a4, fx2, fy2, xi)
 end
 
+Base.similar(ff::EvolVars) = EvolVars(similar(ff.B1), similar(ff.B2), similar(ff.G), similar(ff.phi),
+                                      similar(ff.a4), similar(ff.fx2), similar(ff.fy2), similar(ff.xi))
+
 Base.length(ff::EvolVars) = length(ff.B1) + length(ff.B2) + length(ff.G) + length(ff.phi) +
     length(ff.a4) + length(ff.fx2) + length(ff.fy2) + length(ff.xi)
 Base.size(ff::EvolVars) = (length(ff),)
@@ -59,7 +62,7 @@ Base.size(ff::EvolVars) = (length(ff),)
 @inline Base.firstindex(ff::EvolVars) = 1
 @inline Base.lastindex(ff::EvolVars) = length(ff)
 
-function Base.getindex(evol::EvolVars, i::Int)
+@inline function Base.getindex(evol::EvolVars, i::Int)
     vars = [:B1, :B2, :G, :phi, :a4, :fx2, :fy2, :xi]
     @inbounds for x in vars
         f  = getproperty(evol,x)   # f will point to B1, then B2, then G, etc...
@@ -70,8 +73,17 @@ function Base.getindex(evol::EvolVars, i::Int)
     end
 end
 
-Base.similar(ff::EvolVars) = EvolVars(similar(ff.B1), similar(ff.B2), similar(ff.G), similar(ff.phi),
-                                      similar(ff.a4), similar(ff.fx2), similar(ff.fy2), similar(ff.xi))
+@inline function Base.setindex!(evol::EvolVars, v, i::Int)
+    vars = [:B1, :B2, :G, :phi, :a4, :fx2, :fy2, :xi]
+    @inbounds for x in vars
+        f  = getproperty(evol,x)   # f will point to B1, then B2, then G, etc...
+        i -= length(f)
+        if i <= 0
+            f[length(f)+i] = v
+            break
+        end
+    end
+end
 
 getB1(evol::EvolVars)  = evol.B1
 getB2(evol::EvolVars)  = evol.B2
