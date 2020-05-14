@@ -24,6 +24,17 @@ struct EvolVars{T} <: AbstractVector{T}
     fy2 :: Array{T,3}
     xi  :: Array{T,3}
 end
+function EvolVars{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Real}
+    B1  = Array{T}(undef, Nu, Nx, Ny)
+    B2  = Array{T}(undef, Nu, Nx, Ny)
+    G   = Array{T}(undef, Nu, Nx, Ny)
+    phi = Array{T}(undef, Nu, Nx, Ny)
+    a4  = Array{T}(undef,  1, Nx, Ny)
+    fx2 = Array{T}(undef,  1, Nx, Ny)
+    fy2 = Array{T}(undef,  1, Nx, Ny)
+    xi  = Array{T}(undef,  1, Nx, Ny)
+    EvolVars{T}(B1, B2, G, phi, a4, fx2, fy2, xi)
+end
 
 Base.length(ff::EvolVars) = length(ff.B1) + length(ff.B2) + length(ff.G) + length(ff.phi) +
     length(ff.a4) + length(ff.fx2) + length(ff.fy2) + length(ff.xi)
@@ -56,56 +67,6 @@ geta4(evol::EvolVars)  = evol.a4
 getfx2(evol::EvolVars) = evol.fx2
 getfy2(evol::EvolVars) = evol.fy2
 getxi(evol::EvolVars)  = evol.xi
-
-
-# getB1(evols::AbstractVector{EvolVars{T}})  where T = VectorOfArray([evol.B1  for evol in evols])
-# getB2(evols::AbstractVector{EvolVars{T}})  where T = VectorOfArray([evol.B2  for evol in evols])
-# getG(evols::AbstractVector{EvolVars{T}})   where T = VectorOfArray([evol.G   for evol in evols])
-# getphi(evols::AbstractVector{EvolVars{T}}) where T = VectorOfArray([evol.phi for evol in evols])
-# geta4(evols::AbstractVector{EvolVars{T}})  where T = VectorOfArray([evol.a4  for evol in evols])
-# getfx2(evols::AbstractVector{EvolVars{T}}) where T = VectorOfArray([evol.fx2 for evol in evols])
-# getfy2(evols::AbstractVector{EvolVars{T}}) where T = VectorOfArray([evol.fy2 for evol in evols])
-# getxi(evols::AbstractVector{EvolVars{T}})  where T = VectorOfArray([evol.xi  for evol in evols])
-
-
-# function pack(evol::EvolVars)
-#     ArrayPartition(evol.B1, evol.B2, evol.G, evol.phi, evol.a4, evol.fx2, evol.fy2, evol.xi)
-# end
-
-# ArrayPartition(evol::EvolVars) = 
-#     ArrayPartition(evol.B1, evol.B2, evol.G, evol.phi, evol.a4, evol.fx2, evol.fy2, evol.xi)
-
-# function EvolVars(f::ArrayPartition)
-#     @assert length(f.x) == 8
-#     EvolVars(f.x[1], f.x[2], f.x[3], f.x[4], f.x[5], f.x[6], f.x[7], f.x[8])
-# end
-
-
-# pack(B1s, B2s, Gs, phis, a4s, fx2s, fy2s, xis) =
-#     ArrayPartition(B1s, B2s, Gs, phis, a4s, fx2s, fy2s, xis)
-
-# function pack(evols::AbstractVector{EvolVars{T}}) where T
-#     B1s  = getB1(evols)
-#     B2s  = getB2(evols)
-#     Gs   = getG(evols)
-#     phis = getphi(evols)
-#     a4s  = geta4(evols)
-#     fx2s = getfx2(evols)
-#     fy2s = getfy2(evols)
-#     xis  = getxi(evols)
-#     pack(B1s, B2s, Gs, phis, a4s, fx2s, fy2s, xis)
-# end
-
-# getB1(f::ArrayPartition)  = f.x[1]
-# getB2(f::ArrayPartition)  = f.x[2]
-# getG(f::ArrayPartition)   = f.x[3]
-# getphi(f::ArrayPartition) = f.x[4]
-# geta4(f::ArrayPartition)  = f.x[5]
-# getfx2(f::ArrayPartition) = f.x[6]
-# getfy2(f::ArrayPartition) = f.x[7]
-# getxi(f::ArrayPartition)  = f.x[8]
-
-# unpack(f::ArrayPartition) = f.x
 
 
 
