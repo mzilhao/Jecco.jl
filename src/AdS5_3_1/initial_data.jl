@@ -17,14 +17,15 @@ end
 end
 
 
-
-# init_data(systems::Vector, ibvp::IBVP) = [init_data(sys, ibvp) for sys in systems]
-
-# function init_data(sys::System, ibvp::IBVP{T}) where{T}
-#     Nu, Nx, Ny = size(sys)
-#     ff = EvolVars{T}(undef, Nu, Nx, Ny)
-#     init_data!(ff, sys, ibvp)
-# end
+function init_data!(bulks::AbstractVector{T1}, systems::AbstractVector{T2},
+                    ibvp::IBVP) where {T1<:BulkEvol,T2<:System}
+    Nsys = length(systems)
+    @assert length(bulks) == Nsys
+    for i in 1:Nsys
+        init_data!(bulks[i], systems[i], ibvp)
+    end
+    nothing
+end
 
 
 # BlackBrane initial data

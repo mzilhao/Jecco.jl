@@ -38,10 +38,12 @@ gauge     = Gauge(par_grid)
 
 
 
-# init_data!(bulkevol, sys, ibvp)
-# init_data!(boundary, systems[1],   ibvp)
-# init_data!(gauge,    systems[end], ibvp)
+init_data!(bulkevols, systems, ibvp)
 
+init_data!(boundary, systems[1],   ibvp)
+init_data!(gauge,    systems[end], ibvp)
+
+bulkall = BulkAll(bulkevols[1])
 
 
 # abstract type AbstractEvolEq end
