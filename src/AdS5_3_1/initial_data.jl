@@ -4,25 +4,43 @@
     AH_pos        :: T   = 1.0
 end
 
-function init_data!(f::EvolVars, sys::System, ibvp::BlackBrane)
-    # Nu, Nx, Ny = size(sys)
-    # ucoord = sys.ucoord
-    # xcoord = sys.xcoord
-    # ycoord = sys.ycoord
+@with_kw struct IDTest0{T} <: IBVP{T}
+    b14_0    :: T  = 0
+    b24_0    :: T  = 0
+    g4_0     :: T  = 0
+    phi0     :: T  = 0
+    phi2_0   :: T  = 0
+    a4_0     :: T  = 0
+    fx2_0    :: T  = 0
+    fy2_0    :: T  = 0
+    xi_0     :: T  = 0
+end
 
+
+
+init_data(systems::Vector, ibvp::IBVP) = [init_data(sys, ibvp) for sys in systems]
+
+function init_data(sys::System, ibvp::IBVP{T}) where{T}
+    Nu, Nx, Ny = size(sys)
+    ff = EvolVars{T}(undef, Nu, Nx, Ny)
+    init_data!(ff, sys, ibvp)
+end
+
+
+function init_data!(ff::EvolVars, sys::System, ibvp::BlackBrane)
     a40     = -ibvp.energy_dens/0.75
     AH_pos  = ibvp.AH_pos
 
     xi0 = (-a40)^0.25 - 1/AH_pos
 
-    B1  = f.B1
-    B2  = f.B2
-    G   = f.G
-    phi = f.phi
-    a4  = f.a4
-    fx2 = f.fx2
-    fy2 = f.fy2
-    xi  = f.xi
+    B1  = getB1(ff)
+    B2  = getB2(ff)
+    G   = getG(ff)
+    phi = getphi(ff)
+    a4  = geta4(ff)
+    fx2 = getfx2(ff)
+    fy2 = getfy2(ff)
+    xi  = getxi(ff)
 
     fill!(B1,  0)
     fill!(B2,  0)
@@ -33,13 +51,103 @@ function init_data!(f::EvolVars, sys::System, ibvp::BlackBrane)
     fill!(fy2, 0)
     fill!(xi, xi0)
 
-    f
+    ff
 end
 
-function init_data(sys::System, ibvp::IBVP{T}) where{T}
+
+# IDTest0
+
+function init_data!(ff::EvolVars, sys::System{Outer}, ibvp::IDTest0)
     Nu, Nx, Ny = size(sys)
-    ff = EvolVars{T}(undef, Nu, Nx, Ny)
-    init_data!(ff, sys, ibvp)
+    ucoord = sys.ucoord
+    xcoord = sys.xcoord
+    ycoord = sys.ycoord
+
+    B1  = getB1(ff)
+    B2  = getB2(ff)
+    G   = getG(ff)
+    phi = getphi(ff)
+    a4  = geta4(ff)
+    fx2 = getfx2(ff)
+    fy2 = getfy2(ff)
+    xi  = getxi(ff)
+
+    b14_0  = ibvp.b14_0
+    b24_0  = ibvp.b24_0
+
+    g4_0   = ibvp.g4_0
+
+    phi0   = ibvp.phi0
+    phi2_0 = ibvp.phi2_0
+
+    a4_0   = ibvp.a4_0
+
+    fx2_0  = ibvp.fx2_0
+    fy2_0  = ibvp.fy2_0
+
+    xi_0   = ibvp.xi_0
+
+    fill!(a4,  a4_0)
+    fill!(fx2, fx2_0)
+    fill!(fy2, fy2_0)
+    fill!(xi,  xi_0)
+
+    for j in 1:Ny
+        for i in 1:Nx
+            for a in 1:Nu
+                u = ucoord[a]
+                x = xcoord[i]
+                y = ycoord[j]
+                B1[a,i,j]  = u^4 * b14_0
+                B2[a,i,j]  = u^4 * b24_0
+                phi[a,i,j] = phi0 * u + phi2_0 * u^3
+                G[a,i,j]   = u^4 * g4_0
+            end
+        end
+    end
+
+    ff
 end
 
-init_data(systems::Vector, ibvp::IBVP) = [init_data(sys, ibvp) for sys in systems]
+function init_data!(ff::EvolVars, sys::System{Inner}, ibvp::IDTest0)
+    Nu, Nx, Ny = size(sys)
+    ucoord = sys.ucoord
+    xcoord = sys.xcoord
+    ycoord = sys.ycoord
+
+    B1  = getB1(ff)
+    B2  = getB2(ff)
+    G   = getG(ff)
+    phi = getphi(ff)
+    a4  = geta4(ff)
+    fx2 = getfx2(ff)
+    fy2 = getfy2(ff)
+    xi  = getxi(ff)
+
+    b14_0  = ibvp.b14_0
+    b24_0  = ibvp.b24_0
+
+    g4_0   = ibvp.g4_0
+
+    phi0   = ibvp.phi0
+    phi2_0 = ibvp.phi2_0
+
+    a4_0   = ibvp.a4_0
+
+    fx2_0  = ibvp.fx2_0
+    fy2_0  = ibvp.fy2_0
+
+    xi_0   = ibvp.xi_0
+
+    fill!(B1,  b14_0)
+    fill!(B2,  b24_0)
+    fill!(G,   g4_0)
+    fill!(phi, phi2_0)
+
+    fill!(a4,  a4_0)
+    fill!(fx2, fx2_0)
+    fill!(fy2, fy2_0)
+    fill!(xi,  xi_0)
+
+    ff
+end
