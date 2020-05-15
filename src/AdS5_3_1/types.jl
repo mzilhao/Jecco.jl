@@ -14,47 +14,99 @@ Extend this type for different initial conditions
 abstract type IBVP{T} end
 
 
-struct EvolVars{T} <: AbstractVector{T}
+
+abstract type AbstractVars{T} <: AbstractVector{T} end
+
+abstract type EvolVars{T} <: AbstractVars{T} end
+
+# TODO
+abstract type BulkVars2{T} <: AbstractVars{T} end
+
+
+
+struct BulkEvol{T} <: EvolVars{T}
     B1  :: Array{T,3}
     B2  :: Array{T,3}
     G   :: Array{T,3}
     phi :: Array{T,3}
+end
+
+struct Boundary{T} <: EvolVars{T}
     a4  :: Array{T,3}
     fx2 :: Array{T,3}
     fy2 :: Array{T,3}
+end
+
+struct Gauge{T} <: EvolVars{T}
     xi  :: Array{T,3}
 end
 
-"""
-    EvolVars{T}(undef, Nu, Nx, Ny)
+@inline varlist(bulk::BulkEvol)     = [:B1, :B2, :G, :phi]
+@inline varlist(boundary::Boundary) = [:a4, :fx2, :fy2]
+@inline varlist(gauge::Gauge)       = [:xi]
 
-Construct a container of uninitialized Arrays to hold all the variables that are
-evolved in time: B1, B2, G, phi, a4, fx2, fy2, xi.
 
-xi, a4 and fx2, fy2 are automatically defined on a `(1,Nx,Ny)` grid, rather than
-a `(Nx,Ny)` one, so that the same Dx and Dy differential operators defined for
-the bulk quantities can also straightforwardly apply on them. Remember that the
-axis along which the operator applies is defined on the operator itself. So, by
-defining things this way, the Dx operator (which acts along the 2nd index) will
-also do the correct thing when acting on a4, fx2, fy2 and xi.
 """
-function EvolVars{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Real}
+    BulkEvol{T}(undef, Nu, Nx, Ny)
+
+Construct a container of uninitialized Arrays to hold all the bulk variables
+that are evolved in time: B1, B2, G, phi
+"""
+function BulkEvol{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Real}
     B1  = Array{T}(undef, Nu, Nx, Ny)
     B2  = Array{T}(undef, Nu, Nx, Ny)
     G   = Array{T}(undef, Nu, Nx, Ny)
     phi = Array{T}(undef, Nu, Nx, Ny)
-    a4  = Array{T}(undef,  1, Nx, Ny)
-    fx2 = Array{T}(undef,  1, Nx, Ny)
-    fy2 = Array{T}(undef,  1, Nx, Ny)
-    xi  = Array{T}(undef,  1, Nx, Ny)
-    EvolVars{T}(B1, B2, G, phi, a4, fx2, fy2, xi)
+    BulkEvol{T}(B1, B2, G, phi)
 end
 
-Base.similar(ff::EvolVars) = EvolVars(similar(ff.B1), similar(ff.B2), similar(ff.G), similar(ff.phi),
-                                      similar(ff.a4), similar(ff.fx2), similar(ff.fy2), similar(ff.xi))
+"""
+    Boundary{T}(undef, Nx, Ny)
 
-Base.length(ff::EvolVars) = length(ff.B1) + length(ff.B2) + length(ff.G) + length(ff.phi) +
-    length(ff.a4) + length(ff.fx2) + length(ff.fy2) + length(ff.xi)
+Construct a container of uninitialized Arrays to hold all the boundary
+variables: a4, fx2, fy2
+
+These variables are automatically defined on a `(1,Nx,Ny)` grid, rather than
+a `(Nx,Ny)` one, so that the same Dx and Dy differential operators defined for
+the bulk quantities can also straightforwardly apply on them. Remember that the
+axis along which the operator applies is defined on the operator itself. So, by
+defining things this way, the Dx operator (which acts along the 2nd index) will
+also do the correct thing when acting on a4, fx2, fy2.
+"""
+function Boundary{T}(::UndefInitializer, Nx::Int, Ny::Int) where {T<:Real}
+    a4  = Array{T}(undef, 1, Nx, Ny)
+    fx2 = Array{T}(undef, 1, Nx, Ny)
+    fy2 = Array{T}(undef, 1, Nx, Ny)
+    Boundary{T}(a4, fx2, fy2)
+end
+
+"""
+    Gauge{T}(undef, Nx, Ny)
+
+Construct a container with an uninitialized Array to hold the gauge variable xi
+
+As in the Boundary struct, xi is automatically defined on a `(1,Nx,Ny)` grid,
+rather than a `(Nx,Ny)` one, so that the same Dx and Dy differential operators
+defined for the bulk quantities can also straightforwardly apply on it.
+"""
+function Gauge{T}(::UndefInitializer, Nx::Int, Ny::Int) where {T<:Real}
+    xi  = Array{T}(undef, 1, Nx, Ny)
+    Gauge{T}(xi)
+end
+
+Base.similar(ff::BulkEvol) = BulkEvol(similar(ff.B1), similar(ff.B2), similar(ff.G), similar(ff.phi))
+Base.similar(ff::Boundary) = Boundary(similar(ff.a4), similar(ff.fx2), similar(ff.fy2))
+Base.similar(ff::Gauge)    = Gauge(similar(ff.xi))
+
+function Base.length(ff::EvolVars)
+    vars = varlist(ff)
+    sum_l = 0
+    for x in vars
+        f = getproperty(ff,x)   # f will point to each variable in the ff struct
+        sum_l += length(f)
+    end
+    sum_l
+end
 Base.size(ff::EvolVars) = (length(ff),)
 
 # indexing. this is just a linear indexing through all the arrays
@@ -63,9 +115,9 @@ Base.size(ff::EvolVars) = (length(ff),)
 @inline Base.lastindex(ff::EvolVars) = length(ff)
 
 @inline function Base.getindex(evol::EvolVars, i::Int)
-    vars = [:B1, :B2, :G, :phi, :a4, :fx2, :fy2, :xi]
+    vars = varlist(evol)
     @inbounds for x in vars
-        f  = getproperty(evol,x)   # f will point to B1, then B2, then G, etc...
+        f  = getproperty(evol,x)
         i -= length(f)
         if i <= 0
             return f[length(f)+i]
@@ -74,9 +126,9 @@ Base.size(ff::EvolVars) = (length(ff),)
 end
 
 @inline function Base.setindex!(evol::EvolVars, v, i::Int)
-    vars = [:B1, :B2, :G, :phi, :a4, :fx2, :fy2, :xi]
+    vars = varlist(evol)
     @inbounds for x in vars
-        f  = getproperty(evol,x)   # f will point to B1, then B2, then G, etc...
+        f  = getproperty(evol,x)
         i -= length(f)
         if i <= 0
             f[length(f)+i] = v
@@ -85,14 +137,18 @@ end
     end
 end
 
-getB1(evol::EvolVars)  = evol.B1
-getB2(evol::EvolVars)  = evol.B2
-getG(evol::EvolVars)   = evol.G
-getphi(evol::EvolVars) = evol.phi
-geta4(evol::EvolVars)  = evol.a4
-getfx2(evol::EvolVars) = evol.fx2
-getfy2(evol::EvolVars) = evol.fy2
-getxi(evol::EvolVars)  = evol.xi
+getB1(ff::BulkEvol)  = ff.B1
+getB2(ff::BulkEvol)  = ff.B2
+getG(ff::BulkEvol)   = ff.G
+getphi(ff::BulkEvol) = ff.phi
+
+geta4(ff::Boundary)  = ff.a4
+getfx2(ff::Boundary) = ff.fx2
+getfy2(ff::Boundary) = ff.fy2
+
+getxi(ff::Gauge)     = ff.xi
+
+
 
 
 struct BulkVars{T}

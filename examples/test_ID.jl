@@ -26,46 +26,59 @@ systems = Jecco.AdS5_3_1.Systems(par_grid)
 
 ibvp  = BlackBrane()
 
-evols = init_data(systems, ibvp)
+# evols = init_data(systems, ibvp)
+
+sys = systems[1]
+
+Nu, Nx, Ny = size(sys)
+
+bulkevol = BulkEvol{Float64}(undef, Nu, Nx, Ny)
+boundary = Boundary{Float64}(undef, Nx, Ny)
+gauge    = Gauge{Float64}(undef, Nx, Ny)
+
+init_data!(bulkevol, sys, ibvp)
+init_data!(boundary, sys, ibvp)
+init_data!(gauge,    sys, ibvp)
 
 
-abstract type AbstractEvolEq end
+# abstract type AbstractEvolEq end
 
-struct EvolTest0 <: AbstractEvolEq end
+# struct EvolTest0 <: AbstractEvolEq end
 
 
-function get_evol_t!(evol_t::EvolVars, evol::EvolVars, sys::System, ::EvolTest0)
-    evol_t.B1  .= 0
-    evol_t.B2  .= 0
-    evol_t.G   .= 0
-    evol_t.phi .= 0
-    evol_t.a4  .= 0
-    evol_t.fx2 .= 0
-    evol_t.fy2 .= 0
-    evol_t.xi  .= 0
-    nothing
-end
+# function get_evol_t!(evol_t::EvolVars, evol::EvolVars, sys::System, ::EvolTest0)
+#     evol_t.B1  .= 0
+#     evol_t.B2  .= 0
+#     evol_t.G   .= 0
+#     evol_t.phi .= 0
+#     evol_t.a4  .= 0
+#     evol_t.fx2 .= 0
+#     evol_t.fy2 .= 0
+#     evol_t.xi  .= 0
+#     nothing
+# end
 
-function rhs!(df, f, (sys, evoleq), t)
-    get_evol_t!(df, f, sys, evoleq)
-    nothing
-end
+# function rhs!(df, f, (sys, evoleq), t)
+#     get_evol_t!(df, f, sys, evoleq)
+#     nothing
+# end
 
-evol = evols[1]
-sys  = systems[1]
+# evol = evols[1]
+# sys  = systems[1]
 
-evoleq = EvolTest0()
+# evoleq = EvolTest0()
 
-evol_dt = similar(evol)
+# evol_dt = similar(evol)
 
-dt0 = 0.001
-tspan = (0.0, 0.01)
+# dt0 = 0.001
+# tspan = (0.0, 0.01)
 
-prob  = ODEProblem(rhs!, evol, tspan, (sys, evoleq))
+# prob  = ODEProblem(rhs!, evol, tspan, (sys, evoleq))
 
-integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
+# integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
 
-for (f,t) in tuples(integrator)
-    B1  = Jecco.AdS5_3_1.getB1(f)
-    @show t, B1[1]
-end
+# for (f,t) in tuples(integrator)
+#     B1  = Jecco.AdS5_3_1.getB1(f)
+#     a4  = Jecco.AdS5_3_1.geta4(f)
+#     @show t, B1[1], a4[1]
+# end
