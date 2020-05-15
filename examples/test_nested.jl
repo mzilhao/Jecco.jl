@@ -37,7 +37,7 @@ function IDtest0(sys::System{Outer})
         end
     end
 
-    BulkVars(sys.gridtype, B1, B2, G, phi)
+    BulkVars(B1, B2, G, phi)
 end
 
 function IDtest0(sys::System{Inner})
@@ -71,7 +71,7 @@ function IDtest0(sys::System{Inner})
         end
     end
 
-    BulkVars(sys.gridtype, B1, B2, G, phi)
+    BulkVars(B1, B2, G, phi)
 end
 
 IDtest0(systems::Vector{T}) where {T<:System} = [IDtest0(sys) for sys in systems]

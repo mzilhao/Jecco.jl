@@ -1344,7 +1344,7 @@ function syncBCs!(BC::BulkVars, dBC::BulkVars, bulk::BulkVars, nested::Nested)
     nothing
 end
 
-function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars{Inner},
+function set_innerBCs!(BC::BulkVars, dBC::BulkVars, bulk::BulkVars,
                        boundary::BoundaryVars, gauge::GaugeVars, base::BaseVars,
                        nested::Nested)
     _, Nx, Ny = size(nested.sys)
@@ -1444,7 +1444,7 @@ function set_innerBCs!(BC::BulkVars{Inner}, dBC::BulkVars{Inner}, bulk::BulkVars
     nothing
 end
 
-function set_outerBCs!(BC::BulkVars{Outer}, dBC::BulkVars{Outer}, bulk::BulkVars{Inner},
+function set_outerBCs!(BC::BulkVars, dBC::BulkVars, bulk::BulkVars,
                        gauge::GaugeVars, base::BaseVars, nested::Nested)
     Nu, Nx, Ny = size(nested.sys)
     Du = nested.sys.Du
@@ -1530,8 +1530,8 @@ function nested_solver(base::BaseVars, systems::Vector)
     _, Nx, Ny = size(sys1)
 
     nesteds = [Nested(sys) for sys in systems]
-    BCs     = [BulkVars(sys.gridtype, T, Nx, Ny) for sys in systems]
-    dBCs    = [BulkVars(sys.gridtype, T, Nx, Ny) for sys in systems]
+    BCs     = [BulkVars(T, Nx, Ny) for sys in systems]
+    dBCs    = [BulkVars(T, Nx, Ny) for sys in systems]
 
     function (bulks::Vector, boundary::BoundaryVars, gauge::GaugeVars)
         solve_nested!(bulks, BCs, dBCs, boundary, gauge, base, nesteds)

@@ -95,9 +95,7 @@ getfy2(evol::EvolVars) = evol.fy2
 getxi(evol::EvolVars)  = evol.xi
 
 
-
-struct BulkVars{GT<:GridType,T}
-    gridtype :: GT
+struct BulkVars{T}
     B1       :: T
     B2       :: T
     G        :: T
@@ -113,7 +111,7 @@ struct BulkVars{GT<:GridType,T}
     A        :: T
 end
 
-function BulkVars(gridtype::GT, ::Type{T}, Nxx::Vararg) where{GT<:GridType,T}
+function BulkVars(::Type{T}, Nxx::Vararg) where{T}
     B1     = zeros(T, Nxx...)
     B2     = copy(B1)
     G      = copy(B1)
@@ -127,10 +125,10 @@ function BulkVars(gridtype::GT, ::Type{T}, Nxx::Vararg) where{GT<:GridType,T}
     phid   = copy(B1)
     Sd     = copy(B1)
     A      = copy(B1)
-    BulkVars{GT,typeof(B1)}(gridtype, B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
+    BulkVars{typeof(B1)}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
 
-function BulkVars(gridtype::GT, ff::EvolVars) where {GT}
+function BulkVars(ff::EvolVars)
     B1    = ff.B1
     B2    = ff.B2
     G     = ff.G
@@ -148,10 +146,10 @@ function BulkVars(gridtype::GT, ff::EvolVars) where {GT}
     phid  = similar(B1)
     Sd    = similar(B1)
     A     = similar(B1)
-    BulkVars{GT,typeof(B1)}(gridtype, B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
+    BulkVars{typeof(B1)}(gridtype, B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
 
-function BulkVars(gridtype::GT, B1::T, B2::T, G::T, phi::T) where {GT<:GridType,T}
+function BulkVars(B1::T, B2::T, G::T, phi::T) where {T}
     S      = similar(B1)
     Fx     = similar(B1)
     Fy     = similar(B1)
@@ -162,7 +160,7 @@ function BulkVars(gridtype::GT, B1::T, B2::T, G::T, phi::T) where {GT<:GridType,
     Sd     = similar(B1)
     A      = similar(B1)
 
-    BulkVars{GT,T}(gridtype, B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
+    BulkVars{T}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
 
 #function BulkVars(gridtypes::Vector{GT}, ffs::Vector{T}) where {T<:EvolVars}
