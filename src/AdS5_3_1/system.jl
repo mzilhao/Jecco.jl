@@ -1,6 +1,4 @@
 
-import Base: size
-
 """
 3D grid with the following configuration. x and y are periodic coordinates,
 uniformly spaced. The u coordinate is split into an "inner" and "outer" portion;
@@ -11,15 +9,15 @@ uses Gauss-Lobatto points.
 Since the boundary conditions for the nested system are always specified at u=0,
 the inner grid necessarily starts at u=0 and finishes at u=u_outer_min.
 """
-@with_kw struct Grid3D
-    x_min            :: Float64
-    x_max            :: Float64
+@with_kw struct Grid3D{T<:Real}
+    x_min            :: T
+    x_max            :: T
     x_nodes          :: Int
-    y_min            :: Float64
-    y_max            :: Float64
+    y_min            :: T
+    y_max            :: T
     y_nodes          :: Int
-    u_outer_min      :: Float64
-    u_outer_max      :: Float64
+    u_outer_min      :: T
+    u_outer_max      :: T
     u_outer_domains  :: Int     = 1
     u_outer_nodes    :: Int # number of points per domain
     u_inner_nodes    :: Int
@@ -58,9 +56,9 @@ function System(gridtype::GT, ucoord::GaussLobattoCoord,
            typeof(Dy)}(gridtype, ucoord, xcoord, ycoord, Du, Duu, Dx, Dxx, Dy, Dyy)
 end
 
-size(sys::System) = (sys.ucoord.nodes, sys.xcoord.nodes, sys.ycoord.nodes)
+Base.size(sys::System) = (sys.ucoord.nodes, sys.xcoord.nodes, sys.ycoord.nodes)
 
-function Systems(p::Grid3D)
+function System(p::Grid3D)
     u_inner_coord = GaussLobatto{1}("u", 0.0, p.u_outer_min, p.u_inner_nodes)
 
     N_outer_sys = p.u_outer_domains
@@ -80,4 +78,47 @@ function Systems(p::Grid3D)
                      for i in 1:N_outer_sys]
 
     [inner_system; outer_systems]
+end
+
+
+"""
+    Boundary(p::Grid3d)
+
+Create a `Boundary` struct with arrays of `size = (1,p.x_nodes,p.y_nodes)`
+"""
+function Boundary(p::Grid3D{T}) where {T}
+    Nx = p.x_nodes
+    Ny = p.y_nodes
+    Boundary{T}(undef, Nx, Ny)
+end
+
+"""
+    Gauge(p::Grid3d)
+
+Create a `Gauge` struct with arrays of `size = (1,p.x_nodes,p.y_nodes)`
+"""
+function Gauge(p::Grid3D{T}) where {T}
+    Nx = p.x_nodes
+    Ny = p.y_nodes
+    Gauge{T}(undef, Nx, Ny)
+end
+
+"""
+    BulkEvol(p::Grid3D)
+
+Create an `Array` (with `length = 1 + p.u_outer_domains`) of elements
+`BulkEvol`. The first `BulkEvol` has arrays of `size = (p.u_inner_nodes,
+p.x_nodes, p.y_nodes)`, and the remaining ones have `size = (p.u_outer_nodes,
+p.x_nodes, p.y_nodes)`
+"""
+function BulkEvol(p::Grid3D{T}) where {T}
+    Nx = p.x_nodes
+    Ny = p.y_nodes
+    Nu_in  = p.u_inner_nodes
+    Nu_out = p.u_outer_nodes
+    N_outer_sys = p.u_outer_domains
+
+    bulk_in  = [BulkEvol{T}(undef, Nu_in, Nx, Ny)]
+    bulk_out = [BulkEvol{T}(undef, Nu_out, Nx, Ny) for i in 1:N_outer_sys]
+    [bulk_in; bulk_out]
 end

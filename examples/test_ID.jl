@@ -22,7 +22,7 @@ par_grid = Grid3D(
 )
 
 
-systems = Jecco.AdS5_3_1.Systems(par_grid)
+systems = System(par_grid)
 
 ibvp  = BlackBrane()
 
@@ -32,13 +32,16 @@ sys = systems[1]
 
 Nu, Nx, Ny = size(sys)
 
-bulkevol = BulkEvol{Float64}(undef, Nu, Nx, Ny)
-boundary = Boundary{Float64}(undef, Nx, Ny)
-gauge    = Gauge{Float64}(undef, Nx, Ny)
+bulkevols = BulkEvol(par_grid)
+boundary  = Boundary(par_grid)
+gauge     = Gauge(par_grid)
 
-init_data!(bulkevol, sys, ibvp)
-init_data!(boundary, sys, ibvp)
-init_data!(gauge,    sys, ibvp)
+
+
+# init_data!(bulkevol, sys, ibvp)
+# init_data!(boundary, systems[1],   ibvp)
+# init_data!(gauge,    systems[end], ibvp)
+
 
 
 # abstract type AbstractEvolEq end
