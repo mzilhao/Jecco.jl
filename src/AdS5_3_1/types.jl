@@ -96,8 +96,6 @@ getxi(evol::EvolVars)  = evol.xi
 
 
 
-# TODO: remove d*dt fields from this struct ?
-
 struct BulkVars{GT<:GridType,T}
     gridtype :: GT
     B1       :: T
@@ -113,10 +111,6 @@ struct BulkVars{GT<:GridType,T}
     phid     :: T
     Sd       :: T
     A        :: T
-    dB1dt    :: T
-    dB2dt    :: T
-    dGdt     :: T
-    dphidt   :: T
 end
 
 function BulkVars(gridtype::GT, ::Type{T}, Nxx::Vararg) where{GT<:GridType,T}
@@ -133,13 +127,28 @@ function BulkVars(gridtype::GT, ::Type{T}, Nxx::Vararg) where{GT<:GridType,T}
     phid   = copy(B1)
     Sd     = copy(B1)
     A      = copy(B1)
-    dB1dt  = copy(B1)
-    dB2dt  = copy(B1)
-    dGdt   = copy(B1)
-    dphidt = copy(B1)
+    BulkVars{GT,typeof(B1)}(gridtype, B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
+end
 
-    BulkVars{GT,typeof(B1)}(gridtype, B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A,
-                            dB1dt, dB2dt,dGdt, dphidt)
+function BulkVars(gridtype::GT, ff::EvolVars) where {GT}
+    B1    = ff.B1
+    B2    = ff.B2
+    G     = ff.G
+    phi   = ff.phi
+    a4    = ff.a4
+    fx2   = ff.fx2
+    fy2   = ff.fy2
+    xi    = ff.xi
+    S     = similar(B1)
+    Fx    = similar(B1)
+    Fy    = similar(B1)
+    B1d   = similar(B1)
+    B2d   = similar(B1)
+    Gd    = similar(B1)
+    phid  = similar(B1)
+    Sd    = similar(B1)
+    A     = similar(B1)
+    BulkVars{GT,typeof(B1)}(gridtype, B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
 
 function BulkVars(gridtype::GT, B1::T, B2::T, G::T, phi::T) where {GT<:GridType,T}
@@ -152,14 +161,17 @@ function BulkVars(gridtype::GT, B1::T, B2::T, G::T, phi::T) where {GT<:GridType,
     phid   = similar(B1)
     Sd     = similar(B1)
     A      = similar(B1)
-    dB1dt  = similar(B1)
-    dB2dt  = similar(B1)
-    dGdt   = similar(B1)
-    dphidt = similar(B1)
 
-    BulkVars{GT,T}(gridtype, B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A,
-                   dB1dt, dB2dt,dGdt, dphidt)
+    BulkVars{GT,T}(gridtype, B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
+
+#function BulkVars(gridtypes::Vector{GT}, ffs::Vector{T}) where {T<:EvolVars}
+#    [BulkVars(gridtype, ff) for (gridtype, ff) in (gridtypes, ffs)]
+#end
+
+#function BulkVars(systems::Vector{T1}, ffs::Vector{T2}) where {T1<:System,T2<:EvolVars}
+#    [BulkVars(sys.gridtype, ff) for (sys, ff) in (systems, ffs)]
+#end
 
 
 struct GaugeVars{A,T}
