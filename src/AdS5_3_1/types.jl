@@ -14,11 +14,9 @@ Extend this type for different initial conditions
 abstract type IBVP{T} end
 
 
-
 abstract type AbstractVars{T} <: AbstractVector{T} end
 
 abstract type EvolVars{T} <: AbstractVars{T} end
-
 
 struct BulkEvol{T} <: EvolVars{T}
     B1  :: Array{T,3}
@@ -37,9 +35,9 @@ struct Gauge{T} <: EvolVars{T}
     xi  :: Array{T,3}
 end
 
-@inline varlist(bulk::BulkEvol)     = [:B1, :B2, :G, :phi]
-@inline varlist(boundary::Boundary) = [:a4, :fx2, :fy2]
-@inline varlist(gauge::Gauge)       = [:xi]
+@inline varlist(::BulkEvol) = [:B1, :B2, :G, :phi]
+@inline varlist(::Boundary) = [:a4, :fx2, :fy2]
+@inline varlist(::Gauge)    = [:xi]
 
 
 """
@@ -146,7 +144,7 @@ getfy2(ff::Boundary) = ff.fy2
 getxi(ff::Gauge)     = ff.xi
 
 
-struct BulkAll{T} <: AbstractVars{T}
+struct Bulk{T} <: AbstractVars{T}
     B1   :: Array{T,3}
     B2   :: Array{T,3}
     G    :: Array{T,3}
@@ -162,17 +160,17 @@ struct BulkAll{T} <: AbstractVars{T}
     A    :: Array{T,3}
 end
 
-@inline varlist(bulkall::BulkAll) = [:B1, :B2, :G, :phi, :S, :Fx, :Fy, :B1d, :B2d,
-                                     :Gd, :phid, :Sd, :A]
+@inline varlist(::Bulk) = [:B1, :B2, :G, :phi, :S, :Fx, :Fy, :B1d, :B2d,
+                           :Gd, :phid, :Sd, :A]
 
 """
-    BulkAll{T}(undef, Nu, Nx, Ny)
+    Bulk{T}(undef, Nu, Nx, Ny)
 
 Construct a container of uninitialized Arrays to hold all the bulk variables:
 B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A
 
 """
-function BulkAll{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Real}
+function Bulk{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Real}
     B1   = Array{T}(undef, Nu, Nx, Ny)
     B2   = Array{T}(undef, Nu, Nx, Ny)
     G    = Array{T}(undef, Nu, Nx, Ny)
@@ -186,16 +184,16 @@ function BulkAll{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Rea
     phid = Array{T}(undef, Nu, Nx, Ny)
     Sd   = Array{T}(undef, Nu, Nx, Ny)
     A    = Array{T}(undef, Nu, Nx, Ny)
-    BulkAll{T}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
+    Bulk{T}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
 
 """
-    BulkAll(bulkevol::BulkEvol)
+    Bulk(bulkevol::BulkEvol)
 
 Construct a container to hold all the bulk variables, but where the evolved ones
 point to the given bulkevol struct
 """
-function BulkAll(ff::BulkEvol{T}) where {T}
+function Bulk(ff::BulkEvol{T}) where {T}
     B1    = ff.B1
     B2    = ff.B2
     G     = ff.G
@@ -209,23 +207,23 @@ function BulkAll(ff::BulkEvol{T}) where {T}
     phid  = similar(B1)
     Sd    = similar(B1)
     A     = similar(B1)
-    BulkAll{T}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
+    Bulk{T}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
 
-getB1(ff::BulkAll)   = ff.B1
-getB2(ff::BulkAll)   = ff.B2
-getG(ff::BulkAll)    = ff.G
-getphi(ff::BulkAll)  = ff.phi
-getS(ff::BulkAll)    = ff.S
-getFx(ff::BulkAll)   = ff.Fx
-getFy(ff::BulkAll)   = ff.Fy
-getB1d(ff::BulkAll)  = ff.B1d
-getB2d(ff::BulkAll)  = ff.B2d
-getGd(ff::BulkAll)   = ff.Gd
-getphid(ff::BulkAll) = ff.phid
-getA(ff::BulkAll)    = ff.A
+getB1(ff::Bulk)   = ff.B1
+getB2(ff::Bulk)   = ff.B2
+getG(ff::Bulk)    = ff.G
+getphi(ff::Bulk)  = ff.phi
+getS(ff::Bulk)    = ff.S
+getFx(ff::Bulk)   = ff.Fx
+getFy(ff::Bulk)   = ff.Fy
+getB1d(ff::Bulk)  = ff.B1d
+getB2d(ff::Bulk)  = ff.B2d
+getGd(ff::Bulk)   = ff.Gd
+getphid(ff::Bulk) = ff.phid
+getA(ff::Bulk)    = ff.A
 
-Base.similar(ff::BulkAll) =
+Base.similar(ff::Bulk) =
     BulkAll(similar(ff.B1), similar(ff.B2), similar(ff.G), similar(ff.phi),
             similar(ff.S), similar(ff.Fx), similar(ff.Fy), similar(ff.B1d),
             similar(ff.B2d), similar(ff.Gd), similar(phid), similar(Sd),

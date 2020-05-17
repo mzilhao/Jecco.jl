@@ -24,7 +24,7 @@ export Grid3D
 export Potential, ZeroPotential
 export BlackBrane, init_data!, init_data
 export Inner, Outer, System
-export BulkEvol, Boundary, Gauge, BulkAll
+export BulkEvol, Boundary, Gauge, Bulk
 export BulkVars, BoundaryVars, GaugeVars, BaseVars
 
 end
