@@ -17,14 +17,10 @@ end
 end
 
 
-function init_data!(bulks::AbstractVector{T1}, systems::AbstractVector{T2},
+function init_data!(bulkevols::AbstractVector{T1}, systems::AbstractVector{T2},
                     ibvp::IBVP) where {T1<:BulkEvol,T2<:System}
-    Nsys = length(systems)
-    @assert length(bulks) == Nsys
-    for i in 1:Nsys
-        init_data!(bulks[i], systems[i], ibvp)
-    end
-    nothing
+    # the Ref() makes the argument a scalar with respect to broadcasting
+    init_data!.(bulkevols, systems, Ref(ibvp))
 end
 
 
