@@ -101,6 +101,15 @@ par_grid = Grid3D(
 # )
 
 
+#ibvp = IDTest0(
+#    b14_0 = 0.01,
+#    b24_0 = 0.02,
+#    phi0  = 1.0,
+#    phi2  = 0.01,
+#    fx2_0 = 0.02,
+#    fy2_0 = 0.1,
+#)
+
 
 potential   = ZeroPotential()
 phi0        = 0.0
@@ -112,6 +121,9 @@ kappa = 1.0
 
 
 systems = Jecco.AdS5_3_1.Systems(par_grid)
+
+#evols = init_data(systems, ibvp)
+
 
 sys = systems[1]
 

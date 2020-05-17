@@ -334,6 +334,8 @@ end
 BoundaryVars(a4, fx2, fy2) = BoundaryVars{typeof(a4)}(a4, fx2, fy2)
 
 
+# TODO: use named tuples for these?
+
 struct SVars{T<:Real}
     phi0     :: T
 
