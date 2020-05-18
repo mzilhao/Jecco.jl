@@ -131,6 +131,16 @@ end
     end
 end
 
+"""
+    unpack(ff::AbstractVars)
+
+Return `Array` with all the different fields in the structure
+"""
+function unpack(ff::AbstractVars)
+    vars = varlist(ff)
+    [getproperty(ff,x) for x in vars]
+end
+
 getB1(ff::BulkEvol)  = ff.B1
 getB2(ff::BulkEvol)  = ff.B2
 getG(ff::BulkEvol)   = ff.G
@@ -232,18 +242,25 @@ Base.similar(ff::Bulk) =
 struct EvolPartition{T,N,A} <: AbstractVector{T}
     x :: NTuple{N,A}
 end
+function EvolPartition(ff::AbstractVector{A}) where{A<:AbstractArray}
+    x = Tuple(ff)
+    EvolPartition{eltype(A),length(x),A}(x)
+end
 
 """
-    EvolPartition(ff::AbstractVector)
+    EvolPartition(boundary::Boundary, gauge::Gauge, bulkevols::NTuple)
 
 Build a container to store all the evolved quantities as elements of an
 `NTuple`. The idea is to treat them as a single column vector for the point of
 view of the time evolution routine. Inspired in `ArrayPartition` from
 `RecursiveArrayTools`
 """
-function EvolPartition(ff::AbstractVector{A}) where{A<:AbstractArray}
-    x = Tuple(ff)
-    EvolPartition{eltype(A),length(x),A}(x)
+function EvolPartition(boundary::Boundary{T}, gauge::Gauge{T},
+                       bulkevols::NTuple{Nsys,BulkEvol{T}}) where {T,Nsys}
+    f1 = unpack(boundary)
+    f2 = unpack(gauge)
+    f3 = [unpack(bulkevol) for bulkevol in bulkevols]
+    EvolPartition([f1; f2; f3...])
 end
 
 Base.similar(ff::EvolPartition{T,N,S}) where {T,N,S} = EvolPartition{T,N,S}(similar.(ff.x))

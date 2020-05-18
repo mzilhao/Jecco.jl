@@ -38,3 +38,5 @@ init_data!(gauge,    systems[end], ibvp)
 
 
 evolpartition0 = EvolPartition([boundary.a4, boundary.fx2, boundary.fy2, gauge.xi])
+
+evolpartition1 = EvolPartition(boundary, gauge, bulkevols)
