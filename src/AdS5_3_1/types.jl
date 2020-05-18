@@ -229,14 +229,21 @@ Base.similar(ff::Bulk) =
             similar(ff.A))
 
 
-
-struct EvolPartition{T,N,S<:NTuple} <: AbstractVector{T}
-    x :: S
+struct EvolPartition{T,N,A} <: AbstractVector{T}
+    x :: NTuple{N,A}
 end
 
-function EvolPartition(ff::AbstractVector{A}) where{A}
+"""
+    EvolPartition(ff::AbstractVector)
+
+Build a container to store all the evolved quantities as elements of an
+`NTuple`. The idea is to treat them as a single column vector for the point of
+view of the time evolution routine. Inspired in `ArrayPartition` from
+`RecursiveArrayTools`
+"""
+function EvolPartition(ff::AbstractVector{A}) where{A<:AbstractArray}
     x = Tuple(ff)
-    EvolPartition{eltype(A),length(x),typeof(x)}(x)
+    EvolPartition{eltype(A),length(x),A}(x)
 end
 
 Base.similar(ff::EvolPartition{T,N,S}) where {T,N,S} = EvolPartition{T,N,S}(similar.(ff.x))
@@ -269,6 +276,7 @@ end
     end
 end
 
+@inline npartitions(::EvolPartition{T,N}) where {T,N} = N
 
 
 
