@@ -107,7 +107,6 @@ function SystemPartition(p::Grid3D)
 end
 
 
-
 """
     Boundary(p::Grid3D)
 
@@ -129,27 +128,6 @@ function Gauge(p::Grid3D{T}) where {T}
     Ny = p.y_nodes
     Gauge{T}(undef, Nx, Ny)
 end
-
-# """
-#     BulkPartition(p::Grid3D)
-
-# Create a `BulkPartition` (with `length = 1 + p.u_outer_domains`) of elements
-# `BulkEvol`. The first `BulkEvol` has arrays of `size = (p.u_inner_nodes,
-# p.x_nodes, p.y_nodes)`, and the remaining ones have `size = (p.u_outer_nodes,
-# p.x_nodes, p.y_nodes)`
-# """
-# function BulkPartition(p::Grid3D{T}) where {T}
-#     Nx = p.x_nodes
-#     Ny = p.y_nodes
-#     Nu_in  = p.u_inner_nodes
-#     Nu_out = p.u_outer_nodes
-#     N_outer_sys = p.u_outer_domains
-
-#     bulk_in  = [BulkEvol{T}(undef, Nu_in, Nx, Ny)]
-#     bulk_out = [BulkEvol{T}(undef, Nu_out, Nx, Ny) for i in 1:N_outer_sys]
-#     BulkPartition([bulk_in; bulk_out])
-# end
-
 
 """
     BulkEvols(p::Grid3D)
