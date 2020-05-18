@@ -17,10 +17,10 @@ end
 end
 
 
-function init_data!(bulks::BulkPartition, systems::SystemPartition, ibvp::IBVP)
-    Nsys = length(systems)
+function init_data!(bulks::BulkPartition, systems::SystemPartition{Nsys},
+                    ibvp::IBVP) where {Nsys}
     @assert length(bulks.x) == Nsys
-    for i in 1:Nsys
+    @inbounds for i in 1:Nsys
         init_data!(bulks.x[i], systems[i], ibvp)
     end
     nothing

@@ -59,16 +59,20 @@ end
 Base.size(sys::System) = (sys.ucoord.nodes, sys.xcoord.nodes, sys.ycoord.nodes)
 
 
-struct SystemPartition{S<:Tuple}
+struct SystemPartition{N,S<:Tuple}
     _x :: S
 end
 
-SystemPartition(x::AbstractVector{S}) where {S<:System} = SystemPartition(Tuple(x))
+function SystemPartition(x::AbstractVector{S}) where {S<:System}
+    _x = Tuple(x)
+    N = length(_x)
+    SystemPartition{N,typeof(_x)}(_x)
+end
 
 @inline Base.iterate(ff::SystemPartition)         = iterate(ff._x)
 @inline Base.iterate(ff::SystemPartition, i::Int) = iterate(ff._x, i)
 
-@inline Base.length(ff::SystemPartition)     = length(ff._x)
+@inline Base.length(ff::SystemPartition{N}) where{N} = N
 @inline Base.firstindex(ff::SystemPartition) = 1
 @inline Base.lastindex(ff::SystemPartition)  = length(ff)
 
