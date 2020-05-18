@@ -104,8 +104,8 @@ Base.similar(ff::Gauge)    = Gauge(similar(ff.xi))
 end
 @inline Base.size(ff::AbstractVars) = (length(ff),)
 
-# indexing. this is just a linear indexing through all the arrays
-
+# indexing. this is just a linear indexing through all the arrays. adapted from
+# RecursiveArrayTools
 @inline Base.firstindex(ff::AbstractVars) = 1
 @inline Base.lastindex(ff::AbstractVars) = length(ff)
 
@@ -119,7 +119,6 @@ end
         end
     end
 end
-
 @inline function Base.setindex!(evol::AbstractVars, v, i::Int)
     vars = varlist(evol)
     @inbounds for x in vars
@@ -228,6 +227,48 @@ Base.similar(ff::Bulk) =
             similar(ff.S), similar(ff.Fx), similar(ff.Fy), similar(ff.B1d),
             similar(ff.B2d), similar(ff.Gd), similar(phid), similar(Sd),
             similar(ff.A))
+
+
+
+struct EvolPartition{T,N,S<:NTuple} <: AbstractVector{T}
+    x :: S
+end
+
+function EvolPartition(ff::AbstractVector{A}) where{A}
+    x = Tuple(ff)
+    EvolPartition{eltype(A),length(x),typeof(x)}(x)
+end
+
+Base.similar(ff::EvolPartition{T,N,S}) where {T,N,S} = EvolPartition{T,N,S}(similar.(ff.x))
+
+@inline Base.length(ff::EvolPartition) = sum((length(x) for x in ff.x))
+@inline Base.size(ff::EvolPartition)   = (length(ff),)
+
+# indexing. this is just a linear indexing through all the arrays. adapted from
+# RecursiveArrayTools
+@inline Base.firstindex(ff::EvolPartition) = 1
+@inline Base.lastindex(ff::EvolPartition)  = length(ff)
+
+@inline function Base.getindex(ff::EvolPartition, i::Int)
+    @inbounds for j in 1:length(ff.x)
+        f  = ff.x[j]
+        i -= length(f)
+        if i <= 0
+            return f[length(f)+i]
+        end
+    end
+end
+@inline function Base.setindex!(ff::EvolPartition, v, i::Int)
+    @inbounds for j in 1:length(ff.x)
+        f  = ff.x[j]
+        i -= length(f)
+        if i <= 0
+            f[length(f)+i] = v
+            break
+        end
+    end
+end
+
 
 
 

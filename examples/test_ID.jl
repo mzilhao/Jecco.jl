@@ -21,7 +21,8 @@ par_grid = Grid3D(
 
 systems   = SystemPartition(par_grid)
 
-bulkevols = BulkPartition(par_grid)
+bulkevols = BulkEvols(par_grid)
+
 boundary  = Boundary(par_grid)
 gauge     = Gauge(par_grid)
 
@@ -34,3 +35,6 @@ ibvp = BlackBrane()
 init_data!(bulkevols, systems, ibvp)
 init_data!(boundary, systems[1],   ibvp)
 init_data!(gauge,    systems[end], ibvp)
+
+
+evolpartition0 = EvolPartition([boundary.a4, boundary.fx2, boundary.fy2, gauge.xi])
