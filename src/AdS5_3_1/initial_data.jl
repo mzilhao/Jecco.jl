@@ -17,8 +17,8 @@ end
 end
 
 
-function init_data!(bulkevols::AbstractVector{T1}, systems::AbstractVector{T2},
-                    ibvp::IBVP) where {T1<:BulkEvol,T2<:System}
+function init_data!(bulkevols::AbstractVector{T1}, systems::SystemPartition,
+                    ibvp::IBVP) where {T1<:BulkEvol}
     # the Ref() makes the argument a scalar with respect to broadcasting
     init_data!.(bulkevols, systems, Ref(ibvp))
 end

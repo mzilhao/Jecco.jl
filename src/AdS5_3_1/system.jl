@@ -58,7 +58,29 @@ end
 
 Base.size(sys::System) = (sys.ucoord.nodes, sys.xcoord.nodes, sys.ycoord.nodes)
 
-function System(p::Grid3D)
+
+struct SystemPartition{S<:Tuple}
+    _x :: S
+end
+
+SystemPartition(x::AbstractVector{S}) where {S<:System} = SystemPartition(Tuple(x))
+
+@inline Base.iterate(ff::SystemPartition)         = iterate(ff._x)
+@inline Base.iterate(ff::SystemPartition, i::Int) = iterate(ff._x, i)
+
+@inline Base.length(ff::SystemPartition)     = length(ff._x)
+@inline Base.firstindex(ff::SystemPartition) = 1
+@inline Base.lastindex(ff::SystemPartition)  = length(ff)
+
+@inline Base.getindex(ff::SystemPartition, i::Int) = ff._x[i]
+
+"""
+    SystemPartition(p::Grid3D)
+
+Create a `SystemPartition`, which is a `Tuple` of `System` where each element
+corresponds to a different u-domain
+"""
+function SystemPartition(p::Grid3D)
     u_inner_coord = GaussLobatto{1}("u", 0.0, p.u_outer_min, p.u_inner_nodes)
 
     N_outer_sys = p.u_outer_domains
@@ -77,12 +99,12 @@ function System(p::Grid3D)
     outer_systems = [System(Outer(), u_outer_coords[i], xcoord, ycoord)
                      for i in 1:N_outer_sys]
 
-    [inner_system; outer_systems]
+    SystemPartition([inner_system; outer_systems])
 end
 
 
 """
-    Boundary(p::Grid3d)
+    Boundary(p::Grid3D)
 
 Create a `Boundary` struct with arrays of `size = (1,p.x_nodes,p.y_nodes)`
 """
@@ -93,7 +115,7 @@ function Boundary(p::Grid3D{T}) where {T}
 end
 
 """
-    Gauge(p::Grid3d)
+    Gauge(p::Grid3D)
 
 Create a `Gauge` struct with arrays of `size = (1,p.x_nodes,p.y_nodes)`
 """

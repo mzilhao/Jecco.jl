@@ -19,7 +19,7 @@ par_grid = Grid3D(
 )
 
 
-systems   = System(par_grid)
+systems   = SystemPartition(par_grid)
 
 bulkevols = BulkEvol(par_grid)
 boundary  = Boundary(par_grid)
