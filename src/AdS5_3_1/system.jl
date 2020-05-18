@@ -103,6 +103,60 @@ function SystemPartition(p::Grid3D)
 end
 
 
+struct BulkPartition{T,S<:Tuple} <: AbstractVector{T}
+    x :: S
+end
+function BulkPartition(ff::AbstractVector{T}) where {T<:AbstractVars}
+    x = Tuple(ff)
+    BulkPartition{T,typeof(x)}(x)
+end
+
+
+Base.similar(ff::BulkPartition{T,S}) where {T,S} = BulkPartition{T,S}(similar.(ff.x))
+
+@inline Base.length(ff::BulkPartition) = sum((length(x) for x in ff.x))
+@inline Base.size(ff::BulkPartition)   = (length(ff),)
+
+# indexing. this is just a linear indexing through all the arrays
+
+@inline Base.firstindex(ff::BulkPartition) = 1
+@inline Base.lastindex(ff::BulkPartition)  = length(ff)
+
+
+# adapted from RecursiveArrayTools
+
+@inline function Base.getindex(ff::BulkPartition, i::Int)
+    @inbounds for j in 1:length(ff.x)
+        f  = ff.x[j]
+        i -= length(f)
+        if i <= 0
+            return f[length(f)+i]
+        end
+    end
+end
+
+@inline Base.getindex(ff::BulkPartition, i::Int, j...) = ff.x[i][j...]
+
+@inline function Base.setindex!(ff::BulkPartition, v, i::Int)
+    @inbounds for j in 1:length(ff.x)
+        f  = ff.x[j]
+        i -= length(f)
+        if i <= 0
+            f[length(f)+i] = v
+            break
+        end
+    end
+end
+
+@inline function Base.setindex!(ff::BulkPartition, v, i::Int, j...)
+    ff.x[i][j...] = v
+end
+
+# display
+Base.show(io::IO,ff::BulkPartition) = map(x->Base.show(io,x),ff.x)
+Base.show(io::IO, m::MIME"text/plain", ff::BulkPartition) = show(io, m, ff.x)
+
+
 """
     Boundary(p::Grid3D)
 
@@ -126,14 +180,14 @@ function Gauge(p::Grid3D{T}) where {T}
 end
 
 """
-    BulkEvol(p::Grid3D)
+    BulkPartition(p::Grid3D)
 
-Create an `Array` (with `length = 1 + p.u_outer_domains`) of elements
+Create a `BulkPartition` (with `length = 1 + p.u_outer_domains`) of elements
 `BulkEvol`. The first `BulkEvol` has arrays of `size = (p.u_inner_nodes,
 p.x_nodes, p.y_nodes)`, and the remaining ones have `size = (p.u_outer_nodes,
 p.x_nodes, p.y_nodes)`
 """
-function BulkEvol(p::Grid3D{T}) where {T}
+function BulkPartition(p::Grid3D{T}) where {T}
     Nx = p.x_nodes
     Ny = p.y_nodes
     Nu_in  = p.u_inner_nodes
@@ -142,5 +196,5 @@ function BulkEvol(p::Grid3D{T}) where {T}
 
     bulk_in  = [BulkEvol{T}(undef, Nu_in, Nx, Ny)]
     bulk_out = [BulkEvol{T}(undef, Nu_out, Nx, Ny) for i in 1:N_outer_sys]
-    [bulk_in; bulk_out]
+    BulkPartition([bulk_in; bulk_out])
 end
