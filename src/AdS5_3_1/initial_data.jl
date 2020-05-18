@@ -17,13 +17,10 @@ end
 end
 
 
-function init_data!(bulks::BulkPartition, systems::SystemPartition{Nsys},
-                    ibvp::IBVP) where {Nsys}
-    @assert length(bulks.x) == Nsys
-    @inbounds for i in 1:Nsys
-        init_data!(bulks.x[i], systems[i], ibvp)
-    end
-    nothing
+function init_data!(bulks::NTuple{Nsys,T}, systems::SystemPartition{Nsys},
+                    ibvp::IBVP) where {Nsys,T<:BulkEvol}
+    # the Ref() makes its argument a scalar with respect to broadcast
+    init_data!.(bulks, systems, Ref(ibvp))
 end
 
 

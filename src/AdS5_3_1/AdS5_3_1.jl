@@ -25,7 +25,7 @@ export Potential, ZeroPotential
 export BlackBrane, init_data!, init_data
 export Inner, Outer, System
 export BulkEvol, Boundary, Gauge, Bulk
-export SystemPartition, BulkPartition
+export SystemPartition, BulkEvols
 export BulkVars, BoundaryVars, GaugeVars, BaseVars
 
 end
