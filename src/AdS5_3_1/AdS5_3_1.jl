@@ -29,6 +29,6 @@ export EvolTest0, get_f_t!
 export Inner, Outer, System
 export BulkEvol, Boundary, Gauge, Bulk, EvolPartition
 export SystemPartition, BulkEvols
-export BulkVars, BoundaryVars, GaugeVars, BaseVars
+export BaseVars
 
 end

@@ -158,48 +158,49 @@ getfy2(ff::Boundary) = ff.fy2
 getxi(ff::Gauge)     = ff.xi
 
 
-struct Bulk{T} <: AbstractVars{T}
-    B1   :: Array{T,3}
-    B2   :: Array{T,3}
-    G    :: Array{T,3}
-    phi  :: Array{T,3}
-    S    :: Array{T,3}
-    Fx   :: Array{T,3}
-    Fy   :: Array{T,3}
-    B1d  :: Array{T,3}
-    B2d  :: Array{T,3}
-    Gd   :: Array{T,3}
-    phid :: Array{T,3}
-    Sd   :: Array{T,3}
-    A    :: Array{T,3}
+struct Bulk{T,N} <: AbstractVars{T}
+    B1   :: Array{T,N}
+    B2   :: Array{T,N}
+    G    :: Array{T,N}
+    phi  :: Array{T,N}
+    S    :: Array{T,N}
+    Fx   :: Array{T,N}
+    Fy   :: Array{T,N}
+    B1d  :: Array{T,N}
+    B2d  :: Array{T,N}
+    Gd   :: Array{T,N}
+    phid :: Array{T,N}
+    Sd   :: Array{T,N}
+    A    :: Array{T,N}
 end
 
 @inline varlist(::Bulk) = [:B1, :B2, :G, :phi, :S, :Fx, :Fy, :B1d, :B2d,
                            :Gd, :phid, :Sd, :A]
 
 """
-    Bulk{T}(undef, Nu, Nx, Ny)
+    Bulk{T}(undef, Nxx...)
 
 Construct a container of uninitialized Arrays to hold all the bulk variables:
 B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A
 
 """
-function Bulk{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Real}
-    B1   = Array{T}(undef, Nu, Nx, Ny)
-    B2   = Array{T}(undef, Nu, Nx, Ny)
-    G    = Array{T}(undef, Nu, Nx, Ny)
-    phi  = Array{T}(undef, Nu, Nx, Ny)
-    S    = Array{T}(undef, Nu, Nx, Ny)
-    Fx   = Array{T}(undef, Nu, Nx, Ny)
-    Fy   = Array{T}(undef, Nu, Nx, Ny)
-    B1d  = Array{T}(undef, Nu, Nx, Ny)
-    B2d  = Array{T}(undef, Nu, Nx, Ny)
-    Gd   = Array{T}(undef, Nu, Nx, Ny)
-    phid = Array{T}(undef, Nu, Nx, Ny)
-    Sd   = Array{T}(undef, Nu, Nx, Ny)
-    A    = Array{T}(undef, Nu, Nx, Ny)
-    Bulk{T}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
+function Bulk{T}(::UndefInitializer, Nxx::Vararg{Int,N}) where {T<:Real,N}
+    B1   = Array{T}(undef, Nxx...)
+    B2   = Array{T}(undef, Nxx...)
+    G    = Array{T}(undef, Nxx...)
+    phi  = Array{T}(undef, Nxx...)
+    S    = Array{T}(undef, Nxx...)
+    Fx   = Array{T}(undef, Nxx...)
+    Fy   = Array{T}(undef, Nxx...)
+    B1d  = Array{T}(undef, Nxx...)
+    B2d  = Array{T}(undef, Nxx...)
+    Gd   = Array{T}(undef, Nxx...)
+    phid = Array{T}(undef, Nxx...)
+    Sd   = Array{T}(undef, Nxx...)
+    A    = Array{T}(undef, Nxx...)
+    Bulk{T,N}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
+
 
 """
     Bulk(bulkevol::BulkEvol)
@@ -221,7 +222,7 @@ function Bulk(ff::BulkEvol{T}) where {T}
     phid  = similar(B1)
     Sd    = similar(B1)
     A     = similar(B1)
-    Bulk{T}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
+    Bulk(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
 
 getB1(ff::Bulk)   = ff.B1
@@ -351,91 +352,6 @@ end
 #####
 
 
-struct BulkVars{T}
-    B1       :: T
-    B2       :: T
-    G        :: T
-    phi      :: T
-    S        :: T
-    Fx       :: T
-    Fy       :: T
-    B1d      :: T
-    B2d      :: T
-    Gd       :: T
-    phid     :: T
-    Sd       :: T
-    A        :: T
-end
-
-function BulkVars(::Type{T}, Nxx::Vararg) where{T}
-    B1     = zeros(T, Nxx...)
-    B2     = copy(B1)
-    G      = copy(B1)
-    phi    = copy(B1)
-    S      = copy(B1)
-    Fx     = copy(B1)
-    Fy     = copy(B1)
-    B1d    = copy(B1)
-    B2d    = copy(B1)
-    Gd     = copy(B1)
-    phid   = copy(B1)
-    Sd     = copy(B1)
-    A      = copy(B1)
-    BulkVars{typeof(B1)}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
-end
-
-function BulkVars(ff::EvolVars)
-    B1    = ff.B1
-    B2    = ff.B2
-    G     = ff.G
-    phi   = ff.phi
-    a4    = ff.a4
-    fx2   = ff.fx2
-    fy2   = ff.fy2
-    xi    = ff.xi
-    S     = similar(B1)
-    Fx    = similar(B1)
-    Fy    = similar(B1)
-    B1d   = similar(B1)
-    B2d   = similar(B1)
-    Gd    = similar(B1)
-    phid  = similar(B1)
-    Sd    = similar(B1)
-    A     = similar(B1)
-    BulkVars{typeof(B1)}(gridtype, B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
-end
-
-function BulkVars(B1::T, B2::T, G::T, phi::T) where {T}
-    S      = similar(B1)
-    Fx     = similar(B1)
-    Fy     = similar(B1)
-    B1d    = similar(B1)
-    B2d    = similar(B1)
-    Gd     = similar(B1)
-    phid   = similar(B1)
-    Sd     = similar(B1)
-    A      = similar(B1)
-
-    BulkVars{T}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
-end
-
-#function BulkVars(gridtypes::Vector{GT}, ffs::Vector{T}) where {T<:EvolVars}
-#    [BulkVars(gridtype, ff) for (gridtype, ff) in (gridtypes, ffs)]
-#end
-
-#function BulkVars(systems::Vector{T1}, ffs::Vector{T2}) where {T1<:System,T2<:EvolVars}
-#    [BulkVars(sys.gridtype, ff) for (sys, ff) in (systems, ffs)]
-#end
-
-
-struct GaugeVars{A,T}
-    xi    :: A
-    kappa :: T
-end
-
-function GaugeVars(xi::Array{T,N}, kappa::T) where {T<:Number,N}
-    GaugeVars{typeof(xi), typeof(kappa)}(xi, kappa)
-end
 
 struct BaseVars{PT,T}
     potential :: PT
@@ -443,12 +359,6 @@ struct BaseVars{PT,T}
 end
 
 
-struct BoundaryVars{T}
-    a4   :: T
-    fx2  :: T
-    fy2  :: T
-end
-BoundaryVars(a4, fx2, fy2) = BoundaryVars{typeof(a4)}(a4, fx2, fy2)
 
 
 # TODO: use named tuples for these?
