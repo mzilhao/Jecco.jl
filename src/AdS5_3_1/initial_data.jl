@@ -17,7 +17,7 @@ end
 end
 
 
-function init_data!(bulks::NTuple{Nsys,T}, systems::SystemPartition{Nsys},
+function init_data!(bulks, systems::SystemPartition{Nsys},
                     ibvp::IBVP) where {Nsys,T<:BulkEvol}
     # the Ref() makes its argument a scalar with respect to broadcast
     init_data!.(bulks, systems, Ref(ibvp))

@@ -146,5 +146,5 @@ function BulkEvols(p::Grid3D{T}) where {T}
 
     bulk_in  = [BulkEvol{T}(undef, Nu_in, Nx, Ny)]
     bulk_out = [BulkEvol{T}(undef, Nu_out, Nx, Ny) for i in 1:N_outer_sys]
-    Tuple([bulk_in; bulk_out])
+    [bulk_in; bulk_out]
 end
