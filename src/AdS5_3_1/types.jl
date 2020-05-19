@@ -294,7 +294,7 @@ end
 end
 
 @inline npartitions(::EvolPartition{T,N}) where {T,N} = N
-@inline get_udomains(::EvolPartition{T,N}) where {T,N} = (N-4)/4
+@inline get_udomains(::EvolPartition{T,N}) where {T,N} = div(N-4, 4)
 
 geta4(ff::EvolPartition)   = ff.x[1]
 getfx2(ff::EvolPartition)  = ff.x[2]
@@ -334,6 +334,12 @@ end
 
 @inline getbulkevol(ff::EvolPartition, i::Int) =
     BulkEvol(getB1(ff,i), getB2(ff,i), getG(ff,i), getphi(ff,i))
+
+function getbulkevols(ff::EvolPartition)
+    Nsys = get_udomains(ff)
+    [getbulkevol(ff,i) for i in 1:Nsys]
+end
+
 
 
 
