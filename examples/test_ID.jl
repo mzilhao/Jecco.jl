@@ -26,7 +26,18 @@ bulkevols = BulkEvols(par_grid)
 boundary  = Boundary(par_grid)
 gauge     = Gauge(par_grid)
 
-ibvp = BlackBrane()
+# ibvp = BlackBrane()
+ibvp = AdS5_3_1.IDTest0(
+    b14_0 = 0.01,
+    b24_0 = 0.02,
+    g4_0  = 0.0,
+
+    a4_0  = -1.0,
+    fx2_0 = 0.001,
+    fy2_0 = 0.002,
+
+    xi_0  = 0.0,
+)
 
 init_data!(bulkevols, systems, ibvp)
 init_data!(boundary, systems[1],   ibvp)
