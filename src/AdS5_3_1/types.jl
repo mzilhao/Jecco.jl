@@ -13,6 +13,11 @@ Extend this type for different initial conditions
 """
 abstract type IBVP{T} end
 
+"""
+Extend this type for different evolution equations
+"""
+abstract type AbstractEvolEq end
+
 
 abstract type AbstractVars{T} <: AbstractVector{T} end
 
