@@ -26,17 +26,22 @@ bulkevols = BulkEvols(par_grid)
 boundary  = Boundary(par_grid)
 gauge     = Gauge(par_grid)
 
-
-# bulks = Bulk.(bulkevols)
-
-
 ibvp = BlackBrane()
 
 init_data!(bulkevols, systems, ibvp)
 init_data!(boundary, systems[1],   ibvp)
 init_data!(gauge,    systems[end], ibvp)
 
+evolpartition = EvolPartition(boundary, gauge, bulkevols)
 
-evolpartition0 = EvolPartition([boundary.a4, boundary.fx2, boundary.fy2, gauge.xi])
+boundary_  = AdS5_3_1.getboundary(evolpartition)
+gauge_     = AdS5_3_1.getgauge(evolpartition)
+bulkevol1_ = AdS5_3_1.getbulkevol(evolpartition, 1)
+bulkevol2_ = AdS5_3_1.getbulkevol(evolpartition, 2)
+bulkevol3_ = AdS5_3_1.getbulkevol(evolpartition, 3)
 
-evolpartition1 = EvolPartition(boundary, gauge, bulkevols)
+@show boundary_  === boundary
+@show gauge_     === gauge
+@show bulkevol1_ === bulkevols[1]
+@show bulkevol2_ === bulkevols[2]
+@show bulkevol3_ === bulkevols[3]

@@ -294,6 +294,46 @@ end
 end
 
 @inline npartitions(::EvolPartition{T,N}) where {T,N} = N
+@inline get_udomains(::EvolPartition{T,N}) where {T,N} = (N-4)/4
+
+geta4(ff::EvolPartition)   = ff.x[1]
+getfx2(ff::EvolPartition)  = ff.x[2]
+getfy2(ff::EvolPartition)  = ff.x[3]
+getxi(ff::EvolPartition)   = ff.x[4]
+
+function getB1(ff::EvolPartition, i::Int)
+    Nsys = get_udomains(ff)
+    @assert i > 0
+    @assert i <= Nsys
+    ff.x[5 + (i-1)*4]
+end
+
+function getB2(ff::EvolPartition, i::Int)
+    Nsys = get_udomains(ff)
+    @assert i > 0
+    @assert i <= Nsys
+    ff.x[6 + (i-1)*4]
+end
+
+function getG(ff::EvolPartition, i::Int)
+    Nsys = get_udomains(ff)
+    @assert i > 0
+    @assert i <= Nsys
+    ff.x[7 + (i-1)*4]
+end
+
+function getphi(ff::EvolPartition, i::Int)
+    Nsys = get_udomains(ff)
+    @assert i > 0
+    @assert i <= Nsys
+    ff.x[8 + (i-1)*4]
+end
+
+@inline getboundary(ff::EvolPartition) = Boundary(geta4(ff), getfx2(ff), getfy2(ff))
+@inline getgauge(ff::EvolPartition) = Gauge(getxi(ff))
+
+@inline getbulkevol(ff::EvolPartition, i::Int) =
+    BulkEvol(getB1(ff,i), getB2(ff,i), getG(ff,i), getphi(ff,i))
 
 
 
