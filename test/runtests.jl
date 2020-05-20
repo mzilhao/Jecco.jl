@@ -10,11 +10,13 @@ using Test
 
     @time @testset "output tests:" begin include("output_tests.jl") end
 
-    # AdS5_3_1 inner grid coefficients tests:
-    include("AdS5_3_1_equation_inner_coeff.jl")
+    @time @testset "AdS5_3_1 inner grid coefficients tests:" begin
+        include("AdS5_3_1_equation_inner_coeff.jl")
+    end
 
-    # AdS5_3_1 outer grid coefficients tests:
-    include("AdS5_3_1_equation_outer_coeff.jl")
+    @time @testset "AdS5_3_1 outer grid coefficients tests:" begin
+        include("AdS5_3_1_equation_outer_coeff.jl")
+    end
 
 end
 
