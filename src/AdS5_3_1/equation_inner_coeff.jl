@@ -61,16 +61,56 @@ end
 function S_eq_coeff!(ABCS::Vector, vars, ::Inner)
     (phi0, u, xi, B1, B1p, B2, B2p, G, Gp, phi, phip) = vars
 
-    coshGu4sq = cosh(*(G, u ^ 4)) ^ 2
+    x0 = u^7
+    x1 = u^6
+    x2 = u^5
+    x3 = Gp^2
+    x4 = x1*x3
+    x5 = 24*B2*B2p
+    x6 = 8*x0
+    x7 = G*Gp
+    x8 = x6*x7
+    x9 = u^8
+    x10 = 48*B2^2
+    x11 = x10*x9
+    x12 = 3*B2p^2
+    x13 = 16*G^2
+    x14 = x13*x9
+    x15 = u^4
+    x16 = cosh(G*x15)^2
+    x17 = B1p^2*x16
+    x18 = B1*B1p*x16
+    x19 = 16*B1^2*x16
+    x20 = x19*x9
+    x21 = phi0^2
+    x22 = u^2
+    x23 = u*xi
+    x24 = 2*x23
+    x25 = 3*phi
+    x26 = phip - u*x25
+    x27 = x26^2
+    x28 = 4*phi0^6
+    x29 = u^3
+    x30 = phi0^4*(x24 - 1)
+    x31 = x23 - 1
+    x32 = x23 + 1
+    x33 = phi*x32
+    x34 = x22*xi^2
+    x35 = -3*x23 + 2*x34 + 1
+    x36 = 3*x32
+    x37 = 9*x33
+    x38 = 8*x7
+    x39 = 8*x18
+    x40 = x1*x31
+    x41 = x2*x31
 
+    ABCS[1] = 6*x0
 
-    ABCS[1] = *(6, u ^ 7)
+    ABCS[2] = 48*x1
 
-    ABCS[2] = *(48, u ^ 6)
+    ABCS[3] = x2*(-x0*x5 + x1*x12 + x1*x17 + x11 + x14 + x15*x27*x28 - x18*x6 + x20 + 4*x21*x22*(1 - x24)^2 + 8*x26*x29*x30 + x4 - x8 + 72)
 
-    ABCS[3] = *(u ^ 5, 72 + *(Gp ^ 2, u ^ 6) + *(3, B2p ^ 2, u ^ 6) + *(16, G ^ 2, u ^ 8) + *(48, B2 ^ 2, u ^ 8) + *(u ^ 6, (B1p + *(-4, B1, u)) ^ 2, coshGu4sq) + *(-24, B2, B2p, u ^ 7) + *(-8, G, Gp, u ^ 7) + *(4, phi0 ^ 2, u ^ 2, (1 + *(-2, u, xi)) ^ 2) + *(4, phi0 ^ 6, u ^ 4, (phip + *(-3, phi, u)) ^ 2) + *(8, phi0 ^ 4, u ^ 3, -1 + *(2, u, xi), phip + *(-3, phi, u)))
-
-    ABCS[4] = *(1/3, u ^ 4, *(phi0 ^ 2, u ^ 2, *(48, xi ^ 3) + *(-1, Gp ^ 2, u ^ 3) + *(-48, B2 ^ 2, u ^ 5) + *(-16, G ^ 2, u ^ 5) + *(xi, Gp ^ 2, u ^ 4) + *(3, B2p ^ 2, u ^ 3, -1 + *(u, xi)) + *(8, G, Gp, u ^ 4) + *(16, xi, G ^ 2, u ^ 6) + *(48, xi, B2 ^ 2, u ^ 6) + *(u ^ 3, (B1p + *(-4, B1, u)) ^ 2, coshGu4sq, -1 + *(u, xi)) + *(-24, B2, B2p, u ^ 4, -1 + *(u, xi)) + *(-8, G, Gp, xi, u ^ 5)) + *(3, u ^ 3, 1 + *(u, xi), Gp ^ 2 + *(3, B2p ^ 2) + *((B1p + *(-4, B1, u)) ^ 2, coshGu4sq) + *(16, G ^ 2, u ^ 2) + *(48, B2 ^ 2, u ^ 2) + *(-24, B2, B2p, u) + *(-8, G, Gp, u)) + *(4, phi0 ^ 4, -1 + *(2, u, xi), u + *(-18, phi, u) + *(6, phip, 1 + *(u, xi)) + *(xi, u ^ 2, -3 + *(-18, phi) + *(2, u, xi))) + *(4, u, phi0 ^ 6, phip + *(-3, phi, u), *(u, 2 + *(-9, phi)) + *(3, phip, 1 + *(u, xi)) + *(xi, u ^ 2, -6 + *(-9, phi) + *(4, u, xi))) + *(4, phi0 ^ 8, u ^ 3, (phip + *(-3, phi, u)) ^ 2, -1 + *(u, xi)))
+    ABCS[4] = x15*(4*phi0^8*x27*x29*x31 + u*x28*(phip^2*x36 + 2*phip*u*(x35 - x37) + x22*x25*(6*x23 - 4*x34 + x37 - 2)) + x21*(-x0*x10 - x0*x13 - x0*x19 + x1*x38 + x11*xi + x12*x41 + x14*xi + x17*x41 - x2*x3 + x20*xi + 48*x22*xi^3 - x39*x40 + x4*xi - x40*x5 - x8*xi) + x29*x36*(-u*x38 - u*x39 - u*x5 + x10*x22 + x12 + x13*x22 + x17 + x19*x22 + x3) + 4*x30*(6*phip*x32 + u*(-18*x33 + x35)))/3
 
     nothing
 end
