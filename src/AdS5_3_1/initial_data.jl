@@ -1,19 +1,22 @@
 
-Base.@kwdef struct BlackBrane{T} <: IBVP{T}
+Base.@kwdef struct BlackBrane{T,TP<:Potential} <: IBVP
     energy_dens   :: T   = 1.0
     AH_pos        :: T   = 1.0
+    phi0          :: T   = 0.0
+    potential     :: TP  = ZeroPotential()
 end
 
-Base.@kwdef struct IDTest0{T} <: IBVP{T}
-    b14_0    :: T  = 0.0
-    b24_0    :: T  = 0.0
-    g4_0     :: T  = 0.0
-    phi0     :: T  = 0.0
-    phi2_0   :: T  = 0.0
-    a4_0     :: T  = 0.0
-    fx2_0    :: T  = 0.0
-    fy2_0    :: T  = 0.0
-    xi_0     :: T  = 0.0
+Base.@kwdef struct IDTest0{T,TP<:Potential} <: IBVP
+    b14_0     :: T  = 0.0
+    b24_0     :: T  = 0.0
+    g4_0      :: T  = 0.0
+    phi0      :: T  = 0.0
+    phi2_0    :: T  = 0.0
+    a4_0      :: T  = 0.0
+    fx2_0     :: T  = 0.0
+    fy2_0     :: T  = 0.0
+    xi_0      :: T  = 0.0
+    potential :: TP = ZeroPotential()
 end
 
 

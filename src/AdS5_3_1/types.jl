@@ -9,9 +9,10 @@ Extend this type for different potential choices
 abstract type Potential end
 
 """
-Extend this type for different initial conditions
+Extend this type for all IBVP parameters, including different initial
+conditions. It needs the fields `phi0` and `potential`.
 """
-abstract type IBVP{T} end
+abstract type IBVP end
 
 """
 Extend this type for different evolution equations
@@ -338,11 +339,4 @@ end
 function getbulkevols(ff::EvolPartition)
     Nsys = get_udomains(ff)
     [getbulkevol(ff,i) for i in 1:Nsys]
-end
-
-
-
-struct BaseVars{PT,T}
-    potential :: PT
-    phi0      :: T
 end

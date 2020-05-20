@@ -30,20 +30,15 @@ par_grid = Grid3D(
 
 
 ibvp = AdS5_3_1.IDTest0(
-    b14_0  = 0.01,
-    b24_0  = 0.02,
-    phi0   = 0.0,
-    phi2_0 = 0.01,
-    a4_0   = -1.0,
-    fx2_0  = 0.02,
-    fy2_0  = 0.1,
+    b14_0      = 0.01,
+    b24_0      = 0.02,
+    phi0       = 0.0,
+    phi2_0     = 0.01,
+    a4_0       = -1.0,
+    fx2_0      = 0.02,
+    fy2_0      = 0.1,
+    potential  = ZeroPotential(),
 )
-
-
-potential   = ZeroPotential()
-
-base  = BaseVars(potential, ibvp.phi0)
-
 
 systems = SystemPartition(par_grid)
 
@@ -59,7 +54,7 @@ init_data!(gauge,    systems[end], ibvp)
 
 bulks = Bulk.(bulkevols)
 
-solve_nested = nested_solver(systems, base)
+solve_nested = nested_solver(systems, ibvp)
 solve_nested(bulks, boundary, gauge)
 
 i = 2
