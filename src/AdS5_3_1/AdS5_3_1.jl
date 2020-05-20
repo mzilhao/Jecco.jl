@@ -29,5 +29,6 @@ export Inner, Outer, System
 export BulkEvol, Boundary, Gauge, Bulk, EvolPartition
 export SystemPartition, BulkEvols
 export BaseVars
+export nested_solver
 
 end

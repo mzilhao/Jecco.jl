@@ -139,7 +139,7 @@ of replacing the last line of the A_mat matrix and last entry of b_vec vector.
 =#
 
 function solve_S!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
-                  base::BaseVars, nested::Nested)
+                  nested::Nested, base::BaseVars)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -219,7 +219,7 @@ function solve_S!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
 end
 
 function solve_Fxy!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
-                    base::BaseVars, nested::Nested)
+                    nested::Nested, base::BaseVars)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -364,8 +364,8 @@ function solve_Fxy!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
     nothing
 end
 
-function solve_Sd!(bulk::Bulk, BC::Bulk, gauge::Gauge, base::BaseVars,
-                   nested::Nested)
+function solve_Sd!(bulk::Bulk, BC::Bulk, gauge::Gauge,
+                   nested::Nested, base::BaseVars)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -533,8 +533,8 @@ function solve_Sd!(bulk::Bulk, BC::Bulk, gauge::Gauge, base::BaseVars,
     nothing
 end
 
-function solve_B2d!(bulk::Bulk, BC::Bulk, gauge::Gauge, base::BaseVars,
-                    nested::Nested)
+function solve_B2d!(bulk::Bulk, BC::Bulk, gauge::Gauge,
+                    nested::Nested, base::BaseVars)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -702,8 +702,8 @@ function solve_B2d!(bulk::Bulk, BC::Bulk, gauge::Gauge, base::BaseVars,
     nothing
 end
 
-function solve_B1dGd!(bulk::Bulk, BC::Bulk, gauge::Gauge, base::BaseVars,
-                      nested::Nested)
+function solve_B1dGd!(bulk::Bulk, BC::Bulk, gauge::Gauge,
+                      nested::Nested, base::BaseVars)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -885,8 +885,8 @@ function solve_B1dGd!(bulk::Bulk, BC::Bulk, gauge::Gauge, base::BaseVars,
     nothing
 end
 
-function solve_phid!(bulk::Bulk, BC::Bulk, gauge::Gauge, base::BaseVars,
-                     nested::Nested)
+function solve_phid!(bulk::Bulk, BC::Bulk, gauge::Gauge,
+                     nested::Nested, base::BaseVars)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -1063,7 +1063,7 @@ function solve_phid!(bulk::Bulk, BC::Bulk, gauge::Gauge, base::BaseVars,
 end
 
 function solve_A!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
-                  base::BaseVars, nested::Nested)
+                  nested::Nested, base::BaseVars)
     sys  = nested.sys
     uu   = nested.uu
     xx   = nested.xx
@@ -1243,7 +1243,7 @@ function solve_A!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
 end
 
 function solve_nested!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
-                       base::BaseVars, nested::Nested)
+                       nested::Nested, base::BaseVars)
     sys  = nested.sys
 
     Du_B1   = nested.Du_B1
@@ -1280,7 +1280,7 @@ function solve_nested!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
     end
 
     # solve for S
-    solve_S!(bulk, BC, dBC, gauge, base, nested)
+    solve_S!(bulk, BC, dBC, gauge, nested, base)
 
     # take u-derivatives of S
     @sync begin
@@ -1289,7 +1289,7 @@ function solve_nested!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
     end
 
     # solve for Fx and Fy
-    solve_Fxy!(bulk, BC, dBC, gauge, base, nested)
+    solve_Fxy!(bulk, BC, dBC, gauge, nested, base)
 
     # take u-derivatives of Fx and Fy
     @sync begin
@@ -1300,18 +1300,18 @@ function solve_nested!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
     end
 
     # solve for Sd
-    solve_Sd!(bulk, BC, gauge, base, nested)
+    solve_Sd!(bulk, BC, gauge, nested, base)
 
     # solving for B2d, (B1d,Gd) and phid are independent processes. we can
     # therefore @spawn, here
     @sync begin
-        @spawn solve_B2d!(bulk, BC, gauge, base, nested)
-        @spawn solve_B1dGd!(bulk, BC, gauge, base, nested)
-        @spawn solve_phid!(bulk, BC, gauge, base, nested)
+        @spawn solve_B2d!(bulk, BC, gauge, nested, base)
+        @spawn solve_B1dGd!(bulk, BC, gauge, nested, base)
+        @spawn solve_phid!(bulk, BC, gauge, nested, base)
     end
 
     # solve for A
-    solve_A!(bulk, BC, dBC, gauge, base, nested)
+    solve_A!(bulk, BC, dBC, gauge, nested, base)
 
     nothing
 end
@@ -1345,8 +1345,8 @@ function syncBCs!(BC::Bulk, dBC::Bulk, bulk::Bulk, nested::Nested)
 end
 
 function set_innerBCs!(BC::Bulk, dBC::Bulk, bulk::Bulk,
-                       boundary::Boundary, gauge::Gauge, base::BaseVars,
-                       nested::Nested)
+                       boundary::Boundary, gauge::Gauge,
+                       nested::Nested, base::BaseVars)
     _, Nx, Ny = size(nested.sys)
 
     Dx  = nested.sys.Dx
@@ -1445,7 +1445,7 @@ function set_innerBCs!(BC::Bulk, dBC::Bulk, bulk::Bulk,
 end
 
 function set_outerBCs!(BC::Bulk, dBC::Bulk, bulk::Bulk,
-                       gauge::Gauge, base::BaseVars, nested::Nested)
+                       gauge::Gauge, nested::Nested, base::BaseVars)
     Nu, Nx, Ny = size(nested.sys)
     Du = nested.sys.Du
 
@@ -1505,25 +1505,25 @@ end
 # there is only one domain spanning this grid. If we ever change this
 # construction we must remember to make the appropriate changes here.
 function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, boundary::Boundary,
-                       gauge::Gauge, base::BaseVars, nesteds::Vector)
+                       gauge::Gauge, nesteds::Vector, base::BaseVars)
     Nsys = length(nesteds)
 
-    set_innerBCs!(BCs[1], dBCs[1], bulks[1], boundary, gauge, base, nesteds[1])
+    set_innerBCs!(BCs[1], dBCs[1], bulks[1], boundary, gauge, nesteds[1], base)
 
-    solve_nested!(bulks[1], BCs[1], dBCs[1], gauge, base, nesteds[1])
+    solve_nested!(bulks[1], BCs[1], dBCs[1], gauge, nesteds[1], base)
 
-    set_outerBCs!(BCs[2], dBCs[2], bulks[1], gauge, base, nesteds[1])
+    set_outerBCs!(BCs[2], dBCs[2], bulks[1], gauge, nesteds[1], base)
 
     for i in 2:Nsys-1
-        solve_nested!(bulks[i], BCs[i], dBCs[i], gauge, base, nesteds[i])
+        solve_nested!(bulks[i], BCs[i], dBCs[i], gauge, nesteds[i], base)
         syncBCs!(BCs[i+1], dBCs[i+1], bulks[i], nesteds[i])
     end
-    solve_nested!(bulks[Nsys], BCs[Nsys], dBCs[Nsys], gauge, base, nesteds[Nsys])
+    solve_nested!(bulks[Nsys], BCs[Nsys], dBCs[Nsys], gauge, nesteds[Nsys], base)
 
     nothing
 end
 
-function nested_solver(base::BaseVars, systems::SystemPartition)
+function nested_solver(systems::SystemPartition, base::BaseVars)
     sys1  = systems[1]
     T     = Jecco.coord_eltype(sys1.ucoord)
     _, Nx, Ny = size(sys1)
@@ -1533,7 +1533,7 @@ function nested_solver(base::BaseVars, systems::SystemPartition)
     dBCs    = [Bulk{T}(undef, Nx, Ny) for sys in systems]
 
     function (bulks::Vector, boundary::Boundary, gauge::Gauge)
-        solve_nested!(bulks, BCs, dBCs, boundary, gauge, base, nesteds)
+        solve_nested!(bulks, BCs, dBCs, boundary, gauge, nesteds, base)
         nothing
     end
 end
