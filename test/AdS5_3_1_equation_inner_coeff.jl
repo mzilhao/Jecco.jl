@@ -10,10 +10,10 @@ BB    = zeros(2,2)
 CC    = zeros(2,2)
 SS    = zeros(2)
 
-svars    = ones(11)
-fvars    = ones(37)
+svars    = tuple(ones(11)...)
+fvars    = tuple(ones(37)...)
 sdvars   = tuple([ZeroPotential(); ones(70)]...)
-bdgvars  = ones(71)
+bdgvars  = tuple(ones(71)...)
 phidvars = tuple([ZeroPotential(); ones(72)]...)
 avars    = tuple([ZeroPotential(); ones(76)]...)
 
