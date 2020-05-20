@@ -1,7 +1,6 @@
 module AdS5_3_1
 
 using Jecco
-using Parameters
 
 # abstract types and structs used throughout
 include("types.jl")

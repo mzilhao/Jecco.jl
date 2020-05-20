@@ -2,7 +2,6 @@ module Jecco
 
 using HDF5
 using LinearAlgebra
-using Parameters
 
 export AbstractCoord, CartesianCoord, GaussLobattoCoord
 export Cartesian, GaussLobatto
