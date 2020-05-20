@@ -23,27 +23,45 @@ abstract type AbstractVars{T} <: AbstractVector{T} end
 
 abstract type EvolVars{T} <: AbstractVars{T} end
 
-struct BulkEvol{T} <: EvolVars{T}
+
+struct BulkEvol{T} <: AbstractVars{T}
     B1  :: Array{T,3}
     B2  :: Array{T,3}
     G   :: Array{T,3}
     phi :: Array{T,3}
 end
 
-struct Boundary{T} <: EvolVars{T}
+struct Boundary{T} <: AbstractVars{T}
     a4  :: Array{T,3}
     fx2 :: Array{T,3}
     fy2 :: Array{T,3}
 end
 
-struct Gauge{T} <: EvolVars{T}
+struct Gauge{T} <: AbstractVars{T}
     xi  :: Array{T,3}
+end
+
+struct Bulk{T,N} <: AbstractVars{T}
+    B1   :: Array{T,N}
+    B2   :: Array{T,N}
+    G    :: Array{T,N}
+    phi  :: Array{T,N}
+    S    :: Array{T,N}
+    Fx   :: Array{T,N}
+    Fy   :: Array{T,N}
+    B1d  :: Array{T,N}
+    B2d  :: Array{T,N}
+    Gd   :: Array{T,N}
+    phid :: Array{T,N}
+    Sd   :: Array{T,N}
+    A    :: Array{T,N}
 end
 
 @inline varlist(::BulkEvol) = [:B1, :B2, :G, :phi]
 @inline varlist(::Boundary) = [:a4, :fx2, :fy2]
 @inline varlist(::Gauge)    = [:xi]
-
+@inline varlist(::Bulk)     = [:B1, :B2, :G, :phi, :S, :Fx, :Fy, :B1d, :B2d,
+                               :Gd, :phid, :Sd, :A]
 
 """
     BulkEvol{T}(undef, Nu, Nx, Ny)
@@ -93,90 +111,6 @@ function Gauge{T}(::UndefInitializer, Nx::Int, Ny::Int) where {T<:Real}
     Gauge{T}(xi)
 end
 
-Base.similar(ff::BulkEvol) = BulkEvol(similar(ff.B1), similar(ff.B2), similar(ff.G), similar(ff.phi))
-Base.similar(ff::Boundary) = Boundary(similar(ff.a4), similar(ff.fx2), similar(ff.fy2))
-Base.similar(ff::Gauge)    = Gauge(similar(ff.xi))
-
-
-@inline function Base.length(ff::AbstractVars)
-    vars = varlist(ff)
-    sum_l = 0
-    for x in vars
-        f = getproperty(ff,x)   # f will point to each variable in the ff struct
-        sum_l += length(f)
-    end
-    sum_l
-end
-@inline Base.size(ff::AbstractVars) = (length(ff),)
-
-# indexing. this is just a linear indexing through all the arrays. adapted from
-# RecursiveArrayTools
-@inline Base.firstindex(ff::AbstractVars) = 1
-@inline Base.lastindex(ff::AbstractVars) = length(ff)
-
-@inline function Base.getindex(evol::AbstractVars, i::Int)
-    vars = varlist(evol)
-    @inbounds for x in vars
-        f  = getproperty(evol,x)
-        i -= length(f)
-        if i <= 0
-            return f[length(f)+i]
-        end
-    end
-end
-@inline function Base.setindex!(evol::AbstractVars, v, i::Int)
-    vars = varlist(evol)
-    @inbounds for x in vars
-        f  = getproperty(evol,x)
-        i -= length(f)
-        if i <= 0
-            f[length(f)+i] = v
-            break
-        end
-    end
-end
-
-"""
-    unpack(ff::AbstractVars)
-
-Return `Array` with all the different fields in the structure
-"""
-function unpack(ff::AbstractVars)
-    vars = varlist(ff)
-    [getproperty(ff,x) for x in vars]
-end
-
-getB1(ff::BulkEvol)  = ff.B1
-getB2(ff::BulkEvol)  = ff.B2
-getG(ff::BulkEvol)   = ff.G
-getphi(ff::BulkEvol) = ff.phi
-
-geta4(ff::Boundary)  = ff.a4
-getfx2(ff::Boundary) = ff.fx2
-getfy2(ff::Boundary) = ff.fy2
-
-getxi(ff::Gauge)     = ff.xi
-
-
-struct Bulk{T,N} <: AbstractVars{T}
-    B1   :: Array{T,N}
-    B2   :: Array{T,N}
-    G    :: Array{T,N}
-    phi  :: Array{T,N}
-    S    :: Array{T,N}
-    Fx   :: Array{T,N}
-    Fy   :: Array{T,N}
-    B1d  :: Array{T,N}
-    B2d  :: Array{T,N}
-    Gd   :: Array{T,N}
-    phid :: Array{T,N}
-    Sd   :: Array{T,N}
-    A    :: Array{T,N}
-end
-
-@inline varlist(::Bulk) = [:B1, :B2, :G, :phi, :S, :Fx, :Fy, :B1d, :B2d,
-                           :Gd, :phid, :Sd, :A]
-
 """
     Bulk{T}(undef, Nxx...)
 
@@ -200,8 +134,6 @@ function Bulk{T}(::UndefInitializer, Nxx::Vararg{Int,N}) where {T<:Real,N}
     A    = Array{T}(undef, Nxx...)
     Bulk{T,N}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
-
-
 """
     Bulk(bulkevol::BulkEvol)
 
@@ -225,27 +157,89 @@ function Bulk(ff::BulkEvol{T}) where {T}
     Bulk(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
 
-getB1(ff::Bulk)   = ff.B1
-getB2(ff::Bulk)   = ff.B2
-getG(ff::Bulk)    = ff.G
-getphi(ff::Bulk)  = ff.phi
-getS(ff::Bulk)    = ff.S
-getFx(ff::Bulk)   = ff.Fx
-getFy(ff::Bulk)   = ff.Fy
-getB1d(ff::Bulk)  = ff.B1d
-getB2d(ff::Bulk)  = ff.B2d
-getGd(ff::Bulk)   = ff.Gd
-getphid(ff::Bulk) = ff.phid
-getA(ff::Bulk)    = ff.A
+getB1(ff::BulkEvol)  = ff.B1
+getB2(ff::BulkEvol)  = ff.B2
+getG(ff::BulkEvol)   = ff.G
+getphi(ff::BulkEvol) = ff.phi
 
-Base.similar(ff::Bulk) =
+geta4(ff::Boundary)  = ff.a4
+getfx2(ff::Boundary) = ff.fx2
+getfy2(ff::Boundary) = ff.fy2
+
+getxi(ff::Gauge)     = ff.xi
+
+getB1(ff::Bulk)      = ff.B1
+getB2(ff::Bulk)      = ff.B2
+getG(ff::Bulk)       = ff.G
+getphi(ff::Bulk)     = ff.phi
+getS(ff::Bulk)       = ff.S
+getFx(ff::Bulk)      = ff.Fx
+getFy(ff::Bulk)      = ff.Fy
+getB1d(ff::Bulk)     = ff.B1d
+getB2d(ff::Bulk)     = ff.B2d
+getGd(ff::Bulk)      = ff.Gd
+getphid(ff::Bulk)    = ff.phid
+getA(ff::Bulk)       = ff.A
+
+Base.similar(ff::BulkEvol) = BulkEvol(similar(ff.B1), similar(ff.B2), similar(ff.G), similar(ff.phi))
+Base.similar(ff::Boundary) = Boundary(similar(ff.a4), similar(ff.fx2), similar(ff.fy2))
+Base.similar(ff::Gauge)    = Gauge(similar(ff.xi))
+Base.similar(ff::Bulk)     =
     BulkAll(similar(ff.B1), similar(ff.B2), similar(ff.G), similar(ff.phi),
             similar(ff.S), similar(ff.Fx), similar(ff.Fy), similar(ff.B1d),
             similar(ff.B2d), similar(ff.Gd), similar(phid), similar(Sd),
             similar(ff.A))
 
+@inline function Base.length(ff::AbstractVars)
+    vars = varlist(ff)
+    sum_l = 0
+    for x in vars
+        f = getproperty(ff,x)   # f will point to each variable in the ff struct
+        sum_l += length(f)
+    end
+    sum_l
+end
+@inline Base.size(ff::AbstractVars) = (length(ff),)
 
-struct EvolPartition{T,N,A} <: AbstractVector{T}
+# indexing. this is just a linear indexing through all the arrays. adapted from
+# RecursiveArrayTools
+@inline Base.firstindex(ff::AbstractVars) = 1
+@inline Base.lastindex(ff::AbstractVars) = length(ff)
+
+@inline function Base.getindex(ff::AbstractVars, i::Int)
+    vars = varlist(ff)
+    @inbounds for x in vars
+        f  = getproperty(ff,x)
+        i -= length(f)
+        if i <= 0
+            return f[length(f)+i]
+        end
+    end
+end
+@inline function Base.setindex!(ff::AbstractVars, v, i::Int)
+    vars = varlist(ff)
+    @inbounds for x in vars
+        f  = getproperty(ff,x)
+        i -= length(f)
+        if i <= 0
+            f[length(f)+i] = v
+            break
+        end
+    end
+end
+
+"""
+    unpack(ff::AbstractVars)
+
+Return `Array` with all the different fields in the structure
+"""
+function unpack(ff::AbstractVars)
+    vars = varlist(ff)
+    [getproperty(ff,x) for x in vars]
+end
+
+
+struct EvolPartition{T,N,A} <: EvolVars{T}
     x :: NTuple{N,A}
 end
 function EvolPartition(ff::AbstractVector{A}) where{A<:AbstractArray}
