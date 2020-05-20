@@ -12,10 +12,10 @@ SS    = zeros(2)
 
 svars    = ones(11)
 fvars    = ones(37)
-sdvars   = [ZeroPotential(); ones(70)]
+sdvars   = tuple([ZeroPotential(); ones(70)]...)
 bdgvars  = ones(71)
-phidvars = [ZeroPotential(); ones(72)]
-avars    = [ZeroPotential(); ones(76)]
+phidvars = tuple([ZeroPotential(); ones(72)]...)
+avars    = tuple([ZeroPotential(); ones(76)]...)
 
 
 @testset "S equation outer grid coefficients:" begin
