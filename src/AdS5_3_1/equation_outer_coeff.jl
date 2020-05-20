@@ -55,15 +55,7 @@ end
 # (A d_uu + B d_u + C Id) f = -S
 
 function S_eq_coeff!(ABCS::Vector, vars, ::Outer)
-    u   = vars.u
-
-    B1p  = vars.B1p
-    B2p  = vars.B2p
-
-    G   = vars.G
-    Gp  = vars.Gp
-
-    phip = vars.phip
+    (phi0, u, xi, B1, B1p, B2, B2p, G, Gp, phi, phip) = vars
 
     ABCS[1] = *(6, u ^ 4)
     ABCS[2] = *(12, u ^ 3)
@@ -79,7 +71,7 @@ end
 # ( A21 d_uu Fx + A22 d_uu Fy + B21 d_u Fx + B22 d_u Fy + C21 Fx + C22 Fy ) = -S2
 
 function Fxy_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars, ::Outer)
-    @unpack (
+    (
         phi0, u, xi, xi_x, xi_y,
         B1     ,    B2     ,    G      ,    phi    ,    S      ,
         B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,
@@ -87,7 +79,7 @@ function Fxy_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars, ::O
         B1_x   ,    B2_x   ,    G_x    ,    phi_x  ,    S_x    ,
         B1_y   ,    B2_y   ,    G_y    ,    phi_y  ,    S_y    ,
         B1p_x  ,    B2p_x  ,    Gp_x   ,                Sp_x   ,
-        B1p_y  ,    B2p_y  ,    Gp_y   ,                Sp_y   ,
+        B1p_y  ,    B2p_y  ,    Gp_y   ,                Sp_y
     ) = vars
 
     expB1   = exp(B1)
@@ -125,7 +117,7 @@ end
 
 
 function Sd_eq_coeff!(ABCS::Vector, vars, ::Outer)
-    @unpack (
+    (
         potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
         B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,
         B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
@@ -203,7 +195,7 @@ end
 
 
 function B2d_eq_coeff!(ABCS::Vector, vars, ::Outer)
-    @unpack (
+    (
         phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
         B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
         B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
@@ -283,7 +275,7 @@ end
 # ( A21 d_uu B1d + A22 d_uu Gd + B21 d_u B1d + B22 d_u Gd + C21 B1d + C22 Gd ) = -S2
 
 function B1dGd_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars, ::Outer)
-    @unpack (
+    (
         phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
         B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
         B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
@@ -380,7 +372,7 @@ end
 
 
 function phid_eq_coeff!(ABCS::Vector, vars, ::Outer)
-    @unpack (
+    (
         potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
         B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
         B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
@@ -461,7 +453,7 @@ end
 
 
 function A_eq_coeff!(ABCS::Vector, vars, ::Outer)
-    @unpack (
+    (
         potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
         B1   , B2   , G   , phi   , S    , Fx    , Fy    , Sd, B1d, B2d, Gd, phid,
         B1p  , B2p  , Gp  , phip  , Sp   , Fxp   , Fyp   ,

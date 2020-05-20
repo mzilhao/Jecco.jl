@@ -184,7 +184,7 @@ function solve_S!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
                 Gp    = -u*u * Du_G[a,i,j]
                 phip  = -u*u * Du_phi[a,i,j]
 
-                vars = SVars(phi0, u, xi, B1, B1p, B2, B2p, G, Gp, phi, phip)
+                vars = (phi0, u, xi, B1, B1p, B2, B2p, G, Gp, phi, phip)
 
                 S_eq_coeff!(aux.ABCS, vars, sys.gridtype)
 
@@ -304,7 +304,7 @@ function solve_Fxy!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
                 Sp_x  = -u2 * Dx(Du_S, a,i,j)
                 Sp_y  = -u2 * Dy(Du_S, a,i,j)
 
-                vars = FVars(
+                vars = (
                     phi0, u, xi, xi_x, xi_y,
                     B1     ,    B2     ,    G      ,    phi    ,    S      ,
                     B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,
@@ -492,7 +492,7 @@ function solve_Sd!(bulk::Bulk, BC::Bulk, gauge::Gauge, base::BaseVars,
                 G_xy       = Dx(Dy, bulk.G,  a,i,j)
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
-                vars = SdVars(
+                vars = (
                     potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
                     B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,
                     B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
@@ -661,7 +661,7 @@ function solve_B2d!(bulk::Bulk, BC::Bulk, gauge::Gauge, base::BaseVars,
                 G_xy       = Dx(Dy, bulk.G,  a,i,j)
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
-                vars = BdGVars(
+                vars = (
                     phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
                     B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
                     B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
@@ -832,7 +832,7 @@ function solve_B1dGd!(bulk::Bulk, BC::Bulk, gauge::Gauge, base::BaseVars,
                 G_xy       = Dx(Dy, bulk.G,  a,i,j)
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
-                vars = BdGVars(
+                vars = (
                     phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
                     B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
                     B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
@@ -1021,7 +1021,7 @@ function solve_phid!(bulk::Bulk, BC::Bulk, gauge::Gauge, base::BaseVars,
                 phi_xy     = Dx(Dy, bulk.phi,a,i,j)
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
-                vars = phidVars(
+                vars = (
                     potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
                     B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
                     B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
@@ -1196,7 +1196,7 @@ function solve_A!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
                 phi_xy     = Dx(Dy, bulk.phi,a,i,j)
                 S_xy       = Dx(Dy, bulk.S,  a,i,j)
 
-                vars = AVars(
+                vars = (
                     potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
                     B1   , B2   , G   , phi   , S    , Fx    , Fy    , Sd, B1d, B2d, Gd, phid,
                     B1p  , B2p  , Gp  , phip  , Sp   , Fxp   , Fyp   ,

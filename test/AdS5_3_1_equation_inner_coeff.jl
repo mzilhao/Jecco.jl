@@ -10,12 +10,12 @@ BB    = zeros(2,2)
 CC    = zeros(2,2)
 SS    = zeros(2)
 
-svars    = Jecco.AdS5_3_1.SVars(ones(11)...)
-fvars    = Jecco.AdS5_3_1.FVars(ones(37)...)
-sdvars   = Jecco.AdS5_3_1.SdVars(ZeroPotential(), ones(70)...)
-bdgvars  = Jecco.AdS5_3_1.BdGVars(ones(71)...)
-phidvars = Jecco.AdS5_3_1.phidVars(ZeroPotential(), ones(72)...)
-avars    = Jecco.AdS5_3_1.AVars(ZeroPotential(), ones(76)...)
+svars    = ones(11)
+fvars    = ones(37)
+sdvars   = [ZeroPotential(); ones(70)]
+bdgvars  = ones(71)
+phidvars = [ZeroPotential(); ones(72)]
+avars    = [ZeroPotential(); ones(76)]
 
 
 @testset "S equation inner grid coefficients:" begin
