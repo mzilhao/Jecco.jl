@@ -1,10 +1,10 @@
 
-@with_kw struct BlackBrane{T} <: IBVP{T}
+Base.@kwdef struct BlackBrane{T} <: IBVP{T}
     energy_dens   :: T   = 1.0
     AH_pos        :: T   = 1.0
 end
 
-@with_kw struct IDTest0{T} <: IBVP{T}
+Base.@kwdef struct IDTest0{T} <: IBVP{T}
     b14_0    :: T  = 0.0
     b24_0    :: T  = 0.0
     g4_0     :: T  = 0.0

@@ -9,7 +9,7 @@ uses Gauss-Lobatto points.
 Since the boundary conditions for the nested system are always specified at u=0,
 the inner grid necessarily starts at u=0 and finishes at u=u_outer_min.
 """
-@with_kw struct Grid3D{T<:Real}
+Base.@kwdef struct Grid3D{T<:Real}
     x_min            :: T
     x_max            :: T
     x_nodes          :: Int
