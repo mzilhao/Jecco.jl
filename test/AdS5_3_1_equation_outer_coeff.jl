@@ -1,6 +1,5 @@
 
 using Test
-using BenchmarkTools
 
 using Jecco
 using Jecco.AdS5_3_1
@@ -24,7 +23,6 @@ avars    = Jecco.AdS5_3_1.AVars(ZeroPotential(), ones(76)...)
 
     @test all(ABCS .≈ [6.0, 12.0, 10.381097845541817, 0.0])
 end
-@btime Jecco.AdS5_3_1.S_eq_coeff!($ABCS, $svars, Outer())
 
 @testset "Fxy equations outer grid coefficients:" begin
     Jecco.AdS5_3_1.Fxy_eq_coeff!(AA, BB, CC, SS, fvars, Outer())
@@ -34,21 +32,18 @@ end
     @test all( CC .≈ [149.68137141822632 -24.40497260570832; 42.56474178480922 2.459692111055068] )
     @test all( SS .≈ [0.0, 0.0] )
 end
-@btime Jecco.AdS5_3_1.Fxy_eq_coeff!($AA, $BB, $CC, $SS, $fvars, Outer())
 
 @testset "Sd equation outer grid coefficients:" begin
     Jecco.AdS5_3_1.Sd_eq_coeff!(ABCS, sdvars, Outer())
 
     @test all( ABCS .≈ [0.0, -32.61938194150854, 65.23876388301709, 1102.9647505450266] )
 end
-@btime Jecco.AdS5_3_1.Sd_eq_coeff!($ABCS, $sdvars, Outer())
 
 @testset "B2d equation outer grid coefficients:" begin
     Jecco.AdS5_3_1.B2d_eq_coeff!(ABCS, bdgvars, Outer())
 
     @test all( ABCS .≈ [0.0, -32.61938194150854, 48.92907291226281, 31.353708676211966] )
 end
-@btime Jecco.AdS5_3_1.B2d_eq_coeff!($ABCS, $bdgvars, Outer())
 
 @testset "B1dGd equations outer grid coefficients:" begin
     Jecco.AdS5_3_1.B1dGd_eq_coeff!(AA, BB, CC, SS, bdgvars, Outer())
@@ -58,20 +53,17 @@ end
     @test all( CC .≈ [73.77180356980473 24.842730657541917; -59.15297244604868 48.92907291226281] )
     @test all( SS .≈ [-322.48341532407966, -82.91438383027555] )
 end
-@btime Jecco.AdS5_3_1.B1dGd_eq_coeff!($AA, $BB, $CC, $SS, $bdgvars, Outer())
 
 @testset "phid equations outer grid coefficients:" begin
     Jecco.AdS5_3_1.phid_eq_coeff!(ABCS, phidvars, Outer())
 
     @test all( ABCS .≈ [0.0, -21.74625462767236, 32.61938194150854, 473.5501053413936] )
 end
-@btime Jecco.AdS5_3_1.phid_eq_coeff!($ABCS, $phidvars, Outer())
 
 @testset "A equations outer grid coefficients:" begin
     Jecco.AdS5_3_1.A_eq_coeff!(ABCS, avars, Outer())
 
     @test all( ABCS .≈ [16.30969097075427, 32.61938194150854, 0.0, -2788.0697971816335] )
 end
-@btime Jecco.AdS5_3_1.A_eq_coeff!($ABCS, $avars, Outer())
 
 nothing
