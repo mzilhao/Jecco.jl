@@ -24,17 +24,17 @@ using HDF5
     f     = [0.5 * x1.^2 .* cos.(x2) .* sin.(x3) for x1 in ucoord[:], x2 in xcoord[:], x3 in ycoord[:]]
     g     = [666 for x1 in ucoord[:], x2 in xcoord[:], x3 in ycoord[:]]
 
-    grid  = Jecco.Grid(ucoord, xcoord, ycoord)
+    chart  = Jecco.Chart(ucoord, xcoord, ycoord)
 
-    mins      = Jecco.min(grid)
-    deltas    = Jecco.delta(grid)
-    maxs      = Jecco.max(grid)
-    gridtypes = Jecco.coord_type(grid)
-    names     = Jecco.name(grid)
+    mins      = Jecco.min(chart)
+    deltas    = Jecco.delta(chart)
+    maxs      = Jecco.max(chart)
+    gridtypes = Jecco.coord_type(chart)
+    names     = Jecco.name(chart)
 
 
-    field1 = Jecco.Field("f", f, grid)
-    field2 = Jecco.Field("g", g, grid)
+    field1 = Jecco.Field("f", f, chart)
+    field2 = Jecco.Field("g", g, chart)
 
     # write the contents
     tinfo  = Jecco.TimeInfo(1, 10.0, 0.1)

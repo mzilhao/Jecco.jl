@@ -7,15 +7,15 @@ mutable struct TimeInfo{T<:Real}
     t   :: T
     dt  :: T
 end
-TimeInfo(it::Int, t::Real, dt::Real) = TimeInfo{typeof(t)}(it, t, dt)
+TimeInfo(it::Int, t::T, dt::T) where {T} = TimeInfo{T}(it, t, dt)
 TimeInfo() = TimeInfo(0, 0.0, 0.0)
 
 mutable struct Field{A,G}
     name  :: String
     data  :: A
-    grid  :: G
+    chart :: G
 end
-Field(name::String, data, grid::Grid) = Field{typeof(data),typeof(grid)}(name, data, grid)
+Field(name::String, data, chart::Chart) = Field{typeof(data),typeof(chart)}(name, data, chart)
 
 function out_info(it::Integer, t::Real, time_per_hour::Real, f, label::String, info_every::Integer,
                   header_every::Integer)
@@ -104,13 +104,13 @@ function output(param::Output, fields::Vector)
 end
 
 write_hdf5(param::Output, grp::HDF5Group, field::Field) =
-    write_hdf5(param, grp, field.name, field.data, field.grid)
+    write_hdf5(param, grp, field.name, field.data, field.chart)
 
 function write_hdf5(param::Output, grp::HDF5Group, fieldname::String, data::AbstractArray,
-                    grid::Grid)
+                    chart::Chart)
     # write actual data
     dset = write_dataset(grp, fieldname, data)
-    setup_openpmd_mesh(dset, grid)
+    setup_openpmd_mesh(dset, chart)
 
     nothing
 end
@@ -150,8 +150,8 @@ end
 openpmd_geometry(coord::CartesianCoord) = "cartesian"
 openpmd_geometry(coord::GaussLobattoCoord) = "other"
 
-function openpmd_geometry(grid::Grid)
-    geometries = [openpmd_geometry(coord) for coord in grid.coords]
+function openpmd_geometry(chart::Chart)
+    geometries = [openpmd_geometry(coord) for coord in chart.coords]
     if all(geometries .== "cartesian")
         geometry = "cartesian"
     else
@@ -170,14 +170,14 @@ function setup_openpmd_mesh(dset::HDF5Dataset, coord::AbstractCoord)
     nothing
 end
 
-function setup_openpmd_mesh(dset::HDF5Dataset, grid::Grid)
-    mins      = Jecco.min(grid)
-    deltas    = Jecco.delta(grid)
-    maxs      = Jecco.max(grid)
-    gridtypes = Jecco.coord_type(grid)
-    names     = Jecco.name(grid)
+function setup_openpmd_mesh(dset::HDF5Dataset, chart::Chart)
+    mins      = Jecco.min(chart)
+    deltas    = Jecco.delta(chart)
+    maxs      = Jecco.max(chart)
+    gridtypes = Jecco.coord_type(chart)
+    names     = Jecco.name(chart)
 
-    attrs(dset)["geometry"]         = openpmd_geometry(grid)
+    attrs(dset)["geometry"]         = openpmd_geometry(chart)
 
     # Julia, like Fortran and Matlab, stores arrays in column-major order. HDF5
     # uses C's row-major order, and consequently every array's dimensions are

@@ -17,7 +17,7 @@ end
 
 function write_out(out, fields)
     Nsys    = length(fields)
-    ucoords = [fields[i].grid.coords[1] for i in 1:Nsys]
+    ucoords = [fields[i].chart.coords[1] for i in 1:Nsys]
 
     unpack  = unpack_dom(ucoords)
 
@@ -66,8 +66,8 @@ function ibvp(par_grid::ParamGrid, par_id::ParamID,
 
     phis = unpack(ID)
     fieldnames = ["phi c=$i" for i in 1:Nsys]
-    grids      = [Grid([sys.ucoord, sys.xcoord, sys.ycoord]) for sys in systems]
-    fields     = [Jecco.Field(fieldnames[i], phis[i], grids[i]) for i in 1:Nsys]
+    charts     = [Chart([sys.ucoord, sys.xcoord, sys.ycoord]) for sys in systems]
+    fields     = [Jecco.Field(fieldnames[i], phis[i], charts[i]) for i in 1:Nsys]
 
     out  = Jecco.Output(par_io.folder, par_io.prefix, par_io.out_every, tinfo;
                         overwrite=par_io.overwrite)
