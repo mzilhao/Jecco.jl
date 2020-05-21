@@ -160,21 +160,3 @@ function read_dataset(grp::HDF5Group, var::String)
 
     func, grid
 end
-
-function Grid(coord_types::Vector, names::Vector, mins::Vector, maxs::Vector,
-              nodess::Vector)
-    dim_ = length(names)
-    @assert(length(mins) == length(maxs) == length(nodess) == length(coord_types) == dim_)
-    coords = [Coord(coord_types[i], i, names[i], mins[i], maxs[i], nodess[i]) for i in 1:dim_]
-    Grid{typeof(coords)}(dim_, coords)
-end
-
-function Coord(coord_type::String, N::Int, name::String, min::T, max::T, nodes::Int) where {T<:Real}
-    if coord_type == "Cartesian"
-        return CartesianCoord{T,N}(name, min, max, nodes)
-    elseif coord_type == "GaussLobatto"
-        return GaussLobattoCoord{T,N}(name, min, max, nodes)
-    else
-        error("Unknown coord type")
-    end
-end

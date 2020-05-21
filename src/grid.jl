@@ -42,6 +42,17 @@ function GaussLobatto{N}(name::String, xmin::T, xmax::T,
 end
 GaussLobatto(args...) = GaussLobatto{1}(args...)
 
+struct Coord{N} end
+function Coord{N}(coord_type::String, name::String, min::T, max::T, nodes::Int) where {T<:Real,N}
+    if coord_type == "Cartesian"
+        return CartesianCoord{N,T}(name, min, max, nodes)
+    elseif coord_type == "GaussLobatto"
+        return GaussLobattoCoord{N,T}(name, min, max, nodes)
+    else
+        error("Unknown coord type")
+    end
+end
+
 
 @inline function delta(coord::CartesianCoord) where {T<:Real,N}
     (coord.max - coord.min) / (coord.nodes - 1)
@@ -96,6 +107,15 @@ function Chart(coord::AbstractCoord)
     coords = (coord)
     Chart(coords)
 end
+
+function Chart(coord_types::Vector, names::Vector, mins::Vector, maxs::Vector,
+               nodess::Vector)
+    dim_ = length(names)
+    @assert(length(mins) == length(maxs) == length(nodess) == length(coord_types) == dim_)
+    coords = [Coord{i}(coord_types[i], names[i], mins[i], maxs[i], nodess[i]) for i in 1:dim_]
+    Chart(coords)
+end
+
 
 @inline Base.ndims(chart::Chart) = chart.ndims
 
