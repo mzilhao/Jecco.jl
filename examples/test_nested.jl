@@ -52,9 +52,13 @@ init_data!(boundary, systems[1],   ibvp)
 init_data!(gauge,    systems[end], ibvp)
 
 
+solve_nested = nested_solver(systems, ibvp)
+
+
 bulks = Bulk.(bulkevols)
 
-solve_nested = nested_solver(systems, ibvp)
+
+
 solve_nested(bulks, boundary, gauge)
 
 i = 2

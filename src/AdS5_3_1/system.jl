@@ -1,4 +1,8 @@
 
+abstract type GridType end
+struct Inner <: GridType end
+struct Outer <: GridType end
+
 """
 3D grid with the following configuration. x and y are periodic coordinates,
 uniformly spaced. The u coordinate is split into an "inner" and "outer" portion;

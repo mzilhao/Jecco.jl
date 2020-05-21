@@ -1,8 +1,4 @@
 
-abstract type GridType end
-struct Inner <: GridType end
-struct Outer <: GridType end
-
 """
 Extend this type for different potential choices
 """
