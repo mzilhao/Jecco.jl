@@ -132,3 +132,21 @@ end
 end
 
 @inline Base.size(chart::Chart) = Tuple(nodes(chart))
+
+
+struct Atlas{N,A<:Chart}
+    charts :: NTuple{N,A}
+end
+
+"""
+    Atlas(charts::A)
+
+An `Atlas` is a collection of `Chart`s
+"""
+Atlas(charts::Vararg{Chart,N}) where {N} = Atlas(charts)
+Atlas(xx::Vector) = Atlas(Tuple(xx))
+
+function Atlas(chart::Chart)
+    charts = (chart)
+    Atlas(charts)
+end

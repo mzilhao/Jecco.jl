@@ -4,8 +4,8 @@ using HDF5
 using LinearAlgebra
 
 export AbstractCoord, CartesianCoord, GaussLobattoCoord
+export Chart, Atlas
 export Cartesian, GaussLobatto
-export Chart
 export CenteredDiff, ChebDeriv
 
 export OpenPMDTimeSeries, get_field
