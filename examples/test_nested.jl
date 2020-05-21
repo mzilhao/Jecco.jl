@@ -5,7 +5,7 @@ import Base.Threads.@threads
 import Base.Threads.@spawn
 # using LinearAlgebra
 
-par_grid = Grid3D(
+grid = SpecCartGrid3D(
     x_min            = -5.0,
     x_max            =  5.0,
     x_nodes          =  128,
@@ -28,6 +28,7 @@ par_grid = Grid3D(
 #     tmax    = 1.0,
 # )
 
+atlas = Atlas(grid)
 
 ibvp = AdS5_3_1.IDTest0(
     b14_0      = 0.01,
@@ -40,12 +41,12 @@ ibvp = AdS5_3_1.IDTest0(
     potential  = ZeroPotential(),
 )
 
-systems = SystemPartition(par_grid)
+systems = SystemPartition(grid)
 
-bulkevols = BulkEvols(par_grid)
+bulkevols = BulkEvols(grid)
 
-boundary  = Boundary(par_grid)
-gauge     = Gauge(par_grid)
+boundary  = Boundary(grid)
+gauge     = Gauge(grid)
 
 init_data!(bulkevols, systems, ibvp)
 init_data!(boundary, systems[1],   ibvp)

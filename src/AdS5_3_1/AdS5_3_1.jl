@@ -21,7 +21,7 @@ include("inner_to_outer.jl")
 include("solve_nested.jl")
 
 
-export Grid3D
+export SpecCartGrid3D
 export Potential, ZeroPotential
 export BlackBrane, init_data!, init_data
 export EvolTest0, get_f_t!

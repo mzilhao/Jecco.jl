@@ -13,7 +13,7 @@ uses Gauss-Lobatto points.
 Since the boundary conditions for the nested system are always specified at u=0,
 the inner grid necessarily starts at u=0 and finishes at u=u_outer_min.
 """
-Base.@kwdef struct Grid3D{T<:Real}
+Base.@kwdef struct SpecCartGrid3D{T<:Real}
     x_min            :: T
     x_max            :: T
     x_nodes          :: Int
@@ -25,10 +25,29 @@ Base.@kwdef struct Grid3D{T<:Real}
     u_outer_domains  :: Int     = 1
     u_outer_nodes    :: Int # number of points per domain
     u_inner_nodes    :: Int
+    fd_order         :: Int     = 4
 end
 
-# TODO: add a new method "Grid" acting on the above type
+function Jecco.Atlas(grid::SpecCartGrid3D)
+    u_inner_coord = GaussLobatto{1}("u", 0.0, grid.u_outer_min, grid.u_inner_nodes)
 
+    N_outer_sys = grid.u_outer_domains
+    delta_udom  = (grid.u_outer_max - grid.u_outer_min) / N_outer_sys
+
+    u_outer_coords =
+        [GaussLobatto{1}("u", grid.u_outer_min + (i-1)*delta_udom,
+                          grid.u_outer_min + i*delta_udom, grid.u_outer_nodes)
+         for i in 1:N_outer_sys]
+
+    xcoord  = Cartesian{2}("x", grid.x_min, grid.x_max, grid.x_nodes, endpoint=false)
+    ycoord  = Cartesian{3}("y", grid.y_min, grid.y_max, grid.y_nodes, endpoint=false)
+
+    inner_chart  = Chart(u_inner_coord, xcoord, ycoord)
+    outer_charts = [Chart(u_outer_coords[i], xcoord, ycoord)
+                     for i in 1:N_outer_sys]
+
+    Atlas([inner_chart; outer_charts])
+end
 
 struct System{GT,Cu,Cx,Cy,Du,Dx,Dy}
     gridtype :: GT
@@ -44,8 +63,7 @@ struct System{GT,Cu,Cx,Cy,Du,Dx,Dy}
 end
 
 function System(gridtype::GT, ucoord::GaussLobattoCoord,
-                xcoord::CartesianCoord, ycoord::CartesianCoord) where {GT<:GridType}
-    ord = 4
+                xcoord::CartesianCoord, ycoord::CartesianCoord, ord::Int) where {GT<:GridType}
 
     Du  = ChebDeriv{1}(1, ucoord.min, ucoord.max, ucoord.nodes)
     Duu = ChebDeriv{1}(2, ucoord.min, ucoord.max, ucoord.nodes)
@@ -83,28 +101,28 @@ end
 @inline Base.getindex(ff::SystemPartition, i::Int) = ff._x[i]
 
 """
-    SystemPartition(p::Grid3D)
+    SystemPartition(grid::SpecCartGrid3D)
 
 Create a `SystemPartition`, which is a `Tuple` of `System` where each element
 corresponds to a different u-domain
 """
-function SystemPartition(p::Grid3D)
-    u_inner_coord = GaussLobatto{1}("u", 0.0, p.u_outer_min, p.u_inner_nodes)
+function SystemPartition(grid::SpecCartGrid3D)
+    u_inner_coord = GaussLobatto{1}("u", 0.0, grid.u_outer_min, grid.u_inner_nodes)
 
-    N_outer_sys = p.u_outer_domains
-    delta_udom  = (p.u_outer_max - p.u_outer_min) / N_outer_sys
+    N_outer_sys = grid.u_outer_domains
+    delta_udom  = (grid.u_outer_max - grid.u_outer_min) / N_outer_sys
 
     u_outer_coords =
-        [GaussLobatto{1}("u", p.u_outer_min + (i-1)*delta_udom,
-                          p.u_outer_min + i*delta_udom, p.u_outer_nodes)
+        [GaussLobatto{1}("u", grid.u_outer_min + (i-1)*delta_udom,
+                          grid.u_outer_min + i*delta_udom, grid.u_outer_nodes)
          for i in 1:N_outer_sys]
 
-    xcoord  = Cartesian{2}("x", p.x_min, p.x_max, p.x_nodes, endpoint=false)
-    ycoord  = Cartesian{3}("y", p.y_min, p.y_max, p.y_nodes, endpoint=false)
+    xcoord  = Cartesian{2}("x", grid.x_min, grid.x_max, grid.x_nodes, endpoint=false)
+    ycoord  = Cartesian{3}("y", grid.y_min, grid.y_max, grid.y_nodes, endpoint=false)
 
-    inner_system = System(Inner(), u_inner_coord, xcoord, ycoord)
+    inner_system = System(Inner(), u_inner_coord, xcoord, ycoord, grid.fd_order)
 
-    outer_systems = [System(Outer(), u_outer_coords[i], xcoord, ycoord)
+    outer_systems = [System(Outer(), u_outer_coords[i], xcoord, ycoord, grid.fd_order)
                      for i in 1:N_outer_sys]
 
     SystemPartition([inner_system; outer_systems])
@@ -112,41 +130,41 @@ end
 
 
 """
-    Boundary(p::Grid3D)
+    Boundary(grid::SpecCartGrid3D)
 
 Create a `Boundary` struct with arrays of `size = (1,p.x_nodes,p.y_nodes)`
 """
-function Boundary(p::Grid3D{T}) where {T}
-    Nx = p.x_nodes
-    Ny = p.y_nodes
+function Boundary(grid::SpecCartGrid3D{T}) where {T}
+    Nx = grid.x_nodes
+    Ny = grid.y_nodes
     Boundary{T}(undef, Nx, Ny)
 end
 
 """
-    Gauge(p::Grid3D)
+    Gauge(grid::SpecCartGrid3D)
 
-Create a `Gauge` struct with arrays of `size = (1,p.x_nodes,p.y_nodes)`
+Create a `Gauge` struct with arrays of `size = (1,grid.x_nodes,grid.y_nodes)`
 """
-function Gauge(p::Grid3D{T}) where {T}
-    Nx = p.x_nodes
-    Ny = p.y_nodes
+function Gauge(grid::SpecCartGrid3D{T}) where {T}
+    Nx = grid.x_nodes
+    Ny = grid.y_nodes
     Gauge{T}(undef, Nx, Ny)
 end
 
 """
-    BulkEvols(p::Grid3D)
+    BulkEvols(grid::SpecCartGrid3D)
 
-Create an `NTuple` of `BulkEvol` (with `length = 1 + p.u_outer_domains`) of elements
-`BulkEvol`. The first `BulkEvol` has arrays of `size = (p.u_inner_nodes,
-p.x_nodes, p.y_nodes)`, and the remaining ones have `size = (p.u_outer_nodes,
-p.x_nodes, p.y_nodes)`
+Create an `NTuple` of `BulkEvol` (with `length = 1 + grid.u_outer_domains`) of elements
+`BulkEvol`. The first `BulkEvol` has arrays of `size = (grid.u_inner_nodes,
+grid.x_nodes, grid.y_nodes)`, and the remaining ones have `size = (grid.u_outer_nodes,
+grid.x_nodes, grid.y_nodes)`
 """
-function BulkEvols(p::Grid3D{T}) where {T}
-    Nx = p.x_nodes
-    Ny = p.y_nodes
-    Nu_in  = p.u_inner_nodes
-    Nu_out = p.u_outer_nodes
-    N_outer_sys = p.u_outer_domains
+function BulkEvols(grid::SpecCartGrid3D{T}) where {T}
+    Nx = grid.x_nodes
+    Ny = grid.y_nodes
+    Nu_in  = grid.u_inner_nodes
+    Nu_out = grid.u_outer_nodes
+    N_outer_sys = grid.u_outer_domains
 
     bulk_in  = [BulkEvol{T}(undef, Nu_in, Nx, Ny)]
     bulk_out = [BulkEvol{T}(undef, Nu_out, Nx, Ny) for i in 1:N_outer_sys]
