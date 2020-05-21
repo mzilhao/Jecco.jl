@@ -72,17 +72,16 @@ function Output(dir::String, prefix::String, every::Int, tinfo::TimeInfo{T};
               overwrite=overwrite)
 end
 
+# make Output a callable struct
 
-output(param::Output, fields::Vararg{Field,N}) where {N} = output(param, [fields...])
+# function (out::Output)(fields::Vector{Field{A,G}}) where {A,G}
+function (out::Output)(fields::Vector)
+    it = out.tinfo.it
+    if it % out.every == 0
+        filename = "$(out.prefix)$(lpad(string(it), 8, string(0))).h5"
+        fullpath = abspath(out.dir, filename)
 
-# function output(param::Output, fields::Vector{Field{A,G}}) where {A,G}
-function output(param::Output, fields::Vector)
-    it = param.tinfo.it
-    if it % param.every == 0
-        filename = "$(param.prefix)$(lpad(string(it), 8, string(0))).h5"
-        fullpath = abspath(param.dir, filename)
-
-        if param.overwrite
+        if out.overwrite
             mode = "w"
         else
             mode = "cw"
@@ -91,10 +90,10 @@ function output(param::Output, fields::Vector)
         fid = h5open(fullpath, mode)
 
         # create openPMD structure
-        grp = setup_openpmd_file(param, fid)
+        grp = setup_openpmd_file(out, fid)
 
         for field in fields
-            write_hdf5(param, grp, field)
+            write_hdf5(out, grp, field)
         end
 
         # close file
@@ -102,6 +101,10 @@ function output(param::Output, fields::Vector)
     end
     nothing
 end
+
+(out::Output)(fields::Vararg{Field,N}) where {N} = (out::Output)([fields...])
+
+
 
 write_hdf5(param::Output, grp::HDF5Group, field::Field) =
     write_hdf5(param, grp, field.name, field.data, field.chart)

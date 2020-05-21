@@ -26,7 +26,7 @@ function write_out(out, fields)
         for i in 1:Nsys
             fields[i].data = phis[i]
         end
-        Jecco.output(out, fields)
+        out(fields)
         nothing
     end
 end

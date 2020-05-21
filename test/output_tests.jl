@@ -41,7 +41,7 @@ using HDF5
     dir    = tempname()
     prefix = "data_"
     out    = Jecco.Output(dir, prefix, 1, tinfo)
-    Jecco.output(out, field1, field2)
+    out(field1, field2)
 
     # and now read the file back in
     fn  = "$(prefix)00000001.h5"
