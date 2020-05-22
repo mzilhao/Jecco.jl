@@ -20,10 +20,21 @@ Base.@kwdef struct IDTest0{T,TP<:Potential} <: IBVP
 end
 
 
-function init_data!(bulks, systems::SystemPartition{Nsys},
+function init_data!(bulkevols, boundary::Boundary, gauge::Gauge,
+                    systems::SystemPartition, ibvp::IBVP)
+
+    init_data!(bulkevols, systems, ibvp)
+    init_data!(boundary, systems[1],   ibvp)
+    init_data!(gauge,    systems[end], ibvp)
+
+    nothing
+end
+
+
+function init_data!(bulkevols, systems::SystemPartition{Nsys},
                     ibvp::IBVP) where {Nsys,T<:BulkEvol}
     # the Ref() makes its argument a scalar with respect to broadcast
-    init_data!.(bulks, systems, Ref(ibvp))
+    init_data!.(bulkevols, systems, Ref(ibvp))
 end
 
 

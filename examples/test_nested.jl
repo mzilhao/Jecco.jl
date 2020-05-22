@@ -40,9 +40,7 @@ boundary  = Boundary(grid)
 gauge     = Gauge(grid)
 
 # and their initial conditions
-init_data!(bulkevols, systems, ibvp)
-init_data!(boundary, systems[1],   ibvp)
-init_data!(gauge,    systems[end], ibvp)
+init_data!(bulkevols, boundary, gauge, systems, ibvp)
 
 # function to solve the nested system, given the initial data
 solve_nested = nested_solver(systems, ibvp)

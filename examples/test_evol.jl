@@ -4,7 +4,7 @@ using OrdinaryDiffEq
 using Jecco
 using Jecco.AdS5_3_1
 
-par_grid = Grid3D(
+grid = SpecCartGrid3D(
     x_min            = -5.0,
     x_max            =  5.0,
     x_nodes          =  128,
@@ -24,18 +24,23 @@ ibvp   = BlackBrane()
 
 evoleq = EvolTest0()
 
+# atlas of grid configuration and respective SystemPartition
+atlas     = Atlas(grid)
+systems   = SystemPartition(grid)
 
-systems   = SystemPartition(par_grid)
+# evolved variables
+bulkevols = BulkEvols(grid)
+boundary  = Boundary(grid)
+gauge     = Gauge(grid)
 
-bulkevols = BulkEvols(par_grid)
+# and their initial conditions
+init_data!(bulkevols, boundary, gauge, systems, ibvp)
 
-boundary  = Boundary(par_grid)
-gauge     = Gauge(par_grid)
+# function to solve the nested system, given the initial data
+solve_nested = nested_solver(systems, ibvp)
 
-
-init_data!(bulkevols, systems, ibvp)
-init_data!(boundary, systems[1],   ibvp)
-init_data!(gauge,    systems[end], ibvp)
+# initialize all bulk variables
+bulks = Bulk.(bulkevols)
 
 evol = EvolPartition(boundary, gauge, bulkevols)
 
