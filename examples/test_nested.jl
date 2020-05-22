@@ -30,6 +30,11 @@ grid = SpecCartGrid3D(
 
 ibvp = BlackBrane()
 
+evoleq = EvolEq(
+    phi0       = 0.0,
+    potential  = ZeroPotential(),
+)
+
 # atlas of grid configuration and respective SystemPartition
 atlas     = Atlas(grid)
 systems   = SystemPartition(grid)
@@ -43,7 +48,7 @@ gauge     = Gauge(grid)
 init_data!(bulkevols, boundary, gauge, systems, ibvp)
 
 # function to solve the nested system, given the initial data
-solve_nested = nested_solver(systems, ibvp)
+solve_nested = nested_solver(systems, evoleq)
 
 # initialize all bulk variables
 bulks = Bulk.(bulkevols)

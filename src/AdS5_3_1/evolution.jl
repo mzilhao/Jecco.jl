@@ -1,6 +1,11 @@
 
 struct EvolTest0 <: AbstractEvolEq end
 
+Base.@kwdef struct EvolEq{T,TP<:Potential} <: AbstractEvolEq
+    phi0          :: T   = 0.0
+    potential     :: TP  = ZeroPotential()
+end
+
 function get_f_t!(ff_t, ff, systems, evoleq::EvolTest0)
     Nsys = length(systems)
 

@@ -37,28 +37,32 @@ gauge     = Gauge(grid)
 init_data!(bulkevols, boundary, gauge, systems, ibvp)
 
 # function to solve the nested system, given the initial data
-solve_nested = nested_solver(systems, ibvp)
+# solve_nested = nested_solver(systems, ibvp)
 
 # initialize all bulk variables
-bulks = Bulk.(bulkevols)
+# bulks = Bulk.(bulkevols)
 
-evol = EvolPartition(boundary, gauge, bulkevols)
-
-
-function rhs!(df, f, (systems, evoleq), t)
-    get_f_t!(df, f, systems, evoleq)
-end
+# solve nested system
+# solve_nested(bulks, boundary, gauge)
 
 
-dt0 = 0.001
-tspan = (0.0, 0.05)
+# evol = EvolPartition(boundary, gauge, bulkevols)
 
-prob  = ODEProblem(rhs!, evol, tspan, (systems, evoleq))
 
-integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
+# function rhs!(df, f, (systems, evoleq), t)
+#     get_f_t!(df, f, systems, evoleq)
+# end
 
-for (f,t) in tuples(integrator)
-    B1  = AdS5_3_1.getB1(f, 1)
-    a4  = AdS5_3_1.geta4(f)
-    @show t, B1[1], a4[1]
-end
+
+# dt0 = 0.001
+# tspan = (0.0, 0.05)
+
+# prob  = ODEProblem(rhs!, evol, tspan, (systems, evoleq))
+
+# integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
+
+# for (f,t) in tuples(integrator)
+#     B1  = AdS5_3_1.getB1(f, 1)
+#     a4  = AdS5_3_1.geta4(f)
+#     @show t, B1[1], a4[1]
+# end
