@@ -1503,8 +1503,8 @@ end
 # We assume that the first entry on these arrays is the inner grid, and that
 # there is only one domain spanning this grid. If we ever change this
 # construction we must remember to make the appropriate changes here.
-function solve_nested!(bulks::Vector, BCs::Vector, dBCs::Vector, boundary::Boundary,
-                       gauge::Gauge, nesteds::Vector, ibvp::IBVP)
+function solve_nested!(bulks, BCs, dBCs, boundary::Boundary,
+                       gauge::Gauge, nesteds, ibvp::IBVP)
     Nsys = length(nesteds)
 
     set_innerBCs!(BCs[1], dBCs[1], bulks[1], boundary, gauge, nesteds[1], ibvp)
@@ -1527,11 +1527,11 @@ function nested_solver(systems::SystemPartition, ibvp::IBVP)
     T     = Jecco.coord_eltype(sys1.ucoord)
     _, Nx, Ny = size(sys1)
 
-    nesteds = [Nested(sys) for sys in systems]
-    BCs     = [Bulk{T}(undef, Nx, Ny) for sys in systems]
-    dBCs    = [Bulk{T}(undef, Nx, Ny) for sys in systems]
+    nesteds = Tuple([Nested(sys) for sys in systems])
+    BCs     = Tuple([Bulk{T}(undef, Nx, Ny) for sys in systems])
+    dBCs    = Tuple([Bulk{T}(undef, Nx, Ny) for sys in systems])
 
-    function (bulks::Vector, boundary::Boundary, gauge::Gauge)
+    function (bulks::Tuple, boundary::Boundary, gauge::Gauge)
         solve_nested!(bulks, BCs, dBCs, boundary, gauge, nesteds, ibvp)
         nothing
     end
