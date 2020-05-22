@@ -1,10 +1,6 @@
 using Jecco
 using Jecco.AdS5_3_1
 
-import Base.Threads.@threads
-import Base.Threads.@spawn
-# using LinearAlgebra
-
 grid = SpecCartGrid3D(
     x_min            = -5.0,
     x_max            =  5.0,
@@ -21,54 +17,51 @@ grid = SpecCartGrid3D(
     u_inner_nodes    =  12,
 )
 
-# par_evol = ParamEvol(
-#     ODE_method = "AB3",
-#     # ODE_method = "RK4",
-#     dt      = 0.008,
-#     tmax    = 1.0,
+# ibvp = AdS5_3_1.IDTest0(
+#     b14_0      = 0.01,
+#     b24_0      = 0.02,
+#     phi0       = 0.0,
+#     phi2_0     = 0.01,
+#     a4_0       = -1.0,
+#     fx2_0      = 0.02,
+#     fy2_0      = 0.1,
+#     potential  = ZeroPotential(),
 # )
 
-atlas = Atlas(grid)
+ibvp = BlackBrane()
 
-ibvp = AdS5_3_1.IDTest0(
-    b14_0      = 0.01,
-    b24_0      = 0.02,
-    phi0       = 0.0,
-    phi2_0     = 0.01,
-    a4_0       = -1.0,
-    fx2_0      = 0.02,
-    fy2_0      = 0.1,
-    potential  = ZeroPotential(),
-)
+# atlas of grid configuration and respective SystemPartition
+atlas     = Atlas(grid)
+systems   = SystemPartition(grid)
 
-systems = SystemPartition(grid)
-
+# evolved variables
 bulkevols = BulkEvols(grid)
-
 boundary  = Boundary(grid)
 gauge     = Gauge(grid)
 
+# and their initial conditions
 init_data!(bulkevols, systems, ibvp)
 init_data!(boundary, systems[1],   ibvp)
 init_data!(gauge,    systems[end], ibvp)
 
-
+# function to solve the nested system, given the initial data
 solve_nested = nested_solver(systems, ibvp)
 
-
+# initialize all bulk variables
 bulks = Bulk.(bulkevols)
 
-
-
+# solve nested system
 solve_nested(bulks, boundary, gauge)
+
+# analyze data
 
 i = 2
 
-u = systems[i].ucoord[:]
+chart = atlas.charts[i]
+uu    = chart.coords[1][:]
+xx    = chart.coords[2][:]
+yy    = chart.coords[3][:]
 
-bulk = bulks[i]
-# BC   = BCs[i]
-# dBC  = dBCs[i]
-# nested = nesteds[i]
+bulk  = bulks[i]
 
 bulk.A[:,1,1]
