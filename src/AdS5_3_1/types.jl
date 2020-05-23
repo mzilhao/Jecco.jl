@@ -268,6 +268,29 @@ function unpack(ff::AbstractVars)
 end
 
 
+struct BulkPartition{N,A}
+    _x :: NTuple{N,A}
+end
+"""
+    BulkPartition(x...)
+
+Contained to store (bulk) quantities that may be spread across different grid
+partitions
+"""
+BulkPartition(x...) = BulkPartition(tuple(x...))
+
+@inline Base.iterate(ff::BulkPartition)         = iterate(ff._x)
+@inline Base.iterate(ff::BulkPartition, i::Int) = iterate(ff._x, i)
+
+@inline Base.length(ff::BulkPartition{N}) where{N} = N
+@inline Base.firstindex(ff::BulkPartition) = 1
+@inline Base.lastindex(ff::BulkPartition)  = length(ff)
+
+@inline Base.getindex(ff::BulkPartition, i::Int) = ff._x[i]
+
+
+
+
 struct EvolVars{T,N,A} <: AbstractVector{T}
     x :: NTuple{N,A}
 end
