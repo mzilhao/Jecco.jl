@@ -1531,7 +1531,7 @@ function nested_solver(systems::SystemPartition, evoleq::EvolEq)
     BCs     = Tuple([Bulk{T}(undef, Nx, Ny) for sys in systems])
     dBCs    = Tuple([Bulk{T}(undef, Nx, Ny) for sys in systems])
 
-    function (bulks::Tuple, boundary::Boundary, gauge::Gauge)
+    function (bulks, boundary::Boundary, gauge::Gauge)
         solve_nested!(bulks, BCs, dBCs, boundary, gauge, nesteds, evoleq)
         nothing
     end

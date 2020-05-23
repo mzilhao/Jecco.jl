@@ -39,13 +39,11 @@ evoleq = EvolEq(
 atlas     = Atlas(grid)
 systems   = SystemPartition(grid)
 
-# evolved variables
-bulkevols = BulkEvolveds(grid)
+# allocate variables
+bulkevols, bulkconstrains = Bulks(grid)
 boundary  = Boundary(grid)
 gauge     = Gauge(grid)
 
-# (bulk) constrained variables
-bulkconstrains = BulkConstraineds(grid)
 
 # and their initial conditions
 init_data!(bulkevols, boundary, gauge, systems, ibvp)

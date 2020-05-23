@@ -152,41 +152,33 @@ function Gauge(grid::SpecCartGrid3D{T}) where {T}
 end
 
 """
-    BulkEvolveds(grid::SpecCartGrid3D)
+    Bulks(grid::SpecCartGrid3D)
 
-Create an `NTuple` of `BulkEvolved` (with `length = 1 + grid.u_outer_domains`) of elements
-`BulkEvolved`. The first `BulkEvolved` has arrays of `size = (grid.u_inner_nodes,
-grid.x_nodes, grid.y_nodes)`, and the remaining ones have `size = (grid.u_outer_nodes,
-grid.x_nodes, grid.y_nodes)`
+Returns two `BulkPartition`s of `length = 1 + grid.u_outer_domains` each.
+
+The first of these has elements of type `BulkEvolved`. The first `BulkEvolved`
+has arrays of `size = (grid.u_inner_nodes, grid.x_nodes, grid.y_nodes)`, and the
+remaining ones have `size = (grid.u_outer_nodes, grid.x_nodes, grid.y_nodes)`
+
+The second has elements of type `BulkConstrained`. The first `BulkConstrained`
+has arrays of `size = (grid.u_inner_nodes, grid.x_nodes, grid.y_nodes)`, and the
+remaining ones have `size = (grid.u_outer_nodes, grid.x_nodes, grid.y_nodes)`
+
 """
-function BulkEvolveds(grid::SpecCartGrid3D{T}) where {T}
+function Bulks(grid::SpecCartGrid3D{T}) where {T}
     Nx = grid.x_nodes
     Ny = grid.y_nodes
     Nu_in  = grid.u_inner_nodes
     Nu_out = grid.u_outer_nodes
     N_outer_sys = grid.u_outer_domains
 
-    bulk_in  = [BulkEvolved{T}(undef, Nu_in, Nx, Ny)]
-    bulk_out = [BulkEvolved{T}(undef, Nu_out, Nx, Ny) for i in 1:N_outer_sys]
-    Tuple([bulk_in; bulk_out])
-end
+    bulkevol_in   = BulkEvolved{T}(undef, Nu_in, Nx, Ny)
+    bulkevol_out  = [BulkEvolved{T}(undef, Nu_out, Nx, Ny) for i in 1:N_outer_sys]
 
-"""
-    BulkConstraineds(grid::SpecCartGrid3D)
+    bulkconst_in  = BulkConstrained{T}(undef, Nu_in, Nx, Ny)
+    bulkconst_out = [BulkConstrained{T}(undef, Nu_out, Nx, Ny) for i in 1:N_outer_sys]
 
-Create an `NTuple` of `BulkConstrained` (with `length = 1 + grid.u_outer_domains`) of elements
-`BulkConstrained`. The first `BulkConstrained` has arrays of `size = (grid.u_inner_nodes,
-grid.x_nodes, grid.y_nodes)`, and the remaining ones have `size = (grid.u_outer_nodes,
-grid.x_nodes, grid.y_nodes)`
-"""
-function BulkConstraineds(grid::SpecCartGrid3D{T}) where {T}
-    Nx = grid.x_nodes
-    Ny = grid.y_nodes
-    Nu_in  = grid.u_inner_nodes
-    Nu_out = grid.u_outer_nodes
-    N_outer_sys = grid.u_outer_domains
-
-    bulk_in  = [BulkConstrained{T}(undef, Nu_in, Nx, Ny)]
-    bulk_out = [BulkConstrained{T}(undef, Nu_out, Nx, Ny) for i in 1:N_outer_sys]
-    Tuple([bulk_in; bulk_out])
+    bulkevol  = BulkPartition((bulkevol_in, bulkevol_out...))
+    bulkconst = BulkPartition((bulkconst_in, bulkconst_out...))
+    bulkevol, bulkconst
 end
