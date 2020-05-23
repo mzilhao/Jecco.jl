@@ -34,3 +34,28 @@ function get_f_t!(ff_t, ff, systems, evoleq::EvolTest0)
     end
     nothing
 end
+
+
+function setup_rhs(bulks, systems::SystemPartition, evoleq::EvolEq)
+    Nsys = length(systems)
+
+    # function to solve the nested system
+    solve_nested = nested_solver(systems, evoleq)
+
+    function (ff_t::EvolPartition, ff::EvolPartition, evoleq::EvolEq, t)
+
+        boundary    = getboundary(ff)
+        gauge       = getgauge(ff)
+        bulkevols   = getbulkevols(ff)
+
+        boundary_t  = getboundary(ff_t)
+        gauge_t     = getgauge(ff_t)
+        bulkevols_t = getbulkevols(ff_t)
+
+        # solve nested system
+        solve_nested(bulks, boundary, gauge)
+
+
+        nothing
+    end
+end

@@ -22,7 +22,12 @@ grid = SpecCartGrid3D(
 
 ibvp   = BlackBrane()
 
-evoleq = EvolTest0()
+# evoleq = EvolTest0()
+
+evoleq = EvolEq(
+    phi0       = 0.0,
+    potential  = ZeroPotential(),
+)
 
 # atlas of grid configuration and respective SystemPartition
 atlas     = Atlas(grid)
@@ -33,20 +38,25 @@ bulkevols = BulkEvols(grid)
 boundary  = Boundary(grid)
 gauge     = Gauge(grid)
 
-# and their initial conditions
+# initialize all bulk variables. with this method, the evolved variables (B1,
+# B2, G, phi) in the bulks structs point to the same arrays as in the bulkevols
+# structs. this is important.
+bulks = Bulk.(bulkevols)
+
+# initial conditions
 init_data!(bulkevols, boundary, gauge, systems, ibvp)
 
-# function to solve the nested system, given the initial data
-# solve_nested = nested_solver(systems, ibvp)
 
-# initialize all bulk variables
-# bulks = Bulk.(bulkevols)
+evol = EvolPartition(boundary, gauge, bulkevols)
 
-# solve nested system
-# solve_nested(bulks, boundary, gauge)
+evol_t = similar(evol)
 
 
-# evol = EvolPartition(boundary, gauge, bulkevols)
+rhs! = AdS5_3_1.setup_rhs(bulks, systems, evoleq)
+
+rhs!(evol_t, evol, evoleq, 0.0)
+
+
 
 
 # function rhs!(df, f, (systems, evoleq), t)
