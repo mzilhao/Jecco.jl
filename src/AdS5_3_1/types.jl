@@ -284,7 +284,7 @@ view of the time evolution routine. Inspired in `ArrayPartition` from
 `RecursiveArrayTools`
 """
 function EvolVars(boundary::Boundary{T}, gauge::Gauge{T},
-                       bulkevols::NTuple{Nsys,BulkEvolved{T}}) where {T,Nsys}
+                  bulkevols::NTuple{Nsys,BulkEvolved{T}}) where {T,Nsys}
     f1 = unpack(boundary)
     f2 = unpack(gauge)
     f3 = [unpack(bulkevol) for bulkevol in bulkevols]
@@ -358,12 +358,12 @@ function getphi(ff::EvolVars, i::Int)
 end
 
 @inline getboundary(ff::EvolVars) = Boundary(geta4(ff), getfx2(ff), getfy2(ff))
-@inline getgauge(ff::EvolVars) = Gauge(getxi(ff))
+@inline getgauge(ff::EvolVars)    = Gauge(getxi(ff))
 
-@inline getbulkevol(ff::EvolVars, i::Int) =
+@inline getbulkevolved(ff::EvolVars, i::Int) =
     BulkEvolved(getB1(ff,i), getB2(ff,i), getG(ff,i), getphi(ff,i))
 
-function getbulkevols(ff::EvolVars)
+function getbulkevolveds(ff::EvolVars)
     Nsys = get_udomains(ff)
-    [getbulkevol(ff,i) for i in 1:Nsys]
+    [getbulkevolved(ff,i) for i in 1:Nsys]
 end

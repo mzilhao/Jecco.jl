@@ -14,11 +14,11 @@ function setup_rhs(bulkconstrains, systems::SystemPartition, evoleq::AbstractEvo
     solve_nested = nested_solver(systems, evoleq)
 
     function (ff_t::EvolVars, ff::EvolVars, t)
-        bulkevols_t = getbulkevols(ff_t)
+        bulkevols_t = getbulkevolveds(ff_t)
         boundary_t  = getboundary(ff_t)
         gauge_t     = getgauge(ff_t)
 
-        bulkevols   = getbulkevols(ff)
+        bulkevols   = getbulkevolveds(ff)
         boundary    = getboundary(ff)
         gauge       = getgauge(ff)
 
@@ -57,7 +57,7 @@ function get_f_t!(evol_t::EvolVars, bulks, boundary::Boundary, gauge::Gauge,
                   systems::SystemPartition, ::EvolTest0)
     Nsys = length(systems)
 
-    bulkevols_t = getbulkevols(evol_t)
+    bulkevols_t = getbulkevolveds(evol_t)
     boundary_t  = getboundary(evol_t)
     gauge_t     = getgauge(evol_t)
 
@@ -86,7 +86,7 @@ function get_f_t!(evol_t::EvolVars, bulks, boundary::Boundary, gauge::Gauge,
                   systems::SystemPartition, evoleq::EvolEq)
     Nsys = length(systems)
 
-    bulkevols_t = getbulkevols(evol_t)
+    bulkevols_t = getbulkevolveds(evol_t)
     boundary_t  = getboundary(evol_t)
     gauge_t     = getgauge(evol_t)
 
