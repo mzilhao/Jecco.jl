@@ -63,12 +63,12 @@ struct Gauge{T} <: AbstractVars{T}
     xi  :: Array{T,3}
 end
 
-@inline varlist(::BulkEvolved)     = [:B1, :B2, :G, :phi]
-@inline varlist(::BulkConstrained) = [:S, :Fx, :Fy, :B1d, :B2d, :Gd, :phid, :Sd, :A]
-@inline varlist(::Bulk)            = [:B1, :B2, :G, :phi, :S, :Fx, :Fy, :B1d, :B2d,
-                                      :Gd, :phid, :Sd, :A]
-@inline varlist(::Boundary)        = [:a4, :fx2, :fy2]
-@inline varlist(::Gauge)           = [:xi]
+@inline varlist(::BulkEvolved)     = (:B1, :B2, :G, :phi)
+@inline varlist(::BulkConstrained) = (:S, :Fx, :Fy, :B1d, :B2d, :Gd, :phid, :Sd, :A)
+@inline varlist(::Bulk)            = (:B1, :B2, :G, :phi, :S, :Fx, :Fy, :B1d, :B2d,
+                                      :Gd, :phid, :Sd, :A)
+@inline varlist(::Boundary)        = (:a4, :fx2, :fy2)
+@inline varlist(::Gauge)           = (:xi)
 
 
 """
@@ -185,38 +185,39 @@ function Gauge{T}(::UndefInitializer, Nx::Int, Ny::Int) where {T<:Real}
 end
 
 
-getB1(ff::BulkEvolved)  = ff.B1
-getB2(ff::BulkEvolved)  = ff.B2
-getG(ff::BulkEvolved)   = ff.G
-getphi(ff::BulkEvolved) = ff.phi
+getB1(ff::BulkEvolved)       = ff.B1
+getB2(ff::BulkEvolved)       = ff.B2
+getG(ff::BulkEvolved)        = ff.G
+getphi(ff::BulkEvolved)      = ff.phi
 
-geta4(ff::Boundary)  = ff.a4
-getfx2(ff::Boundary) = ff.fx2
-getfy2(ff::Boundary) = ff.fy2
+getS(ff::BulkConstrained)    = ff.S
+getFx(ff::BulkConstrained)   = ff.Fx
+getFy(ff::BulkConstrained)   = ff.Fy
+getB1d(ff::BulkConstrained)  = ff.B1d
+getB2d(ff::BulkConstrained)  = ff.B2d
+getGd(ff::BulkConstrained)   = ff.Gd
+getphid(ff::BulkConstrained) = ff.phid
+getA(ff::BulkConstrained)    = ff.A
 
-getxi(ff::Gauge)     = ff.xi
+getB1(ff::Bulk)              = ff.B1
+getB2(ff::Bulk)              = ff.B2
+getG(ff::Bulk)               = ff.G
+getphi(ff::Bulk)             = ff.phi
+getS(ff::Bulk)               = ff.S
+getFx(ff::Bulk)              = ff.Fx
+getFy(ff::Bulk)              = ff.Fy
+getB1d(ff::Bulk)             = ff.B1d
+getB2d(ff::Bulk)             = ff.B2d
+getGd(ff::Bulk)              = ff.Gd
+getphid(ff::Bulk)            = ff.phid
+getA(ff::Bulk)               = ff.A
 
-getB1(ff::Bulk)      = ff.B1
-getB2(ff::Bulk)      = ff.B2
-getG(ff::Bulk)       = ff.G
-getphi(ff::Bulk)     = ff.phi
-getS(ff::Bulk)       = ff.S
-getFx(ff::Bulk)      = ff.Fx
-getFy(ff::Bulk)      = ff.Fy
-getB1d(ff::Bulk)     = ff.B1d
-getB2d(ff::Bulk)     = ff.B2d
-getGd(ff::Bulk)      = ff.Gd
-getphid(ff::Bulk)    = ff.phid
-getA(ff::Bulk)       = ff.A
+geta4(ff::Boundary)          = ff.a4
+getfx2(ff::Boundary)         = ff.fx2
+getfy2(ff::Boundary)         = ff.fy2
 
-Base.similar(ff::BulkEvolved) = BulkEvolved(similar(ff.B1), similar(ff.B2), similar(ff.G), similar(ff.phi))
-Base.similar(ff::Boundary) = Boundary(similar(ff.a4), similar(ff.fx2), similar(ff.fy2))
-Base.similar(ff::Gauge)    = Gauge(similar(ff.xi))
-Base.similar(ff::Bulk)     =
-    BulkAll(similar(ff.B1), similar(ff.B2), similar(ff.G), similar(ff.phi),
-            similar(ff.S), similar(ff.Fx), similar(ff.Fy), similar(ff.B1d),
-            similar(ff.B2d), similar(ff.Gd), similar(phid), similar(Sd),
-            similar(ff.A))
+getxi(ff::Gauge)             = ff.xi
+
 
 @inline function Base.length(ff::AbstractVars)
     vars = varlist(ff)
