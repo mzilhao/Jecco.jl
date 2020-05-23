@@ -32,7 +32,7 @@ end
 
 
 function init_data!(bulkevols, systems::SystemPartition{Nsys},
-                    ibvp::IBVP) where {Nsys,T<:BulkEvol}
+                    ibvp::IBVP) where {Nsys,T<:BulkEvolved}
     # the Ref() makes its argument a scalar with respect to broadcast
     init_data!.(bulkevols, systems, Ref(ibvp))
 end
@@ -40,7 +40,7 @@ end
 
 # BlackBrane initial data
 
-function init_data!(ff::BulkEvol, sys::System, ibvp::BlackBrane)
+function init_data!(ff::BulkEvolved, sys::System, ibvp::BlackBrane)
     B1  = getB1(ff)
     B2  = getB2(ff)
     G   = getG(ff)
@@ -83,7 +83,7 @@ end
 
 # IDTest0
 
-function init_data!(ff::BulkEvol, sys::System{Outer}, ibvp::IDTest0)
+function init_data!(ff::BulkEvolved, sys::System{Outer}, ibvp::IDTest0)
     Nu, Nx, Ny = size(sys)
     ucoord = sys.ucoord
     xcoord = sys.xcoord
@@ -119,7 +119,7 @@ function init_data!(ff::BulkEvol, sys::System{Outer}, ibvp::IDTest0)
     ff
 end
 
-function init_data!(ff::BulkEvol, sys::System{Inner}, ibvp::IDTest0)
+function init_data!(ff::BulkEvolved, sys::System{Inner}, ibvp::IDTest0)
     # Nu, Nx, Ny = size(sys)
     # ucoord = sys.ucoord
     # xcoord = sys.xcoord

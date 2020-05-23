@@ -21,7 +21,7 @@ abstract type AbstractVars{T} <: AbstractVector{T} end
 abstract type EvolVars{T} <: AbstractVars{T} end
 
 
-struct BulkEvol{T} <: AbstractVars{T}
+struct BulkEvolved{T} <: AbstractVars{T}
     B1  :: Array{T,3}
     B2  :: Array{T,3}
     G   :: Array{T,3}
@@ -54,24 +54,24 @@ struct Bulk{T,N} <: AbstractVars{T}
     A    :: Array{T,N}
 end
 
-@inline varlist(::BulkEvol) = [:B1, :B2, :G, :phi]
+@inline varlist(::BulkEvolved) = [:B1, :B2, :G, :phi]
 @inline varlist(::Boundary) = [:a4, :fx2, :fy2]
 @inline varlist(::Gauge)    = [:xi]
 @inline varlist(::Bulk)     = [:B1, :B2, :G, :phi, :S, :Fx, :Fy, :B1d, :B2d,
                                :Gd, :phid, :Sd, :A]
 
 """
-    BulkEvol{T}(undef, Nu, Nx, Ny)
+    BulkEvolved{T}(undef, Nu, Nx, Ny)
 
 Construct a container of uninitialized Arrays to hold all the bulk variables
 that are evolved in time: B1, B2, G, phi
 """
-function BulkEvol{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Real}
+function BulkEvolved{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Real}
     B1  = Array{T}(undef, Nu, Nx, Ny)
     B2  = Array{T}(undef, Nu, Nx, Ny)
     G   = Array{T}(undef, Nu, Nx, Ny)
     phi = Array{T}(undef, Nu, Nx, Ny)
-    BulkEvol{T}(B1, B2, G, phi)
+    BulkEvolved{T}(B1, B2, G, phi)
 end
 
 """
@@ -132,12 +132,12 @@ function Bulk{T}(::UndefInitializer, Nxx::Vararg{Int,N}) where {T<:Real,N}
     Bulk{T,N}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
 """
-    Bulk(bulkevol::BulkEvol)
+    Bulk(bulkevol::BulkEvolved)
 
 Construct a container to hold all the bulk variables, but where the evolved ones
 point to the given bulkevol struct
 """
-function Bulk(ff::BulkEvol{T}) where {T}
+function Bulk(ff::BulkEvolved{T}) where {T}
     B1    = ff.B1
     B2    = ff.B2
     G     = ff.G
@@ -154,10 +154,10 @@ function Bulk(ff::BulkEvol{T}) where {T}
     Bulk(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
 
-getB1(ff::BulkEvol)  = ff.B1
-getB2(ff::BulkEvol)  = ff.B2
-getG(ff::BulkEvol)   = ff.G
-getphi(ff::BulkEvol) = ff.phi
+getB1(ff::BulkEvolved)  = ff.B1
+getB2(ff::BulkEvolved)  = ff.B2
+getG(ff::BulkEvolved)   = ff.G
+getphi(ff::BulkEvolved) = ff.phi
 
 geta4(ff::Boundary)  = ff.a4
 getfx2(ff::Boundary) = ff.fx2
@@ -178,7 +178,7 @@ getGd(ff::Bulk)      = ff.Gd
 getphid(ff::Bulk)    = ff.phid
 getA(ff::Bulk)       = ff.A
 
-Base.similar(ff::BulkEvol) = BulkEvol(similar(ff.B1), similar(ff.B2), similar(ff.G), similar(ff.phi))
+Base.similar(ff::BulkEvolved) = BulkEvolved(similar(ff.B1), similar(ff.B2), similar(ff.G), similar(ff.phi))
 Base.similar(ff::Boundary) = Boundary(similar(ff.a4), similar(ff.fx2), similar(ff.fy2))
 Base.similar(ff::Gauge)    = Gauge(similar(ff.xi))
 Base.similar(ff::Bulk)     =
@@ -253,7 +253,7 @@ view of the time evolution routine. Inspired in `ArrayPartition` from
 `RecursiveArrayTools`
 """
 function EvolPartition(boundary::Boundary{T}, gauge::Gauge{T},
-                       bulkevols::NTuple{Nsys,BulkEvol{T}}) where {T,Nsys}
+                       bulkevols::NTuple{Nsys,BulkEvolved{T}}) where {T,Nsys}
     f1 = unpack(boundary)
     f2 = unpack(gauge)
     f3 = [unpack(bulkevol) for bulkevol in bulkevols]
@@ -330,7 +330,7 @@ end
 @inline getgauge(ff::EvolPartition) = Gauge(getxi(ff))
 
 @inline getbulkevol(ff::EvolPartition, i::Int) =
-    BulkEvol(getB1(ff,i), getB2(ff,i), getG(ff,i), getphi(ff,i))
+    BulkEvolved(getB1(ff,i), getB2(ff,i), getG(ff,i), getphi(ff,i))
 
 function getbulkevols(ff::EvolPartition)
     Nsys = get_udomains(ff)

@@ -40,7 +40,7 @@ atlas     = Atlas(grid)
 systems   = SystemPartition(grid)
 
 # evolved variables
-bulkevols = BulkEvols(grid)
+bulkevols = BulkEvolveds(grid)
 boundary  = Boundary(grid)
 gauge     = Gauge(grid)
 
