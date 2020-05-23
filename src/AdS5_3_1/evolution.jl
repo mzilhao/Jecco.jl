@@ -6,16 +6,36 @@ Base.@kwdef struct EvolEq{T,TP<:Potential} <: AbstractEvolEq
     potential     :: TP  = ZeroPotential()
 end
 
-function get_f_t!(ff_t, ff, systems, evoleq::EvolTest0)
+
+function setup_rhs(bulks, systems::SystemPartition, evoleq::AbstractEvolEq)
     Nsys = length(systems)
 
-    boundary    = getboundary(ff)
-    gauge       = getgauge(ff)
-    bulkevols   = getbulkevols(ff)
+    # function to solve the nested system
+    solve_nested = nested_solver(systems, evoleq)
 
-    boundary_t  = getboundary(ff_t)
-    gauge_t     = getgauge(ff_t)
-    bulkevols_t = getbulkevols(ff_t)
+    function (ff_t::EvolPartition, ff::EvolPartition, t)
+        boundary    = getboundary(ff)
+        gauge       = getgauge(ff)
+
+        # solve nested system
+        solve_nested(bulks, boundary, gauge)
+
+        get_f_t!(ff_t, bulks, boundary, gauge, systems, evoleq)
+
+        nothing
+    end
+end
+
+
+# TODO
+function get_f_t!(evol_t::EvolPartition, bulks, boundary::Boundary, gauge::Gauge,
+                  systems::SystemPartition, ::EvolTest0)
+    Nsys = length(systems)
+
+    bulkevols_t = getbulkevols(evol_t)
+    boundary_t  = getboundary(evol_t)
+    gauge_t     = getgauge(evol_t)
+
 
     fill!(boundary_t.a4, 0)
     fill!(boundary_t.fx2, 0)
@@ -24,7 +44,7 @@ function get_f_t!(ff_t, ff, systems, evoleq::EvolTest0)
 
     for aa in 1:Nsys
         sys = systems[aa]
-        bulkevol   = bulkevols[aa]
+        bulk       = bulks[aa]
         bulkevol_t = bulkevols_t[aa]
 
         fill!(bulkevol_t.B1,  0)
@@ -36,26 +56,30 @@ function get_f_t!(ff_t, ff, systems, evoleq::EvolTest0)
 end
 
 
-function setup_rhs(bulks, systems::SystemPartition, evoleq::EvolEq)
+# TODO
+function get_f_t!(evol_t::EvolPartition, bulks, boundary::Boundary, gauge::Gauge,
+                  systems::SystemPartition, evoleq::EvolEq)
     Nsys = length(systems)
 
-    # function to solve the nested system
-    solve_nested = nested_solver(systems, evoleq)
-
-    function (ff_t::EvolPartition, ff::EvolPartition, evoleq::EvolEq, t)
-
-        boundary    = getboundary(ff)
-        gauge       = getgauge(ff)
-        bulkevols   = getbulkevols(ff)
-
-        boundary_t  = getboundary(ff_t)
-        gauge_t     = getgauge(ff_t)
-        bulkevols_t = getbulkevols(ff_t)
-
-        # solve nested system
-        solve_nested(bulks, boundary, gauge)
+    bulkevols_t = getbulkevols(evol_t)
+    boundary_t  = getboundary(evol_t)
+    gauge_t     = getgauge(evol_t)
 
 
-        nothing
+    fill!(boundary_t.a4, 0)
+    fill!(boundary_t.fx2, 0)
+    fill!(boundary_t.fy2, 0)
+    fill!(gauge_t.xi, 0)
+
+    for aa in 1:Nsys
+        sys = systems[aa]
+        bulk       = bulks[aa]
+        bulkevol_t = bulkevols_t[aa]
+
+        fill!(bulkevol_t.B1,  0)
+        fill!(bulkevol_t.B2,  0)
+        fill!(bulkevol_t.G,   0)
+        fill!(bulkevol_t.phi, 0)
     end
+    nothing
 end
