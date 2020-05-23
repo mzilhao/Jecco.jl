@@ -44,6 +44,9 @@ bulkevols = BulkEvolveds(grid)
 boundary  = Boundary(grid)
 gauge     = Gauge(grid)
 
+# (bulk) constrained variables
+bulkconstrains = BulkConstraineds(grid)
+
 # and their initial conditions
 init_data!(bulkevols, boundary, gauge, systems, ibvp)
 
@@ -51,7 +54,7 @@ init_data!(bulkevols, boundary, gauge, systems, ibvp)
 solve_nested = nested_solver(systems, evoleq)
 
 # initialize all bulk variables
-bulks = Bulk.(bulkevols)
+bulks = Bulk.(bulkevols, bulkconstrains)
 
 # solve nested system
 solve_nested(bulks, boundary, gauge)

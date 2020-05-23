@@ -170,3 +170,23 @@ function BulkEvolveds(grid::SpecCartGrid3D{T}) where {T}
     bulk_out = [BulkEvolved{T}(undef, Nu_out, Nx, Ny) for i in 1:N_outer_sys]
     Tuple([bulk_in; bulk_out])
 end
+
+"""
+    BulkConstraineds(grid::SpecCartGrid3D)
+
+Create an `NTuple` of `BulkConstrained` (with `length = 1 + grid.u_outer_domains`) of elements
+`BulkConstrained`. The first `BulkConstrained` has arrays of `size = (grid.u_inner_nodes,
+grid.x_nodes, grid.y_nodes)`, and the remaining ones have `size = (grid.u_outer_nodes,
+grid.x_nodes, grid.y_nodes)`
+"""
+function BulkConstraineds(grid::SpecCartGrid3D{T}) where {T}
+    Nx = grid.x_nodes
+    Ny = grid.y_nodes
+    Nu_in  = grid.u_inner_nodes
+    Nu_out = grid.u_outer_nodes
+    N_outer_sys = grid.u_outer_domains
+
+    bulk_in  = [BulkConstrained{T}(undef, Nu_in, Nx, Ny)]
+    bulk_out = [BulkConstrained{T}(undef, Nu_out, Nx, Ny) for i in 1:N_outer_sys]
+    Tuple([bulk_in; bulk_out])
+end

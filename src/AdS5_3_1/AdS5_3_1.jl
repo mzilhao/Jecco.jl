@@ -26,8 +26,8 @@ export Potential, ZeroPotential
 export BlackBrane, init_data!, init_data
 export EvolEq, EvolTest0, get_f_t!
 export Inner, Outer, System
-export BulkEvolved, Boundary, Gauge, Bulk, EvolPartition
-export SystemPartition, BulkEvolveds
+export BulkEvolved, BulkConstrained, Boundary, Gauge, Bulk, EvolPartition
+export SystemPartition, BulkEvolveds, BulkConstraineds
 export nested_solver
 
 end

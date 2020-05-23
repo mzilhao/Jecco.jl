@@ -28,14 +28,16 @@ struct BulkEvolved{T} <: AbstractVars{T}
     phi :: Array{T,3}
 end
 
-struct Boundary{T} <: AbstractVars{T}
-    a4  :: Array{T,3}
-    fx2 :: Array{T,3}
-    fy2 :: Array{T,3}
-end
-
-struct Gauge{T} <: AbstractVars{T}
-    xi  :: Array{T,3}
+struct BulkConstrained{T} <: AbstractVars{T}
+    S    :: Array{T,3}
+    Fx   :: Array{T,3}
+    Fy   :: Array{T,3}
+    B1d  :: Array{T,3}
+    B2d  :: Array{T,3}
+    Gd   :: Array{T,3}
+    phid :: Array{T,3}
+    Sd   :: Array{T,3}
+    A    :: Array{T,3}
 end
 
 struct Bulk{T,N} <: AbstractVars{T}
@@ -54,11 +56,23 @@ struct Bulk{T,N} <: AbstractVars{T}
     A    :: Array{T,N}
 end
 
-@inline varlist(::BulkEvolved) = [:B1, :B2, :G, :phi]
-@inline varlist(::Boundary) = [:a4, :fx2, :fy2]
-@inline varlist(::Gauge)    = [:xi]
-@inline varlist(::Bulk)     = [:B1, :B2, :G, :phi, :S, :Fx, :Fy, :B1d, :B2d,
-                               :Gd, :phid, :Sd, :A]
+struct Boundary{T} <: AbstractVars{T}
+    a4  :: Array{T,3}
+    fx2 :: Array{T,3}
+    fy2 :: Array{T,3}
+end
+
+struct Gauge{T} <: AbstractVars{T}
+    xi  :: Array{T,3}
+end
+
+@inline varlist(::BulkEvolved)     = [:B1, :B2, :G, :phi]
+@inline varlist(::BulkConstrained) = [:S, :Fx, :Fy, :B1d, :B2d, :Gd, :phid, :Sd, :A]
+@inline varlist(::Bulk)            = [:B1, :B2, :G, :phi, :S, :Fx, :Fy, :B1d, :B2d,
+                                      :Gd, :phid, :Sd, :A]
+@inline varlist(::Boundary)        = [:a4, :fx2, :fy2]
+@inline varlist(::Gauge)           = [:xi]
+
 
 """
     BulkEvolved{T}(undef, Nu, Nx, Ny)
@@ -72,6 +86,71 @@ function BulkEvolved{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<
     G   = Array{T}(undef, Nu, Nx, Ny)
     phi = Array{T}(undef, Nu, Nx, Ny)
     BulkEvolved{T}(B1, B2, G, phi)
+end
+
+"""
+    BulkConstrained{T}(undef, Nu, Nx, Ny)
+
+Construct a container of uninitialized Arrays to hold all the bulk variables
+that are constrained (not evolved in time): S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A
+"""
+function BulkConstrained{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Real}
+    S    = Array{T}(undef, Nu, Nx, Ny)
+    Fx   = Array{T}(undef, Nu, Nx, Ny)
+    Fy   = Array{T}(undef, Nu, Nx, Ny)
+    B1d  = Array{T}(undef, Nu, Nx, Ny)
+    B2d  = Array{T}(undef, Nu, Nx, Ny)
+    Gd   = Array{T}(undef, Nu, Nx, Ny)
+    phid = Array{T}(undef, Nu, Nx, Ny)
+    Sd   = Array{T}(undef, Nu, Nx, Ny)
+    A    = Array{T}(undef, Nu, Nx, Ny)
+    BulkConstrained{T}(S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
+end
+
+"""
+    Bulk{T}(undef, Nxx...)
+
+Construct a container of uninitialized Arrays to hold all the bulk variables:
+B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A
+
+"""
+function Bulk{T}(::UndefInitializer, Nxx::Vararg{Int,N}) where {T<:Real,N}
+    B1   = Array{T}(undef, Nxx...)
+    B2   = Array{T}(undef, Nxx...)
+    G    = Array{T}(undef, Nxx...)
+    phi  = Array{T}(undef, Nxx...)
+    S    = Array{T}(undef, Nxx...)
+    Fx   = Array{T}(undef, Nxx...)
+    Fy   = Array{T}(undef, Nxx...)
+    B1d  = Array{T}(undef, Nxx...)
+    B2d  = Array{T}(undef, Nxx...)
+    Gd   = Array{T}(undef, Nxx...)
+    phid = Array{T}(undef, Nxx...)
+    Sd   = Array{T}(undef, Nxx...)
+    A    = Array{T}(undef, Nxx...)
+    Bulk{T,N}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
+end
+"""
+    Bulk(bulkevol::BulkEvolved, bulkconstrain::BulkConstrained)
+
+Construct a container to hold all the bulk variables, but where the evolved variables
+point to the given bulkevol struct and the constrained ones point to the bulkconstrain struct
+"""
+function Bulk(bulkevol::BulkEvolved{T}, bulkconstrain::BulkConstrained{T}) where {T}
+    B1    = bulkevol.B1
+    B2    = bulkevol.B2
+    G     = bulkevol.G
+    phi   = bulkevol.phi
+    S     = bulkconstrain.S
+    Fx    = bulkconstrain.Fx
+    Fy    = bulkconstrain.Fy
+    B1d   = bulkconstrain.B1d
+    B2d   = bulkconstrain.B2d
+    Gd    = bulkconstrain.Gd
+    phid  = bulkconstrain.phid
+    Sd    = bulkconstrain.Sd
+    A     = bulkconstrain.A
+    Bulk(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
 
 """
@@ -108,51 +187,6 @@ function Gauge{T}(::UndefInitializer, Nx::Int, Ny::Int) where {T<:Real}
     Gauge{T}(xi)
 end
 
-"""
-    Bulk{T}(undef, Nxx...)
-
-Construct a container of uninitialized Arrays to hold all the bulk variables:
-B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A
-
-"""
-function Bulk{T}(::UndefInitializer, Nxx::Vararg{Int,N}) where {T<:Real,N}
-    B1   = Array{T}(undef, Nxx...)
-    B2   = Array{T}(undef, Nxx...)
-    G    = Array{T}(undef, Nxx...)
-    phi  = Array{T}(undef, Nxx...)
-    S    = Array{T}(undef, Nxx...)
-    Fx   = Array{T}(undef, Nxx...)
-    Fy   = Array{T}(undef, Nxx...)
-    B1d  = Array{T}(undef, Nxx...)
-    B2d  = Array{T}(undef, Nxx...)
-    Gd   = Array{T}(undef, Nxx...)
-    phid = Array{T}(undef, Nxx...)
-    Sd   = Array{T}(undef, Nxx...)
-    A    = Array{T}(undef, Nxx...)
-    Bulk{T,N}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
-end
-"""
-    Bulk(bulkevol::BulkEvolved)
-
-Construct a container to hold all the bulk variables, but where the evolved ones
-point to the given bulkevol struct
-"""
-function Bulk(ff::BulkEvolved{T}) where {T}
-    B1    = ff.B1
-    B2    = ff.B2
-    G     = ff.G
-    phi   = ff.phi
-    S     = similar(B1)
-    Fx    = similar(B1)
-    Fy    = similar(B1)
-    B1d   = similar(B1)
-    B2d   = similar(B1)
-    Gd    = similar(B1)
-    phid  = similar(B1)
-    Sd    = similar(B1)
-    A     = similar(B1)
-    Bulk(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
-end
 
 getB1(ff::BulkEvolved)  = ff.B1
 getB2(ff::BulkEvolved)  = ff.B2
