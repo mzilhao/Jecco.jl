@@ -7,24 +7,49 @@ Base.@kwdef struct EvolEq{T,TP<:Potential} <: AbstractEvolEq
 end
 
 
-function setup_rhs(bulks, systems::SystemPartition, evoleq::AbstractEvolEq)
+function setup_rhs(bulkconstrains, systems::SystemPartition, evoleq::AbstractEvolEq)
     Nsys = length(systems)
 
     # function to solve the nested system
     solve_nested = nested_solver(systems, evoleq)
 
     function (ff_t::EvolPartition, ff::EvolPartition, t)
+        bulkevols_t = getbulkevols(ff_t)
+        boundary_t  = getboundary(ff_t)
+        gauge_t     = getgauge(ff_t)
+
+        bulkevols   = getbulkevols(ff)
         boundary    = getboundary(ff)
         gauge       = getgauge(ff)
+
+
+        # TODO
+        # compute_boundary_t!(boundary_t, bulkevols[1], boundary, gauge, systems[1], evoleq)
+
+        # all bulk variables
+        bulks = Bulk.(bulkevols, bulkconstrains)
+
+        @show typeof(bulks)
 
         # solve nested system
         solve_nested(bulks, boundary, gauge)
 
-        get_f_t!(ff_t, bulks, boundary, gauge, systems, evoleq)
+        # TODO
+        # compute_xi_t!(gauge_t, bulks[end], boundary, gauge, systems[end], evoleq)
+
+        for aa in 1:Nsys
+            sys = systems[aa]
+            bulk       = bulks[aa]
+            bulkevol_t = bulkevols_t[aa]
+
+            # TODO
+            # compute_bulk_t!(bulkevol_t, bulks, boundary, gauge, systems, evoleq)
+        end
 
         nothing
     end
 end
+
 
 
 # TODO
