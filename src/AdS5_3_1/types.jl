@@ -18,9 +18,6 @@ abstract type AbstractEvolEq end
 
 abstract type AbstractVars{T} <: AbstractVector{T} end
 
-abstract type EvolVars{T} <: AbstractVars{T} end
-
-
 struct BulkEvolved{T} <: AbstractVars{T}
     B1  :: Array{T,3}
     B2  :: Array{T,3}
@@ -270,41 +267,41 @@ function unpack(ff::AbstractVars)
 end
 
 
-struct EvolPartition{T,N,A} <: EvolVars{T}
+struct EvolVars{T,N,A} <: AbstractVector{T}
     x :: NTuple{N,A}
 end
-function EvolPartition(ff::AbstractVector{A}) where{A<:AbstractArray}
+function EvolVars(ff::AbstractVector{A}) where{A<:AbstractArray}
     x = Tuple(ff)
-    EvolPartition{eltype(A),length(x),A}(x)
+    EvolVars{eltype(A),length(x),A}(x)
 end
 
 """
-    EvolPartition(boundary::Boundary, gauge::Gauge, bulkevols::NTuple)
+    EvolVars(boundary::Boundary, gauge::Gauge, bulkevols::NTuple)
 
 Build a container to store all the evolved quantities as elements of an
 `NTuple`. The idea is to treat them as a single column vector for the point of
 view of the time evolution routine. Inspired in `ArrayPartition` from
 `RecursiveArrayTools`
 """
-function EvolPartition(boundary::Boundary{T}, gauge::Gauge{T},
+function EvolVars(boundary::Boundary{T}, gauge::Gauge{T},
                        bulkevols::NTuple{Nsys,BulkEvolved{T}}) where {T,Nsys}
     f1 = unpack(boundary)
     f2 = unpack(gauge)
     f3 = [unpack(bulkevol) for bulkevol in bulkevols]
-    EvolPartition([f1; f2; f3...])
+    EvolVars([f1; f2; f3...])
 end
 
-Base.similar(ff::EvolPartition{T,N,S}) where {T,N,S} = EvolPartition{T,N,S}(similar.(ff.x))
+Base.similar(ff::EvolVars{T,N,S}) where {T,N,S} = EvolVars{T,N,S}(similar.(ff.x))
 
-@inline Base.length(ff::EvolPartition) = sum((length(x) for x in ff.x))
-@inline Base.size(ff::EvolPartition)   = (length(ff),)
+@inline Base.length(ff::EvolVars) = sum((length(x) for x in ff.x))
+@inline Base.size(ff::EvolVars)   = (length(ff),)
 
 # indexing. this is just a linear indexing through all the arrays. adapted from
 # RecursiveArrayTools
-@inline Base.firstindex(ff::EvolPartition) = 1
-@inline Base.lastindex(ff::EvolPartition)  = length(ff)
+@inline Base.firstindex(ff::EvolVars) = 1
+@inline Base.lastindex(ff::EvolVars)  = length(ff)
 
-@inline function Base.getindex(ff::EvolPartition, i::Int)
+@inline function Base.getindex(ff::EvolVars, i::Int)
     @inbounds for j in 1:length(ff.x)
         f  = ff.x[j]
         i -= length(f)
@@ -313,7 +310,7 @@ Base.similar(ff::EvolPartition{T,N,S}) where {T,N,S} = EvolPartition{T,N,S}(simi
         end
     end
 end
-@inline function Base.setindex!(ff::EvolPartition, v, i::Int)
+@inline function Base.setindex!(ff::EvolVars, v, i::Int)
     @inbounds for j in 1:length(ff.x)
         f  = ff.x[j]
         i -= length(f)
@@ -324,49 +321,49 @@ end
     end
 end
 
-@inline npartitions(::EvolPartition{T,N}) where {T,N} = N
-@inline get_udomains(::EvolPartition{T,N}) where {T,N} = div(N-4, 4)
+@inline npartitions(::EvolVars{T,N}) where {T,N} = N
+@inline get_udomains(::EvolVars{T,N}) where {T,N} = div(N-4, 4)
 
-geta4(ff::EvolPartition)   = ff.x[1]
-getfx2(ff::EvolPartition)  = ff.x[2]
-getfy2(ff::EvolPartition)  = ff.x[3]
-getxi(ff::EvolPartition)   = ff.x[4]
+geta4(ff::EvolVars)   = ff.x[1]
+getfx2(ff::EvolVars)  = ff.x[2]
+getfy2(ff::EvolVars)  = ff.x[3]
+getxi(ff::EvolVars)   = ff.x[4]
 
-function getB1(ff::EvolPartition, i::Int)
+function getB1(ff::EvolVars, i::Int)
     Nsys = get_udomains(ff)
     @assert i > 0
     @assert i <= Nsys
     ff.x[5 + (i-1)*4]
 end
 
-function getB2(ff::EvolPartition, i::Int)
+function getB2(ff::EvolVars, i::Int)
     Nsys = get_udomains(ff)
     @assert i > 0
     @assert i <= Nsys
     ff.x[6 + (i-1)*4]
 end
 
-function getG(ff::EvolPartition, i::Int)
+function getG(ff::EvolVars, i::Int)
     Nsys = get_udomains(ff)
     @assert i > 0
     @assert i <= Nsys
     ff.x[7 + (i-1)*4]
 end
 
-function getphi(ff::EvolPartition, i::Int)
+function getphi(ff::EvolVars, i::Int)
     Nsys = get_udomains(ff)
     @assert i > 0
     @assert i <= Nsys
     ff.x[8 + (i-1)*4]
 end
 
-@inline getboundary(ff::EvolPartition) = Boundary(geta4(ff), getfx2(ff), getfy2(ff))
-@inline getgauge(ff::EvolPartition) = Gauge(getxi(ff))
+@inline getboundary(ff::EvolVars) = Boundary(geta4(ff), getfx2(ff), getfy2(ff))
+@inline getgauge(ff::EvolVars) = Gauge(getxi(ff))
 
-@inline getbulkevol(ff::EvolPartition, i::Int) =
+@inline getbulkevol(ff::EvolVars, i::Int) =
     BulkEvolved(getB1(ff,i), getB2(ff,i), getG(ff,i), getphi(ff,i))
 
-function getbulkevols(ff::EvolPartition)
+function getbulkevols(ff::EvolVars)
     Nsys = get_udomains(ff)
     [getbulkevol(ff,i) for i in 1:Nsys]
 end
