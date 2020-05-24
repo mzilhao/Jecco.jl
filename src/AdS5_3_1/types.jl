@@ -68,7 +68,7 @@ end
 @inline varlist(::Bulk)            = (:B1, :B2, :G, :phi, :S, :Fx, :Fy, :B1d, :B2d,
                                       :Gd, :phid, :Sd, :A)
 @inline varlist(::Boundary)        = (:a4, :fx2, :fy2)
-@inline varlist(::Gauge)           = (:xi)
+@inline varlist(::Gauge)           = (:xi,)
 
 
 """
