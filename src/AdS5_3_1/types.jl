@@ -308,7 +308,7 @@ end
     BulkPartition(x...)
 
 Container to store (bulk) quantities that may be spread across different grid
-partitions
+partitions. This is to be thought as a `Tuple` (or an `Array`) of `Bulk` objects.
 """
 BulkPartition(x...) = BulkPartition(tuple(x...))
 
@@ -353,9 +353,13 @@ Build a container to store all the evolved quantities as elements of an
 view of the time evolution routine. Inspired in `ArrayPartition` from
 `RecursiveArrayTools`
 """
-function EvolVars(boundary::Boundary, gauge::Gauge, bulkevols::BulkPartition)
+function EvolVars(boundary::Boundary, gauge::Gauge,
+                  bulkevols::BulkPartition{Nsys}) where {Nsys}
     f1 = unpack(boundary)
     f2 = unpack(gauge)
+
+    # this technique allocates a bit of memory and is not fully type-stable, but
+    # i think it's not a problem since we only call this function once
     f3 = [unpack(bulkevol) for bulkevol in bulkevols]
     EvolVars([f1; f2; f3...])
 end
