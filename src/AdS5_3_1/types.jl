@@ -321,14 +321,14 @@ BulkPartition(x...) = BulkPartition(tuple(x...))
 
 @inline Base.getindex(ff::BulkPartition, i::Int) = ff._x[i]
 
-function BulkEvolved(ff::BulkPartition)
-    ffs = BulkEvolved.(ff)
-    BulkPartition(ffs...)
+function BulkEvolved(bulks::BulkPartition{N}) where{N}
+    f = ntuple(i -> BulkEvolved(bulks[i]), N)
+    BulkPartition(f)
 end
 
-function BulkConstrained(ff::BulkPartition)
-    ffs = BulkConstrained.(ff)
-    BulkPartition(ffs...)
+function BulkConstrained(bulks::BulkPartition{N}) where{N}
+    f = ntuple(i -> BulkConstrained(bulks[i]), N)
+    BulkPartition(f)
 end
 
 
