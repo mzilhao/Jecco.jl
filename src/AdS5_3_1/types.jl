@@ -274,7 +274,7 @@ end
 """
     BulkPartition(x...)
 
-Contained to store (bulk) quantities that may be spread across different grid
+Container to store (bulk) quantities that may be spread across different grid
 partitions
 """
 BulkPartition(x...) = BulkPartition(tuple(x...))
@@ -294,6 +294,10 @@ BulkPartition(x...) = BulkPartition(tuple(x...))
 struct EvolVars{T,N,A} <: AbstractVector{T}
     x :: NTuple{N,A}
 end
+EvolVars(x::NTuple{N,A}) where {N,A} = EvolVars{eltype(A),N,A}(x)
+EvolVars(x...) = EvolVars(tuple(x...))
+
+
 function EvolVars(ff::AbstractVector{A}) where{A<:AbstractArray}
     x = Tuple(ff)
     EvolVars{eltype(A),length(x),A}(x)
@@ -307,8 +311,7 @@ Build a container to store all the evolved quantities as elements of an
 view of the time evolution routine. Inspired in `ArrayPartition` from
 `RecursiveArrayTools`
 """
-function EvolVars(boundary::Boundary{T}, gauge::Gauge{T},
-                  bulkevols::NTuple{Nsys,BulkEvolved{T}}) where {T,Nsys}
+function EvolVars(boundary::Boundary, gauge::Gauge, bulkevols::BulkPartition)
     f1 = unpack(boundary)
     f2 = unpack(gauge)
     f3 = [unpack(bulkevol) for bulkevol in bulkevols]
