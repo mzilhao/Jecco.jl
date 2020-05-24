@@ -151,6 +151,39 @@ function Bulk(bulkevol::BulkEvolved{T}, bulkconstrain::BulkConstrained{T}) where
 end
 
 """
+    BulkEvolved(bulk::Bulk)
+
+Construct `BulkEvolved` where each array points to the corresponding one in the
+given `Bulk` struct.
+"""
+function BulkEvolved(bulk::Bulk)
+    B1    = bulk.B1
+    B2    = bulk.B2
+    G     = bulk.G
+    phi   = bulk.phi
+    BulkEvolved(B1, B2, G, phi)
+end
+
+"""
+    BulkConstrained(bulk::Bulk)
+
+Construct `BulkConstrained` where each array points to the corresponding one in the
+given `Bulk` struct.
+"""
+function BulkConstrained(bulk::Bulk)
+    S     = bulk.S
+    Fx    = bulk.Fx
+    Fy    = bulk.Fy
+    B1d   = bulk.B1d
+    B2d   = bulk.B2d
+    Gd    = bulk.Gd
+    phid  = bulk.phid
+    Sd    = bulk.Sd
+    A     = bulk.A
+    BulkConstrained(S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
+end
+
+"""
     Boundary{T}(undef, Nx, Ny)
 
 Construct a container of uninitialized Arrays to hold all the boundary
@@ -288,6 +321,15 @@ BulkPartition(x...) = BulkPartition(tuple(x...))
 
 @inline Base.getindex(ff::BulkPartition, i::Int) = ff._x[i]
 
+function BulkEvolved(ff::BulkPartition)
+    ffs = BulkEvolved.(ff)
+    BulkPartition(ffs...)
+end
+
+function BulkConstrained(ff::BulkPartition)
+    ffs = BulkConstrained.(ff)
+    BulkPartition(ffs...)
+end
 
 
 
@@ -390,7 +432,7 @@ end
 @inline getbulkevolved(ff::EvolVars, i::Int) =
     BulkEvolved(getB1(ff,i), getB2(ff,i), getG(ff,i), getphi(ff,i))
 
-function getbulkevolveds(ff::EvolVars)
+function getbulkevolved(ff::EvolVars)
     Nsys = get_udomains(ff)
     [getbulkevolved(ff,i) for i in 1:Nsys]
 end
