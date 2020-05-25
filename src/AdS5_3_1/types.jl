@@ -395,7 +395,7 @@ end
 end
 
 @inline npartitions(::EvolVars{T,N}) where {T,N} = N
-@inline get_udomains(::EvolVars{T,N}) where {T,N} = div(N-4, 4)
+@inline getudomains(::EvolVars{T,N}) where {T,N} = div(N-4, 4)
 
 geta4(ff::EvolVars)   = ff.x[1]
 getfx2(ff::EvolVars)  = ff.x[2]
@@ -403,28 +403,28 @@ getfy2(ff::EvolVars)  = ff.x[3]
 getxi(ff::EvolVars)   = ff.x[4]
 
 function getB1(ff::EvolVars, i::Int)
-    Nsys = get_udomains(ff)
+    Nsys = getudomains(ff)
     @assert i > 0
     @assert i <= Nsys
     ff.x[5 + (i-1)*4]
 end
 
 function getB2(ff::EvolVars, i::Int)
-    Nsys = get_udomains(ff)
+    Nsys = getudomains(ff)
     @assert i > 0
     @assert i <= Nsys
     ff.x[6 + (i-1)*4]
 end
 
 function getG(ff::EvolVars, i::Int)
-    Nsys = get_udomains(ff)
+    Nsys = getudomains(ff)
     @assert i > 0
     @assert i <= Nsys
     ff.x[7 + (i-1)*4]
 end
 
 function getphi(ff::EvolVars, i::Int)
-    Nsys = get_udomains(ff)
+    Nsys = getudomains(ff)
     @assert i > 0
     @assert i <= Nsys
     ff.x[8 + (i-1)*4]
@@ -436,7 +436,8 @@ end
 @inline getbulkevolved(ff::EvolVars, i::Int) =
     BulkEvolved(getB1(ff,i), getB2(ff,i), getG(ff,i), getphi(ff,i))
 
-function getbulkevolved(ff::EvolVars)
-    Nsys = get_udomains(ff)
-    [getbulkevolved(ff,i) for i in 1:Nsys]
+function getbulkevolvedpartition(ff::EvolVars)
+    Nsys = getudomains(ff)
+    f = ntuple(i -> getbulkevolved(ff,i), Nsys)
+    BulkPartition(f)
 end
