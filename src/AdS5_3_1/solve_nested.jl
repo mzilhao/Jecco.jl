@@ -1528,7 +1528,7 @@ function solve_nested!(bulkconstrains, bulkevols, BCs, dBCs, boundary::Boundary,
     nothing
 end
 
-function nested_solver(systems::SystemPartition, evoleq::EvolEq)
+function nested_solver(systems::SystemPartition)
     sys1  = systems[1]
     T     = Jecco.coord_eltype(sys1.ucoord)
     _, Nx, Ny = size(sys1)
@@ -1537,7 +1537,7 @@ function nested_solver(systems::SystemPartition, evoleq::EvolEq)
     BCs     = Tuple([Bulk{T}(undef, Nx, Ny) for sys in systems])
     dBCs    = Tuple([Bulk{T}(undef, Nx, Ny) for sys in systems])
 
-    function (bulkconstrains, bulkevols, boundary::Boundary, gauge::Gauge)
+    function (bulkconstrains, bulkevols, boundary::Boundary, gauge::Gauge, evoleq::EvolEq)
         solve_nested!(bulkconstrains, bulkevols, BCs, dBCs, boundary, gauge,
                       nesteds, evoleq)
         nothing

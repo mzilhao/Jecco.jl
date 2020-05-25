@@ -50,10 +50,10 @@ bulkconstrains = BulkConstrainedPartition(grid)
 init_data!(bulkevols, boundary, gauge, systems, ibvp)
 
 # function to solve the nested system, given the initial data
-solve_nested = nested_solver(systems, evoleq)
+solve_nested! = nested_solver(systems)
 
 # solve nested system for the constrained variables
-solve_nested(bulkconstrains, bulkevols, boundary, gauge)
+solve_nested!(bulkconstrains, bulkevols, boundary, gauge, evoleq)
 
 # analyze data
 
