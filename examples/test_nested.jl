@@ -54,7 +54,7 @@ init_data!(bulkevols, boundary, gauge, systems, ibvp)
 solve_nested = nested_solver(systems, evoleq)
 
 # solve nested system
-solve_nested(bulkevols, bulkconstrains, boundary, gauge)
+solve_nested(bulkconstrains, bulkevols, boundary, gauge)
 
 # analyze data
 
