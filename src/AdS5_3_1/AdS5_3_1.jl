@@ -28,7 +28,7 @@ export EvolEq, EvolTest0, get_f_t!
 export Inner, Outer, System
 export BulkEvolved, BulkConstrained, Boundary, Gauge, Bulk, EvolVars
 export BulkPartition
-export SystemPartition, Bulks
+export SystemPartition, BulkEvolvedPartition, BulkConstrainedPartition
 export nested_solver
 
 end

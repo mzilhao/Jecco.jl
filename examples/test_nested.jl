@@ -40,20 +40,19 @@ atlas     = Atlas(grid)
 systems   = SystemPartition(grid)
 
 # allocate variables
-bulks     = Bulks(grid)
 boundary  = Boundary(grid)
 gauge     = Gauge(grid)
 
-bulkevols      = BulkEvolved(bulks)
-bulkconstrains = BulkConstrained(bulks)
+bulkevols      = BulkEvolvedPartition(grid)
+bulkconstrains = BulkConstrainedPartition(grid)
 
-# and their initial conditions
+# initial conditions
 init_data!(bulkevols, boundary, gauge, systems, ibvp)
 
 # function to solve the nested system, given the initial data
 solve_nested = nested_solver(systems, evoleq)
 
-# solve nested system
+# solve nested system for the constrained variables
 solve_nested(bulkconstrains, bulkevols, boundary, gauge)
 
 # analyze data
