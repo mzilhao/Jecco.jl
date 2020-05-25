@@ -1242,7 +1242,8 @@ function solve_A!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
     nothing
 end
 
-function solve_nested!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
+function solve_nested!(bulkevol::BulkEvolved, bulkconstrain::BulkConstrained,
+                       BC::Bulk, dBC::Bulk, gauge::Gauge,
                        nested::Nested, evoleq::EvolEq)
     sys  = nested.sys
 
@@ -1267,6 +1268,8 @@ function solve_nested!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
     Dxx = sys.Dxx
     Dy  = sys.Dy
     Dyy = sys.Dyy
+
+    bulk = Bulk(bulkevol, bulkconstrain)
 
     @sync begin
         @spawn mul!(Du_B1,  Du,  bulk.B1)
@@ -1317,7 +1320,7 @@ function solve_nested!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
 end
 
 
-function syncBCs!(BC::Bulk, dBC::Bulk, bulk::Bulk, nested::Nested)
+function syncBCs!(BC::Bulk, dBC::Bulk, bulk::BulkConstrained, nested::Nested)
     Du = nested.sys.Du
 
     Nu, Nx, Ny = size(bulk.S)
@@ -1344,7 +1347,7 @@ function syncBCs!(BC::Bulk, dBC::Bulk, bulk::Bulk, nested::Nested)
     nothing
 end
 
-function set_innerBCs!(BC::Bulk, dBC::Bulk, bulk::Bulk,
+function set_innerBCs!(BC::Bulk, dBC::Bulk, bulk::BulkEvolved,
                        boundary::Boundary, gauge::Gauge,
                        nested::Nested, evoleq::EvolEq)
     _, Nx, Ny = size(nested.sys)
@@ -1444,7 +1447,7 @@ function set_innerBCs!(BC::Bulk, dBC::Bulk, bulk::Bulk,
     nothing
 end
 
-function set_outerBCs!(BC::Bulk, dBC::Bulk, bulk::Bulk,
+function set_outerBCs!(BC::Bulk, dBC::Bulk, bulk::BulkConstrained,
                        gauge::Gauge, nested::Nested, evoleq::EvolEq)
     Nu, Nx, Ny = size(nested.sys)
     Du = nested.sys.Du
@@ -1503,21 +1506,24 @@ end
 # We assume that the first entry on these arrays is the inner grid, and that
 # there is only one domain spanning this grid. If we ever change this
 # construction we must remember to make the appropriate changes here.
-function solve_nested!(bulks, BCs, dBCs, boundary::Boundary,
+function solve_nested!(bulkevols, bulkconstrains, BCs, dBCs, boundary::Boundary,
                        gauge::Gauge, nesteds, evoleq::EvolEq)
     Nsys = length(nesteds)
 
-    set_innerBCs!(BCs[1], dBCs[1], bulks[1], boundary, gauge, nesteds[1], evoleq)
+    set_innerBCs!(BCs[1], dBCs[1], bulkevols[1], boundary, gauge, nesteds[1], evoleq)
 
-    solve_nested!(bulks[1], BCs[1], dBCs[1], gauge, nesteds[1], evoleq)
+    solve_nested!(bulkevols[1], bulkconstrains[1], BCs[1], dBCs[1],
+                  gauge, nesteds[1], evoleq)
 
-    set_outerBCs!(BCs[2], dBCs[2], bulks[1], gauge, nesteds[1], evoleq)
+    set_outerBCs!(BCs[2], dBCs[2], bulkconstrains[1], gauge, nesteds[1], evoleq)
 
     for i in 2:Nsys-1
-        solve_nested!(bulks[i], BCs[i], dBCs[i], gauge, nesteds[i], evoleq)
-        syncBCs!(BCs[i+1], dBCs[i+1], bulks[i], nesteds[i])
+        solve_nested!(bulkevols[i], bulkconstrains[i], BCs[i], dBCs[i],
+                      gauge, nesteds[i], evoleq)
+        syncBCs!(BCs[i+1], dBCs[i+1], bulkconstrains[i], nesteds[i])
     end
-    solve_nested!(bulks[Nsys], BCs[Nsys], dBCs[Nsys], gauge, nesteds[Nsys], evoleq)
+    solve_nested!(bulkevols[Nsys], bulkconstrains[Nsys], BCs[Nsys], dBCs[Nsys],
+                  gauge, nesteds[Nsys], evoleq)
 
     nothing
 end
@@ -1531,8 +1537,9 @@ function nested_solver(systems::SystemPartition, evoleq::EvolEq)
     BCs     = Tuple([Bulk{T}(undef, Nx, Ny) for sys in systems])
     dBCs    = Tuple([Bulk{T}(undef, Nx, Ny) for sys in systems])
 
-    function (bulks, boundary::Boundary, gauge::Gauge)
-        solve_nested!(bulks, BCs, dBCs, boundary, gauge, nesteds, evoleq)
+    function (bulkevols, bulkconstrains, boundary::Boundary, gauge::Gauge)
+        solve_nested!(bulkevols, bulkconstrains, BCs, dBCs, boundary, gauge,
+                      nesteds, evoleq)
         nothing
     end
 end
