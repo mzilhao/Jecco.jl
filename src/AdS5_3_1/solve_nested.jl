@@ -89,10 +89,6 @@ function Nested(sys::System)
                                         Duu_S, Duu_Fx, Duu_Fy, aux_acc)
 end
 
-Nested(systems::SystemPartition) = [Nested(sys) for sys in systems]
-
-
-
 struct BC{T}
     S    :: Array{T,2}
     Fx   :: Array{T,2}
@@ -108,7 +104,6 @@ struct BC{T}
     Fy_u :: Array{T,2}
     A_u  :: Array{T,2}
 end
-
 function BC{T}(Nx::Int, Ny::Int) where {T<:Real}
     S    = Array{T}(undef, Nx, Ny)
     Fx   = Array{T}(undef, Nx, Ny)
@@ -125,7 +120,6 @@ function BC{T}(Nx::Int, Ny::Int) where {T<:Real}
     A_u  = Array{T}(undef, Nx, Ny)
     BC{T}(S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A, S_u, Fx_u, Fy_u, A_u)
 end
-
 
 
 #= Notes
@@ -1568,8 +1562,8 @@ function nested_solver(systems::SystemPartition)
     T     = Jecco.coord_eltype(sys1.ucoord)
     _, Nx, Ny = size(sys1)
 
-    nesteds = Tuple([Nested(sys) for sys in systems])
-    bcs     = Tuple([BC{T}(Nx, Ny) for sys in systems])
+    nesteds = [Nested(sys) for sys in systems]
+    bcs     = [BC{T}(Nx, Ny) for sys in systems]
 
     function (bulkconstrains, bulkevols, boundary::Boundary, gauge::Gauge, evoleq::EvolEq)
         solve_nested!(bulkconstrains, bulkevols, bcs, boundary, gauge,
