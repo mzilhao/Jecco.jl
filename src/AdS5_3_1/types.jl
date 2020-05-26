@@ -37,20 +37,20 @@ struct BulkConstrained{T} <: AbstractVars{T}
     A    :: Array{T,3}
 end
 
-struct Bulk{T,N} <: AbstractVars{T}
-    B1   :: Array{T,N}
-    B2   :: Array{T,N}
-    G    :: Array{T,N}
-    phi  :: Array{T,N}
-    S    :: Array{T,N}
-    Fx   :: Array{T,N}
-    Fy   :: Array{T,N}
-    B1d  :: Array{T,N}
-    B2d  :: Array{T,N}
-    Gd   :: Array{T,N}
-    phid :: Array{T,N}
-    Sd   :: Array{T,N}
-    A    :: Array{T,N}
+struct Bulk{T} <: AbstractVars{T}
+    B1   :: Array{T,3}
+    B2   :: Array{T,3}
+    G    :: Array{T,3}
+    phi  :: Array{T,3}
+    S    :: Array{T,3}
+    Fx   :: Array{T,3}
+    Fy   :: Array{T,3}
+    B1d  :: Array{T,3}
+    B2d  :: Array{T,3}
+    Gd   :: Array{T,3}
+    phid :: Array{T,3}
+    Sd   :: Array{T,3}
+    A    :: Array{T,3}
 end
 
 struct Boundary{T} <: AbstractVars{T}
@@ -105,32 +105,9 @@ function BulkConstrained{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where
 end
 
 """
-    Bulk{T}(undef, Nxx...)
-
-Construct a container of uninitialized Arrays to hold all the bulk variables:
-B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A
-
-"""
-function Bulk{T}(::UndefInitializer, Nxx::Vararg{Int,N}) where {T<:Real,N}
-    B1   = Array{T}(undef, Nxx...)
-    B2   = Array{T}(undef, Nxx...)
-    G    = Array{T}(undef, Nxx...)
-    phi  = Array{T}(undef, Nxx...)
-    S    = Array{T}(undef, Nxx...)
-    Fx   = Array{T}(undef, Nxx...)
-    Fy   = Array{T}(undef, Nxx...)
-    B1d  = Array{T}(undef, Nxx...)
-    B2d  = Array{T}(undef, Nxx...)
-    Gd   = Array{T}(undef, Nxx...)
-    phid = Array{T}(undef, Nxx...)
-    Sd   = Array{T}(undef, Nxx...)
-    A    = Array{T}(undef, Nxx...)
-    Bulk{T,N}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
-end
-"""
     Bulk(bulkevol::BulkEvolved, bulkconstrain::BulkConstrained)
 
-Construct a container to hold all the bulk variables, but where the evolved variables
+Construct a container to hold all the bulk variables where the evolved variables
 point to the given bulkevol struct and the constrained ones point to the bulkconstrain struct
 """
 function Bulk(bulkevol::BulkEvolved{T}, bulkconstrain::BulkConstrained{T}) where {T}
@@ -147,40 +124,7 @@ function Bulk(bulkevol::BulkEvolved{T}, bulkconstrain::BulkConstrained{T}) where
     phid  = bulkconstrain.phid
     Sd    = bulkconstrain.Sd
     A     = bulkconstrain.A
-    Bulk(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
-end
-
-"""
-    BulkEvolved(bulk::Bulk)
-
-Construct `BulkEvolved` where each array points to the corresponding one in the
-given `Bulk` struct.
-"""
-function BulkEvolved(bulk::Bulk)
-    B1    = bulk.B1
-    B2    = bulk.B2
-    G     = bulk.G
-    phi   = bulk.phi
-    BulkEvolved(B1, B2, G, phi)
-end
-
-"""
-    BulkConstrained(bulk::Bulk)
-
-Construct `BulkConstrained` where each array points to the corresponding one in the
-given `Bulk` struct.
-"""
-function BulkConstrained(bulk::Bulk)
-    S     = bulk.S
-    Fx    = bulk.Fx
-    Fy    = bulk.Fy
-    B1d   = bulk.B1d
-    B2d   = bulk.B2d
-    Gd    = bulk.Gd
-    phid  = bulk.phid
-    Sd    = bulk.Sd
-    A     = bulk.A
-    BulkConstrained(S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
+    Bulk{T}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
 
 """
