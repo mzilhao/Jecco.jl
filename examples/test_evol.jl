@@ -33,46 +33,31 @@ evoleq = EvolEq(
 atlas     = Atlas(grid)
 systems   = SystemPartition(grid)
 
-# evolved variables
-bulkevols = BulkEvols(grid)
-boundary  = Boundary(grid)
-gauge     = Gauge(grid)
-
-# initialize all bulk variables. with this method, the evolved variables (B1,
-# B2, G, phi) in the bulks structs point to the same arrays as in the bulkevols
-# structs. this is important.
-bulks = Bulk.(bulkevols)
+# allocate variables
+boundary       = Boundary(grid)
+gauge          = Gauge(grid)
+bulkevols      = BulkEvolvedPartition(grid)
+bulkconstrains = BulkConstrainedPartition(grid)
 
 # initial conditions
 init_data!(bulkevols, boundary, gauge, systems, ibvp)
 
+# full state vector
+evolvars  = EvolVars(boundary, gauge, bulkevols)
 
-evol = EvolPartition(boundary, gauge, bulkevols)
-
-evol_t = similar(evol)
-
-
-rhs! = AdS5_3_1.setup_rhs(bulks, systems, evoleq)
-
-rhs!(evol_t, evol, evoleq, 0.0)
+# function that updates the state vector
+rhs! = AdS5_3_1.setup_rhs(bulkconstrains, systems)
 
 
+dt0   = 0.001
+tspan = (0.0, 0.05)
 
+prob  = ODEProblem(rhs!, evolvars, tspan, evoleq)
 
-# function rhs!(df, f, (systems, evoleq), t)
-#     get_f_t!(df, f, systems, evoleq)
-# end
+integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
 
-
-# dt0 = 0.001
-# tspan = (0.0, 0.05)
-
-# prob  = ODEProblem(rhs!, evol, tspan, (systems, evoleq))
-
-# integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
-
-# for (f,t) in tuples(integrator)
-#     B1  = AdS5_3_1.getB1(f, 1)
-#     a4  = AdS5_3_1.geta4(f)
-#     @show t, B1[1], a4[1]
-# end
+for (f,t) in tuples(integrator)
+    B1  = AdS5_3_1.getB1(f, 1)
+    a4  = AdS5_3_1.geta4(f)
+    @show t, B1[1], a4[1]
+end
