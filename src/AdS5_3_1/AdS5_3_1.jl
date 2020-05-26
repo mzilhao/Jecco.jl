@@ -24,7 +24,7 @@ include("solve_nested.jl")
 export SpecCartGrid3D
 export Potential, ZeroPotential
 export BlackBrane, init_data!, init_data
-export EvolEq, EvolTest0
+export AffineNull, EvolTest0
 export Inner, Outer, System
 export BulkEvolved, BulkConstrained, Boundary, Gauge, Bulk, EvolVars
 export BulkPartition

@@ -24,7 +24,7 @@ id   = BlackBrane()
 
 # evoleq = EvolTest0()
 
-evoleq = EvolEq(
+evoleq = AffineNull(
     phi0       = 0.0,
     potential  = ZeroPotential(),
 )
@@ -50,11 +50,12 @@ rhs! = AdS5_3_1.setup_rhs(bulkconstrains, systems)
 
 
 dt0   = 0.001
-tspan = (0.0, 0.05)
+tspan = (0.0, 0.01)
 
 prob  = ODEProblem(rhs!, evolvars, tspan, evoleq)
 
-integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
+# integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
+integrator = init(prob, AB3(), save_everystep=false, dt=dt0, adaptive=false)
 
 for (f,t) in tuples(integrator)
     B1  = AdS5_3_1.getB1(f, 1)

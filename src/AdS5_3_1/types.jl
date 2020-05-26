@@ -1,19 +1,18 @@
 
 """
-Extend this type for different potential choices
+Extend this type for different `Potential` choices
 """
 abstract type Potential end
 
 """
-Extend this type for all InitialData parameters, including different initial
-conditions. It needs the fields `phi0` and `potential`.
+Extend this type for different `InitialData` choices
 """
 abstract type InitialData end
 
 """
-Extend this type for different evolution equations
+Extend this type for different `EvolutionEquations`
 """
-abstract type AbstractEvolEq end
+abstract type EvolutionEquations end
 
 
 abstract type AbstractVars{T} <: AbstractVector{T} end
