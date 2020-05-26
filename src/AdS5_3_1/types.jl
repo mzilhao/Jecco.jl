@@ -14,6 +14,13 @@ Extend this type for different `EvolutionEquations`
 """
 abstract type EvolutionEquations end
 
+struct EvolTest0 <: EvolutionEquations end
+
+Base.@kwdef struct AffineNull{T,TP<:Potential} <: EvolutionEquations
+    phi0          :: T   = 0.0
+    potential     :: TP  = ZeroPotential()
+end
+
 
 abstract type AbstractVars{T} <: AbstractVector{T} end
 

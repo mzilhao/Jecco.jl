@@ -1,11 +1,4 @@
 
-struct EvolTest0 <: EvolutionEquations end
-
-Base.@kwdef struct AffineNull{T,TP<:Potential} <: EvolutionEquations
-    phi0          :: T   = 0.0
-    potential     :: TP  = ZeroPotential()
-end
-
 function setup_rhs(bulkconstrains::BulkPartition{Nsys}, systems::SystemPartition) where {Nsys}
     # function to solve the nested system
     solve_nested! = nested_solver(systems)

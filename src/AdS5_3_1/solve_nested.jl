@@ -1556,6 +1556,18 @@ function solve_nested!(bulkconstrains, bulkevols, bcs, boundary::Boundary,
     nothing
 end
 
+# for testing only: set all constrained variables to zero
+function solve_nested!(bulkconstrains, bulkevols, bcs, boundary::Boundary,
+                       gauge::Gauge, nesteds, evoleq::EvolTest0)
+    Nsys = length(nesteds)
+
+    for i in 1:Nsys
+        fill!(bulkconstrains[i], 0)
+    end
+    nothing
+end
+
+
 function nested_solver(systems::SystemPartition)
     sys1  = systems[1]
     T     = Jecco.coord_eltype(sys1.ucoord)
@@ -1564,7 +1576,7 @@ function nested_solver(systems::SystemPartition)
     nesteds = [Nested(sys) for sys in systems]
     bcs     = [BC{T}(Nx, Ny) for sys in systems]
 
-    function (bulkconstrains, bulkevols, boundary::Boundary, gauge::Gauge, evoleq::AffineNull)
+    function (bulkconstrains, bulkevols, boundary::Boundary, gauge::Gauge, evoleq::EvolutionEquations)
         solve_nested!(bulkconstrains, bulkevols, bcs, boundary, gauge,
                       nesteds, evoleq)
         nothing
