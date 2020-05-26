@@ -25,10 +25,8 @@ export SpecCartGrid3D
 export Potential, ZeroPotential
 export BlackBrane, init_data!, init_data
 export AffineNull, EvolTest0
-export Inner, Outer, System
-export BulkEvolved, BulkConstrained, Boundary, Gauge, Bulk, EvolVars
-export BulkPartition
-export SystemPartition, BulkEvolvedPartition, BulkConstrainedPartition
+export BulkEvolved, BulkConstrained, Boundary, Gauge, Bulk
+export System, SystemPartition, BulkEvolvedPartition, BulkConstrainedPartition
 export nested_solver
 
 end

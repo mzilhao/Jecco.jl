@@ -30,7 +30,7 @@ grid = SpecCartGrid3D(
 
 id = BlackBrane()
 
-evoleq = EvolEq(
+evoleq = AffineNull(
     phi0       = 0.0,
     potential  = ZeroPotential(),
 )

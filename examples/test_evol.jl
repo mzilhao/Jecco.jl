@@ -43,7 +43,7 @@ bulkconstrains = BulkConstrainedPartition(grid)
 init_data!(bulkevols, boundary, gauge, systems, id)
 
 # full state vector
-evolvars  = EvolVars(boundary, gauge, bulkevols)
+evolvars  = AdS5_3_1.EvolVars(boundary, gauge, bulkevols)
 
 # function that updates the state vector
 rhs! = AdS5_3_1.setup_rhs(bulkconstrains, systems)
