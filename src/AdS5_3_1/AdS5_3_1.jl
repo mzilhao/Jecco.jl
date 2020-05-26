@@ -12,7 +12,7 @@ include("potential.jl")
 include("initial_data.jl")
 
 # time marching orders
-include("evolution.jl")
+include("setup_rhs.jl")
 
 # nested system
 include("equation_inner_coeff.jl")
