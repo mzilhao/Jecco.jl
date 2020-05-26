@@ -93,6 +93,41 @@ Nested(systems::SystemPartition) = [Nested(sys) for sys in systems]
 
 
 
+struct BC{T}
+    S    :: Array{T,2}
+    Fx   :: Array{T,2}
+    Fy   :: Array{T,2}
+    B1d  :: Array{T,2}
+    B2d  :: Array{T,2}
+    Gd   :: Array{T,2}
+    phid :: Array{T,2}
+    Sd   :: Array{T,2}
+    A    :: Array{T,2}
+    S_u  :: Array{T,2}
+    Fx_u :: Array{T,2}
+    Fy_u :: Array{T,2}
+    A_u  :: Array{T,2}
+end
+
+function BC{T}(Nx::Int, Ny::Int) where {T<:Real}
+    S    = Array{T}(undef, Nx, Ny)
+    Fx   = Array{T}(undef, Nx, Ny)
+    Fy   = Array{T}(undef, Nx, Ny)
+    B1d  = Array{T}(undef, Nx, Ny)
+    B2d  = Array{T}(undef, Nx, Ny)
+    Gd   = Array{T}(undef, Nx, Ny)
+    phid = Array{T}(undef, Nx, Ny)
+    Sd   = Array{T}(undef, Nx, Ny)
+    A    = Array{T}(undef, Nx, Ny)
+    S_u  = Array{T}(undef, Nx, Ny)
+    Fx_u = Array{T}(undef, Nx, Ny)
+    Fy_u = Array{T}(undef, Nx, Ny)
+    A_u  = Array{T}(undef, Nx, Ny)
+    BC{T}(S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A, S_u, Fx_u, Fy_u, A_u)
+end
+
+
+
 #= Notes
 
 for each metric function there are radial ODEs at each z point. since they are
@@ -138,7 +173,7 @@ of replacing the last line of the A_mat matrix and last entry of b_vec vector.
 
 =#
 
-function solve_S!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
+function solve_S!(bulk::Bulk, bc::BC, gauge::Gauge,
                   nested::Nested, evoleq::EvolEq)
     sys  = nested.sys
     uu   = nested.uu
@@ -197,11 +232,11 @@ function solve_S!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
 
             # BC
 
-            aux.b_vec[1]    = BC.S[i,j]
+            aux.b_vec[1]    = bc.S[i,j]
             aux.A_mat[1,:] .= 0.0
             aux.A_mat[1,1]  = 1.0
 
-            aux.b_vec[end]    = dBC.S[i,j]
+            aux.b_vec[end]    = bc.S_u[i,j]
             @inbounds @simd for aa in eachindex(uu)
                 aux.A_mat[end,aa]  = Du[1,aa]
             end
@@ -218,7 +253,7 @@ function solve_S!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
     nothing
 end
 
-function solve_Fxy!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
+function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge,
                     nested::Nested, evoleq::EvolEq)
     sys  = nested.sys
     uu   = nested.uu
@@ -333,16 +368,16 @@ function solve_Fxy!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
 
             # BC
 
-            aux.b_vec2[1]     = BC.Fx[i,j]
+            aux.b_vec2[1]     = bc.Fx[i,j]
             aux.A_mat2[1,:]  .= 0.0
             aux.A_mat2[1,1]   = 1.0
 
-            aux.b_vec2[1+Nu]      = BC.Fy[i,j]
+            aux.b_vec2[1+Nu]      = bc.Fy[i,j]
             aux.A_mat2[1+Nu,:]   .= 0.0
             aux.A_mat2[1+Nu,1+Nu] = 1.0
 
-            aux.b_vec2[Nu]   = dBC.Fx[i,j]
-            aux.b_vec2[2*Nu] = dBC.Fy[i,j]
+            aux.b_vec2[Nu]   = bc.Fx_u[i,j]
+            aux.b_vec2[2*Nu] = bc.Fy_u[i,j]
 
             aux.A_mat2[Nu,:]   .= 0.0
             aux.A_mat2[2*Nu,:] .= 0.0
@@ -364,7 +399,7 @@ function solve_Fxy!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
     nothing
 end
 
-function solve_Sd!(bulk::Bulk, BC::Bulk, gauge::Gauge,
+function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge,
                    nested::Nested, evoleq::EvolEq)
     sys  = nested.sys
     uu   = nested.uu
@@ -517,7 +552,7 @@ function solve_Sd!(bulk::Bulk, BC::Bulk, gauge::Gauge,
 
             # BC (first order equation)
 
-            aux.b_vec[1]    = BC.Sd[i,j]
+            aux.b_vec[1]    = bc.Sd[i,j]
             aux.A_mat[1,:] .= 0.0
             aux.A_mat[1,1]  = 1.0
 
@@ -533,7 +568,7 @@ function solve_Sd!(bulk::Bulk, BC::Bulk, gauge::Gauge,
     nothing
 end
 
-function solve_B2d!(bulk::Bulk, BC::Bulk, gauge::Gauge,
+function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge,
                     nested::Nested, evoleq::EvolEq)
     sys  = nested.sys
     uu   = nested.uu
@@ -686,7 +721,7 @@ function solve_B2d!(bulk::Bulk, BC::Bulk, gauge::Gauge,
 
             # BC (first order equation)
 
-            aux.b_vec[1]    = BC.B2d[i,j]
+            aux.b_vec[1]    = bc.B2d[i,j]
             aux.A_mat[1,:] .= 0.0
             aux.A_mat[1,1]  = 1.0
 
@@ -702,7 +737,7 @@ function solve_B2d!(bulk::Bulk, BC::Bulk, gauge::Gauge,
     nothing
 end
 
-function solve_B1dGd!(bulk::Bulk, BC::Bulk, gauge::Gauge,
+function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge,
                       nested::Nested, evoleq::EvolEq)
     sys  = nested.sys
     uu   = nested.uu
@@ -864,11 +899,11 @@ function solve_B1dGd!(bulk::Bulk, BC::Bulk, gauge::Gauge,
 
             # BC (first order system)
 
-            aux.b_vec2[1]     = BC.B1d[i,j]
+            aux.b_vec2[1]     = bc.B1d[i,j]
             aux.A_mat2[1,:]  .= 0.0
             aux.A_mat2[1,1]   = 1.0
 
-            aux.b_vec2[1+Nu]      = BC.Gd[i,j]
+            aux.b_vec2[1+Nu]      = bc.Gd[i,j]
             aux.A_mat2[1+Nu,:]   .= 0.0
             aux.A_mat2[1+Nu,1+Nu] = 1.0
 
@@ -885,7 +920,7 @@ function solve_B1dGd!(bulk::Bulk, BC::Bulk, gauge::Gauge,
     nothing
 end
 
-function solve_phid!(bulk::Bulk, BC::Bulk, gauge::Gauge,
+function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge,
                      nested::Nested, evoleq::EvolEq)
     sys  = nested.sys
     uu   = nested.uu
@@ -1046,7 +1081,7 @@ function solve_phid!(bulk::Bulk, BC::Bulk, gauge::Gauge,
 
             # BC (first order equation)
 
-            aux.b_vec[1]    = BC.phid[i,j]
+            aux.b_vec[1]    = bc.phid[i,j]
             aux.A_mat[1,:] .= 0.0
             aux.A_mat[1,1]  = 1.0
 
@@ -1062,7 +1097,7 @@ function solve_phid!(bulk::Bulk, BC::Bulk, gauge::Gauge,
     nothing
 end
 
-function solve_A!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
+function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge,
                   nested::Nested, evoleq::EvolEq)
     sys  = nested.sys
     uu   = nested.uu
@@ -1221,11 +1256,11 @@ function solve_A!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
 
             # BC
 
-            aux.b_vec[1]    = BC.A[i,j]
+            aux.b_vec[1]    = bc.A[i,j]
             aux.A_mat[1,:] .= 0.0
             aux.A_mat[1,1]  = 1.0
 
-            aux.b_vec[end]    = dBC.A[i,j]
+            aux.b_vec[end]    = bc.A_u[i,j]
             @inbounds @simd for aa in eachindex(uu)
                 aux.A_mat[end,aa]  = Du[1,aa]
             end
@@ -1243,7 +1278,7 @@ function solve_A!(bulk::Bulk, BC::Bulk, dBC::Bulk, gauge::Gauge,
 end
 
 function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved,
-                       BC::Bulk, dBC::Bulk, gauge::Gauge,
+                       bc::BC, gauge::Gauge,
                        nested::Nested, evoleq::EvolEq)
     sys  = nested.sys
 
@@ -1283,7 +1318,7 @@ function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved,
     end
 
     # solve for S
-    solve_S!(bulk, BC, dBC, gauge, nested, evoleq)
+    solve_S!(bulk, bc, gauge, nested, evoleq)
 
     # take u-derivatives of S
     @sync begin
@@ -1292,7 +1327,7 @@ function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved,
     end
 
     # solve for Fx and Fy
-    solve_Fxy!(bulk, BC, dBC, gauge, nested, evoleq)
+    solve_Fxy!(bulk, bc, gauge, nested, evoleq)
 
     # take u-derivatives of Fx and Fy
     @sync begin
@@ -1303,51 +1338,51 @@ function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved,
     end
 
     # solve for Sd
-    solve_Sd!(bulk, BC, gauge, nested, evoleq)
+    solve_Sd!(bulk, bc, gauge, nested, evoleq)
 
     # solving for B2d, (B1d,Gd) and phid are independent processes. we can
     # therefore @spawn, here
     @sync begin
-        @spawn solve_B2d!(bulk, BC, gauge, nested, evoleq)
-        @spawn solve_B1dGd!(bulk, BC, gauge, nested, evoleq)
-        @spawn solve_phid!(bulk, BC, gauge, nested, evoleq)
+        @spawn solve_B2d!(bulk, bc, gauge, nested, evoleq)
+        @spawn solve_B1dGd!(bulk, bc, gauge, nested, evoleq)
+        @spawn solve_phid!(bulk, bc, gauge, nested, evoleq)
     end
 
     # solve for A
-    solve_A!(bulk, BC, dBC, gauge, nested, evoleq)
+    solve_A!(bulk, bc, gauge, nested, evoleq)
 
     nothing
 end
 
 
-function syncBCs!(BC::Bulk, dBC::Bulk, bulk::BulkConstrained, nested::Nested)
+function syncBCs!(bc::BC, bulk::BulkConstrained, nested::Nested)
     Du = nested.sys.Du
 
     Nu, Nx, Ny = size(bulk.S)
 
     @fastmath @inbounds @threads for j in 1:Ny
         @inbounds @simd for i in 1:Nx
-            BC.S[i,j]    = bulk.S[end,i,j]
-            BC.Fx[i,j]   = bulk.Fx[end,i,j]
-            BC.Fy[i,j]   = bulk.Fy[end,i,j]
-            BC.Sd[i,j]   = bulk.Sd[end,i,j]
-            BC.B1d[i,j]  = bulk.B1d[end,i,j]
-            BC.B2d[i,j]  = bulk.B2d[end,i,j]
-            BC.Gd[i,j]   = bulk.Gd[end,i,j]
-            BC.phid[i,j] = bulk.phid[end,i,j]
-            BC.A[i,j]    = bulk.A[end,i,j]
+            bc.S[i,j]    = bulk.S[end,i,j]
+            bc.Fx[i,j]   = bulk.Fx[end,i,j]
+            bc.Fy[i,j]   = bulk.Fy[end,i,j]
+            bc.Sd[i,j]   = bulk.Sd[end,i,j]
+            bc.B1d[i,j]  = bulk.B1d[end,i,j]
+            bc.B2d[i,j]  = bulk.B2d[end,i,j]
+            bc.Gd[i,j]   = bulk.Gd[end,i,j]
+            bc.phid[i,j] = bulk.phid[end,i,j]
+            bc.A[i,j]    = bulk.A[end,i,j]
 
-            dBC.S[i,j]   = nested.Du_S[end,i,j]
-            dBC.Fx[i,j]  = nested.Du_Fx[end,i,j]
-            dBC.Fy[i,j]  = nested.Du_Fy[end,i,j]
-            dBC.A[i,j]   = Du(bulk.A, Nu,i,j)
+            bc.S_u[i,j]   = nested.Du_S[end,i,j]
+            bc.Fx_u[i,j]  = nested.Du_Fx[end,i,j]
+            bc.Fy_u[i,j]  = nested.Du_Fy[end,i,j]
+            bc.A_u[i,j]   = Du(bulk.A, Nu,i,j)
         end
     end
 
     nothing
 end
 
-function set_innerBCs!(BC::Bulk, dBC::Bulk, bulk::BulkEvolved,
+function set_innerBCs!(bc::BC, bulk::BulkEvolved,
                        boundary::Boundary, gauge::Gauge,
                        nested::Nested, evoleq::EvolEq)
     _, Nx, Ny = size(nested.sys)
@@ -1400,27 +1435,27 @@ function set_innerBCs!(BC::Bulk, dBC::Bulk, bulk::BulkEvolved,
             phi2_x  = phi03 * phi_x - 2 * phi0 * xi * xi_x
             phi2_y  = phi03 * phi_y - 2 * phi0 * xi * xi_y
 
-            BC.S[i,j]  = phi04 * (1 - 18 * phi) / 54
-            dBC.S[i,j] = phi02 * (-12 * xi3 +
-                                  phi02 * xi * (18 * phi - 5) -
-                                  24 * phi02 * phi_u) / 90
+            bc.S[i,j]   = phi04 * (1 - 18 * phi) / 54
+            bc.S_u[i,j] = phi02 * (-12 * xi3 +
+                                   phi02 * xi * (18 * phi - 5) -
+                                   24 * phi02 * phi_u) / 90
 
-            BC.Fx[i,j]  = fx2
-            dBC.Fx[i,j] = -2 * fx2 * xi - 12 / 15 * (b14_x + b24_x - g4_y) +
+            bc.Fx[i,j]   = fx2
+            bc.Fx_u[i,j] = -2 * fx2 * xi - 12 / 15 * (b14_x + b24_x - g4_y) +
                 4/15 * phi0 * phi2_x
 
-            BC.Fy[i,j]  = fy2
-            dBC.Fy[i,j] = -2 * fy2 * xi - 12 / 15 * (-b14_y + b24_y - g4_x) +
+            bc.Fy[i,j]   = fy2
+            bc.Fy_u[i,j] = -2 * fy2 * xi - 12 / 15 * (-b14_y + b24_y - g4_x) +
                 4/15 * phi0 * phi2_y
 
-            BC.Sd[i,j] = a4 / 2
+            bc.Sd[i,j] = a4 / 2
 
-            BC.B2d[i,j] = -2 * b24
-            BC.B1d[i,j] = -2 * b14
-            BC.Gd[i,j]  = -2 * g4
+            bc.B2d[i,j] = -2 * b24
+            bc.B1d[i,j] = -2 * b14
+            bc.Gd[i,j]  = -2 * g4
 
-            BC.A[i,j]  = a4
-            dBC.A[i,j] = -2 * xi * a4 - 2 * phi0 * xi * phi2 -
+            bc.A[i,j]   = a4
+            bc.A_u[i,j] = -2 * xi * a4 - 2 * phi0 * xi * phi2 -
                 2/3 * (phi02 * xi3 + fx2_x + fy2_y + phi04 * phi_u)
 
         end
@@ -1430,7 +1465,7 @@ function set_innerBCs!(BC::Bulk, dBC::Bulk, bulk::BulkEvolved,
     # vectorization
 
     if abs(phi0) < 1e-9
-        fill!(BC.phid, 0)
+        fill!(bc.phid, 0)
         return
     end
 
@@ -1440,14 +1475,14 @@ function set_innerBCs!(BC::Bulk, dBC::Bulk, bulk::BulkEvolved,
             phi     = bulk.phi[1,i,j]
             phi2    = phi03 * phi - phi0 * xi * xi
 
-            BC.phid[i,j] = 1/3 - 3/2 * phi2 / phi03
+            bc.phid[i,j] = 1/3 - 3/2 * phi2 / phi03
         end
     end
 
     nothing
 end
 
-function set_outerBCs!(BC::Bulk, dBC::Bulk, bulk::BulkConstrained,
+function set_outerBCs!(bc::BC, bulk::BulkConstrained,
                        gauge::Gauge, nested::Nested, evoleq::EvolEq)
     Nu, Nx, Ny = size(nested.sys)
     Du = nested.sys.Du
@@ -1477,25 +1512,25 @@ function set_outerBCs!(BC::Bulk, dBC::Bulk, bulk::BulkConstrained,
             Fy_u   = nested.Du_Fy[end,i,j]
             A_u    = Du(bulk.A, Nu,i,j)
 
-            BC.S[i,j]  = S_inner_to_outer(S, u0, xi, phi0)
-            dBC.S[i,j] = S_u_inner_to_outer(S_u, S, u0, xi, phi0)
+            bc.S[i,j]   = S_inner_to_outer(S, u0, xi, phi0)
+            bc.S_u[i,j] = S_u_inner_to_outer(S_u, S, u0, xi, phi0)
 
-            BC.Fx[i,j]  = F_inner_to_outer(Fx, u0)
-            BC.Fy[i,j]  = F_inner_to_outer(Fy, u0)
-            dBC.Fx[i,j] = F_u_inner_to_outer(Fx_u, Fx, u0)
-            dBC.Fy[i,j] = F_u_inner_to_outer(Fy_u, Fy, u0)
+            bc.Fx[i,j]   = F_inner_to_outer(Fx, u0)
+            bc.Fy[i,j]   = F_inner_to_outer(Fy, u0)
+            bc.Fx_u[i,j] = F_u_inner_to_outer(Fx_u, Fx, u0)
+            bc.Fy_u[i,j] = F_u_inner_to_outer(Fy_u, Fy, u0)
 
-            BC.Sd[i,j]  = Sd_inner_to_outer(Sd, u0, xi, phi0)
+            bc.Sd[i,j]  = Sd_inner_to_outer(Sd, u0, xi, phi0)
 
             # B1d, B2d, and Gd transform in the same way
-            BC.B2d[i,j] = Bd_inner_to_outer(B2d, u0)
-            BC.B1d[i,j] = Bd_inner_to_outer(B1d, u0)
-            BC.Gd[i,j]  = Bd_inner_to_outer(Gd, u0)
+            bc.B2d[i,j] = Bd_inner_to_outer(B2d, u0)
+            bc.B1d[i,j] = Bd_inner_to_outer(B1d, u0)
+            bc.Gd[i,j]  = Bd_inner_to_outer(Gd, u0)
 
-            BC.phid[i,j] = phid_inner_to_outer(phid, u0, phi0)
+            bc.phid[i,j] = phid_inner_to_outer(phid, u0, phi0)
 
-            BC.A[i,j]  = A_inner_to_outer(A, u0, xi, phi0)
-            dBC.A[i,j] = A_u_inner_to_outer(A_u, A, u0, xi, phi0)
+            bc.A[i,j]   = A_inner_to_outer(A, u0, xi, phi0)
+            bc.A_u[i,j] = A_u_inner_to_outer(A_u, A, u0, xi, phi0)
         end
     end
 
@@ -1506,23 +1541,23 @@ end
 # We assume that the first entry on these arrays is the inner grid, and that
 # there is only one domain spanning this grid. If we ever change this
 # construction we must remember to make the appropriate changes here.
-function solve_nested!(bulkconstrains, bulkevols, BCs, dBCs, boundary::Boundary,
+function solve_nested!(bulkconstrains, bulkevols, bcs, boundary::Boundary,
                        gauge::Gauge, nesteds, evoleq::EvolEq)
     Nsys = length(nesteds)
 
-    set_innerBCs!(BCs[1], dBCs[1], bulkevols[1], boundary, gauge, nesteds[1], evoleq)
+    set_innerBCs!(bcs[1], bulkevols[1], boundary, gauge, nesteds[1], evoleq)
 
-    solve_nested!(bulkconstrains[1], bulkevols[1], BCs[1], dBCs[1],
+    solve_nested!(bulkconstrains[1], bulkevols[1], bcs[1],
                   gauge, nesteds[1], evoleq)
 
-    set_outerBCs!(BCs[2], dBCs[2], bulkconstrains[1], gauge, nesteds[1], evoleq)
+    set_outerBCs!(bcs[2], bulkconstrains[1], gauge, nesteds[1], evoleq)
 
     for i in 2:Nsys-1
-        solve_nested!(bulkconstrains[i], bulkevols[i], BCs[i], dBCs[i],
+        solve_nested!(bulkconstrains[i], bulkevols[i], bcs[i],
                       gauge, nesteds[i], evoleq)
-        syncBCs!(BCs[i+1], dBCs[i+1], bulkconstrains[i], nesteds[i])
+        syncBCs!(bcs[i+1], bulkconstrains[i], nesteds[i])
     end
-    solve_nested!(bulkconstrains[Nsys], bulkevols[Nsys], BCs[Nsys], dBCs[Nsys],
+    solve_nested!(bulkconstrains[Nsys], bulkevols[Nsys], bcs[Nsys],
                   gauge, nesteds[Nsys], evoleq)
 
     nothing
@@ -1534,11 +1569,10 @@ function nested_solver(systems::SystemPartition)
     _, Nx, Ny = size(sys1)
 
     nesteds = Tuple([Nested(sys) for sys in systems])
-    BCs     = Tuple([Bulk{T}(undef, Nx, Ny) for sys in systems])
-    dBCs    = Tuple([Bulk{T}(undef, Nx, Ny) for sys in systems])
+    bcs     = Tuple([BC{T}(Nx, Ny) for sys in systems])
 
     function (bulkconstrains, bulkevols, boundary::Boundary, gauge::Gauge, evoleq::EvolEq)
-        solve_nested!(bulkconstrains, bulkevols, BCs, dBCs, boundary, gauge,
+        solve_nested!(bulkconstrains, bulkevols, bcs, boundary, gauge,
                       nesteds, evoleq)
         nothing
     end

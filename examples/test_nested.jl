@@ -59,11 +59,11 @@ solve_nested!(bulkconstrains, bulkevols, boundary, gauge, evoleq)
 
 i = 2
 
+bulk = Bulk(bulkevols[i], bulkconstrains[i])
+
 chart = atlas.charts[i]
 uu    = chart.coords[1][:]
 xx    = chart.coords[2][:]
 yy    = chart.coords[3][:]
-
-bulk  = bulks[i]
 
 bulk.A[:,1,1]
