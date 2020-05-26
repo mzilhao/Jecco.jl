@@ -12,14 +12,12 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, systems::SystemPartition
         boundary    = getboundary(ff)
         gauge       = getgauge(ff)
 
-        # TODO
-        # compute_boundary_t!(boundary_t, bulkevols[1], boundary, gauge, systems[1], evoleq)
+        compute_boundary_t!(boundary_t, bulkevols[1], boundary, gauge, systems[1], evoleq)
 
         # solve nested system for the constrained variables
         solve_nested!(bulkconstrains, bulkevols, boundary, gauge, evoleq)
 
-        # TODO
-        # compute_xi_t!(gauge_t, bulkconstrains[end], bulkevols[end], boundary, gauge, systems[end], evoleq)
+        compute_xi_t!(gauge_t, bulkconstrains[end], gauge, systems[end], evoleq)
 
         @inbounds for aa in 1:Nsys
             sys           = systems[aa]
@@ -27,8 +25,8 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, systems::SystemPartition
             bulkevol      = bulkevols[aa]
             bulkconstrain = bulkconstrains[aa]
 
-            # TODO
-            # compute_bulkevolved_t!(bulkevol_t, bulkconstrain, bulkevol, boundary, gauge, sys, evoleq)
+            compute_bulkevolved_t!(bulkevol_t, bulkconstrain, gauge_t, bulkevol,
+                                   boundary, gauge, sys, evoleq)
         end
 
         # TODO: sync_bulkevolved

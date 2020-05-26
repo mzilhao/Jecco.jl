@@ -20,6 +20,11 @@ include("equation_outer_coeff.jl")
 include("inner_to_outer.jl")
 include("solve_nested.jl")
 
+# evolution equations
+include("compute_boundary_t.jl")
+include("compute_gauge_t.jl")
+include("compute_bulkevolved_t.jl")
+
 
 export SpecCartGrid3D
 export Potential, ZeroPotential
