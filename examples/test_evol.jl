@@ -20,7 +20,7 @@ grid = SpecCartGrid3D(
     u_inner_nodes    =  12,
 )
 
-ibvp   = BlackBrane()
+id   = BlackBrane()
 
 # evoleq = EvolTest0()
 
@@ -40,7 +40,7 @@ bulkevols      = BulkEvolvedPartition(grid)
 bulkconstrains = BulkConstrainedPartition(grid)
 
 # initial conditions
-init_data!(bulkevols, boundary, gauge, systems, ibvp)
+init_data!(bulkevols, boundary, gauge, systems, id)
 
 # full state vector
 evolvars  = EvolVars(boundary, gauge, bulkevols)

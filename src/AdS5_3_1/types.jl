@@ -5,10 +5,10 @@ Extend this type for different potential choices
 abstract type Potential end
 
 """
-Extend this type for all IBVP parameters, including different initial
+Extend this type for all InitialData parameters, including different initial
 conditions. It needs the fields `phi0` and `potential`.
 """
-abstract type IBVP end
+abstract type InitialData end
 
 """
 Extend this type for different evolution equations

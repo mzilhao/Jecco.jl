@@ -17,7 +17,7 @@ grid = SpecCartGrid3D(
     u_inner_nodes    =  12,
 )
 
-# ibvp = AdS5_3_1.IDTest0(
+# id = AdS5_3_1.IDTest0(
 #     b14_0      = 0.01,
 #     b24_0      = 0.02,
 #     phi0       = 0.0,
@@ -28,7 +28,7 @@ grid = SpecCartGrid3D(
 #     potential  = ZeroPotential(),
 # )
 
-ibvp = BlackBrane()
+id = BlackBrane()
 
 evoleq = EvolEq(
     phi0       = 0.0,
@@ -47,7 +47,7 @@ bulkevols      = BulkEvolvedPartition(grid)
 bulkconstrains = BulkConstrainedPartition(grid)
 
 # initial conditions
-init_data!(bulkevols, boundary, gauge, systems, ibvp)
+init_data!(bulkevols, boundary, gauge, systems, id)
 
 # function to solve the nested system, given the initial data
 solve_nested! = nested_solver(systems)
