@@ -240,6 +240,13 @@ end
     end
 end
 
+Base.similar(ff::BulkEvolved{T}) where{T} =
+    BulkEvolved{T}(similar(ff.B1), similar(ff.B2), similar(ff.G), similar(ff.phi))
+
+Base.similar(ff::Boundary{T}) where{T} =
+    Boundary{T}(similar(ff.a4), similar(ff.fx2), similar(ff.fy2))
+
+
 """
     unpack(ff::AbstractVars)
 
