@@ -1,51 +1,106 @@
 
-function initial_data(sys, p::ParamID)
-    if p.ID_type == "sine2D"
-        return sine2D(sys, p)
-    elseif p.ID_type == "uniform2D"
-        return uniform2D(sys, p)
-    else
-        error("Unknown initial data type.")
-    end
+Base.@kwdef struct BlackBrane{T,TP<:Potential} <: InitialData
+    energy_dens   :: T   = 1.0
+    AH_pos        :: T   = 1.0
+    phi0          :: T   = 0.0
+    potential     :: TP  = ZeroPotential()
 end
 
-function uniform2D(sys::System, p::ParamID)
-    Nu, Nx, Ny = size(sys)
-
-    phif  = zeros(Nu, Nx, Ny)
-
-    # TODO: make parameter
-    phi2 = 1.0
-
-    for j in 1:Ny
-        for i in 1:Nx
-            for a in 1:Nu
-                phif[a,i,j] = phi2
-            end
-        end
-    end
-
-    phif
+Base.@kwdef struct IDTest0{T,TP<:Potential} <: InitialData
+    b14_0     :: T  = 0.0
+    b24_0     :: T  = 0.0
+    g4_0      :: T  = 0.0
+    phi0      :: T  = 0.0
+    phi2_0    :: T  = 0.0
+    a4_0      :: T  = 0.0
+    fx2_0     :: T  = 0.0
+    fy2_0     :: T  = 0.0
+    xi_0      :: T  = 0.0
+    potential :: TP = ZeroPotential()
 end
 
-uniform2D(systems::Array, p::ParamID) = [uniform2D(sys, p) for sys in systems]
 
-sine2D(x, y, Lx::Real, Ly::Real, kx::Integer, ky::Integer) =
-             sin( 2*π * kx / Lx * x ) * sin( 2*π * ky / Ly * y )
+function init_data!(bulkevols, boundary::Boundary, gauge::Gauge,
+                    systems::SystemPartition, id::InitialData)
 
-function sine2D(sys::System, p::ParamID)
+    init_data!(bulkevols, systems, id)
+    init_data!(boundary, systems[1],   id)
+    init_data!(gauge,    systems[end], id)
+
+    nothing
+end
+
+
+function init_data!(bulkevols, systems::SystemPartition{Nsys},
+                    id::InitialData) where {Nsys,T<:BulkEvolved}
+    # the Ref() makes its argument a scalar with respect to broadcast
+    init_data!.(bulkevols, systems, Ref(id))
+end
+
+
+# BlackBrane initial data
+
+function init_data!(ff::BulkEvolved, sys::System, id::BlackBrane)
+    B1  = getB1(ff)
+    B2  = getB2(ff)
+    G   = getG(ff)
+    phi = getphi(ff)
+
+    fill!(B1,  0)
+    fill!(B2,  0)
+    fill!(G,   0)
+    fill!(phi, 0)
+
+    ff
+end
+
+function init_data!(ff::Boundary, sys::System, id::BlackBrane)
+    a40 = -id.energy_dens/0.75
+
+    a4  = geta4(ff)
+    fx2 = getfx2(ff)
+    fy2 = getfy2(ff)
+
+    fill!(a4, a40)
+    fill!(fx2, 0)
+    fill!(fy2, 0)
+
+    ff
+end
+
+function init_data!(ff::Gauge, sys::System, id::BlackBrane)
+    a40     = -id.energy_dens/0.75
+    AH_pos  = id.AH_pos
+    xi0     = (-a40)^0.25 - 1/AH_pos
+
+    xi  = getxi(ff)
+
+    fill!(xi, xi0)
+
+    ff
+end
+
+
+# IDTest0
+
+function init_data!(ff::BulkEvolved, sys::System{Outer}, id::IDTest0)
     Nu, Nx, Ny = size(sys)
     ucoord = sys.ucoord
     xcoord = sys.xcoord
     ycoord = sys.ycoord
 
-    phif  = zeros(Nu, Nx, Ny)
+    B1  = getB1(ff)
+    B2  = getB2(ff)
+    G   = getG(ff)
+    phi = getphi(ff)
 
-    Lx    = p.Lx
-    Ly    = p.Ly
+    b14_0  = id.b14_0
+    b24_0  = id.b24_0
 
-    kx = 2
-    ky = 4
+    g4_0   = id.g4_0
+
+    phi0   = id.phi0
+    phi2_0 = id.phi2_0
 
     for j in 1:Ny
         for i in 1:Nx
@@ -53,17 +108,72 @@ function sine2D(sys::System, p::ParamID)
                 u = ucoord[a]
                 x = xcoord[i]
                 y = ycoord[j]
-                phif[a,i,j] = sine2D(x, y, Lx, Ly, kx, ky)
+                B1[a,i,j]  = u^4 * b14_0
+                B2[a,i,j]  = u^4 * b24_0
+                phi[a,i,j] = phi0 * u + phi2_0 * u^3
+                G[a,i,j]   = u^4 * g4_0
             end
         end
     end
 
-    phif
+    ff
 end
 
-sine2D(systems::Array, p::ParamID) = [sine2D(sys, p) for sys in systems]
+function init_data!(ff::BulkEvolved, sys::System{Inner}, id::IDTest0)
+    # Nu, Nx, Ny = size(sys)
+    # ucoord = sys.ucoord
+    # xcoord = sys.xcoord
+    # ycoord = sys.ycoord
 
-function ones2D(sys::System)
-    Nu, Nx, Ny = size(sys)
-    ones(Nx, Ny)
+    B1  = getB1(ff)
+    B2  = getB2(ff)
+    G   = getG(ff)
+    phi = getphi(ff)
+
+    b14_0  = id.b14_0
+    b24_0  = id.b24_0
+
+    g4_0   = id.g4_0
+
+    phi0   = id.phi0
+    phi2_0 = id.phi2_0
+
+    fill!(B1,  b14_0)
+    fill!(B2,  b24_0)
+    fill!(G,   g4_0)
+    fill!(phi, phi2_0)
+
+    ff
+end
+
+function init_data!(ff::Boundary, sys::System{Inner}, id::IDTest0)
+    # _, Nx, Ny = size(sys)
+    # xcoord = sys.xcoord
+    # ycoord = sys.ycoord
+
+    a4  = geta4(ff)
+    fx2 = getfx2(ff)
+    fy2 = getfy2(ff)
+
+    a4_0   = id.a4_0
+    fx2_0  = id.fx2_0
+    fy2_0  = id.fy2_0
+
+    fill!(a4,  a4_0)
+    fill!(fx2, fx2_0)
+    fill!(fy2, fy2_0)
+
+    ff
+end
+
+function init_data!(ff::Gauge, sys::System{Outer}, id::IDTest0)
+    # _, Nx, Ny = size(sys)
+    # xcoord = sys.xcoord
+    # ycoord = sys.ycoord
+
+    xi   = getxi(ff)
+    xi_0 = id.xi_0
+    fill!(xi,  xi_0)
+
+    ff
 end

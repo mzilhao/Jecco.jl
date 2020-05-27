@@ -42,6 +42,17 @@ function GaussLobatto{N}(name::String, xmin::T, xmax::T,
 end
 GaussLobatto(args...) = GaussLobatto{1}(args...)
 
+struct Coord{N} end
+function Coord{N}(coord_type::String, name::String, min::T, max::T, nodes::Int) where {T<:Real,N}
+    if coord_type == "Cartesian"
+        return CartesianCoord{N,T}(name, min, max, nodes)
+    elseif coord_type == "GaussLobatto"
+        return GaussLobattoCoord{N,T}(name, min, max, nodes)
+    else
+        error("Unknown coord type")
+    end
+end
+
 
 @inline function delta(coord::CartesianCoord) where {T<:Real,N}
     (coord.max - coord.min) / (coord.nodes - 1)
@@ -71,66 +82,91 @@ end
 @inline Base.getindex(coord::AbstractCoord, ::Colon) = [coord[i] for i in 1:coord.nodes]
 
 
-struct Grid{A}
-    ndim    :: Int
-    coords  :: A
+struct Chart{A}
+    ndims  :: Int
+    coords :: A
 
-    function Grid{A}(coords) where {A}
+    function Chart{A}(coords) where {A}
         ndim = length(coords)
         for a in 1:ndim
             @assert(coord_axis(coords[a]) == a, "wrong order in grid array")
         end
-        new(ndim, coords)
+        new{A}(ndim,coords)
     end
 end
-Grid(coords) = Grid{typeof(coords)}(coords)
+"""
+    Chart(coords::A)
 
-function Grid(coords::Tuple)
-    ndim = length(coords)
-    Grid{typeof(coords)}(ndim, coords)
-end
+A `Chart` is a collection of `AbstractCoord`s
+"""
+Chart(coords::A) where {A} = Chart{A}(coords)
 
-function Grid(coords::Vararg{AbstractCoord,N}) where {N}
-    Grid{typeof(coords)}(coords)
-end
+Chart(coords::Vararg{AbstractCoord,N}) where {N} = Chart(coords)
 
-function Grid(coord::AbstractCoord)
-    ndim   = 1
+function Chart(coord::AbstractCoord)
     coords = (coord)
-    Grid{typeof(coords)}(coords)
+    Chart(coords)
+end
+
+function Chart(coord_types::Vector, names::Vector, mins::Vector, maxs::Vector,
+               nodess::Vector)
+    dim_ = length(names)
+    @assert(length(mins) == length(maxs) == length(nodess) == length(coord_types) == dim_)
+    coords = [Coord{i}(coord_types[i], names[i], mins[i], maxs[i], nodess[i]) for i in 1:dim_]
+    Chart(coords)
 end
 
 
-@inline function Base.getindex(grid::Grid, idx::Vararg{Int,N}) where {N}
-    [grid.coords[a][idx[a]] for a in 1:N]
+@inline Base.ndims(chart::Chart) = chart.ndims
+
+@inline function Base.getindex(chart::Chart, idx::Vararg{Int,N}) where {N}
+    [chart.coords[a][idx[a]] for a in 1:N]
 end
 
-@inline function Base.getindex(grid::Grid, ::Colon)
-    [grid.coords[a][:] for a in 1:grid.ndim]
+@inline function Base.getindex(chart::Chart, ::Colon)
+    [chart.coords[a][:] for a in 1:chart.ndims]
 end
 
-@inline function name(grid::Grid)
-    [grid.coords[a].name for a in 1:grid.ndim]
+@inline function name(chart::Chart)
+    [chart.coords[a].name for a in 1:chart.ndims]
 end
 
-@inline function min(grid::Grid)
-    [grid.coords[a].min for a in 1:grid.ndim]
+@inline function min(chart::Chart)
+    [chart.coords[a].min for a in 1:chart.ndims]
 end
 
-@inline function max(grid::Grid)
-    [grid.coords[a].max for a in 1:grid.ndim]
+@inline function max(chart::Chart)
+    [chart.coords[a].max for a in 1:chart.ndims]
 end
 
-@inline function nodes(grid::Grid)
-    [grid.coords[a].nodes for a in 1:grid.ndim]
+@inline function nodes(chart::Chart)
+    [chart.coords[a].nodes for a in 1:chart.ndims]
 end
 
-@inline function delta(grid::Grid)
-    [delta(grid.coords[a]) for a in 1:grid.ndim]
+@inline function delta(chart::Chart)
+    [delta(chart.coords[a]) for a in 1:chart.ndims]
 end
 
-@inline function coord_type(grid::Grid)
-    [coord_type(grid.coords[a]) for a in 1:grid.ndim]
+@inline function coord_type(chart::Chart)
+    [coord_type(chart.coords[a]) for a in 1:chart.ndims]
 end
 
-@inline Base.size(grid::Grid) = Tuple(nodes(grid))
+@inline Base.size(chart::Chart) = Tuple(nodes(chart))
+
+
+struct Atlas{N,A<:Chart}
+    charts :: NTuple{N,A}
+end
+
+"""
+    Atlas(charts::A)
+
+An `Atlas` is a collection of `Chart`s
+"""
+Atlas(charts::Vararg{Chart,N}) where {N} = Atlas(charts)
+Atlas(xx::Vector) = Atlas(Tuple(xx))
+
+function Atlas(chart::Chart)
+    charts = (chart)
+    Atlas(charts)
+end

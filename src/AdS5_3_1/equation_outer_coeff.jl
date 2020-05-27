@@ -1,13 +1,4 @@
 
-
-# V(phi)  = VV(phi)
-# Vp(phi) = ∂(VV)(phi)
-
-# FIXME. defined in the inner_coeff script.
-# U(phi)  = 0
-# Up(phi) = 0
-
-
 #= tilde, hat, etc, definitions
 
 We use these macros as shorthand notation. For instance
@@ -63,16 +54,8 @@ end
 # assuming
 # (A d_uu + B d_u + C Id) f = -S
 
-function S_eq_coeff!(ABCS::Vector, vars::SVars, ::Outer)
-    u   = vars.u
-
-    B1p  = vars.B1p
-    B2p  = vars.B2p
-
-    G   = vars.G
-    Gp  = vars.Gp
-
-    phip = vars.phip
+function S_eq_coeff!(ABCS::Vector, vars::Tuple, ::Outer)
+    (phi0, u, xi, B1, B1p, B2, B2p, G, Gp, phi, phip) = vars
 
     ABCS[1] = *(6, u ^ 4)
     ABCS[2] = *(12, u ^ 3)
@@ -87,8 +70,8 @@ end
 # ( A11 d_uu Fx + A12 d_uu Fy + B11 d_u Fx + B12 d_u Fy + C11 Fx + C12 Fy ) = -S1
 # ( A21 d_uu Fx + A22 d_uu Fy + B21 d_u Fx + B22 d_u Fy + C21 Fx + C22 Fy ) = -S2
 
-function Fxy_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::FVars, ::Outer)
-    @unpack (
+function Fxy_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::Tuple, ::Outer)
+    (
         phi0, u, xi, xi_x, xi_y,
         B1     ,    B2     ,    G      ,    phi    ,    S      ,
         B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,
@@ -96,7 +79,7 @@ function Fxy_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::FVa
         B1_x   ,    B2_x   ,    G_x    ,    phi_x  ,    S_x    ,
         B1_y   ,    B2_y   ,    G_y    ,    phi_y  ,    S_y    ,
         B1p_x  ,    B2p_x  ,    Gp_x   ,                Sp_x   ,
-        B1p_y  ,    B2p_y  ,    Gp_y   ,                Sp_y   ,
+        B1p_y  ,    B2p_y  ,    Gp_y   ,                Sp_y
     ) = vars
 
     expB1   = exp(B1)
@@ -133,9 +116,9 @@ function Fxy_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::FVa
 end
 
 
-function Sd_eq_coeff!(ABCS::Vector, vars::SdVars, ::Outer)
-    @unpack (
-        phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+function Sd_eq_coeff!(ABCS::Vector, vars::Tuple, ::Outer)
+    (
+        potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
         B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,
         B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
         B1pp   ,    B2pp   ,    Gpp    ,    phipp  ,    Spp    ,    Fxpp   ,    Fypp   ,
@@ -186,7 +169,7 @@ function Sd_eq_coeff!(ABCS::Vector, vars::SdVars, ::Outer)
     @cross_outer("G")
     @cross_outer("S")
 
-    VV  = -3 - 3/2 * phi0 * u * (1 - 2*u*xi) + u*u*u*u * U(phi)
+    VV  = -3 - 3/2 * phi0 * u * (1 - 2*u*xi) + u*u*u*u * UU(phi, potential)
 
     # VVp = -3 * phi0*u * (1 - u*xi + phi0*phi0 * u*u * phi) + u*u*u * Up(phi)
 
@@ -211,8 +194,8 @@ function Sd_eq_coeff!(ABCS::Vector, vars::SdVars, ::Outer)
 end
 
 
-function B2d_eq_coeff!(ABCS::Vector, vars::BdGVars, ::Outer)
-    @unpack (
+function B2d_eq_coeff!(ABCS::Vector, vars::Tuple, ::Outer)
+    (
         phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
         B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
         B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
@@ -291,8 +274,8 @@ end
 # ( A11 d_uu B1d + A12 d_uu Gd + B11 d_u B1d + B12 d_u Gd + C11 B1d + C12 Gd ) = -S1
 # ( A21 d_uu B1d + A22 d_uu Gd + B21 d_u B1d + B22 d_u Gd + C21 B1d + C22 Gd ) = -S2
 
-function B1dGd_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::BdGVars, ::Outer)
-    @unpack (
+function B1dGd_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::Tuple, ::Outer)
+    (
         phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
         B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
         B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
@@ -388,9 +371,9 @@ function B1dGd_eq_coeff!(AA::Matrix, BB::Matrix, CC::Matrix, SS::Vector, vars::B
 end
 
 
-function phid_eq_coeff!(ABCS::Vector, vars::phidVars, ::Outer)
-    @unpack (
-        phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+function phid_eq_coeff!(ABCS::Vector, vars::Tuple, ::Outer)
+    (
+        potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
         B1     ,    B2     ,    G      ,    phi    ,    S      ,    Fx     ,    Fy     ,  Sd,
         B1p    ,    B2p    ,    Gp     ,    phip   ,    Sp     ,    Fxp    ,    Fyp    ,
         B1pp   ,    B2pp   ,    Gpp    ,    phipp  ,    Spp    ,    Fxpp   ,    Fypp   ,
@@ -442,9 +425,9 @@ function phid_eq_coeff!(ABCS::Vector, vars::phidVars, ::Outer)
     # @cross_outer("S")
     @cross_outer("phi")
 
-    # VV  = -3 - 3/2 * phi0 * u * (1 - 2*u*xi) + u*u*u*u * U(phi)
+    # VV  = -3 - 3/2 * phi0 * u * (1 - 2*u*xi) + u*u*u*u * UU(phi, potential)
 
-    VVp = -3 * phi0*u * (1 - u*xi + phi0*phi0 * u*u * phi) + u*u*u * Up(phi)
+    VVp = -3 * phi0*u * (1 - u*xi + phi0*phi0 * u*u * phi) + u*u*u * UUp(phi, potential)
 
 
 
@@ -469,9 +452,9 @@ function phid_eq_coeff!(ABCS::Vector, vars::phidVars, ::Outer)
 end
 
 
-function A_eq_coeff!(ABCS::Vector, vars::AVars, ::Outer)
-    @unpack (
-        phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
+function A_eq_coeff!(ABCS::Vector, vars::Tuple, ::Outer)
+    (
+        potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
         B1   , B2   , G   , phi   , S    , Fx    , Fy    , Sd, B1d, B2d, Gd, phid,
         B1p  , B2p  , Gp  , phip  , Sp   , Fxp   , Fyp   ,
         B1pp , B2pp , Gpp , phipp , Spp  , Fxpp  , Fypp  ,
@@ -523,7 +506,7 @@ function A_eq_coeff!(ABCS::Vector, vars::AVars, ::Outer)
     @cross_outer("S")
     @cross_outer("phi")
 
-    VV  = -3 - 3/2 * phi0 * u * (1 - 2*u*xi) + u*u*u*u * U(phi)
+    VV  = -3 - 3/2 * phi0 * u * (1 - 2*u*xi) + u*u*u*u * UU(phi, potential)
 
     # VVp = -3 * phi0*u * (1 - u*xi + phi0*phi0 * u*u * phi) + u*u*u * Up(phi)
 

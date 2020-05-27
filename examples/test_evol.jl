@@ -1,3 +1,6 @@
+
+using OrdinaryDiffEq
+
 using Jecco
 using Jecco.AdS5_3_1
 
@@ -17,53 +20,45 @@ grid = SpecCartGrid3D(
     u_inner_nodes    =  12,
 )
 
-# id = AdS5_3_1.IDTest0(
-#     b14_0      = 0.01,
-#     b24_0      = 0.02,
+id   = BlackBrane()
+
+evoleq = EvolTest0()
+
+# evoleq = AffineNull(
 #     phi0       = 0.0,
-#     phi2_0     = 0.01,
-#     a4_0       = -1.0,
-#     fx2_0      = 0.02,
-#     fy2_0      = 0.1,
 #     potential  = ZeroPotential(),
 # )
-
-id = BlackBrane()
-
-evoleq = AffineNull(
-    phi0       = 0.0,
-    potential  = ZeroPotential(),
-)
 
 # atlas of grid configuration and respective SystemPartition
 atlas     = Atlas(grid)
 systems   = SystemPartition(grid)
 
 # allocate variables
-boundary  = Boundary(grid)
-gauge     = Gauge(grid)
-
+boundary       = Boundary(grid)
+gauge          = Gauge(grid)
 bulkevols      = BulkEvolvedPartition(grid)
 bulkconstrains = BulkConstrainedPartition(grid)
 
 # initial conditions
 init_data!(bulkevols, boundary, gauge, systems, id)
 
-# function to solve the nested system, given the initial data
-solve_nested! = nested_solver(systems)
+# full state vector
+evolvars  = AdS5_3_1.EvolVars(boundary, gauge, bulkevols)
 
-# solve nested system for the constrained variables
-solve_nested!(bulkconstrains, bulkevols, boundary, gauge, evoleq)
+# function that updates the state vector
+rhs! = AdS5_3_1.setup_rhs(bulkconstrains, systems)
 
-# analyze data
 
-i = 2
+dt0   = 0.001
+tspan = (0.0, 0.01)
 
-bulk = Bulk(bulkevols[i], bulkconstrains[i])
+prob  = ODEProblem(rhs!, evolvars, tspan, evoleq)
 
-chart = atlas.charts[i]
-uu    = chart.coords[1][:]
-xx    = chart.coords[2][:]
-yy    = chart.coords[3][:]
+# integrator = init(prob, RK4(), save_everystep=false, dt=dt0, adaptive=false)
+integrator = init(prob, AB3(), save_everystep=false, dt=dt0, adaptive=false)
 
-bulk.A[:,1,1]
+for (f,t) in tuples(integrator)
+    B1  = AdS5_3_1.getB1(f, 1)
+    a4  = AdS5_3_1.geta4(f)
+    @show t, B1[1], a4[1]
+end

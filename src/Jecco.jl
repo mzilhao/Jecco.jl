@@ -2,11 +2,10 @@ module Jecco
 
 using HDF5
 using LinearAlgebra
-using Parameters
 
 export AbstractCoord, CartesianCoord, GaussLobattoCoord
+export Chart, Atlas
 export Cartesian, GaussLobatto
-export Grid
 export CenteredDiff, ChebDeriv
 
 export OpenPMDTimeSeries, get_field
