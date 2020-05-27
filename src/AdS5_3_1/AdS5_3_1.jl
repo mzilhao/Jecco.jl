@@ -1,6 +1,7 @@
 module AdS5_3_1
 
 using Jecco
+using OrdinaryDiffEq
 
 # abstract types and structs used throughout
 include("types.jl")
@@ -25,6 +26,8 @@ include("compute_boundary_t.jl")
 include("compute_gauge_t.jl")
 include("compute_bulkevolved_t.jl")
 
+# run the model
+include("run.jl")
 
 export SpecCartGrid3D
 export Potential, ZeroPotential
@@ -33,5 +36,6 @@ export AffineNull, EvolTest0
 export BulkEvolved, BulkConstrained, Boundary, Gauge, Bulk
 export System, SystemPartition, BulkEvolvedPartition, BulkConstrainedPartition
 export nested_solver
+export Integration, InOut, run
 
 end
