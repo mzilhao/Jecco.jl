@@ -161,28 +161,70 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
 end
 
 
-# TODO
 function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
                                 bulkconstrain::BulkConstrained, gauge_t::Gauge,
                                 bulkevol::BulkEvolved, boundary::Boundary,
                                 gauge::Gauge, sys::System{Outer}, evoleq::AffineNull)
+    uu  = sys.ucoord
     Du  = sys.Du
     Dx  = sys.Dx
     Dy  = sys.Dy
 
     phi0  = evoleq.phi0
-    phi03 = phi0 * phi0 * phi0
+    phi02 = phi0 * phi0
+    phi03 = phi0 * phi02
 
     Nu, Nx, Ny = size(sys)
 
-
     B1_t, B2_t, G_t, phi_t = unpack(bulkevol_t)
-    # B1  , B2  , G  , phi   = unpack(bulkevol)
 
-    fill!(B1_t,  0)
-    fill!(B2_t,  0)
-    fill!(G_t,   0)
-    fill!(phi_t, 0)
+    @fastmath @inbounds for j in 1:Ny
+        @inbounds for i in 1:Nx
+            xi_t  = gauge_t.xi[1,i,j]
+            @inbounds @simd for a in 1:Nu
+                u      = uu[a]
+                u2     = u * u
+
+                B1d    = bulkconstrain.B1d[a,i,j]
+                B2d    = bulkconstrain.B2d[a,i,j]
+                Gd     = bulkconstrain.Gd[a,i,j]
+                A      = bulkconstrain.A[a,i,j]
+
+                B1_u   = Du(bulkevol.B1, a,i,j)
+                B2_u   = Du(bulkevol.B2, a,i,j)
+                G_u    = Du(bulkevol.G,  a,i,j)
+
+		B1_t[a,i,j] = B1d + u2 * (A/2 - xi_t) * B1_u
+		B2_t[a,i,j] = B2d + u2 * (A/2 - xi_t) * B2_u
+		G_t[a,i,j]  = Gd  + u2 * (A/2 - xi_t) * G_u
+            end
+        end
+    end
+
+    # if phi0 = 0 set phi_t to zero and return
+    if abs(phi0) < 1e-9
+        fill!(phi_t, 0)
+        return
+    end
+
+    # otherwise, compute phi_t
+
+    @fastmath @inbounds for j in 1:Ny
+        @inbounds for i in 1:Nx
+            xi_t   = gauge_t.xi[1,i,j]
+            @inbounds @simd for a in 1:Nu
+                u      = uu[a]
+                u2     = u * u
+
+                phid   = bulkconstrain.phid[a,i,j]
+                A      = bulkconstrain.A[a,i,j]
+
+                phi_u  = Du(bulkevol.phi, a,i,j)
+
+		phi_t[a,i,j] = phid + u2 * (A/2 - xi_t) * phi_u
+            end
+        end
+    end
 
     nothing
 end
