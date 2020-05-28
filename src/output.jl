@@ -74,8 +74,7 @@ end
 
 # make Output a callable struct
 
-# function (out::Output)(fields::Vector{Field{A,G}}) where {A,G}
-function (out::Output)(fields::Vector)
+function (out::Output)(fields::Union{Vector, Tuple})
     it = out.tinfo.it
     if it % out.every == 0
         filename = "$(out.prefix)$(lpad(string(it), 8, string(0))).h5"
