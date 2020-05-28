@@ -42,17 +42,19 @@ struct Output{T}
     software         :: String
     software_version :: String
     tinfo            :: TimeInfo{T}
-    overwrite        :: Bool
 
     function Output{T}(dir::String, prefix::String, every::Int,
                        software::String, software_version::String, tinfo::TimeInfo{T};
-                       overwrite::Bool=false) where {T}
+                       remove_existing::Bool=false) where {T}
         # if no name specified, use name of script
         if dir == ""
             dir = splitext(basename(Base.source_path()))[1]
         end
 
         # create folder if it doesn't exist already
+        if isdir(dir) && remove_existing
+            rm(dir, recursive=true)
+        end
         if !isdir(dir)
             mkdir(dir)
         end
@@ -61,15 +63,15 @@ struct Output{T}
             prefix = "data_"
         end
 
-        new(dir, prefix, every, software, software_version, tinfo, overwrite)
+        new(dir, prefix, every, software, software_version, tinfo)
     end
 end
 function Output(dir::String, prefix::String, every::Int, tinfo::TimeInfo{T};
-                overwrite::Bool=false) where {T<:Real}
+                remove_existing::Bool=false) where {T<:Real}
     software         = "Jecco"
     software_version = "0.1.0"
     Output{T}(dir, prefix, every, software, software_version, tinfo;
-              overwrite=overwrite)
+              remove_existing=remove_existing)
 end
 
 # make Output a callable struct
@@ -80,13 +82,8 @@ function (out::Output)(fields::Union{Vector, Tuple})
         filename = "$(out.prefix)$(lpad(string(it), 8, string(0))).h5"
         fullpath = abspath(out.dir, filename)
 
-        if out.overwrite
-            mode = "w"
-        else
-            mode = "cw"
-        end
         # open file
-        fid = h5open(fullpath, mode)
+        fid = h5open(fullpath, "cw")
 
         # create openPMD structure
         grp = setup_openpmd_file(out, fid)
