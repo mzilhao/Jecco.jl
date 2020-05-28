@@ -86,7 +86,8 @@ function (out::Output)(fields::Union{Vector, Tuple})
         fid = h5open(fullpath, "cw")
 
         # create openPMD structure
-        grp = setup_openpmd_file(out, fid)
+        setup_openpmd_file(out, fid)
+        grp = create_group(out, fid)
 
         for field in fields
             write_hdf5(out, grp, field)
@@ -116,10 +117,6 @@ end
 
 
 function setup_openpmd_file(out::Output, fid::HDF5File)
-    it   = out.tinfo.it
-    time = out.tinfo.t
-    dt   = out.tinfo.dt
-
     attrs(fid)["software"] = out.software
     attrs(fid)["softwareVersion"] = out.software_version
     attrs(fid)["openPMD"] = "1.1.0"
@@ -131,6 +128,12 @@ function setup_openpmd_file(out::Output, fid::HDF5File)
 
     attrs(fid)["basePath"] = "/data/%T/"
     attrs(fid)["meshesPath"] = "fields/"
+end
+
+function create_group(out::Output, fid::HDF5File)
+    it   = out.tinfo.it
+    time = out.tinfo.t
+    dt   = out.tinfo.dt
 
     grp = g_create(fid, "data/$it")
 
