@@ -101,6 +101,9 @@ function run(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquations,
         bulkevols = getbulkevolvedpartition(u)
 
         # output
+        # FIXME: this bulkevols is not pointing to the one inside the
+        # bulkevols_fields define above, so the output information won't be
+        # updated... need to see a better way...
         out_bdry(boundary_fields)
         out_gauge(gauge_fields)
         out_bulk(bulkevols_fields)
