@@ -98,7 +98,7 @@ function (out::Output)(fields::Union{Vector, Tuple})
     nothing
 end
 
-(out::Output)(fields::Vararg{Field,N}) where {N} = (out::Output)([fields...])
+(out::Output)(fields::Vararg{Field,N}) where {N} = (out::Output)((fields...,))
 
 
 
