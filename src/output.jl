@@ -82,11 +82,22 @@ function (out::Output)(fields::Union{Vector, Tuple})
         filename = "$(out.prefix)$(lpad(string(it), 8, string(0))).h5"
         fullpath = abspath(out.dir, filename)
 
+        # check if file already exists
+        if isfile(fullpath)
+            mode = "r+"
+            firsttime = false
+        else
+            mode = "cw"
+            firsttime = true
+        end
+
         # open file
-        fid = h5open(fullpath, "cw")
+        fid = h5open(fullpath, mode)
 
         # create openPMD structure
-        setup_openpmd_file(out, fid)
+        if firsttime
+            setup_openpmd_file(out, fid)
+        end
         grp = create_group(out, fid)
 
         for field in fields
@@ -135,12 +146,16 @@ function create_group(out::Output, fid::HDF5File)
     time = out.tinfo.t
     dt   = out.tinfo.dt
 
-    grp = g_create(fid, "data/$it")
+    if exists(fid, "data/$it")
+        fields = fid["data/$it/fields"]
+    else
+        grp = g_create(fid, "data/$it")
+        attrs(grp)["time"] = time
+        attrs(grp)["dt"] = dt
+        fields = g_create(grp, "fields")
+    end
 
-    attrs(grp)["time"] = time
-    attrs(grp)["dt"] = dt
-
-    g_create(grp, "fields")
+    fields
 end
 
 function write_dataset(grp::HDF5Group, fieldname::String, data::AbstractArray)
