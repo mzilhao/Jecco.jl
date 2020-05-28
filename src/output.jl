@@ -102,10 +102,10 @@ end
 
 
 
-write_hdf5(param::Output, grp::HDF5Group, field::Field) =
-    write_hdf5(param, grp, field.name, field.data, field.chart)
+write_hdf5(out::Output, grp::HDF5Group, field::Field) =
+    write_hdf5(out, grp, field.name, field.data, field.chart)
 
-function write_hdf5(param::Output, grp::HDF5Group, fieldname::String, data::AbstractArray,
+function write_hdf5(out::Output, grp::HDF5Group, fieldname::String, data::AbstractArray,
                     chart::Chart)
     # write actual data
     dset = write_dataset(grp, fieldname, data)
@@ -115,19 +115,19 @@ function write_hdf5(param::Output, grp::HDF5Group, fieldname::String, data::Abst
 end
 
 
-function setup_openpmd_file(param::Output, fid::HDF5File)
-    it   = param.tinfo.it
-    time = param.tinfo.t
-    dt   = param.tinfo.dt
+function setup_openpmd_file(out::Output, fid::HDF5File)
+    it   = out.tinfo.it
+    time = out.tinfo.t
+    dt   = out.tinfo.dt
 
-    attrs(fid)["software"] = param.software
-    attrs(fid)["softwareVersion"] = param.software_version
+    attrs(fid)["software"] = out.software
+    attrs(fid)["softwareVersion"] = out.software_version
     attrs(fid)["openPMD"] = "1.1.0"
     attrs(fid)["openPMDextension"] = 0
     attrs(fid)["author"] = ENV["USER"]
     attrs(fid)["date"] = string(now())
     attrs(fid)["iterationEncoding"] = "fileBased"
-    attrs(fid)["iterationFormat"] = "$(param.prefix)%T.h5"
+    attrs(fid)["iterationFormat"] = "$(out.prefix)%T.h5"
 
     attrs(fid)["basePath"] = "/data/%T/"
     attrs(fid)["meshesPath"] = "fields/"
