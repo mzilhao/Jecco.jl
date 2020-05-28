@@ -10,11 +10,70 @@ Base.@kwdef struct InOut
     out_bulk_every     :: Int
     out_gauge_every    :: Int
     folder             :: String  = "./data"
-    overwrite          :: Bool    = false
+    # be very careful with this option! it will remove the whole folder contents
+    # if set to true! use only for fast debugging runs
+    remove_existing    :: Bool    = false
 end
 
-function run(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquations,
-             integration::Integration, io::InOut)
+function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInfo,
+                       io::InOut)
+    Nsys = length(charts)
+
+    # output structures
+    out_bdry  = Jecco.Output(io.folder, "boundary_", io.out_boundary_every, tinfo;
+                             remove_existing=io.remove_existing)
+    out_gauge = Jecco.Output(io.folder, "gauge_", io.out_gauge_every, tinfo;
+                             remove_existing=io.remove_existing)
+    out_bulk  = Jecco.Output(io.folder, "bulk_", io.out_bulk_every, tinfo;
+                             remove_existing=io.remove_existing)
+
+    boundary  = getboundary(u)
+    gauge     = getgauge(u)
+    bulkevols = getbulkevolvedpartition(u)
+
+    # output fields
+    boundary_fields = (
+        Jecco.Field("a4",  boundary.a4,  chart2D),
+        Jecco.Field("fx2", boundary.fx2, chart2D),
+        Jecco.Field("fy2", boundary.fy2, chart2D),
+    )
+    gauge_fields = Jecco.Field("xi", gauge.xi, chart2D)
+    bulkevols_fields = ntuple(i -> (
+        Jecco.Field("B1 c=$i",  bulkevols[i].B1,  charts[i]),
+        Jecco.Field("B2 c=$i",  bulkevols[i].B2,  charts[i]),
+        Jecco.Field("G c=$i",   bulkevols[i].G,   charts[i]),
+        Jecco.Field("phi c=$i", bulkevols[i].phi, charts[i])
+    ), Nsys)
+
+    function (u::EvolVars)
+        boundary  = getboundary(u)
+        gauge     = getgauge(u)
+        bulkevols = getbulkevolvedpartition(u)
+
+        boundary_fields[1].data = boundary.a4
+        boundary_fields[2].data = boundary.fx2
+        boundary_fields[3].data = boundary.fy2
+
+        gauge_fields.data = gauge.xi
+
+        @inbounds for i in 1:Nsys
+            bulkevols_fields[i][1].data = bulkevols[i].B1
+            bulkevols_fields[i][2].data = bulkevols[i].B2
+            bulkevols_fields[i][3].data = bulkevols[i].G
+            bulkevols_fields[i][4].data = bulkevols[i].phi
+        end
+
+        # write data. use spawn here?
+        out_bdry(boundary_fields)
+        out_gauge(gauge_fields)
+        out_bulk.(bulkevols_fields)
+
+        nothing
+    end
+end
+
+function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquations,
+                   integration::Integration, io::InOut)
     Jecco.startup()
 
     # atlas of grid configuration and respective SystemPartition
@@ -50,38 +109,15 @@ function run(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquations,
 
     tinfo  = Jecco.TimeInfo()
 
-    # output structures
-    out_bdry  = Jecco.Output(io.folder, "boundary_", io.out_boundary_every, tinfo;
-                             overwrite=io.overwrite)
-    out_bulk  = Jecco.Output(io.folder, "bulk_", io.out_bulk_every, tinfo;
-                             overwrite=io.overwrite)
-    out_gauge = Jecco.Output(io.folder, "gauge_", io.out_gauge_every, tinfo;
-                             overwrite=io.overwrite)
-
-    # output fields
-    charts  = atlas.charts
-
     # for the boundary/xi grid
     empty   = Cartesian{1}("u", 0.0, 0.0, 1)
     chart2D = Chart(empty, systems[1].xcoord, systems[1].ycoord)
 
-    boundary_fields = (
-        Jecco.Field("a4",  boundary.a4,  chart2D),
-        Jecco.Field("fx2", boundary.fx2, chart2D),
-        Jecco.Field("fy2", boundary.fy2, chart2D),
-    )
-    gauge_fields = Jecco.Field("xi", gauge.xi, chart2D)
-
-    tmp = [ [Jecco.Field("B1 c=$i",  bulkevols[i].B1,  charts[i]),
-             Jecco.Field("B2 c=$i",  bulkevols[i].B2,  charts[i]),
-             Jecco.Field("G c=$i",   bulkevols[i].G,   charts[i]),
-             Jecco.Field("phi c=$i", bulkevols[i].phi, charts[i])] for i in 1:Nsys ]
-    bulkevols_fields = [tmp...;]
+    # prepare function to write data
+    output = output_writer(evolvars, chart2D, atlas.charts, tinfo, io)
 
     # write initial data
-    out_bdry(boundary_fields)
-    out_gauge(gauge_fields)
-    out_bulk(bulkevols_fields)
+    output(evolvars)
 
     # for stdout info
     Aend = bulkconstrains[end].A
@@ -96,17 +132,8 @@ function run(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquations,
         tinfo.dt  = integrator.dt
         tinfo.t   = t
 
-        boundary  = getboundary(u)
-        gauge     = getgauge(u)
-        bulkevols = getbulkevolvedpartition(u)
-
-        # output
-        # FIXME: this bulkevols is not pointing to the one inside the
-        # bulkevols_fields define above, so the output information won't be
-        # updated... need to see a better way...
-        out_bdry(boundary_fields)
-        out_gauge(gauge_fields)
-        out_bulk(bulkevols_fields)
+        # write data
+        output(u)
 
         telapsed = (time() - tstart) / 3600
         deltat   = t - t0

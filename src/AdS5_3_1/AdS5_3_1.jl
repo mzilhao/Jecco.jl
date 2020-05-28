@@ -36,6 +36,6 @@ export AffineNull, EvolTest0
 export BulkEvolved, BulkConstrained, Boundary, Gauge, Bulk
 export System, SystemPartition, BulkEvolvedPartition, BulkConstrainedPartition
 export nested_solver
-export Integration, InOut, run
+export Integration, InOut, run_model
 
 end

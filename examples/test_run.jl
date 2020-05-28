@@ -30,7 +30,7 @@ io = InOut(
     out_bulk_every      = 2,
     out_gauge_every     = 1,
     folder              = "./data",
-    overwrite           = true,
+    remove_existing     = true,
 )
 
 integration = Integration(
@@ -38,4 +38,4 @@ integration = Integration(
     tmax = 0.01,
 )
 
-run(grid, id, evoleq, integration, io)
+run_model(grid, id, evoleq, integration, io)
