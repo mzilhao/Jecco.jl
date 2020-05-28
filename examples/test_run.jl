@@ -27,7 +27,7 @@ evoleq = AffineNull(
 
 io = InOut(
     out_boundary_every  = 1,
-    out_bulk_every      = 1,
+    out_bulk_every      = 2,
     out_gauge_every     = 1,
     folder              = "./data",
     overwrite           = true,
