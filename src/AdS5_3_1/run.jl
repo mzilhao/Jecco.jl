@@ -63,7 +63,7 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
             bulkevols_fields[i][4].data = bulkevols[i].phi
         end
 
-        # write data. use spawn here?
+        # write data
         out_bdry(boundary_fields)
         out_gauge(gauge_fields)
         out_bulk.(bulkevols_fields)
