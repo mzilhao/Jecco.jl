@@ -10,15 +10,28 @@ Extend this type for different `InitialData` choices
 abstract type InitialData end
 
 """
+Extend this type for different `GaugeCondition`s
+"""
+abstract type GaugeCondition end
+
+struct ConstantGauge <: GaugeCondition end
+
+Base.@kwdef struct ConstantAH{T} <: GaugeCondition
+    u_AH  :: T = 1.0
+    kappa :: T = 1.0
+end
+
+"""
 Extend this type for different `EvolutionEquations`
 """
 abstract type EvolutionEquations end
 
 struct EvolTest0 <: EvolutionEquations end
 
-Base.@kwdef struct AffineNull{T,TP<:Potential} <: EvolutionEquations
-    phi0          :: T   = 0.0
-    potential     :: TP  = ZeroPotential()
+Base.@kwdef struct AffineNull{T,TP<:Potential,TG<:GaugeCondition} <: EvolutionEquations
+    phi0           :: T   = 0.0
+    potential      :: TP  = ZeroPotential()
+    gaugecondition :: TG  = ConstantAH()
 end
 
 
