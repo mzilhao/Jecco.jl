@@ -229,10 +229,17 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
     nothing
 end
 
-# function sync_bulkevolved!(bulkevols_t, gauge_t::Gauge, systems::SystemPartition)
+function sync_bulkevolved!(bulkevols_t, bulkconstrains, gauge_t::Gauge,
+                           systems::SystemPartition, evoleq::AffineNull)
+    Nsys = length(systems)
 
-#     nothing
-# end
+    @inbounds for i in 1:Nsys-1
+        sync_bulkevolved!(bulkevols_t[i], bulkevols_t[i+1], bulkconstrains[i+1],
+                          gauge_t, systems[i], systems[i+1], evoleq)
+    end
+
+    nothing
+end
 
 function sync_bulkevolved!(bulkevol1_t::BulkEvolved, bulkevol2_t::BulkEvolved,
                            bulkconstrain2::BulkConstrained, gauge_t::Gauge,

@@ -29,7 +29,7 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, systems::SystemPartition
                                    boundary, gauge, sys, evoleq)
         end
 
-        # TODO: sync_bulkevolved
+        sync_bulkevolved!(bulkevols_t, bulkconstrains, gauge_t, systems, evoleq)
 
         # TODO: add filtering here?
 
