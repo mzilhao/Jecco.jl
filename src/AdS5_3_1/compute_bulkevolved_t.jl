@@ -228,3 +228,110 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
 
     nothing
 end
+
+# function sync_bulkevolved!(bulkevols_t, gauge_t::Gauge, systems::SystemPartition)
+
+#     nothing
+# end
+
+function sync_bulkevolved!(bulkevol1_t::BulkEvolved, bulkevol2_t::BulkEvolved,
+                           bulkconstrain2::BulkConstrained, gauge_t::Gauge,
+                           sys1::System{Outer}, sys2::System{Outer}, evoleq::AffineNull)
+    u0 = sys2.ucoord[1]
+
+    _, Nx, Ny = size(sys2)
+
+    B11_t, B21_t, G1_t, phi1_t = unpack(bulkevol1_t)
+    B12_t, B22_t, G2_t, phi2_t = unpack(bulkevol2_t)
+
+    @fastmath @inbounds for j in 1:Ny
+        @inbounds for i in 1:Nx
+            xi_t   = gauge_t.xi[1,i,j]
+            A      = bulkconstrain2.A[1,i,j]
+
+            # characteristic speed
+            c = u0 * u0 * (A/2 - xi_t)
+
+            # if c > 0, mode is entering grid1 from grid2; if c < 0 it goes from
+            # grid2 to grid1. we assume here that grids merely touch at the interface
+            if c > 0
+                B11_t[end,i,j]  = B12_t[1,i,j]
+                B21_t[end,i,j]  = B22_t[1,i,j]
+                G1_t[end,i,j]   = G2_t[1,i,j]
+                phi1_t[end,i,j] = phi2_t[1,i,j]
+            elseif c < 0
+                B12_t[1,i,j]  = B11_t[end,i,j]
+                B22_t[1,i,j]  = B21_t[end,i,j]
+                G2_t[1,i,j]   = G1_t[end,i,j]
+                phi2_t[1,i,j] = phi1_t[end,i,j]
+            end
+        end
+    end
+
+    nothing
+end
+
+function sync_bulkevolved!(bulkevol1_t::BulkEvolved, bulkevol2_t::BulkEvolved,
+                           bulkconstrain2::BulkConstrained, gauge_t::Gauge,
+                           sys1::System{Inner}, sys2::System{Outer}, evoleq::AffineNull)
+    u0  = sys2.ucoord[1]
+    u02 = u0 * u0
+    u03 = u0 * u02
+    u04 = u02 * u02
+
+    phi0  = evoleq.phi0
+    phi02 = phi0 * phi0
+    phi03 = phi0 * phi02
+
+    _, Nx, Ny = size(sys2)
+
+    B11_t, B21_t, G1_t, phi1_t = unpack(bulkevol1_t)
+    B12_t, B22_t, G2_t, phi2_t = unpack(bulkevol2_t)
+
+    @fastmath @inbounds for j in 1:Ny
+        @inbounds for i in 1:Nx
+            xi_t   = gauge_t.xi[1,i,j]
+            A      = bulkconstrain2.A[1,i,j]
+
+            # characteristic speed
+            c = u0 * u0 * (A/2 - xi_t)
+
+            # if c > 0, mode is entering grid1 from grid2; if c < 0 it goes from
+            # grid2 to grid1. we assume here that grids merely touch at the interface
+            if c > 0
+                B11_t[end,i,j]  = B12_t[1,i,j] / u04
+                B21_t[end,i,j]  = B22_t[1,i,j] / u04
+                G1_t[end,i,j]   = G2_t[1,i,j] / u04
+            elseif c < 0
+                B12_t[1,i,j]  = u04 * B11_t[end,i,j]
+                B22_t[1,i,j]  = u04 * B21_t[end,i,j]
+                G2_t[1,i,j]   = u04 * G1_t[end,i,j]
+            end
+        end
+    end
+
+    # if phi0 = 0 return
+    if abs(phi0) < 1e-9
+        return
+    end
+
+    @fastmath @inbounds for j in 1:Ny
+        @inbounds for i in 1:Nx
+            xi_t   = gauge_t.xi[1,i,j]
+            A      = bulkconstrain2.A[1,i,j]
+
+            # characteristic speed
+            c = u0 * u0 * (A/2 - xi_t)
+
+            # if c > 0, mode is entering grid1 from grid2; if c < 0 it goes from
+            # grid2 to grid1. we assume here that grids merely touch at the interface
+            if c > 0
+                phi1_t[end,i,j] = phi2_t[1,i,j] / (u03 * phi03) + xi_t / (u0 * phi02)
+            elseif c < 0
+                phi2_t[1,i,j] = -phi0 * u02 * xi_t + u03 * phi03 * phi1_t[end,i,j]
+            end
+        end
+    end
+
+    nothing
+end
