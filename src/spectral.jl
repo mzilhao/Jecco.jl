@@ -82,6 +82,17 @@ struct ChebInterpolator{T,A,FT<:FFTW.r2rFFTWPlan}
     c        :: A
     fft_plan :: FT
 end
+"""
+    ChebInterpolator(xmin, xmax, N)
+
+Build an interpolator to act on functions defined on a Chebyshev-Lobatto grid.
+Uses `FFTW`.
+
+# Arguments
+* `xmin::Real`: rightmost grid point
+* `xmax::Real`: leftmost grid point
+* `N::Integer`: total number of grid points
+"""
 function ChebInterpolator(xmin::T, xmax::T, N::Int) where {T<:Real}
     M  = N - 1
     x  = -cos.(T(pi)*(0:M)/M)
@@ -94,8 +105,29 @@ function ChebInterpolator(xmin::T, xmax::T, N::Int) where {T<:Real}
 
     ChebInterpolator{T,typeof(c),typeof(fft_plan)}(xmin, xmax, c, fft_plan)
 end
+"""
+    ChebInterpolator(xp::Vector)
+
+Build it directly from a `Vector` with the grid points
+"""
 ChebInterpolator(xp::Vector) = ChebInterpolator(xp[1], xp[end], length(xp))
 
+"""
+# Examples
+
+```
+julia> xx, = Jecco.cheb(0.0, 2.0, 16);
+
+julia> f = xx.^2;
+
+julia> interp = Jecco.ChebInterpolator(xx);
+
+julia> f_interp = interp(f);
+
+julia> f_interp(0.2)
+0.03999999999999987
+```
+"""
 function (interp::ChebInterpolator)(fp)
     # compute the DCT-I of the coefficients
     fft_fp = interp.fft_plan * fp
