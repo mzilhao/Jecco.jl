@@ -107,7 +107,7 @@ function Chart(coord::AbstractCoord)
 end
 
 function Chart(coord_types::Vector, names::Vector, mins::Vector, maxs::Vector,
-               nodess::Vector)
+               nodess)
     dim_ = length(names)
     @assert(length(mins) == length(maxs) == length(nodess) == length(coord_types) == dim_)
     coords = [Coord{i}(coord_types[i], names[i], mins[i], maxs[i], nodess[i]) for i in 1:dim_]

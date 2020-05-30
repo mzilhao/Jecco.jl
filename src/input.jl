@@ -74,13 +74,13 @@ end
 """
     get_field(ts::OpenPMDTimeSeries; it::Int, field::String)
 
-Given a time series, extract the requested field (and corresponding grid) from
+Given a time series, extract the requested field (and corresponding chart) from
 an HDF5 file in the openPMD format. As side-effects, ```ts.current_i```,
 ```ts.current_iteration``` and ```ts.current_t``` are correspondingly modified.
 
 # Example
 ```
-julia> psi, grid=get_field(ts, it=20, field="psi");
+julia> psi, chart=get_field(ts, it=20, field="psi");
 
 julia> ts.current_t
 20.0
@@ -108,12 +108,12 @@ function get_field(ts::OpenPMDTimeSeries; it::Int, field::String)
     grp, ts.current_t = read_openpmd_file(fid, ts.current_iteration, field)
 
     # read actual data
-    data, grid = read_dataset(grp, field)
+    data, chart = read_dataset(grp, field)
 
     # close file
     close(fid)
 
-    data, grid
+    data, chart
 end
 
 function read_openpmd_file(fid::HDF5File, it::Integer, var::String)
@@ -127,7 +127,7 @@ function read_openpmd_file(fid::HDF5File, it::Integer, var::String)
 
     time = read(attrs(grp_base)["time"])
 
-    # pointer to mesh group (with the actual grid function data)
+    # pointer to mesh group (with the actual chart function data)
     grp_mesh = grp_base[meshesPath]
 
     grp_mesh, time
@@ -156,7 +156,7 @@ function read_dataset(grp::HDF5Group, var::String)
         gridtypes     = read(dset_attrs["gridType"])[end:-1:1]
     end
 
-    grid = Grid(gridtypes, names, mins, maxs, nodes)
+    chart = Chart(gridtypes, names, mins, maxs, nodes)
 
-    func, grid
+    func, chart
 end
