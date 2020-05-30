@@ -82,16 +82,14 @@ end
 @inline Base.getindex(coord::AbstractCoord, ::Colon) = [coord[i] for i in 1:coord.nodes]
 
 
-struct Chart{A}
-    ndims  :: Int
+struct Chart{N,A}
     coords :: A
-
     function Chart{A}(coords) where {A}
-        ndim = length(coords)
-        for a in 1:ndim
+        N = length(coords)
+        for a in 1:N
             @assert(coord_axis(coords[a]) == a, "wrong order in grid array")
         end
-        new{A}(ndim,coords)
+        new{N,A}(coords)
     end
 end
 """
@@ -117,38 +115,38 @@ function Chart(coord_types::Vector, names::Vector, mins::Vector, maxs::Vector,
 end
 
 
-@inline Base.ndims(chart::Chart) = chart.ndims
+@inline Base.ndims(chart::Chart{N}) where {N} = N
 
-@inline function Base.getindex(chart::Chart, idx::Vararg{Int,N}) where {N}
+@inline function Base.getindex(chart::Chart{N}, idx::Vararg{Int,N}) where {N}
     [chart.coords[a][idx[a]] for a in 1:N]
 end
 
-@inline function Base.getindex(chart::Chart, ::Colon)
-    [chart.coords[a][:] for a in 1:chart.ndims]
+@inline function Base.getindex(chart::Chart{N}, ::Colon) where {N}
+    [chart.coords[a][:] for a in 1:N]
 end
 
-@inline function name(chart::Chart)
-    [chart.coords[a].name for a in 1:chart.ndims]
+@inline function name(chart::Chart{N}) where {N}
+    [chart.coords[a].name for a in 1:N]
 end
 
-@inline function min(chart::Chart)
-    [chart.coords[a].min for a in 1:chart.ndims]
+@inline function min(chart::Chart{N}) where {N}
+    [chart.coords[a].min for a in 1:N]
 end
 
-@inline function max(chart::Chart)
-    [chart.coords[a].max for a in 1:chart.ndims]
+@inline function max(chart::Chart{N}) where {N}
+    [chart.coords[a].max for a in 1:N]
 end
 
-@inline function nodes(chart::Chart)
-    [chart.coords[a].nodes for a in 1:chart.ndims]
+@inline function nodes(chart::Chart{N}) where {N}
+    [chart.coords[a].nodes for a in 1:N]
 end
 
-@inline function delta(chart::Chart)
-    [delta(chart.coords[a]) for a in 1:chart.ndims]
+@inline function delta(chart::Chart{N}) where {N}
+    [delta(chart.coords[a]) for a in 1:N]
 end
 
-@inline function coord_type(chart::Chart)
-    [coord_type(chart.coords[a]) for a in 1:chart.ndims]
+@inline function coord_type(chart::Chart{N}) where {N}
+    [coord_type(chart.coords[a]) for a in 1:N]
 end
 
 @inline Base.size(chart::Chart) = Tuple(nodes(chart))
