@@ -49,7 +49,7 @@ function Jecco.Atlas(grid::SpecCartGrid3D)
     Atlas([inner_chart; outer_charts])
 end
 
-struct System{GT,Cu,Cx,Cy,Du,Dx,Dy}
+struct System{GT,Cu,Cx,Cy,Du,Dx,Dy,TI}
     gridtype :: GT
     ucoord   :: Cu
     xcoord   :: Cx
@@ -60,6 +60,7 @@ struct System{GT,Cu,Cx,Cy,Du,Dx,Dy}
     Dxx      :: Dx
     Dy       :: Dy
     Dyy      :: Dy
+    uinterp  :: TI
 end
 
 function System(gridtype::GT, ucoord::GaussLobattoCoord,
@@ -74,8 +75,11 @@ function System(gridtype::GT, ucoord::GaussLobattoCoord,
     Dy  = CenteredDiff{3}(1, ord, Jecco.delta(ycoord), ycoord.nodes)
     Dyy = CenteredDiff{3}(2, ord, Jecco.delta(ycoord), ycoord.nodes)
 
-    System{GT,typeof(ucoord), typeof(xcoord), typeof(ycoord), typeof(Du), typeof(Dx),
-           typeof(Dy)}(gridtype, ucoord, xcoord, ycoord, Du, Duu, Dx, Dxx, Dy, Dyy)
+    uinterp = ChebInterpolator(ucoord.min, ucoord.max, ucoord.nodes)
+
+    System{GT, typeof(ucoord), typeof(xcoord), typeof(ycoord), typeof(Du),
+           typeof(Dx), typeof(Dy), typeof(uinterp)}(gridtype, ucoord, xcoord, ycoord,
+                                                    Du, Duu, Dx, Dxx, Dy, Dyy, uinterp)
 end
 
 Base.size(sys::System) = (sys.ucoord.nodes, sys.xcoord.nodes, sys.ycoord.nodes)

@@ -8,6 +8,7 @@ export AbstractCoord, CartesianCoord, GaussLobattoCoord
 export Chart, Atlas
 export Cartesian, GaussLobatto
 export CenteredDiff, ChebDeriv
+export ChebInterpolator
 
 export OpenPMDTimeSeries, get_field
 
