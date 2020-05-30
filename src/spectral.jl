@@ -74,3 +74,42 @@ function fourier(N::Integer)
 
     x, D, D2
 end
+
+
+struct ChebInterpolator{T,A,FT<:FFTW.r2rFFTWPlan}
+    xmin     :: T
+    xmax     :: T
+    c        :: A
+    fft_plan :: FT
+end
+function ChebInterpolator(xmin::T, xmax::T, N::Int) where {T<:Real}
+    M  = N - 1
+    x  = -cos.(T(pi)*(0:M)/M)
+    xp = 0.5 * (xmax + xmin .+ (xmax - xmin) * x)
+
+    # Create the FFT plan for the DCT-I
+    fft_plan = FFTW.plan_r2r(x, FFTW.REDFT00)
+
+    c  = M * [2; ones(Int,M-1); 2] .* (-1).^(0:M)
+
+    ChebInterpolator{T,typeof(c),typeof(fft_plan)}(xmin, xmax, c, fft_plan)
+end
+ChebInterpolator(xp::Vector) = ChebInterpolator(xp[1], xp[end], length(xp))
+
+function (interp::ChebInterpolator)(fp)
+    # compute the DCT-I of the coefficients
+    fft_fp = interp.fft_plan * fp
+
+    # compute the spectral coefficients
+    spec_coeff = fft_fp ./ interp.c
+
+    function (x0::T) where {T<:Real}
+        @assert interp.xmin <= x0 <= interp.xmax
+        X = (2 * x0 - (interp.xmin + interp.xmax)) / (interp.xmax - interp.xmin)
+        sum_l = zero(T)
+        @fastmath @inbounds for i in LinearIndices(spec_coeff)
+            sum_l += spec_coeff[i] * cos( (i-1)*acos(X) )
+        end
+        sum_l
+    end
+end

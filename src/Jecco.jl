@@ -2,6 +2,7 @@ module Jecco
 
 using HDF5
 using LinearAlgebra
+using FFTW
 
 export AbstractCoord, CartesianCoord, GaussLobattoCoord
 export Chart, Atlas
