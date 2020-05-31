@@ -17,7 +17,7 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, systems::SystemPartition
         # solve nested system for the constrained variables
         solve_nested!(bulkconstrains, bulkevols, boundary, gauge, evoleq)
 
-        compute_xi_t!(gauge_t, bulkconstrains[end], gauge, systems[end], evoleq.gaugecondition)
+        compute_xi_t!(gauge_t, bulkconstrains[end], bulkevols[end], gauge, systems[end], evoleq.gaugecondition)
 
         @inbounds for aa in 1:Nsys
             sys           = systems[aa]
