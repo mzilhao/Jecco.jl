@@ -72,6 +72,23 @@ struct Bulk{T} <: AbstractVars{T}
     A    :: Array{T,3}
 end
 
+struct BulkDeriv{T}
+    Du_B1   :: Array{T,3}
+    Du_B2   :: Array{T,3}
+    Du_G    :: Array{T,3}
+    Du_phi  :: Array{T,3}
+    Du_S    :: Array{T,3}
+    Du_Fx   :: Array{T,3}
+    Du_Fy   :: Array{T,3}
+    Duu_B1  :: Array{T,3}
+    Duu_B2  :: Array{T,3}
+    Duu_G   :: Array{T,3}
+    Duu_phi :: Array{T,3}
+    Duu_S   :: Array{T,3}
+    Duu_Fx  :: Array{T,3}
+    Duu_Fy  :: Array{T,3}
+end
+
 struct Boundary{T} <: AbstractVars{T}
     a4  :: Array{T,3}
     fx2 :: Array{T,3}
@@ -144,6 +161,25 @@ function Bulk(bulkevol::BulkEvolved{T}, bulkconstrain::BulkConstrained{T}) where
     Sd    = bulkconstrain.Sd
     A     = bulkconstrain.A
     Bulk{T}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
+end
+
+function BulkDeriv{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Real}
+    Du_B1    = Array{T}(undef, Nu, Nx, Ny)
+    Du_B2    = Array{T}(undef, Nu, Nx, Ny)
+    Du_G     = Array{T}(undef, Nu, Nx, Ny)
+    Du_phi   = Array{T}(undef, Nu, Nx, Ny)
+    Du_S     = Array{T}(undef, Nu, Nx, Ny)
+    Du_Fx    = Array{T}(undef, Nu, Nx, Ny)
+    Du_Fy    = Array{T}(undef, Nu, Nx, Ny)
+    Duu_B1   = Array{T}(undef, Nu, Nx, Ny)
+    Duu_B2   = Array{T}(undef, Nu, Nx, Ny)
+    Duu_G    = Array{T}(undef, Nu, Nx, Ny)
+    Duu_phi  = Array{T}(undef, Nu, Nx, Ny)
+    Duu_S    = Array{T}(undef, Nu, Nx, Ny)
+    Duu_Fx   = Array{T}(undef, Nu, Nx, Ny)
+    Duu_Fy   = Array{T}(undef, Nu, Nx, Ny)
+    BulkDeriv{T}(Du_B1, Du_B2, Du_G, Du_phi, Du_S, Du_Fx, Du_Fy, Duu_B1, Duu_B2,
+                 Duu_G, Duu_phi, Duu_S, Duu_Fx, Duu_Fy)
 end
 
 """
