@@ -41,20 +41,7 @@ struct Nested{S,T<:Real,D}
     uu      :: Vector{T}
     xx      :: Vector{T}
     yy      :: Vector{T}
-    Du_B1   :: D
-    Du_B2   :: D
-    Du_G    :: D
-    Du_phi  :: D
-    Du_S    :: D
-    Du_Fx   :: D
-    Du_Fy   :: D
-    Duu_B1  :: D
-    Duu_B2  :: D
-    Duu_G   :: D
-    Duu_phi :: D
-    Duu_S   :: D
-    Duu_Fx  :: D
-    Duu_Fy  :: D
+    deriv   :: D
     aux_acc :: Vector{Aux{T}}
 end
 function Nested(sys::System)
@@ -64,29 +51,13 @@ function Nested(sys::System)
     yy = sys.ycoord[:]
     T  = Jecco.coord_eltype(sys.ucoord)
 
-    Du_B1    = zeros(T, Nu, Nx, Ny)
-    Du_B2    = zeros(T, Nu, Nx, Ny)
-    Du_G     = zeros(T, Nu, Nx, Ny)
-    Du_phi   = zeros(T, Nu, Nx, Ny)
-    Du_S     = zeros(T, Nu, Nx, Ny)
-    Du_Fx    = zeros(T, Nu, Nx, Ny)
-    Du_Fy    = zeros(T, Nu, Nx, Ny)
-    Duu_B1   = zeros(T, Nu, Nx, Ny)
-    Duu_B2   = zeros(T, Nu, Nx, Ny)
-    Duu_G    = zeros(T, Nu, Nx, Ny)
-    Duu_phi  = zeros(T, Nu, Nx, Ny)
-    Duu_S    = zeros(T, Nu, Nx, Ny)
-    Duu_Fx   = zeros(T, Nu, Nx, Ny)
-    Duu_Fy   = zeros(T, Nu, Nx, Ny)
+    deriv = BulkDeriv{T}(undef, Nu, Nx, Ny)
 
     nt = Threads.nthreads()
     # pre-allocate thread-local aux quantities
     aux_acc = [Aux{T}(Nu) for _ in 1:nt]
 
-    Nested{typeof(sys),T,typeof(Du_B1)}(sys, uu, xx, yy, Du_B1,
-                                        Du_B2, Du_G, Du_phi, Du_S, Du_Fx,
-                                        Du_Fy, Duu_B1, Duu_B2, Duu_G, Duu_phi,
-                                        Duu_S, Duu_Fx, Duu_Fy, aux_acc)
+    Nested{typeof(sys),T,typeof(deriv)}(sys, uu, xx, yy, deriv, aux_acc)
 end
 
 struct BC{T}
@@ -174,13 +145,13 @@ function solve_S!(bulk::Bulk, bc::BC, gauge::Gauge,
     xx   = nested.xx
     yy   = nested.yy
 
-    Du_B1   = nested.Du_B1
-    Du_B2   = nested.Du_B2
-    Du_G    = nested.Du_G
-    Du_phi  = nested.Du_phi
-    # Duu_B1  = nested.Duu_B1
-    # Duu_B2  = nested.Duu_B2
-    # Duu_G   = nested.Duu_G
+    Du_B1   = nested.deriv.Du_B1
+    Du_B2   = nested.deriv.Du_B2
+    Du_G    = nested.deriv.Du_G
+    Du_phi  = nested.deriv.Du_phi
+    # Duu_B1  = nested.deriv.Duu_B1
+    # Duu_B2  = nested.deriv.Duu_B2
+    # Duu_G   = nested.deriv.Duu_G
 
     aux_acc = nested.aux_acc
 
@@ -254,16 +225,16 @@ function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge,
     xx   = nested.xx
     yy   = nested.yy
 
-    Du_B1   = nested.Du_B1
-    Du_B2   = nested.Du_B2
-    Du_G    = nested.Du_G
-    Du_phi  = nested.Du_phi
-    Du_S    = nested.Du_S
-    Duu_B1  = nested.Duu_B1
-    Duu_B2  = nested.Duu_B2
-    Duu_G   = nested.Duu_G
-    Duu_phi = nested.Duu_phi
-    Duu_S   = nested.Duu_S
+    Du_B1   = nested.deriv.Du_B1
+    Du_B2   = nested.deriv.Du_B2
+    Du_G    = nested.deriv.Du_G
+    Du_phi  = nested.deriv.Du_phi
+    Du_S    = nested.deriv.Du_S
+    Duu_B1  = nested.deriv.Duu_B1
+    Duu_B2  = nested.deriv.Duu_B2
+    Duu_G   = nested.deriv.Duu_G
+    Duu_phi = nested.deriv.Duu_phi
+    Duu_S   = nested.deriv.Duu_S
 
     aux_acc = nested.aux_acc
 
@@ -400,20 +371,20 @@ function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge,
     xx   = nested.xx
     yy   = nested.yy
 
-    Du_B1   = nested.Du_B1
-    Du_B2   = nested.Du_B2
-    Du_G    = nested.Du_G
-    Du_phi  = nested.Du_phi
-    Du_S    = nested.Du_S
-    Du_Fx   = nested.Du_Fx
-    Du_Fy   = nested.Du_Fy
-    Duu_B1  = nested.Duu_B1
-    Duu_B2  = nested.Duu_B2
-    Duu_G   = nested.Duu_G
-    Duu_phi = nested.Duu_phi
-    Duu_S   = nested.Duu_S
-    Duu_Fx  = nested.Duu_Fx
-    Duu_Fy  = nested.Duu_Fy
+    Du_B1   = nested.deriv.Du_B1
+    Du_B2   = nested.deriv.Du_B2
+    Du_G    = nested.deriv.Du_G
+    Du_phi  = nested.deriv.Du_phi
+    Du_S    = nested.deriv.Du_S
+    Du_Fx   = nested.deriv.Du_Fx
+    Du_Fy   = nested.deriv.Du_Fy
+    Duu_B1  = nested.deriv.Duu_B1
+    Duu_B2  = nested.deriv.Duu_B2
+    Duu_G   = nested.deriv.Duu_G
+    Duu_phi = nested.deriv.Duu_phi
+    Duu_S   = nested.deriv.Duu_S
+    Duu_Fx  = nested.deriv.Duu_Fx
+    Duu_Fy  = nested.deriv.Duu_Fy
 
     aux_acc = nested.aux_acc
 
@@ -569,20 +540,20 @@ function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge,
     xx   = nested.xx
     yy   = nested.yy
 
-    Du_B1   = nested.Du_B1
-    Du_B2   = nested.Du_B2
-    Du_G    = nested.Du_G
-    Du_phi  = nested.Du_phi
-    Du_S    = nested.Du_S
-    Du_Fx   = nested.Du_Fx
-    Du_Fy   = nested.Du_Fy
-    Duu_B1  = nested.Duu_B1
-    Duu_B2  = nested.Duu_B2
-    Duu_G   = nested.Duu_G
-    Duu_phi = nested.Duu_phi
-    Duu_S   = nested.Duu_S
-    Duu_Fx  = nested.Duu_Fx
-    Duu_Fy  = nested.Duu_Fy
+    Du_B1   = nested.deriv.Du_B1
+    Du_B2   = nested.deriv.Du_B2
+    Du_G    = nested.deriv.Du_G
+    Du_phi  = nested.deriv.Du_phi
+    Du_S    = nested.deriv.Du_S
+    Du_Fx   = nested.deriv.Du_Fx
+    Du_Fy   = nested.deriv.Du_Fy
+    Duu_B1  = nested.deriv.Duu_B1
+    Duu_B2  = nested.deriv.Duu_B2
+    Duu_G   = nested.deriv.Duu_G
+    Duu_phi = nested.deriv.Duu_phi
+    Duu_S   = nested.deriv.Duu_S
+    Duu_Fx  = nested.deriv.Duu_Fx
+    Duu_Fy  = nested.deriv.Duu_Fy
 
     aux_acc = nested.aux_acc
 
@@ -738,20 +709,20 @@ function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge,
     xx   = nested.xx
     yy   = nested.yy
 
-    Du_B1   = nested.Du_B1
-    Du_B2   = nested.Du_B2
-    Du_G    = nested.Du_G
-    Du_phi  = nested.Du_phi
-    Du_S    = nested.Du_S
-    Du_Fx   = nested.Du_Fx
-    Du_Fy   = nested.Du_Fy
-    Duu_B1  = nested.Duu_B1
-    Duu_B2  = nested.Duu_B2
-    Duu_G   = nested.Duu_G
-    Duu_phi = nested.Duu_phi
-    Duu_S   = nested.Duu_S
-    Duu_Fx  = nested.Duu_Fx
-    Duu_Fy  = nested.Duu_Fy
+    Du_B1   = nested.deriv.Du_B1
+    Du_B2   = nested.deriv.Du_B2
+    Du_G    = nested.deriv.Du_G
+    Du_phi  = nested.deriv.Du_phi
+    Du_S    = nested.deriv.Du_S
+    Du_Fx   = nested.deriv.Du_Fx
+    Du_Fy   = nested.deriv.Du_Fy
+    Duu_B1  = nested.deriv.Duu_B1
+    Duu_B2  = nested.deriv.Duu_B2
+    Duu_G   = nested.deriv.Duu_G
+    Duu_phi = nested.deriv.Duu_phi
+    Duu_S   = nested.deriv.Duu_S
+    Duu_Fx  = nested.deriv.Duu_Fx
+    Duu_Fy  = nested.deriv.Duu_Fy
 
     aux_acc = nested.aux_acc
 
@@ -921,20 +892,20 @@ function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge,
     xx   = nested.xx
     yy   = nested.yy
 
-    Du_B1   = nested.Du_B1
-    Du_B2   = nested.Du_B2
-    Du_G    = nested.Du_G
-    Du_phi  = nested.Du_phi
-    Du_S    = nested.Du_S
-    Du_Fx   = nested.Du_Fx
-    Du_Fy   = nested.Du_Fy
-    Duu_B1  = nested.Duu_B1
-    Duu_B2  = nested.Duu_B2
-    Duu_G   = nested.Duu_G
-    Duu_phi = nested.Duu_phi
-    Duu_S   = nested.Duu_S
-    Duu_Fx  = nested.Duu_Fx
-    Duu_Fy  = nested.Duu_Fy
+    Du_B1   = nested.deriv.Du_B1
+    Du_B2   = nested.deriv.Du_B2
+    Du_G    = nested.deriv.Du_G
+    Du_phi  = nested.deriv.Du_phi
+    Du_S    = nested.deriv.Du_S
+    Du_Fx   = nested.deriv.Du_Fx
+    Du_Fy   = nested.deriv.Du_Fy
+    Duu_B1  = nested.deriv.Duu_B1
+    Duu_B2  = nested.deriv.Duu_B2
+    Duu_G   = nested.deriv.Duu_G
+    Duu_phi = nested.deriv.Duu_phi
+    Duu_S   = nested.deriv.Duu_S
+    Duu_Fx  = nested.deriv.Duu_Fx
+    Duu_Fy  = nested.deriv.Duu_Fy
 
     aux_acc = nested.aux_acc
 
@@ -1098,20 +1069,20 @@ function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge,
     xx   = nested.xx
     yy   = nested.yy
 
-    Du_B1   = nested.Du_B1
-    Du_B2   = nested.Du_B2
-    Du_G    = nested.Du_G
-    Du_phi  = nested.Du_phi
-    Du_S    = nested.Du_S
-    Du_Fx   = nested.Du_Fx
-    Du_Fy   = nested.Du_Fy
-    Duu_B1  = nested.Duu_B1
-    Duu_B2  = nested.Duu_B2
-    Duu_G   = nested.Duu_G
-    Duu_phi = nested.Duu_phi
-    Duu_S   = nested.Duu_S
-    Duu_Fx  = nested.Duu_Fx
-    Duu_Fy  = nested.Duu_Fy
+    Du_B1   = nested.deriv.Du_B1
+    Du_B2   = nested.deriv.Du_B2
+    Du_G    = nested.deriv.Du_G
+    Du_phi  = nested.deriv.Du_phi
+    Du_S    = nested.deriv.Du_S
+    Du_Fx   = nested.deriv.Du_Fx
+    Du_Fy   = nested.deriv.Du_Fy
+    Duu_B1  = nested.deriv.Duu_B1
+    Duu_B2  = nested.deriv.Duu_B2
+    Duu_G   = nested.deriv.Duu_G
+    Duu_phi = nested.deriv.Duu_phi
+    Duu_S   = nested.deriv.Duu_S
+    Duu_Fx  = nested.deriv.Duu_Fx
+    Duu_Fy  = nested.deriv.Duu_Fy
 
     aux_acc = nested.aux_acc
 
@@ -1276,20 +1247,20 @@ function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved,
                        nested::Nested, evoleq::AffineNull)
     sys  = nested.sys
 
-    Du_B1   = nested.Du_B1
-    Du_B2   = nested.Du_B2
-    Du_G    = nested.Du_G
-    Du_phi  = nested.Du_phi
-    Du_S    = nested.Du_S
-    Du_Fx   = nested.Du_Fx
-    Du_Fy   = nested.Du_Fy
-    Duu_B1  = nested.Duu_B1
-    Duu_B2  = nested.Duu_B2
-    Duu_G   = nested.Duu_G
-    Duu_phi = nested.Duu_phi
-    Duu_S   = nested.Duu_S
-    Duu_Fx  = nested.Duu_Fx
-    Duu_Fy  = nested.Duu_Fy
+    Du_B1   = nested.deriv.Du_B1
+    Du_B2   = nested.deriv.Du_B2
+    Du_G    = nested.deriv.Du_G
+    Du_phi  = nested.deriv.Du_phi
+    Du_S    = nested.deriv.Du_S
+    Du_Fx   = nested.deriv.Du_Fx
+    Du_Fy   = nested.deriv.Du_Fy
+    Duu_B1  = nested.deriv.Duu_B1
+    Duu_B2  = nested.deriv.Duu_B2
+    Duu_G   = nested.deriv.Duu_G
+    Duu_phi = nested.deriv.Duu_phi
+    Duu_S   = nested.deriv.Duu_S
+    Duu_Fx  = nested.deriv.Duu_Fx
+    Duu_Fy  = nested.deriv.Duu_Fy
 
     Du  = sys.Du
     Duu = sys.Duu
@@ -1366,9 +1337,9 @@ function syncBCs!(bc::BC, bulk::BulkConstrained, nested::Nested)
             bc.phid[i,j] = bulk.phid[end,i,j]
             bc.A[i,j]    = bulk.A[end,i,j]
 
-            bc.S_u[i,j]   = nested.Du_S[end,i,j]
-            bc.Fx_u[i,j]  = nested.Du_Fx[end,i,j]
-            bc.Fy_u[i,j]  = nested.Du_Fy[end,i,j]
+            bc.S_u[i,j]   = nested.deriv.Du_S[end,i,j]
+            bc.Fx_u[i,j]  = nested.deriv.Du_Fx[end,i,j]
+            bc.Fy_u[i,j]  = nested.deriv.Du_Fy[end,i,j]
             bc.A_u[i,j]   = Du(bulk.A, Nu,i,j)
         end
     end
@@ -1395,7 +1366,7 @@ function set_innerBCs!(bc::BC, bulk::BulkEvolved,
             xi3     = xi*xi*xi
 
             phi     = bulk.phi[1,i,j]
-            phi_u   = nested.Du_phi[1,i,j]
+            phi_u   = nested.deriv.Du_phi[1,i,j]
 
             phi_x   = Dx(bulk.phi, 1,i,j)
             phi_y   = Dy(bulk.phi, 1,i,j)
@@ -1500,9 +1471,9 @@ function set_outerBCs!(bc::BC, bulk::BulkConstrained,
             phid   = bulk.phid[end,i,j]
             A      = bulk.A[end,i,j]
 
-            S_u    = nested.Du_S[end,i,j]
-            Fx_u   = nested.Du_Fx[end,i,j]
-            Fy_u   = nested.Du_Fy[end,i,j]
+            S_u    = nested.deriv.Du_S[end,i,j]
+            Fx_u   = nested.deriv.Du_Fx[end,i,j]
+            Fy_u   = nested.deriv.Du_Fy[end,i,j]
             A_u    = Du(bulk.A, Nu,i,j)
 
             bc.S[i,j]   = S_inner_to_outer(S, u0, xi, phi0)
