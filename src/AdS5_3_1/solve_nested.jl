@@ -1505,8 +1505,8 @@ end
 # We assume that the first entry on these arrays is the inner grid, and that
 # there is only one domain spanning this grid. If we ever change this
 # construction we must remember to make the appropriate changes here.
-function solve_nested!(bulkconstrains, bulkevols, bcs, boundary::Boundary,
-                       gauge::Gauge, nesteds, evoleq::AffineNull)
+function solve_nested!(bulkconstrains, gauge_t::Gauge, bulkevols, bcs,
+                       boundary::Boundary, gauge::Gauge, nesteds, evoleq::AffineNull)
     Nsys = length(nesteds)
 
     set_innerBCs!(bcs[1], bulkevols[1], boundary, gauge, nesteds[1], evoleq)
@@ -1523,6 +1523,9 @@ function solve_nested!(bulkconstrains, bulkevols, bcs, boundary::Boundary,
     end
     solve_nested!(bulkconstrains[Nsys], bulkevols[Nsys], bcs[Nsys],
                   gauge, nesteds[Nsys], evoleq)
+
+    compute_xi_t!(gauge_t, bulkconstrains[end], bulkevols[end], gauge, nesteds[end].sys,
+                  evoleq.gaugecondition)
 
     nothing
 end
@@ -1547,8 +1550,9 @@ function nested_solver(systems::SystemPartition)
     nesteds = [Nested(sys) for sys in systems]
     bcs     = [BC{T}(Nx, Ny) for sys in systems]
 
-    function (bulkconstrains, bulkevols, boundary::Boundary, gauge::Gauge, evoleq::EvolutionEquations)
-        solve_nested!(bulkconstrains, bulkevols, bcs, boundary, gauge,
+    function (bulkconstrains, gauge_t::Gauge, bulkevols, boundary::Boundary,
+              gauge::Gauge, evoleq::EvolutionEquations)
+        solve_nested!(bulkconstrains, gauge_t, bulkevols, bcs, boundary, gauge,
                       nesteds, evoleq)
         nothing
     end
