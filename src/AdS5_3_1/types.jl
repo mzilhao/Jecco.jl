@@ -259,6 +259,8 @@ Base.similar(ff::BulkEvolved{T}) where{T} =
 Base.similar(ff::Boundary{T}) where{T} =
     Boundary{T}(similar(ff.a4), similar(ff.fx2), similar(ff.fy2))
 
+Base.similar(ff::Gauge{T}) where{T} = Gauge{T}(similar(ff.xi))
+
 
 """
     unpack(ff::AbstractVars)
