@@ -141,9 +141,7 @@ of replacing the last line of the A_mat matrix and last entry of b_vec vector.
 function solve_S!(bulk::Bulk, bc::BC, gauge::Gauge,
                   nested::Nested, evoleq::AffineNull)
     sys  = nested.sys
-    uu   = nested.uu
-    xx   = nested.xx
-    yy   = nested.yy
+    Nu, Nx, Ny = size(sys)
 
     Du_B1   = nested.deriv.Du_B1
     Du_B2   = nested.deriv.Du_B2
@@ -164,15 +162,15 @@ function solve_S!(bulk::Bulk, bc::BC, gauge::Gauge,
 
     phi0  = evoleq.phi0
 
-    @fastmath @inbounds @threads for j in eachindex(yy)
-        @inbounds for i in eachindex(xx)
+    @fastmath @inbounds @threads for j in 1:Ny
+        @inbounds for i in 1:Nx
             id  = Threads.threadid()
             aux = aux_acc[id]
 
             xi  = gauge.xi[1,i,j]
 
-            @inbounds @simd for a in eachindex(uu)
-                u     = uu[a]
+            @inbounds @simd for a in 1:Nu
+                u     = sys.ucoord[a]
 
                 B1    = bulk.B1[a,i,j]
                 B2    = bulk.B2[a,i,j]
@@ -189,7 +187,7 @@ function solve_S!(bulk::Bulk, bc::BC, gauge::Gauge,
                 S_eq_coeff!(aux.ABCS, vars, sys.gridtype)
 
                 aux.b_vec[a]   = -aux.ABCS[4]
-                @inbounds @simd for aa in eachindex(uu)
+                @inbounds @simd for aa in 1:Nu
                     aux.A_mat[a,aa] = aux.ABCS[1] * Duu[a,aa] + aux.ABCS[2] * Du[a,aa]
                 end
                 aux.A_mat[a,a] += aux.ABCS[3]
@@ -202,13 +200,13 @@ function solve_S!(bulk::Bulk, bc::BC, gauge::Gauge,
             aux.A_mat[1,1]  = 1.0
 
             aux.b_vec[end]    = bc.S_u[i,j]
-            @inbounds @simd for aa in eachindex(uu)
+            @inbounds @simd for aa in 1:Nu
                 aux.A_mat[end,aa]  = Du[1,aa]
             end
 
             solve_lin_system!(aux.A_mat, aux.b_vec)
 
-            @inbounds @simd for aa in eachindex(uu)
+            @inbounds @simd for aa in 1:Nu
                 bulk.S[aa,i,j] = aux.b_vec[aa]
             end
 
@@ -221,9 +219,7 @@ end
 function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge,
                     nested::Nested, evoleq::AffineNull)
     sys  = nested.sys
-    uu   = nested.uu
-    xx   = nested.xx
-    yy   = nested.yy
+    Nu, Nx, Ny = size(sys)
 
     Du_B1   = nested.deriv.Du_B1
     Du_B2   = nested.deriv.Du_B2
@@ -247,10 +243,8 @@ function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge,
 
     phi0  = evoleq.phi0
 
-    Nu = length(uu)
-
-    @fastmath @inbounds @threads for j in eachindex(yy)
-        @inbounds for i in eachindex(xx)
+    @fastmath @inbounds @threads for j in 1:Ny
+        @inbounds for i in 1:Nx
             id  = Threads.threadid()
             aux = aux_acc[id]
 
@@ -258,8 +252,8 @@ function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge,
             xi_x  = Dx(gauge.xi, 1,i,j)
             xi_y  = Dy(gauge.xi, 1,i,j)
 
-            @inbounds @simd for a in eachindex(uu)
-                u     = uu[a]
+            @inbounds @simd for a in 1:Nu
+                u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
                 u4    = u2 * u2
@@ -319,7 +313,7 @@ function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge,
 
                 aux.b_vec2[a]    = -aux.SS[1]
                 aux.b_vec2[a+Nu] = -aux.SS[2]
-                @inbounds @simd for aa in eachindex(uu)
+                @inbounds @simd for aa in 1:Nu
                     aux.A_mat2[a,aa]         = aux.AA[1,1] * Duu[a,aa] + aux.BB[1,1] * Du[a,aa]
                     aux.A_mat2[a,aa+Nu]      = aux.AA[1,2] * Duu[a,aa] + aux.BB[1,2] * Du[a,aa]
                     aux.A_mat2[a+Nu,aa]      = aux.AA[2,1] * Duu[a,aa] + aux.BB[2,1] * Du[a,aa]
@@ -346,14 +340,14 @@ function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge,
 
             aux.A_mat2[Nu,:]   .= 0.0
             aux.A_mat2[2*Nu,:] .= 0.0
-            @inbounds @simd for aa in eachindex(uu)
+            @inbounds @simd for aa in 1:Nu
                 aux.A_mat2[Nu,aa]      = Du[1,aa]
                 aux.A_mat2[2*Nu,aa+Nu] = Du[1,aa]
             end
 
             solve_lin_system!(aux.A_mat2, aux.b_vec2)
 
-            @inbounds @simd for aa in eachindex(uu)
+            @inbounds @simd for aa in 1:Nu
                 bulk.Fx[aa,i,j] = aux.b_vec2[aa]
                 bulk.Fy[aa,i,j] = aux.b_vec2[aa+Nu]
             end
@@ -367,9 +361,7 @@ end
 function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge,
                    nested::Nested, evoleq::AffineNull)
     sys  = nested.sys
-    uu   = nested.uu
-    xx   = nested.xx
-    yy   = nested.yy
+    Nu, Nx, Ny = size(sys)
 
     Du_B1   = nested.deriv.Du_B1
     Du_B2   = nested.deriv.Du_B2
@@ -398,8 +390,8 @@ function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge,
     potential = evoleq.potential
     phi0      = evoleq.phi0
 
-    @fastmath @inbounds @threads for j in eachindex(yy)
-        @inbounds for i in eachindex(xx)
+    @fastmath @inbounds @threads for j in 1:Ny
+        @inbounds for i in 1:Nx
             id   = Threads.threadid()
             aux  = aux_acc[id]
 
@@ -410,8 +402,8 @@ function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge,
             xi_yy = Dyy(gauge.xi, 1,i,j)
             xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
-            @inbounds @simd for a in eachindex(uu)
-                u     = uu[a]
+            @inbounds @simd for a in 1:Nu
+                u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
                 u4    = u2 * u2
@@ -509,7 +501,7 @@ function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge,
                 Sd_eq_coeff!(aux.ABCS, vars, sys.gridtype)
 
                 aux.b_vec[a]   = -aux.ABCS[4]
-                @inbounds @simd for aa in eachindex(uu)
+                @inbounds @simd for aa in 1:Nu
                     aux.A_mat[a,aa] = aux.ABCS[1] * Duu[a,aa] + aux.ABCS[2] * Du[a,aa]
                 end
                 aux.A_mat[a,a] += aux.ABCS[3]
@@ -523,7 +515,7 @@ function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge,
 
             solve_lin_system!(aux.A_mat, aux.b_vec)
 
-            @inbounds @simd for aa in eachindex(uu)
+            @inbounds @simd for aa in 1:Nu
                 bulk.Sd[aa,i,j] = aux.b_vec[aa]
             end
 
@@ -536,9 +528,7 @@ end
 function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge,
                     nested::Nested, evoleq::AffineNull)
     sys  = nested.sys
-    uu   = nested.uu
-    xx   = nested.xx
-    yy   = nested.yy
+    Nu, Nx, Ny = size(sys)
 
     Du_B1   = nested.deriv.Du_B1
     Du_B2   = nested.deriv.Du_B2
@@ -566,8 +556,8 @@ function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge,
 
     phi0  = evoleq.phi0
 
-    @fastmath @inbounds @threads for j in eachindex(yy)
-        @inbounds for i in eachindex(xx)
+    @fastmath @inbounds @threads for j in 1:Ny
+        @inbounds for i in 1:Nx
             id  = Threads.threadid()
             aux = aux_acc[id]
 
@@ -578,8 +568,8 @@ function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge,
             xi_yy = Dyy(gauge.xi, 1,i,j)
             xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
-            @inbounds @simd for a in eachindex(uu)
-                u     = uu[a]
+            @inbounds @simd for a in 1:Nu
+                u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
                 u4    = u2 * u2
@@ -678,7 +668,7 @@ function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge,
                 B2d_eq_coeff!(aux.ABCS, vars, sys.gridtype)
 
                 aux.b_vec[a]   = -aux.ABCS[4]
-                @inbounds @simd for aa in eachindex(uu)
+                @inbounds @simd for aa in 1:Nu
                     aux.A_mat[a,aa] = aux.ABCS[1] * Duu[a,aa] + aux.ABCS[2] * Du[a,aa]
                 end
                 aux.A_mat[a,a] += aux.ABCS[3]
@@ -692,7 +682,7 @@ function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge,
 
             solve_lin_system!(aux.A_mat, aux.b_vec)
 
-            @inbounds @simd for aa in eachindex(uu)
+            @inbounds @simd for aa in 1:Nu
                 bulk.B2d[aa,i,j] = aux.b_vec[aa]
             end
 
@@ -705,9 +695,7 @@ end
 function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge,
                       nested::Nested, evoleq::AffineNull)
     sys  = nested.sys
-    uu   = nested.uu
-    xx   = nested.xx
-    yy   = nested.yy
+    Nu, Nx, Ny = size(sys)
 
     Du_B1   = nested.deriv.Du_B1
     Du_B2   = nested.deriv.Du_B2
@@ -735,10 +723,8 @@ function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge,
 
     phi0  = evoleq.phi0
 
-    Nu = length(uu)
-
-    @fastmath @inbounds @threads for j in eachindex(yy)
-        @inbounds for i in eachindex(xx)
+    @fastmath @inbounds @threads for j in 1:Ny
+        @inbounds for i in 1:Nx
             id  = Threads.threadid()
             aux = aux_acc[id]
 
@@ -749,8 +735,8 @@ function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge,
             xi_yy = Dyy(gauge.xi, 1,i,j)
             xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
-            @inbounds @simd for a in eachindex(uu)
-                u     = uu[a]
+            @inbounds @simd for a in 1:Nu
+                u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
                 u4    = u2 * u2
@@ -850,7 +836,7 @@ function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge,
 
                 aux.b_vec2[a]    = -aux.SS[1]
                 aux.b_vec2[a+Nu] = -aux.SS[2]
-                @inbounds @simd for aa in eachindex(uu)
+                @inbounds @simd for aa in 1:Nu
                     aux.A_mat2[a,aa]         = aux.AA[1,1] * Duu[a,aa] + aux.BB[1,1] * Du[a,aa]
                     aux.A_mat2[a,aa+Nu]      = aux.AA[1,2] * Duu[a,aa] + aux.BB[1,2] * Du[a,aa]
                     aux.A_mat2[a+Nu,aa]      = aux.AA[2,1] * Duu[a,aa] + aux.BB[2,1] * Du[a,aa]
@@ -874,7 +860,7 @@ function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge,
 
             solve_lin_system!(aux.A_mat2, aux.b_vec2)
 
-            @inbounds @simd for aa in eachindex(uu)
+            @inbounds @simd for aa in 1:Nu
                 bulk.B1d[aa,i,j] = aux.b_vec2[aa]
                 bulk.Gd[aa,i,j]  = aux.b_vec2[aa+Nu]
             end
@@ -888,9 +874,7 @@ end
 function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge,
                      nested::Nested, evoleq::AffineNull)
     sys  = nested.sys
-    uu   = nested.uu
-    xx   = nested.xx
-    yy   = nested.yy
+    Nu, Nx, Ny = size(sys)
 
     Du_B1   = nested.deriv.Du_B1
     Du_B2   = nested.deriv.Du_B2
@@ -925,8 +909,8 @@ function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge,
         return
     end
 
-    @fastmath @inbounds @threads for j in eachindex(yy)
-        @inbounds for i in eachindex(xx)
+    @fastmath @inbounds @threads for j in 1:Ny
+        @inbounds for i in 1:Nx
             id  = Threads.threadid()
             aux = aux_acc[id]
 
@@ -937,8 +921,8 @@ function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge,
             xi_yy = Dyy(gauge.xi, 1,i,j)
             xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
-            @inbounds @simd for a in eachindex(uu)
-                u     = uu[a]
+            @inbounds @simd for a in 1:Nu
+                u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
                 u4    = u2 * u2
@@ -1038,7 +1022,7 @@ function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge,
                 phid_eq_coeff!(aux.ABCS, vars, sys.gridtype)
 
                 aux.b_vec[a]   = -aux.ABCS[4]
-                @inbounds @simd for aa in eachindex(uu)
+                @inbounds @simd for aa in 1:Nu
                     aux.A_mat[a,aa] = aux.ABCS[1] * Duu[a,aa] + aux.ABCS[2] * Du[a,aa]
                 end
                 aux.A_mat[a,a] += aux.ABCS[3]
@@ -1052,7 +1036,7 @@ function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge,
 
             solve_lin_system!(aux.A_mat, aux.b_vec)
 
-            @inbounds @simd for aa in eachindex(uu)
+            @inbounds @simd for aa in 1:Nu
                 bulk.phid[aa,i,j] = aux.b_vec[aa]
             end
 
@@ -1065,9 +1049,7 @@ end
 function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge,
                   nested::Nested, evoleq::AffineNull)
     sys  = nested.sys
-    uu   = nested.uu
-    xx   = nested.xx
-    yy   = nested.yy
+    Nu, Nx, Ny = size(sys)
 
     Du_B1   = nested.deriv.Du_B1
     Du_B2   = nested.deriv.Du_B2
@@ -1096,8 +1078,8 @@ function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge,
     potential = evoleq.potential
     phi0      = evoleq.phi0
 
-    @fastmath @inbounds @threads for j in eachindex(yy)
-        @inbounds for i in eachindex(xx)
+    @fastmath @inbounds @threads for j in 1:Ny
+        @inbounds for i in 1:Nx
             id  = Threads.threadid()
             aux = aux_acc[id]
 
@@ -1108,8 +1090,8 @@ function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge,
             xi_yy = Dyy(gauge.xi, 1,i,j)
             xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
-            @inbounds @simd for a in eachindex(uu)
-                u     = uu[a]
+            @inbounds @simd for a in 1:Nu
+                u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
                 u4    = u2 * u2
@@ -1213,7 +1195,7 @@ function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge,
                 A_eq_coeff!(aux.ABCS, vars, sys.gridtype)
 
                 aux.b_vec[a]   = -aux.ABCS[4]
-                @inbounds @simd for aa in eachindex(uu)
+                @inbounds @simd for aa in 1:Nu
                     aux.A_mat[a,aa] = aux.ABCS[1] * Duu[a,aa] + aux.ABCS[2] * Du[a,aa]
                 end
                 aux.A_mat[a,a] += aux.ABCS[3]
@@ -1226,13 +1208,13 @@ function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge,
             aux.A_mat[1,1]  = 1.0
 
             aux.b_vec[end]    = bc.A_u[i,j]
-            @inbounds @simd for aa in eachindex(uu)
+            @inbounds @simd for aa in 1:Nu
                 aux.A_mat[end,aa]  = Du[1,aa]
             end
 
             solve_lin_system!(aux.A_mat, aux.b_vec)
 
-            @inbounds @simd for aa in eachindex(uu)
+            @inbounds @simd for aa in 1:Nu
                 bulk.A[aa,i,j] = aux.b_vec[aa]
             end
 
@@ -1524,8 +1506,8 @@ function solve_nested!(bulkconstrains, gauge_t::Gauge, bulkevols, bcs,
     solve_nested!(bulkconstrains[Nsys], bulkevols[Nsys], bcs[Nsys],
                   gauge, nesteds[Nsys], evoleq)
 
-    compute_xi_t!(gauge_t, bulkconstrains[end], bulkevols[end], gauge, nesteds[end].sys,
-                  evoleq.gaugecondition)
+    # compute_xi_t!(gauge_t, bulkconstrains[Nsys], bulkevols[Nsys], gauge, nesteds[Nsys].sys,
+    #               evoleq.gaugecondition)
 
     nothing
 end
