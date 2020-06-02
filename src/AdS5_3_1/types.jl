@@ -80,6 +80,7 @@ struct BulkDeriv{T}
     Du_S    :: Array{T,3}
     Du_Fx   :: Array{T,3}
     Du_Fy   :: Array{T,3}
+    Du_A    :: Array{T,3}
     Duu_B1  :: Array{T,3}
     Duu_B2  :: Array{T,3}
     Duu_G   :: Array{T,3}
@@ -171,6 +172,7 @@ function BulkDeriv{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:R
     Du_S     = Array{T}(undef, Nu, Nx, Ny)
     Du_Fx    = Array{T}(undef, Nu, Nx, Ny)
     Du_Fy    = Array{T}(undef, Nu, Nx, Ny)
+    Du_A     = Array{T}(undef, Nu, Nx, Ny)
     Duu_B1   = Array{T}(undef, Nu, Nx, Ny)
     Duu_B2   = Array{T}(undef, Nu, Nx, Ny)
     Duu_G    = Array{T}(undef, Nu, Nx, Ny)
@@ -178,7 +180,7 @@ function BulkDeriv{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:R
     Duu_S    = Array{T}(undef, Nu, Nx, Ny)
     Duu_Fx   = Array{T}(undef, Nu, Nx, Ny)
     Duu_Fy   = Array{T}(undef, Nu, Nx, Ny)
-    BulkDeriv{T}(Du_B1, Du_B2, Du_G, Du_phi, Du_S, Du_Fx, Du_Fy, Duu_B1, Duu_B2,
+    BulkDeriv{T}(Du_B1, Du_B2, Du_G, Du_phi, Du_S, Du_Fx, Du_Fy, Du_A, Duu_B1, Duu_B2,
                  Duu_G, Duu_phi, Duu_S, Duu_Fx, Duu_Fy)
 end
 
