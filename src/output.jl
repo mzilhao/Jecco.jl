@@ -42,17 +42,19 @@ struct Output{T}
     software         :: String
     software_version :: String
     tinfo            :: TimeInfo{T}
-    overwrite        :: Bool
 
     function Output{T}(dir::String, prefix::String, every::Int,
                        software::String, software_version::String, tinfo::TimeInfo{T};
-                       overwrite::Bool=false) where {T}
+                       remove_existing::Bool=false) where {T}
         # if no name specified, use name of script
         if dir == ""
             dir = splitext(basename(Base.source_path()))[1]
         end
 
         # create folder if it doesn't exist already
+        if isdir(dir) && remove_existing
+            rm(dir, recursive=true)
+        end
         if !isdir(dir)
             mkdir(dir)
         end
@@ -61,36 +63,42 @@ struct Output{T}
             prefix = "data_"
         end
 
-        new(dir, prefix, every, software, software_version, tinfo, overwrite)
+        new(dir, prefix, every, software, software_version, tinfo)
     end
 end
 function Output(dir::String, prefix::String, every::Int, tinfo::TimeInfo{T};
-                overwrite::Bool=false) where {T<:Real}
+                remove_existing::Bool=false) where {T<:Real}
     software         = "Jecco"
     software_version = "0.1.0"
     Output{T}(dir, prefix, every, software, software_version, tinfo;
-              overwrite=overwrite)
+              remove_existing=remove_existing)
 end
 
 # make Output a callable struct
 
-# function (out::Output)(fields::Vector{Field{A,G}}) where {A,G}
-function (out::Output)(fields::Vector)
+function (out::Output)(fields::Union{Vector, Tuple})
     it = out.tinfo.it
     if it % out.every == 0
         filename = "$(out.prefix)$(lpad(string(it), 8, string(0))).h5"
         fullpath = abspath(out.dir, filename)
 
-        if out.overwrite
-            mode = "w"
+        # check if file already exists
+        if isfile(fullpath)
+            mode = "r+"
+            firsttime = false
         else
             mode = "cw"
+            firsttime = true
         end
+
         # open file
         fid = h5open(fullpath, mode)
 
         # create openPMD structure
-        grp = setup_openpmd_file(out, fid)
+        if firsttime
+            setup_openpmd_file(out, fid)
+        end
+        grp = create_group(out, fid)
 
         for field in fields
             write_hdf5(out, grp, field)
@@ -102,14 +110,14 @@ function (out::Output)(fields::Vector)
     nothing
 end
 
-(out::Output)(fields::Vararg{Field,N}) where {N} = (out::Output)([fields...])
+(out::Output)(fields::Vararg{Field,N}) where {N} = (out::Output)((fields...,))
 
 
 
-write_hdf5(param::Output, grp::HDF5Group, field::Field) =
-    write_hdf5(param, grp, field.name, field.data, field.chart)
+write_hdf5(out::Output, grp::HDF5Group, field::Field) =
+    write_hdf5(out, grp, field.name, field.data, field.chart)
 
-function write_hdf5(param::Output, grp::HDF5Group, fieldname::String, data::AbstractArray,
+function write_hdf5(out::Output, grp::HDF5Group, fieldname::String, data::AbstractArray,
                     chart::Chart)
     # write actual data
     dset = write_dataset(grp, fieldname, data)
@@ -119,29 +127,35 @@ function write_hdf5(param::Output, grp::HDF5Group, fieldname::String, data::Abst
 end
 
 
-function setup_openpmd_file(param::Output, fid::HDF5File)
-    it   = param.tinfo.it
-    time = param.tinfo.t
-    dt   = param.tinfo.dt
-
-    attrs(fid)["software"] = param.software
-    attrs(fid)["softwareVersion"] = param.software_version
+function setup_openpmd_file(out::Output, fid::HDF5File)
+    attrs(fid)["software"] = out.software
+    attrs(fid)["softwareVersion"] = out.software_version
     attrs(fid)["openPMD"] = "1.1.0"
     attrs(fid)["openPMDextension"] = 0
     attrs(fid)["author"] = ENV["USER"]
     attrs(fid)["date"] = string(now())
     attrs(fid)["iterationEncoding"] = "fileBased"
-    attrs(fid)["iterationFormat"] = "$(param.prefix)%T.h5"
+    attrs(fid)["iterationFormat"] = "$(out.prefix)%T.h5"
 
     attrs(fid)["basePath"] = "/data/%T/"
     attrs(fid)["meshesPath"] = "fields/"
+end
 
-    grp = g_create(fid, "data/$it")
+function create_group(out::Output, fid::HDF5File)
+    it   = out.tinfo.it
+    time = out.tinfo.t
+    dt   = out.tinfo.dt
 
-    attrs(grp)["time"] = time
-    attrs(grp)["dt"] = dt
+    if exists(fid, "data/$it")
+        fields = fid["data/$it/fields"]
+    else
+        grp = g_create(fid, "data/$it")
+        attrs(grp)["time"] = time
+        attrs(grp)["dt"] = dt
+        fields = g_create(grp, "fields")
+    end
 
-    g_create(grp, "fields")
+    fields
 end
 
 function write_dataset(grp::HDF5Group, fieldname::String, data::AbstractArray)

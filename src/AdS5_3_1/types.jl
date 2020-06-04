@@ -10,15 +10,28 @@ Extend this type for different `InitialData` choices
 abstract type InitialData end
 
 """
+Extend this type for different `GaugeCondition`s
+"""
+abstract type GaugeCondition end
+
+struct ConstantGauge <: GaugeCondition end
+
+Base.@kwdef struct ConstantAH{T} <: GaugeCondition
+    u_AH  :: T = 1.0
+    kappa :: T = 1.0
+end
+
+"""
 Extend this type for different `EvolutionEquations`
 """
 abstract type EvolutionEquations end
 
 struct EvolTest0 <: EvolutionEquations end
 
-Base.@kwdef struct AffineNull{T,TP<:Potential} <: EvolutionEquations
-    phi0          :: T   = 0.0
-    potential     :: TP  = ZeroPotential()
+Base.@kwdef struct AffineNull{T,TP<:Potential,TG<:GaugeCondition} <: EvolutionEquations
+    phi0           :: T   = 0.0
+    potential      :: TP  = ZeroPotential()
+    gaugecondition :: TG  = ConstantAH()
 end
 
 
@@ -57,6 +70,24 @@ struct Bulk{T} <: AbstractVars{T}
     phid :: Array{T,3}
     Sd   :: Array{T,3}
     A    :: Array{T,3}
+end
+
+struct BulkDeriv{T}
+    Du_B1   :: Array{T,3}
+    Du_B2   :: Array{T,3}
+    Du_G    :: Array{T,3}
+    Du_phi  :: Array{T,3}
+    Du_S    :: Array{T,3}
+    Du_Fx   :: Array{T,3}
+    Du_Fy   :: Array{T,3}
+    Du_A    :: Array{T,3}
+    Duu_B1  :: Array{T,3}
+    Duu_B2  :: Array{T,3}
+    Duu_G   :: Array{T,3}
+    Duu_phi :: Array{T,3}
+    Duu_S   :: Array{T,3}
+    Duu_Fx  :: Array{T,3}
+    Duu_Fy  :: Array{T,3}
 end
 
 struct Boundary{T} <: AbstractVars{T}
@@ -131,6 +162,26 @@ function Bulk(bulkevol::BulkEvolved{T}, bulkconstrain::BulkConstrained{T}) where
     Sd    = bulkconstrain.Sd
     A     = bulkconstrain.A
     Bulk{T}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
+end
+
+function BulkDeriv{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Real}
+    Du_B1    = Array{T}(undef, Nu, Nx, Ny)
+    Du_B2    = Array{T}(undef, Nu, Nx, Ny)
+    Du_G     = Array{T}(undef, Nu, Nx, Ny)
+    Du_phi   = Array{T}(undef, Nu, Nx, Ny)
+    Du_S     = Array{T}(undef, Nu, Nx, Ny)
+    Du_Fx    = Array{T}(undef, Nu, Nx, Ny)
+    Du_Fy    = Array{T}(undef, Nu, Nx, Ny)
+    Du_A     = Array{T}(undef, Nu, Nx, Ny)
+    Duu_B1   = Array{T}(undef, Nu, Nx, Ny)
+    Duu_B2   = Array{T}(undef, Nu, Nx, Ny)
+    Duu_G    = Array{T}(undef, Nu, Nx, Ny)
+    Duu_phi  = Array{T}(undef, Nu, Nx, Ny)
+    Duu_S    = Array{T}(undef, Nu, Nx, Ny)
+    Duu_Fx   = Array{T}(undef, Nu, Nx, Ny)
+    Duu_Fy   = Array{T}(undef, Nu, Nx, Ny)
+    BulkDeriv{T}(Du_B1, Du_B2, Du_G, Du_phi, Du_S, Du_Fx, Du_Fy, Du_A, Duu_B1, Duu_B2,
+                 Duu_G, Duu_phi, Duu_S, Duu_Fx, Duu_Fy)
 end
 
 """
@@ -239,6 +290,15 @@ end
         end
     end
 end
+
+Base.similar(ff::BulkEvolved{T}) where{T} =
+    BulkEvolved{T}(similar(ff.B1), similar(ff.B2), similar(ff.G), similar(ff.phi))
+
+Base.similar(ff::Boundary{T}) where{T} =
+    Boundary{T}(similar(ff.a4), similar(ff.fx2), similar(ff.fy2))
+
+Base.similar(ff::Gauge{T}) where{T} = Gauge{T}(similar(ff.xi))
+
 
 """
     unpack(ff::AbstractVars)

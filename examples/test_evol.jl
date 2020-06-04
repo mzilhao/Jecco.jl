@@ -22,12 +22,12 @@ grid = SpecCartGrid3D(
 
 id   = BlackBrane()
 
-evoleq = EvolTest0()
+# evoleq = EvolTest0()
 
-# evoleq = AffineNull(
-#     phi0       = 0.0,
-#     potential  = ZeroPotential(),
-# )
+evoleq = AffineNull(
+    phi0       = 0.0,
+    potential  = ZeroPotential(),
+)
 
 # atlas of grid configuration and respective SystemPartition
 atlas     = Atlas(grid)
