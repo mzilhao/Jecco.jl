@@ -47,20 +47,16 @@ gauge_t   = similar(gauge)
 
 bulkevols      = BulkEvolvedPartition(grid)
 bulkconstrains = BulkConstrainedPartition(grid)
-
-T = Float64
-
-derivs   = [AdS5_3_1.BulkDeriv{T}(sys) for sys in systems]
-
+bulkderivs     = BulkDerivPartition(grid)
 
 # initial conditions
 init_data!(bulkevols, boundary, gauge, systems, id)
 
 # function to solve the nested system, given the initial data
-solve_nested! = nested_solver(systems)
+nested = Nested(systems, bulkconstrains, bulkderivs)
 
 # solve nested system for the constrained variables
-solve_nested!(bulkconstrains, bulkevols, derivs, boundary, gauge, evoleq)
+nested(bulkevols, boundary, gauge, evoleq)
 
 # analyze data
 

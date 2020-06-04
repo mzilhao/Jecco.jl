@@ -196,3 +196,16 @@ function BulkConstrainedPartition(grid::SpecCartGrid3D{T}) where {T}
 
     BulkPartition((bulk_in, bulk_out...))
 end
+
+function BulkDerivPartition(grid::SpecCartGrid3D{T}) where {T}
+    Nx = grid.x_nodes
+    Ny = grid.y_nodes
+    Nu_in  = grid.u_inner_nodes
+    Nu_out = grid.u_outer_nodes
+    N_outer_sys = grid.u_outer_domains
+
+    bulk_in   = BulkDeriv{T}(undef, Nu_in, Nx, Ny)
+    bulk_out  = [BulkDeriv{T}(undef, Nu_out, Nx, Ny) for i in 1:N_outer_sys]
+
+    BulkPartition((bulk_in, bulk_out...))
+end

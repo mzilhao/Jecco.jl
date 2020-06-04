@@ -42,12 +42,6 @@ function Aux{T}(sys::System) where {T}
     [Aux{T}(Nu) for _ in 1:nt]
 end
 
-
-function BulkDeriv{T}(sys::System) where {T}
-    Nu, Nx, Ny = size(sys)
-    BulkDeriv{T}(undef, Nu, Nx, Ny)
-end
-
 struct BC{T}
     S    :: Array{T,2}
     Fx   :: Array{T,2}
@@ -78,6 +72,14 @@ function BC{T}(Nx::Int, Ny::Int) where {T<:Real}
     Fy_u = Array{T}(undef, Nx, Ny)
     A_u  = Array{T}(undef, Nx, Ny)
     BC{T}(S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A, S_u, Fx_u, Fy_u, A_u)
+end
+
+function BCs(systems::SystemPartition)
+    sys1  = systems[1]
+    T     = Jecco.coord_eltype(sys1.ucoord)
+    _, Nx, Ny = size(sys1)
+
+    [BC{T}(Nx, Ny) for sys in systems]
 end
 
 
@@ -1191,8 +1193,8 @@ function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
     nothing
 end
 
-function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved,
-                       bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
+function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc::BC,
+                       gauge::Gauge, deriv::BulkDeriv, aux_acc,
                        sys::System, evoleq::AffineNull)
     Du_B1   = deriv.Du_B1
     Du_B2   = deriv.Du_B2
@@ -1454,32 +1456,32 @@ end
 # We assume that the first entry on these arrays is the inner grid, and that
 # there is only one domain spanning this grid. If we ever change this
 # construction we must remember to make the appropriate changes here.
-function solve_nesteds!(bulkconstrains, bulkevols, bcs,
-                        boundary::Boundary, gauge::Gauge, derivs, aux_accs,
+function solve_nesteds!(bulkconstrains, bulkevols, boundary::Boundary, gauge::Gauge,
+                        bcs, derivs, aux_accs,
                         systems::SystemPartition, evoleq::AffineNull)
     Nsys = length(systems)
 
     set_innerBCs!(bcs[1], bulkevols[1], boundary, gauge, derivs[1], systems[1], evoleq)
 
-    solve_nested!(bulkconstrains[1], bulkevols[1], bcs[1],
-                  gauge, derivs[1], aux_accs[1], systems[1], evoleq)
+    solve_nested!(bulkconstrains[1], bulkevols[1], bcs[1], gauge,
+                  derivs[1], aux_accs[1], systems[1], evoleq)
 
     set_outerBCs!(bcs[2], bulkconstrains[1], gauge, derivs[1], systems[1], evoleq)
 
     for i in 2:Nsys-1
-        solve_nested!(bulkconstrains[i], bulkevols[i], bcs[i],
-                      gauge, derivs[i], aux_accs[i], systems[i], evoleq)
+        solve_nested!(bulkconstrains[i], bulkevols[i], bcs[i], gauge,
+                      derivs[i], aux_accs[i], systems[i], evoleq)
         syncBCs!(bcs[i+1], bulkconstrains[i], derivs[i])
     end
-    solve_nested!(bulkconstrains[Nsys], bulkevols[Nsys], bcs[Nsys],
-                  gauge, derivs[Nsys], aux_accs[Nsys], systems[Nsys], evoleq)
+    solve_nested!(bulkconstrains[Nsys], bulkevols[Nsys], bcs[Nsys], gauge,
+                  derivs[Nsys], aux_accs[Nsys], systems[Nsys], evoleq)
 
     nothing
 end
 
 # for testing only: set all constrained variables to zero
-function solve_nesteds!(bulkconstrains, bulkevols, bcs,
-                        boundary::Boundary, gauge::Gauge, derivs, aux_accs,
+function solve_nesteds!(bulkconstrains, bulkevols, boundary::Boundary, gauge::Gauge,
+                        bcs, derivs, aux_accs,
                         systems, evoleq::EvolTest0)
     Nsys = length(systems)
 
@@ -1490,18 +1492,27 @@ function solve_nesteds!(bulkconstrains, bulkevols, bcs,
 end
 
 
-function nested_solver(systems::SystemPartition)
-    sys1  = systems[1]
-    T     = Jecco.coord_eltype(sys1.ucoord)
-    _, Nx, Ny = size(sys1)
+struct Nested{S,C,D,B,A}
+    systems        :: S
+    bulkconstrains :: C
+    derivs         :: D
+    bcs            :: B
+    aux_accs       :: A
+end
 
-    bcs      = [BC{T}(Nx, Ny) for sys in systems]
+function Nested(systems::SystemPartition, bulkconstrains::BulkPartition,
+                derivs::BulkPartition)
+    T        = Jecco.coord_eltype(systems[1].ucoord)
+    bcs      = BCs(systems)
     aux_accs = [Aux{T}(sys) for sys in systems]
 
-    function (bulkconstrains, bulkevols, derivs, boundary::Boundary,
-              gauge::Gauge, evoleq::EvolutionEquations)
-        solve_nesteds!(bulkconstrains, bulkevols, bcs, boundary, gauge,
-                      derivs, aux_accs, systems, evoleq)
-        nothing
-    end
+    Nested{typeof(systems),typeof(bulkconstrains),typeof(derivs),
+           typeof(bcs),typeof(aux_accs)}(systems, bulkconstrains, derivs, bcs,
+                                         aux_accs)
+end
+
+function (nested::Nested)(bulkevols::BulkPartition, boundary::Boundary,
+                          gauge::Gauge, evoleq::EvolutionEquations)
+    solve_nesteds!(nested.bulkconstrains, bulkevols, boundary, gauge, nested.bcs,
+                   nested.derivs, nested.aux_accs, nested.systems, evoleq)
 end
