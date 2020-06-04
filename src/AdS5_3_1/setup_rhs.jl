@@ -3,6 +3,11 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, systems::SystemPartition
     # function to solve the nested system
     solve_nested! = nested_solver(systems)
 
+    T = Float64
+
+    derivs = [BulkDeriv{T}(sys) for sys in systems]
+
+
     function (ff_t::EvolVars, ff::EvolVars, evoleq::EvolutionEquations, t)
         bulkevols_t = getbulkevolvedpartition(ff_t)
         boundary_t  = getboundary(ff_t)
@@ -12,10 +17,15 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, systems::SystemPartition
         boundary    = getboundary(ff)
         gauge       = getgauge(ff)
 
+        # TODO: add filtering here for t > 0
+
         compute_boundary_t!(boundary_t, bulkevols[1], boundary, gauge, systems[1], evoleq)
 
         # solve nested system for the constrained variables
-        solve_nested!(bulkconstrains, gauge_t, bulkevols, boundary, gauge, evoleq)
+        solve_nested!(bulkconstrains, bulkevols, boundary, gauge, evoleq)
+
+        compute_xi_t!(gauge_t, bulkconstrains[Nsys], bulkevols[Nsys], derivs[Nsys],
+                      gauge, nesteds[Nsys].sys, evoleq.gaugecondition)
 
         @inbounds for aa in 1:Nsys
             sys           = systems[aa]
@@ -28,8 +38,6 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, systems::SystemPartition
         end
 
         sync_bulkevolved!(bulkevols_t, bulkconstrains, gauge_t, systems, evoleq)
-
-        # TODO: add filtering here?
 
         nothing
     end

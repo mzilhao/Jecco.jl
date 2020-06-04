@@ -1194,8 +1194,6 @@ end
 function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved,
                        bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                        sys::System, evoleq::AffineNull)
-    sys  = sys
-
     Du_B1   = deriv.Du_B1
     Du_B2   = deriv.Du_B2
     Du_G    = deriv.Du_G
@@ -1266,6 +1264,8 @@ function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved,
     # solve for A
     solve_A!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
 
+    # take u-derivatives of A. they will be needed for syncing the domains and
+    # also for the xi_t function. TODO: second derivative?
     mul!(Du_A,   Du,  bulk.A)
 
     nothing
@@ -1297,10 +1297,9 @@ function syncBCs!(bc::BC, bulk::BulkConstrained, deriv::BulkDeriv)
     nothing
 end
 
-function set_innerBCs!(bc::BC, bulk::BulkEvolved,
-                       boundary::Boundary, gauge::Gauge,
-                       deriv::BulkDeriv,
-                       sys::System, evoleq::AffineNull)
+function set_innerBCs!(bc::BC, bulk::BulkEvolved, boundary::Boundary,
+                       gauge::Gauge, deriv::BulkDeriv, sys::System{Inner},
+                       evoleq::AffineNull)
     _, Nx, Ny = size(sys)
 
     Dx  = sys.Dx
@@ -1397,8 +1396,8 @@ function set_innerBCs!(bc::BC, bulk::BulkEvolved,
     nothing
 end
 
-function set_outerBCs!(bc::BC, bulk::BulkConstrained,
-                       gauge::Gauge, deriv::BulkDeriv, sys::System, evoleq::AffineNull)
+function set_outerBCs!(bc::BC, bulk::BulkConstrained, gauge::Gauge,
+                       deriv::BulkDeriv, sys::System, evoleq::AffineNull)
     _, Nx, Ny = size(sys)
 
     phi0 = evoleq.phi0
@@ -1455,9 +1454,9 @@ end
 # We assume that the first entry on these arrays is the inner grid, and that
 # there is only one domain spanning this grid. If we ever change this
 # construction we must remember to make the appropriate changes here.
-function solve_nested!(bulkconstrains, gauge_t::Gauge, bulkevols, bcs,
-                       boundary::Boundary, gauge::Gauge, derivs, aux_accs,
-                       systems, evoleq::AffineNull)
+function solve_nesteds!(bulkconstrains, bulkevols, bcs,
+                        boundary::Boundary, gauge::Gauge, derivs, aux_accs,
+                        systems::SystemPartition, evoleq::AffineNull)
     Nsys = length(systems)
 
     set_innerBCs!(bcs[1], bulkevols[1], boundary, gauge, derivs[1], systems[1], evoleq)
@@ -1475,16 +1474,13 @@ function solve_nested!(bulkconstrains, gauge_t::Gauge, bulkevols, bcs,
     solve_nested!(bulkconstrains[Nsys], bulkevols[Nsys], bcs[Nsys],
                   gauge, derivs[Nsys], aux_accs[Nsys], systems[Nsys], evoleq)
 
-    # compute_xi_t!(gauge_t, bulkconstrains[Nsys], bulkevols[Nsys], gauge, nesteds[Nsys].sys,
-    #               evoleq.gaugecondition)
-
     nothing
 end
 
 # for testing only: set all constrained variables to zero
-function solve_nested!(bulkconstrains, gauge_t::Gauge, bulkevols, bcs,
-                       boundary::Boundary, gauge::Gauge, derivs, aux_accs,
-                       systems, evoleq::EvolTest0)
+function solve_nesteds!(bulkconstrains, bulkevols, bcs,
+                        boundary::Boundary, gauge::Gauge, derivs, aux_accs,
+                        systems, evoleq::EvolTest0)
     Nsys = length(systems)
 
     for i in 1:Nsys
@@ -1500,12 +1496,11 @@ function nested_solver(systems::SystemPartition)
     _, Nx, Ny = size(sys1)
 
     bcs      = [BC{T}(Nx, Ny) for sys in systems]
-    derivs   = [BulkDeriv{T}(sys) for sys in systems]
     aux_accs = [Aux{T}(sys) for sys in systems]
 
-    function (bulkconstrains, gauge_t::Gauge, bulkevols, boundary::Boundary,
+    function (bulkconstrains, bulkevols, derivs, boundary::Boundary,
               gauge::Gauge, evoleq::EvolutionEquations)
-        solve_nested!(bulkconstrains, gauge_t, bulkevols, bcs, boundary, gauge,
+        solve_nesteds!(bulkconstrains, bulkevols, bcs, boundary, gauge,
                       derivs, aux_accs, systems, evoleq)
         nothing
     end

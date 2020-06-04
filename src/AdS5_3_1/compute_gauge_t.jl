@@ -1,6 +1,6 @@
 
 function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained, bulkevol::BulkEvolved,
-                       gauge::Gauge, sys::System{Outer}, ::ConstantGauge)
+                       deriv::BulkDeriv, gauge::Gauge, sys::System{Outer}, ::ConstantGauge)
     xi_t = getxi(gauge_t)
     fill!(xi_t, 0)
     nothing
@@ -11,7 +11,7 @@ struct TestGauge <: GaugeCondition end
 
 # TODO
 function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained, bulkevol::BulkEvolved,
-                       gauge::Gauge, sys::System{Outer}, ::TestGauge)
+                       deriv::BulkDeriv, gauge::Gauge, sys::System{Outer}, ::TestGauge)
     bulk = Bulk(bulkevol, bulkconstrain)
     _, Nx, Ny = size(sys)
 
@@ -144,7 +144,7 @@ end
 
 # TODO
 function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained, bulkevol::BulkEvolved,
-                       gauge::Gauge, sys::System{Outer}, gaugecondition::ConstantAH)
+                       deriv::BulkDeriv, gauge::Gauge, sys::System{Outer}, gaugecondition::ConstantAH)
     _, Nx, Ny = size(sys)
 
     xi_t = getxi(gauge_t)
