@@ -16,6 +16,7 @@ sdvars   = tuple([ZeroPotential(); ones(70)]...)
 bdgvars  = tuple(ones(71)...)
 phidvars = tuple([ZeroPotential(); ones(72)]...)
 avars    = tuple([ZeroPotential(); ones(76)]...)
+xivars   = tuple(ones(84)...)
 
 
 @testset "S equation outer grid coefficients:" begin
@@ -66,4 +67,11 @@ end
     @test all( ABCS .≈ [16.30969097075427, 32.61938194150854, 0.0, -2788.0697971816335] )
 end
 
+@testset "xi_t equation coefficients:" begin
+
+    abccS = Jecco.AdS5_3_1.xi_t_eq_coeff(xivars, AdS5_3_1.Outer())
+
+    @test all( abccS .≈ (-61.98720613207489, -8.389056098930649, 34.73451018945725, -303.7973949812715, 83.3896552507381, -828.73362702863, -2046.0855701645924) )
+ 
+end
 nothing

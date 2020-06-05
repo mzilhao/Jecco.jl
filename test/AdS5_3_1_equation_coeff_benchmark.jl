@@ -8,6 +8,7 @@ AA    = zeros(2,2)
 BB    = zeros(2,2)
 CC    = zeros(2,2)
 SS    = zeros(2)
+abccS = 0
 
 svars    = tuple(ones(11)...)
 fvars    = tuple(ones(37)...)
@@ -15,7 +16,7 @@ sdvars   = tuple([ZeroPotential(); ones(70)]...)
 bdgvars  = tuple(ones(71)...)
 phidvars = tuple([ZeroPotential(); ones(72)]...)
 avars    = tuple([ZeroPotential(); ones(76)]...)
-
+xivars   = tuple(ones(84)...)
 
 # inner grid
 
@@ -63,3 +64,9 @@ println("phid equations outer grid coefficients:")
 
 println("A equations outer grid coefficients:")
 @btime Jecco.AdS5_3_1.A_eq_coeff!($ABCS, $avars, AdS5_3_1.Outer())
+
+#xi equation
+
+println("xi_t equations coefficients:")
+@btime $abccS = Jecco.AdS5_3_1.xi_t_eq_coeff($xivars, AdS5_3_1.Outer())
+
