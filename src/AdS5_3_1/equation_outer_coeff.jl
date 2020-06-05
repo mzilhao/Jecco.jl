@@ -533,16 +533,16 @@ end
 function xi_t_eq_coeff(vars::Tuple, ::Outer)
     (
         kappa, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
-        B1   , B2   , G   ,  S    , Fx    , Fy    , Sd ,  B1d  , B2d  , Gd,  phid, A,
-        B1p  , B2p  , Gp  ,  Sp   , Fxp   , Fyp   , Sdp,  B1dp , B2dp , Gdp,       Ap,
+        B1   , B2   , G   ,  S    , Fx    , Fy    , Sd ,  B1d  , B2d  , Gd,  phid, A    , phi,
+        B1p  , B2p  , Gp  ,  Sp   , Fxp   , Fyp   , Sdp,  B1dp , B2dp , Gdp,       Ap   , phip,
         B1pp , B2pp , Gpp ,  Spp  , Fxpp  , Fypp  ,                                App,
-        B1_x , B2_x , G_x ,  S_x  , Fx_x  , Fy_x  , Sd_x, B1d_x, B2d_x, Gd_x,      A_x,
-        B1_y , B2_y , G_y ,  S_y  , Fx_y  , Fy_y  , Sd_y, B1d_y, B2d_y, Gd_y,      A_y,
+        B1_x , B2_x , G_x ,  S_x  , Fx_x  , Fy_x  , Sd_x, B1d_x, B2d_x, Gd_x,      A_x  , phi_x,
+	B1_y , B2_y , G_y ,  S_y  , Fx_y  , Fy_y  , Sd_y, B1d_y, B2d_y, Gd_y,      A_y  , phi_y,
         B1p_x, B2p_x, Gp_x,  Sp_x , Fxp_x , Fyp_x ,                                Ap_x,
         B1p_y, B2p_y, Gp_y,  Sp_y , Fxp_y , Fyp_y ,                                Ap_y,
-                                                                                   A_xx,
-                                                                                   A_yy,
-                                                                                   A_xy,
+                                            Fy_xx ,                                A_xx,
+                                    Fx_yy ,                                        A_yy,
+                                    Fx_xy , Fy_xy ,                                A_xy,
     ) = vars
 
     @tilde_outer("B1")
@@ -556,6 +556,7 @@ function xi_t_eq_coeff(vars::Tuple, ::Outer)
     @tilde_outer("B2d")
     @tilde_outer("Gd")
     @tilde_outer("A")
+    @tilde_outer("phi")
 
     @hat_outer("B1")
     @hat_outer("B2")
@@ -568,10 +569,13 @@ function xi_t_eq_coeff(vars::Tuple, ::Outer)
     @hat_outer("B2d")
     @hat_outer("Gd")
     @hat_outer("A")
+    @hat_outer("phi")
 
     @bar_outer("A")
+    @bar_outer("Fy")
 
     @star_outer("A")
+    @star_outer("Fx")
 
     @tilde_outer("B1p")
     @tilde_outer("B2p")
@@ -579,6 +583,7 @@ function xi_t_eq_coeff(vars::Tuple, ::Outer)
     @tilde_outer("Sp")
     @tilde_outer("Fxp")
     @tilde_outer("Fyp")
+    @tilde_outer("Ap")
 
     @hat_outer("B1p")
     @hat_outer("B2p")
@@ -586,8 +591,11 @@ function xi_t_eq_coeff(vars::Tuple, ::Outer)
     @hat_outer("Sp")
     @hat_outer("Fxp")
     @hat_outer("Fyp")
+    @hat_outer("Ap")
 
     @cross_outer("A")
+    @cross_outer("Fx")
+    @cross_outer("Fy")
 
     ## FIXME
     Fydh = 0
@@ -599,34 +607,256 @@ function xi_t_eq_coeff(vars::Tuple, ::Outer)
     Fxd  = 0
     Fxdh = 0
 
-    expB1   = exp(B1)
-    expB2   = exp(B2)
-    sinh2G  = sinh(*(2, G))
-    cosh2G  = cosh(*(2, G))
-    coshGsq = cosh(G)^2
-    coshG   = cosh(G)
-    sinhG   = sinh(G)
+##    expB1   = exp(B1)
+##    expB2   = exp(B2)
+##    sinh2G  = sinh(*(2, G))
+##    cosh2G  = cosh(*(2, G))
+##    coshGsq = cosh(G)^2
+##    coshG   = cosh(G)
+##    sinhG   = sinh(G)
 
     κ = kappa
 
 
+    x0 = 2*B1
+    x1 = exp(B2 + x0)
+    x2 = cosh(G)
+    x3 = 2*x2
+    x4 = S*x3
+    x5 = exp(B1 + B2)
+    x6 = sinh(G)
+    x7 = x5*x6
+    x8 = 4*S
+    x9 = exp(B2)
+    x10 = B2h*S
+    x11 = Fyp*S
+    x12 = Sp*xi_y
+    x13 = 2*B2p
+    x14 = S*x13
+    x15 = x14*xi_y
+    x16 = exp(B1)
+    x17 = Gt*x16
+    x18 = S*x17
+    x19 = 2*Fx
+    x20 = Gp*S*x16
+    x21 = x19*x20
+    x22 = 2*xi_x
+    x23 = x20*x22
+    x24 = 2*x6
+    x25 = Fy + xi_y
+    x26 = Gp*x25
+    x27 = S*(Gh + 2*x26)
+    x28 = B1t*S
+    x29 = 2*B1p
+    x30 = x13 + x29
+    x31 = Fx*S
+    x32 = S*x29
+    x33 = B2t*S
+    x34 = Sp*xi_x
+    x35 = Fxp*S
+    x36 = St + x35
+    x37 = -Fx*Sp + x14*xi_x + x33 - x34 + x36
+    x38 = -Sh
+    x39 = -x10 + x18 + x38
+    x40 = 6*Sp
+    x41 = Fyp*x25
+    x42 = x2*x9
+    x43 = x41*x42
+    x44 = 3*Spp
+    x45 = x25^2
+    x46 = x42*x45
+    x47 = 3*B2p
+    x48 = Sp*x46
+    x49 = 3*Sp
+    x50 = x6*x9
+    x51 = x45*x50
+    x52 = Fx + xi_x
+    x53 = Fxp*x52
+    x54 = x1*x2
+    x55 = x53*x54
+    x56 = x52^2
+    x57 = x54*x56
+    x58 = Gp*x6
+    x59 = x1*x56
+    x60 = Sp*x57
+    x61 = Sp*x25
+    x62 = Sh + x61
+    x63 = x6*x62
+    x64 = Sp*x52
+    x65 = St + x64
+    x66 = x16*x2
+    x67 = x65*x66
+    x68 = -B2h
+    x69 = B2p*x25
+    x70 = x68 - x69
+    x71 = B1p + B2p
+    x72 = x16*(x2*(B1t + B2t + x52*x71) + x6*(Fx*Gp + Gp*xi_x + Gt))
+    x73 = x2*(-Gh - x26) + x6*x70 + x72
+    x74 = S*x73 - x63 + x67
+    x75 = x5*x74
+    x76 = Fxp*x75
+    x77 = x42*(2*Fyh + 2*x41 + 2*xi_yy)
+    x78 = 2*Fxh
+    x79 = 2*xi_xy
+    x80 = Fxp*x25
+    x81 = 2*x80
+    x82 = 6*S
+    x83 = Sd*x82
+    x84 = Fyp*x52
+    x85 = x50*(2*Fyt + x79 + 2*x84)
+    x86 = x2*x5
+    x87 = x86*(2*Fxt + 2*x53 + 2*xi_xx)
+    x88 = x16*(x83 + x85 - x87)
+    x89 = x7*(x78 + x79 + x81) - x77 + x88
+    x90 = St - 2*x64
+    x91 = x16*x6
+    x92 = x90*x91
+    x93 = B1h + B1p*x25
+    x94 = B2h + x69
+    x95 = x2*x94
+    x96 = Gh + x26
+    x97 = x6*x96
+    x98 = B2p*x52 + B2t
+    x99 = x91*x98
+    x100 = Gp*x52 + Gt
+    x101 = x100*x66
+    x102 = x101 + x2*x93 - x95 - x97 + x99
+    x103 = S*x102 + x2*(x38 - x61) + x92
+    x104 = x103*x9
+    x105 = Fyp*x104
+    x106 = x104*x25
+    x107 = x52*x75
+    x108 = Fyh + xi_yy
+    x109 = x108 + x41
+    x110 = x24*x9
+    x111 = x109*x110
+    x112 = Fypp*x25
+    x113 = Fxpp*x25
+    x114 = Fxh + x80 + xi_xy
+    x115 = x3*x5
+    x116 = x114*x7
+    x117 = 6*Sd
+    x118 = Fypp*x52 + Fypt
+    x119 = Fxpp*x52 + Fxpt
+    x120 = Fyt + x84 + xi_xy
+    x121 = x120*x50
+    x122 = Fxt + x53 + xi_xx
+    x123 = Sph + Spp*x25
+    x124 = Gp*x2
+    x125 = Spp*x52
+    x126 = Spt + x125
+    x127 = x16*x58
+    x128 = B2ph + B2pp*x25
+    x129 = Gph + Gpp*x25
+    x130 = B1pp*x52 + B1pt
+    x131 = B2pp*x52 + B2pt
+    x132 = Gpp*x52 + Gpt
+    x133 = B1p*x52 + B1t
+    x134 = x5*(x19 + x22)
+    x135 = Gp*x66
+    x136 = 3*Fxp
+    x137 = B1ph + B1pp*x25
+    x138 = x9*(2*Fy + 2*xi_y)
+    x139 = A*Sp
+    x140 = 3*x139
+    x141 = 6*B2d
+    x142 = 2*Gd
+    x143 = A*Gp
+    x144 = x142 - x143
+    x145 = 3*x144/2
+    x146 = Gd - x143/2
+    x147 = 2*Sdp
+    x148 = A*Spp
+    x149 = Ap*Sp
+    x150 = 3*x147/2 - 3*x148/2 - 3*x149/2
+    x151 = S*x42
+    x152 = 4*B2d
+    x153 = -A*x13 + x152
+    x154 = x153/2
+    x155 = Sp*x59
+    x156 = 4*B1d
+    x157 = -2*A*x71 + x152 + x156
+    x158 = x157/2
+    x159 = 3*A
+    x160 = x2/2
+    x161 = 2*B1d
+    x162 = A*B1p
+    x163 = x161/2 - x162/2
+    x164 = 2*Sd - x139
+    x165 = S^3
+    x166 = 2*x165
+    x167 = A*x166
+    x168 = Ah + Ap*x25
+    x169 = x166*x168
+    x170 = S^2
+    x171 = 3*B2d
+    x172 = 3*Sd
+    x173 = x2^2
+    x174 = 3*x173
+    x175 = 4*Fxh
+    x176 = 4*Fyt
+    x177 = x175*(Sh - 2*x10) - x176*(S*(-2*B2h + Fyp) + Sh) + x8*(Fxp*x108 - Fxs + Fyc - Fyp*xi_xy)
+    x178 = 4*x11
+    x179 = Fxh - Fyt
+    x180 = Fxc*x8 + Fxt*x178 - Fyb*x8 + St*x176 - x175*x36 + x178*xi_xx + 8*x179*x33 - 4*x35*xi_xy
+    x181 = 8*phid
+    x182 = 2*G
+    x183 = sinh(x182)
+    x184 = x161*x183
+    x185 = Ah*B1p + 2*B1dh - B1h*x161
+    x186 = 2*Gp
+    x187 = 4*Gd
+    x188 = x156*cosh(x182)
+    x189 = B1d*St
+    x190 = 2*B1dt
+    x191 = At*B1p
+    x192 = 16*S*Sd*Sh + x16*x170*(At*S*x186 + 12*Gd*St + Gdt*x8 - Gt*S*x188 - x183*(S*x190 + S*x191 + x161*x28 + 6*x189) + x187*x28) - x166*(Ah*B2p - Ap*Fyp + 2*Aph + 2*B2dh + B2h*x141 + Gh*x142 - Gh*x184 + phih*x181 - x173*x185) + 4*x170*(Ah*Sp + B1d*Sh*x174 - Fyp*x172 - 4*Sdh - Sh*x171) + x177*x50 + x180*x86
+    x193 = 1/(2*x170)
+    x194 = -At*Sp
+    x195 = 2*S
+    x196 = x16*x195
+    x197 = exp(-B1)
+    x198 = x197*(-12*Sh*x170*(B1d*x2*x6 + Gd) + x165*(-Ah*x186 + B1h*x187 - 4*Gdh - Gh*x188 - x183*x185) - x177*x42 - x180*x7 + x196*(-8*Sd*St + x170*(-Ap*Fxp + 2*Apt + At*B2p + 2*B2dt + B2t*x141 + Gt*x142 + Gt*x184 + phit*x181 + x173*(B1t*x161 + x190 + x191)) + x195*(Sd*x136 + 4*Sdt + St*x171 + x174*x189 + x194)))
+    x199 = x146*x2
+    x200 = B1d - x162/2
+    x201 = x146*x91
+    x202 = A/2
+    x203 = x168/2
+    x204 = Sdh + Sdp*x25 - Sp*x203 - x123*x202
+    x205 = Ap*x52 + At
+    x206 = x205/2
+    x207 = Sd - x139/2
+    x208 = B2dh + B2dp*x25 - B2p*x203 - x128*x202
+    x209 = Gdh + Gdp*x25 - Gp*x203 - x129*x202
+    x210 = x146*x6
+    x211 = B2dp*x52 + B2dt - B2p*x206 - x131*x202
+    x212 = Gdp*x52 + Gdt - Gp*x206 - x132*x202
+    x213 = x146*x66
+    x214 = 4*x146
+    x215 = x122*x165
+    x216 = Ah*S
+    x217 = Ah*x16
+    x218 = Ap*S
+    x219 = x16*x218
+    x220 = At*x16
+    x221 = exp(x0)
+    x222 = At*x221
+    x223 = x218*x221
+    x224 = x166*x205
 
-    axx = *(-2, S, coshG, exp(B2 + *(2, B1)))
+    axx = -x1*x4
 
-    ayy = *(4, S, exp(B1 + B2), sinhG)
+    axy = x7*x8
 
-    axy = *(-2, S, coshG, expB2)
+    ayy = -x4*x9
 
+    bx = x5*(x24*(-Fy*Sp + Fy*x14 + Sh + x10 + x11 - x12 + x15 - x18 - x21 - x23) + x3*(-x16*(x28 + x30*x31 + x32*xi_x + x37) + x27))
 
-    bx  = *(2, *(*(S, Gh + *(2, Gp, Fy + xi_y)) + *(-1, St + *(B1t, S) + *(B2t, S) + *(Fxp, S) + *(-1, Fx, Sp) + *(-1, Sp, xi_x) + *(Fx, S, *(2, B1p) + *(2, B2p)) + *(2, B1p, S, xi_x) + *(2, B2p, S, xi_x), expB1), coshG) + *(Sh + *(B2h, S) + *(Fyp, S) + *(-1, Fy, Sp) + *(-1, Sp, xi_y) + *(-1, Gt, S, expB1) + *(2, B2p, Fy, S) + *(2, B2p, S, xi_y) + *(-2, Fx, Gp, S, expB1) + *(-2, Gp, S, xi_x, expB1), sinhG), exp(B1 + B2))
+    by = x9*(x24*(x16*(x13*x31 + x37) - x27) + x3*(B1h*S + Fy*(Sp - x14 + x32) - x11 + x12 - x15 + x21 + x23 + x32*xi_y + x39))
 
-    by = *(2, *(*(St + *(B2t, S) + *(Fxp, S) + *(-1, Fx, Sp) + *(-1, Sp, xi_x) + *(2, B2p, Fx, S) + *(2, B2p, S, xi_x), expB1) + *(-1, S, Gh + *(2, Gp, Fy + xi_y)), sinhG) + *(*(-1, Sh) + *(B1h, S) + *(Fy, Sp + *(-2, B2p, S) + *(2, B1p, S)) + *(Sp, xi_y) + *(-1, B2h, S) + *(-1, Fyp, S) + *(Gt, S, expB1) + *(-2, B2p, S, xi_y) + *(2, B1p, S, xi_y) + *(2, Fx, Gp, S, expB1) + *(2, Gp, S, xi_x, expB1), coshG), expB2)
+    cc = Gp*x49*x51 + S*(B1p*x88 - Gp*x111 + Gp*x114*x115 - x109*x13*x42 + x116*x30 + x16*(Gp*x120*x3*x9 - Gp*x122*x24*x5 + Sdp*x82 + Sp*x117 + x110*x118 - x115*x119 - x115*x122*x71 + x121*x13) - x42*(2*Fyph + 2*x112) + x7*(2*Fxph + 2*x113)) + Sp*x89 + 2*x105 + x106*x13 - x107*x30 - x134*(B1p*x67 + S*(B1p*x72 - Gp*x95 - Gp*x97 - x128*x6 - x129*x2 + x16*(x100*x124 + x130*x2 + x131*x2 + x132*x6 + x133*x58 + x58*x98)) + Sp*x73 - x123*x6 - x124*x62 + x126*x66 + x127*x65) + x138*(B1p*x92 - Gp*x63 + S*(B1p*x101 + B1p*x99 + x100*x127 - x124*x96 - x128*x2 - x129*x6 + x131*x91 + x132*x66 + x135*x98 + x137*x2 + x58*x93 - x58*x94) + Sp*x102 - x123*x2 + x135*x90 + x91*(-Sp*x136 + Spt - 2*x125)) + x40*x43 + x40*x55 + x44*x46 + x44*x57 + x47*x48 + x49*x58*x59 + x60*(6*B1p + x47) - 2*x76
 
-
-    cc = *(-1, *(2, B1p, *(-1, *(Fx, Sh + *(B2h, S) + *(Fyp, S) + *(-1, Fy, Sp) + *(-1, Sp, xi_y) + *(2, B2p, Fy, S) + *(2, B2p, S, xi_y)) + *(Fxh, S) + *(Fy, St) + *(Fyt, S) + *(Sh, xi_x) + *(St, xi_y) + *(2, S, xi_xy) + *(B2h, S, xi_x) + *(B2t, Fy, S) + *(B2t, S, xi_y) + *(Fxp, Fy, S) + *(Fxp, S, xi_y) + *(Fyp, S, xi_x) + *(-1, Fy, Sp, xi_x) + *(-1, Sp, xi_x, xi_y) + *(2, B2p, Fy, S, xi_x) + *(2, B2p, S, xi_x, xi_y), expB1) + *(-1, Gp, S, (Fy + xi_y) ^ 2) + *(S, Fx + xi_x, *(2, Gt) + *(3, Fx, Gp) + *(3, Gp, xi_x), exp(*(2, B1)))) + *(2, B2p, *(-1, *(Fx, Sh + *(B2h, S) + *(Fy, Sp) + *(Sp, xi_y) + *(2, Fyp, S)) + *(Fxh, S) + *(Fy, St) + *(Fyt, S) + *(Sh, xi_x) + *(St, xi_y) + *(2, S, xi_xy) + *(B2h, S, xi_x) + *(B2t, Fy, S) + *(B2t, S, xi_y) + *(Fy, Sp, xi_x) + *(Sp, xi_x, xi_y) + *(2, Fxp, Fy, S) + *(2, Fxp, S, xi_y) + *(2, Fyp, S, xi_x), expB1) + *(S, Fy + xi_y, Gh + *(2, Gp, Fy + xi_y)) + *(S, Fx + xi_x, Gt + *(2, Fx, Gp) + *(2, Gp, xi_x), exp(*(2, B1)))) + *(Gp, Sp, Fy ^ 2) + *(Gp, Sp, xi_y ^ 2) + *(-4, Sp, xi_xy, expB1) + *(-2, Fx, Sph, expB1) + *(-2, Fxh, Sp, expB1) + *(-2, Fxph, S, expB1) + *(-2, Fxp, Sh, expB1) + *(-2, Fy, Spt, expB1) + *(-2, Fyp, St, expB1) + *(-2, Fyt, Sp, expB1) + *(-2, Fypt, S, expB1) + *(-2, Sph, xi_x, expB1) + *(-2, Spt, xi_y, expB1) + *(2, Fy, Gh, Sp) + *(2, Fy, Gph, S) + *(2, Fy, Gp, Sh) + *(2, Fyh, Gp, S) + *(2, Fyp, Gh, S) + *(2, Gh, Sp, xi_y) + *(2, Gph, S, xi_y) + *(2, Gp, S, xi_yy) + *(2, Gp, Sh, xi_y) + *(2, Gpp, S, Fy ^ 2) + *(2, Gpp, S, xi_y ^ 2) + *(Gp, Sp, Fx ^ 2, exp(*(2, B1))) + *(Gp, Sp, xi_x ^ 2, exp(*(2, B1))) + *(-2, B1h, Fy, Gp, S) + *(-2, B1h, Gp, S, xi_y) + *(-2, B2h, Fx, Sp, expB1) + *(-2, B2h, Fxp, S, expB1) + *(-2, B2h, Sp, xi_x, expB1) + *(-2, B2ph, Fx, S, expB1) + *(-2, B2ph, S, xi_x, expB1) + *(-2, B2t, Fy, Sp, expB1) + *(-2, B2t, Fyp, S, expB1) + *(-2, B2t, Sp, xi_y, expB1) + *(-2, B2pt, Fy, S, expB1) + *(-2, B2pt, S, xi_y, expB1) + *(-2, Fx, Fypp, S, expB1) + *(-2, Fxpp, Fy, S, expB1) + *(-2, Fxpp, S, xi_y, expB1) + *(-2, Fypp, S, xi_x, expB1) + *(2, B2h, Fy, Gp, S) + *(2, B2h, Gp, S, xi_y) + *(2, Fx, Fy, Spp, expB1) + *(2, Fx, Fyp, Sp, expB1) + *(2, Fx, Gp, St, exp(*(2, B1))) + *(2, Fx, Gt, Sp, exp(*(2, B1))) + *(2, Fx, Gpt, S, exp(*(2, B1))) + *(2, Fx, Spp, xi_y, expB1) + *(2, Fxp, Fy, Sp, expB1) + *(2, Fxp, Gt, S, exp(*(2, B1))) + *(2, Fxp, Sp, xi_y, expB1) + *(2, Fxt, Gp, S, exp(*(2, B1))) + *(2, Fy, Gp, Sp, xi_y) + *(2, Fy, Spp, xi_x, expB1) + *(2, Fyp, Sp, xi_x, expB1) + *(2, Gp, S, xi_xx, exp(*(2, B1))) + *(2, Gp, St, xi_x, exp(*(2, B1))) + *(2, Gpp, S, Fx ^ 2, exp(*(2, B1))) + *(2, Gpp, S, xi_x ^ 2, exp(*(2, B1))) + *(2, Gt, Sp, xi_x, exp(*(2, B1))) + *(2, Gpt, S, xi_x, exp(*(2, B1))) + *(2, Spp, xi_x, xi_y, expB1) + *(4, Fy, Fyp, Gp, S) + *(4, Fy, Gpp, S, xi_y) + *(4, Fyp, Gp, S, xi_y) + *(-4, B2pp, Fx, Fy, S, expB1) + *(-4, B2pp, Fx, S, xi_y, expB1) + *(-4, B2pp, Fy, S, xi_x, expB1) + *(-4, B2pp, S, xi_x, xi_y, expB1) + *(-4, Fx, Fy, S, Gp ^ 2, expB1) + *(-4, Fx, S, xi_y, Gp ^ 2, expB1) + *(-4, Fy, S, xi_x, Gp ^ 2, expB1) + *(-4, S, xi_x, xi_y, Gp ^ 2, expB1) + *(-4, S, B2p ^ 2, Fx + xi_x, Fy + xi_y, expB1) + *(-2, Fx, Gh, Gp, S, expB1) + *(-2, Fy, Gp, Gt, S, expB1) + *(-2, Gh, Gp, S, xi_x, expB1) + *(-2, Gp, Gt, S, xi_y, expB1) + *(2, B1t, Fx, Gp, S, exp(*(2, B1))) + *(2, B1t, Gp, S, xi_x, exp(*(2, B1))) + *(2, B2t, Fx, Gp, S, exp(*(2, B1))) + *(2, B2t, Gp, S, xi_x, exp(*(2, B1))) + *(2, Fx, Gp, Sp, xi_x, exp(*(2, B1))) + *(4, Fx, Fxp, Gp, S, exp(*(2, B1))) + *(4, Fx, Gpp, S, xi_x, exp(*(2, B1))) + *(4, Fxp, Gp, S, xi_x, exp(*(2, B1))), expB2, sinhG) + *(-1, *(B2p, *(Sp, xi_y ^ 2) + *(Fy ^ 2, Sp + *(-2, B1p, S)) + *(*(Sp, xi_x ^ 2) + *(Fx ^ 2, Sp + *(6, B1p, S)) + *(2, Fx, St + *(B1t, S) + *(B2t, S) + *(Sp, xi_x) + *(2, Fxp, S) + *(6, B1p, S, xi_x)) + *(2, Fxt, S) + *(2, S, xi_xx) + *(2, St, xi_x) + *(2, B1t, S, xi_x) + *(2, B2t, S, xi_x) + *(4, Fxp, S, xi_x) + *(6, B1p, S, xi_x ^ 2), exp(*(2, B1))) + *(2, Fy, Sh + *(B2h, S) + *(Sp, xi_y) + *(-1, B1h, S) + *(2, Fyp, S) + *(-1, Gt, S, expB1) + *(-2, B1p, S, xi_y) + *(-4, Fx, Gp, S, expB1) + *(-4, Gp, S, xi_x, expB1)) + *(2, Fyh, S) + *(2, S, xi_yy) + *(2, Sh, xi_y) + *(-2, B1h, S, xi_y) + *(-2, B1p, S, xi_y ^ 2) + *(-2, S, *(Fx, Gh + *(4, Gp, xi_y)) + *(Gh, xi_x) + *(Gt, xi_y) + *(4, Gp, xi_x, xi_y), expB1) + *(2, B2h, S, xi_y) + *(4, Fyp, S, xi_y)) + *(-1, Spp, Fy ^ 2) + *(-1, Spp, xi_y ^ 2) + *(2, Fy, Sph) + *(2, Fyh, Sp) + *(2, Fyph, S) + *(2, Fyp, Sh) + *(2, Sph, xi_y) + *(2, Sp, xi_yy) + *(-1, Spp, Fx ^ 2, exp(*(2, B1))) + *(-1, Spp, xi_x ^ 2, exp(*(2, B1))) + *(-2, B1h, Fy, Sp) + *(-2, B1h, Fyp, S) + *(-2, B1h, Sp, xi_y) + *(-2, B1ph, Fy, S) + *(-2, B1ph, S, xi_y) + *(-2, B1p, Sp, Fy ^ 2) + *(-2, B1p, Sp, xi_y ^ 2) + *(-2, B1pp, S, Fy ^ 2) + *(-2, B1pp, S, xi_y ^ 2) + *(-2, Fy, Fyp, Sp) + *(-2, Fy, Spp, xi_y) + *(-2, Fyp, Sp, xi_y) + *(2, B2h, Fy, Sp) + *(2, B2h, Fyp, S) + *(2, B2h, Sp, xi_y) + *(2, B2ph, Fy, S) + *(2, B2ph, S, xi_y) + *(2, B2pp, S, Fy ^ 2) + *(2, B2pp, S, xi_y ^ 2) + *(2, Fx, Spt, exp(*(2, B1))) + *(2, Fxp, St, exp(*(2, B1))) + *(2, Fxt, Sp, exp(*(2, B1))) + *(2, Fxpt, S, exp(*(2, B1))) + *(2, Fy, Fypp, S) + *(2, Fypp, S, xi_y) + *(2, S, B2p ^ 2, (Fy + xi_y) ^ 2 + *((Fx + xi_x) ^ 2, exp(*(2, B1)))) + *(2, S, Fy ^ 2, Gp ^ 2) + *(2, S, Gp ^ 2, xi_y ^ 2) + *(2, Sp, xi_xx, exp(*(2, B1))) + *(2, Spt, xi_x, exp(*(2, B1))) + *(-4, B1p, Fy, Sp, xi_y) + *(-4, B1pp, Fy, S, xi_y) + *(-4, Gp, S, xi_xy, expB1) + *(-2, B1p, Fy, Fyp, S) + *(-2, B1p, Fyp, S, xi_y) + *(-2, Fx, Fxp, Sp, exp(*(2, B1))) + *(-2, Fx, Gh, Sp, expB1) + *(-2, Fx, Gph, S, expB1) + *(-2, Fx, Gp, Sh, expB1) + *(-2, Fx, Spp, xi_x, exp(*(2, B1))) + *(-2, Fxh, Gp, S, expB1) + *(-2, Fxp, Gh, S, expB1) + *(-2, Fxp, Sp, xi_x, exp(*(2, B1))) + *(-2, Fy, Gp, St, expB1) + *(-2, Fy, Gt, Sp, expB1) + *(-2, Fy, Gpt, S, expB1) + *(-2, Fyp, Gt, S, expB1) + *(-2, Fyt, Gp, S, expB1) + *(-2, Gh, Sp, xi_x, expB1) + *(-2, Gph, S, xi_x, expB1) + *(-2, Gp, Sh, xi_x, expB1) + *(-2, Gp, St, xi_y, expB1) + *(-2, Gt, Sp, xi_y, expB1) + *(-2, Gpt, S, xi_y, expB1) + *(2, B1pp, S, Fx ^ 2, exp(*(2, B1))) + *(2, B1pp, S, xi_x ^ 2, exp(*(2, B1))) + *(2, B1t, Fx, Sp, exp(*(2, B1))) + *(2, B1t, Fxp, S, exp(*(2, B1))) + *(2, B1t, Sp, xi_x, exp(*(2, B1))) + *(2, B1pt, Fx, S, exp(*(2, B1))) + *(2, B1pt, S, xi_x, exp(*(2, B1))) + *(2, B2pp, S, Fx ^ 2, exp(*(2, B1))) + *(2, B2pp, S, xi_x ^ 2, exp(*(2, B1))) + *(2, B2t, Fx, Sp, exp(*(2, B1))) + *(2, B2t, Fxp, S, exp(*(2, B1))) + *(2, B2t, Sp, xi_x, exp(*(2, B1))) + *(2, B2pt, Fx, S, exp(*(2, B1))) + *(2, B2pt, S, xi_x, exp(*(2, B1))) + *(2, Fx, Fxpp, S, exp(*(2, B1))) + *(2, Fxpp, S, xi_x, exp(*(2, B1))) + *(2, Fy, Gh, Gp, S) + *(2, Gh, Gp, S, xi_y) + *(2, S, Fx ^ 2, Gp ^ 2, exp(*(2, B1))) + *(2, S, Gp ^ 2, xi_x ^ 2, exp(*(2, B1))) + *(4, B1p, Fx, St, exp(*(2, B1))) + *(4, B1p, Fxt, S, exp(*(2, B1))) + *(4, B1p, S, xi_xx, exp(*(2, B1))) + *(4, B1p, St, xi_x, exp(*(2, B1))) + *(4, B2pp, Fy, S, xi_y) + *(4, Fy, S, xi_y, Gp ^ 2) + *(4, S, B1p ^ 2, Fx ^ 2, exp(*(2, B1))) + *(4, S, B1p ^ 2, xi_x ^ 2, exp(*(2, B1))) + *(-4, Fx, Fy, Gpp, S, expB1) + *(-4, Fx, Fyp, Gp, S, expB1) + *(-4, Fx, Gpp, S, xi_y, expB1) + *(-4, Fxp, Fy, Gp, S, expB1) + *(-4, Fxp, Gp, S, xi_y, expB1) + *(-4, Fy, Gpp, S, xi_x, expB1) + *(-4, Fyp, Gp, S, xi_x, expB1) + *(-4, Gpp, S, xi_x, xi_y, expB1) + *(-2, B1p, Fx, Gh, S, expB1) + *(-2, B1p, Fy, Gt, S, expB1) + *(-2, B1p, Gh, S, xi_x, expB1) + *(-2, B1p, Gt, S, xi_y, expB1) + *(-2, B2h, Fx, Gp, S, expB1) + *(-2, B2h, Gp, S, xi_x, expB1) + *(-2, B2t, Fy, Gp, S, expB1) + *(-2, B2t, Gp, S, xi_y, expB1) + *(-2, Fx, Fy, Gp, Sp, expB1) + *(-2, Fx, Gp, Sp, xi_y, expB1) + *(-2, Fy, Gp, Sp, xi_x, expB1) + *(-2, Gp, Sp, xi_x, xi_y, expB1) + *(2, Fx, Gp, Gt, S, exp(*(2, B1))) + *(2, Gp, Gt, S, xi_x, exp(*(2, B1))) + *(4, B1p, B1t, Fx, S, exp(*(2, B1))) + *(4, B1p, B1t, S, xi_x, exp(*(2, B1))) + *(4, B1p, B2t, Fx, S, exp(*(2, B1))) + *(4, B1p, B2t, S, xi_x, exp(*(2, B1))) + *(4, B1pp, Fx, S, xi_x, exp(*(2, B1))) + *(4, B2pp, Fx, S, xi_x, exp(*(2, B1))) + *(4, Fx, S, xi_x, Gp ^ 2, exp(*(2, B1))) + *(6, B1p, Fx, Fxp, S, exp(*(2, B1))) + *(6, B1p, Fxp, S, xi_x, exp(*(2, B1))) + *(8, Fx, S, xi_x, B1p ^ 2, exp(*(2, B1))) + *(-4, B1p, Fx, Fy, Gp, S, expB1) + *(-4, B1p, Fx, Gp, S, xi_y, expB1) + *(-4, B1p, Fy, Gp, S, xi_x, expB1) + *(-4, B1p, Gp, S, xi_x, xi_y, expB1), coshG, expB2) + *(6, S, *(S, Sdp) + *(2, Sd, Sp) + *(B1p, S, Sd), expB1)
-
-
-    S = *(κ, *(S, *(-2, *(*(-1, Fyt + xi_xy + *(Fx, Fyp) + *(Fyp, xi_x), sinhG) + *(Fxt + xi_xx + *(Fx, Fxp) + *(Fxp, xi_x), coshG, expB1), expB2) + *(-3, S, Sd), expB1) + *(-2, Fyh + xi_yy + *(Fyp, Fy + xi_y), coshG, expB2) + *(2, Fxh + xi_xy + *(Fxp, Fy + xi_y), exp(B1 + B2), sinhG)) + *(-2, Fx + xi_x, *(S, *(*(B1t + B2t + *(B1p + B2p, Fx + xi_x), coshG) + *(Gt + *(Fx, Gp) + *(Gp, xi_x), sinhG), expB1) + *(-1, B2h + *(B2p, Fy + xi_y), sinhG) + *(-1, Gh + *(Gp, Fy + xi_y), coshG)) + *(-1, Sh + *(Sp, Fy + xi_y), sinhG) + *(St + *(Sp, Fx + xi_x), coshG, expB1), exp(B1 + B2)) + *(2, Fy + xi_y, *(S, *(B1h + *(B1p, Fy + xi_y), coshG) + *(-1, B2h + *(B2p, Fy + xi_y), coshG) + *(-1, Gh + *(Gp, Fy + xi_y), sinhG) + *(B2t + *(B2p, Fx + xi_x), expB1, sinhG) + *(Gt + *(Gp, Fx + xi_x), coshG, expB1)) + *(-1, Sh + *(Sp, Fy + xi_y), coshG) + *(St + *(-2, Sp, Fx + xi_x), expB1, sinhG), expB2) + *(3, Sp, (Fx + xi_x) ^ 2, coshG, exp(B2 + *(2, B1))) + *(3, Sp, (Fy + xi_y) ^ 2, coshG, expB2)) + *(Sd + *(-1/2, A, Sp), *(-2, *(*(-1, Fyt + xi_xy + *(Fx, Fyp) + *(Fyp, xi_x), sinhG) + *(Fxt + xi_xx + *(Fx, Fxp) + *(Fxp, xi_x), coshG, expB1), expB2) + *(-3, S, Sd), expB1) + *(-2, Fyh + xi_yy + *(Fyp, Fy + xi_y), coshG, expB2) + *(2, Fxh + xi_xy + *(Fxp, Fy + xi_y), exp(B1 + B2), sinhG)) + *(S ^ -1, *((Fxh + *(-1, Fyt)) ^ 2, exp(*(2, B2))) + *(-1, S ^ 3, *(S, Gd ^ 2 + *(3, B2d ^ 2) + *(4, phid ^ 2) + *(B1d ^ 2, coshGsq)) + *(-3, Ap, Sd)) + *(S, *(*(Ah, Sh + *(S, B2h + *(-1, B1h))) + *(S, As + *(2, Fydh) + *(-1, Ap, Fyh + xi_yy)) + *(2, Fyd, Sh + *(S, B2h + *(-1, B1h))), coshG) + *(Gh, S, Ah + *(2, Fyd), sinhG), exp(B2 + *(-1, B1))) + *(S, *(S, Ab + *(2, Fxdt) + *(At, B1t + B2t) + *(-1, Ap, Fxt) + *(-1, Ap, xi_xx) + *(2, B1t, Fxd) + *(2, B2t, Fxd), coshG) + *(St, At + *(2, Fxd), coshG) + *(Gt, S, At + *(2, Fxd), sinhG), exp(B1 + B2)) + *(-1, S, *(S, *(*(Ah, Gt) + *(At, Gh) + *(2, Fxd, Gh) + *(2, Fyd, Gt), coshG) + *(*(2, Ac) + *(2, Fxdh) + *(2, Fydt) + *(Ah, B2t) + *(At, B2h) + *(-1, Ap, Fxh) + *(-1, Ap, Fyt) + *(-2, Ap, xi_xy) + *(2, B2h, Fxd) + *(2, B2t, Fyd), sinhG)) + *(*(At, Sh) + *(St, Ah + *(2, Fyd)) + *(2, Fxd, Sh), sinhG), expB2) + *(-3, A, Sdp, S ^ 3) + *(3, Sd, S ^ 2, *(2, Sd) + *(-1, A, Sp)) + *(-2, S ^ 2, Fxdt + *(Fxdp, Fx + xi_x) + *(-1/2, A, Fxpt + *(Fxpp, Fx + xi_x)) + *(-1/2, Fxp, At + *(Ap, Fx + xi_x)), coshG, exp(B1 + B2)) + *(2, S ^ 2, Fydt + *(Fydp, Fx + xi_x) + *(-1/2, A, Fypt + *(Fypp, Fx + xi_x)) + *(-1/2, Fyp, At + *(Ap, Fx + xi_x)), expB2, sinhG) + *(S ^ 2, *(2, B2d) + *(-1, A, B2p), Fyt + xi_xy + *(Fyp, Fx + xi_x), expB2, sinhG) + *(S ^ 2, *(2, Gd) + *(-1, A, Gp), Fyt + xi_xy + *(Fyp, Fx + xi_x), coshG, expB2) + *(-1, S ^ 2, *(2, Gd) + *(-1, A, Gp), Fxt + xi_xx + *(Fxp, Fx + xi_x), exp(B1 + B2), sinhG) + *(-1, S ^ 2, *(2, B1d) + *(2, B2d) + *(-1, A, B1p + B2p), Fxt + xi_xx + *(Fx, Fxp) + *(Fxp, xi_x), coshG, exp(B1 + B2)), expB1) + *(-2, Fx + xi_x, *(S, *(*(B1dt + *(B1dp, Fx + xi_x) + *(-1/2, A, B1pt + *(B1pp, Fx + xi_x)) + *(-1/2, B1p, At + *(Ap, Fx + xi_x)), coshG) + *(B2dt + *(B2dp, Fx + xi_x) + *(-1/2, A, B2pt + *(B2pp, Fx + xi_x)) + *(-1/2, B2p, At + *(Ap, Fx + xi_x)), coshG) + *(Gdt + *(Gdp, Fx + xi_x) + *(-1/2, A, Gpt + *(Gpp, Fx + xi_x)) + *(-1/2, Gp, At + *(Ap, Fx + xi_x)), sinhG) + *(B1t + *(B1p, Fx + xi_x), Gd + *(-1/2, A, Gp), sinhG) + *(B2t + *(B2p, Fx + xi_x), Gd + *(-1/2, A, Gp), sinhG) + *(Gd + *(-1/2, A, Gp), Gt + *(Gp, Fx + xi_x), coshG), expB1) + *(-1, B2dh + *(B2dp, Fy + xi_y) + *(-1/2, A, B2ph + *(B2pp, Fy + xi_y)) + *(-1/2, B2p, Ah + *(Ap, Fy + xi_y)), sinhG) + *(-1, Gdh + *(Gdp, Fy + xi_y) + *(-1/2, A, Gph + *(Gpp, Fy + xi_y)) + *(-1/2, Gp, Ah + *(Ap, Fy + xi_y)), coshG) + *(1 / 2, *(2, B1d) + *(-1, A, B1p), *(B1t + B2t + *(B1p + B2p, Fx + xi_x), coshG) + *(Gt + *(Fx, Gp) + *(Gp, xi_x), sinhG), expB1) + *(-1, Gd + *(-1/2, A, Gp), Gh + *(Gp, Fy + xi_y), sinhG) + *(-1/2, B2h + *(B2p, Fy + xi_y), *(2, Gd) + *(-1, A, Gp), coshG)) + *(Sd + *(-1/2, A, Sp), *(*(B1t + B2t + *(B1p + B2p, Fx + xi_x), coshG) + *(Gt + *(Fx, Gp) + *(Gp, xi_x), sinhG), expB1) + *(-1, B2h + *(B2p, Fy + xi_y), sinhG) + *(-1, Gh + *(Gp, Fy + xi_y), coshG)) + *(-1, Sdh + *(Sdp, Fy + xi_y) + *(-1/2, A, Sph + *(Spp, Fy + xi_y)) + *(-1/2, Sp, Ah + *(Ap, Fy + xi_y)), sinhG) + *(Sdt + *(Sdp, Fx + xi_x) + *(-1/2, A, Spt + *(Spp, Fx + xi_x)) + *(-1/2, Sp, At + *(Ap, Fx + xi_x)), coshG, expB1) + *(-1, Gd + *(-1/2, A, Gp), Sh + *(Sp, Fy + xi_y), coshG) + *(B1d + *(-1/2, A, B1p), St + *(Sp, Fx + xi_x), coshG, expB1) + *(Gd + *(-1/2, A, Gp), St + *(Sp, Fx + xi_x), expB1, sinhG), exp(B1 + B2)) + *(-2, Fxd + *(-1/2, A, Fxp), *(S, *(*(B1t + B2t + *(B1p + B2p, Fx + xi_x), coshG) + *(Gt + *(Fx, Gp) + *(Gp, xi_x), sinhG), expB1) + *(-1, B2h + *(B2p, Fy + xi_y), sinhG) + *(-1, Gh + *(Gp, Fy + xi_y), coshG)) + *(-1, Sh + *(Sp, Fy + xi_y), sinhG) + *(St + *(Sp, Fx + xi_x), coshG, expB1), exp(B1 + B2)) + *(2, Fy + xi_y, *(S, *(B1dh + *(B1dp, Fy + xi_y) + *(-1/2, A, B1ph + *(B1pp, Fy + xi_y)) + *(-1/2, B1p, Ah + *(Ap, Fy + xi_y)), coshG) + *(-1, B2dh + *(B2dp, Fy + xi_y) + *(-1/2, A, B2ph + *(B2pp, Fy + xi_y)) + *(-1/2, B2p, Ah + *(Ap, Fy + xi_y)), coshG) + *(-1, Gdh + *(Gdp, Fy + xi_y) + *(-1/2, A, Gph + *(Gpp, Fy + xi_y)) + *(-1/2, Gp, Ah + *(Ap, Fy + xi_y)), sinhG) + *(B1h + *(B1p, Fy + xi_y), Gd + *(-1/2, A, Gp), sinhG) + *(B2dt + *(B2dp, Fx + xi_x) + *(-1/2, A, B2pt + *(B2pp, Fx + xi_x)) + *(-1/2, B2p, At + *(Ap, Fx + xi_x)), expB1, sinhG) + *(Gdt + *(Gdp, Fx + xi_x) + *(-1/2, A, Gpt + *(Gpp, Fx + xi_x)) + *(-1/2, Gp, At + *(Ap, Fx + xi_x)), coshG, expB1) + *(-1, B2h + *(B2p, Fy + xi_y), Gd + *(-1/2, A, Gp), sinhG) + *(-1, Gd + *(-1/2, A, Gp), Gh + *(Gp, Fy + xi_y), coshG) + *(B1d + *(-1/2, A, B1p), B2t + *(B2p, Fx + xi_x), expB1, sinhG) + *(B1d + *(-1/2, A, B1p), Gt + *(Gp, Fx + xi_x), coshG, expB1) + *(B2t + *(B2p, Fx + xi_x), Gd + *(-1/2, A, Gp), coshG, expB1) + *(Gd + *(-1/2, A, Gp), Gt + *(Gp, Fx + xi_x), expB1, sinhG)) + *(Sd + *(-1/2, A, Sp), *(B1h + *(B1p, Fy + xi_y), coshG) + *(-1, B2h + *(B2p, Fy + xi_y), coshG) + *(-1, Gh + *(Gp, Fy + xi_y), sinhG) + *(B2t + *(B2p, Fx + xi_x), expB1, sinhG) + *(Gt + *(Gp, Fx + xi_x), coshG, expB1)) + *(-1, Sdh + *(Sdp, Fy + xi_y) + *(-1/2, A, Sph + *(Spp, Fy + xi_y)) + *(-1/2, Sp, Ah + *(Ap, Fy + xi_y)), coshG) + *(1 / 2, *(2, Sdt) + *(-1, A, Spt) + *(-1, At, Sp) + *(-6, Fxd, Sp) + *(-4, Sdp, Fx + xi_x) + *(2, A, Spp, Fx + xi_x) + *(2, Ap, Sp, Fx + xi_x) + *(3, A, Fxp, Sp), expB1, sinhG) + *(-1, Gd + *(-1/2, A, Gp), Sh + *(Sp, Fy + xi_y), sinhG) + *(B1d + *(-1/2, A, B1p), St + *(-2, Sp, Fx + xi_x), expB1, sinhG) + *(Gd + *(-1/2, A, Gp), St + *(-2, Sp, Fx + xi_x), coshG, expB1), expB2) + *(2, Fyd + *(-1/2, A, Fyp), *(S, *(B1h + *(B1p, Fy + xi_y), coshG) + *(-1, B2h + *(B2p, Fy + xi_y), coshG) + *(-1, Gh + *(Gp, Fy + xi_y), sinhG) + *(B2t + *(B2p, Fx + xi_x), expB1, sinhG) + *(Gt + *(Gp, Fx + xi_x), coshG, expB1)) + *(-1, Sh + *(Sp, Fy + xi_y), coshG) + *(St + *(-2, Sp, Fx + xi_x), expB1, sinhG), expB2) + *(Fy + xi_y, *(2, B2d) + *(-1, A, B2p), *(S, *(B1h + *(B1p, Fy + xi_y), coshG) + *(-1, B2h + *(B2p, Fy + xi_y), coshG) + *(-1, Gh + *(Gp, Fy + xi_y), sinhG) + *(B2t + *(B2p, Fx + xi_x), expB1, sinhG) + *(Gt + *(Gp, Fx + xi_x), coshG, expB1)) + *(-1, Sh + *(Sp, Fy + xi_y), coshG) + *(St + *(-2, Sp, Fx + xi_x), expB1, sinhG), expB2) + *(-1, S, *(2, B1d) + *(-1, A, B1p), *(*(-1, Fyt + xi_xy + *(Fx, Fyp) + *(Fyp, xi_x), sinhG) + *(Fxt + xi_xx + *(Fx, Fxp) + *(Fxp, xi_x), coshG, expB1), expB2) + *(-3, S, Sd), expB1) + *(-1, Fx + xi_x, *(2, B1d) + *(2, B2d) + *(-1, A, B1p + B2p), *(S, *(*(B1t + B2t + *(B1p + B2p, Fx + xi_x), coshG) + *(Gt + *(Fx, Gp) + *(Gp, xi_x), sinhG), expB1) + *(-1, B2h + *(B2p, Fy + xi_y), sinhG) + *(-1, Gh + *(Gp, Fy + xi_y), coshG)) + *(-1, Sh + *(Sp, Fy + xi_y), sinhG) + *(St + *(Sp, Fx + xi_x), coshG, expB1), exp(B1 + B2)) + *(-2, S, Fydh + *(Fydp, Fy + xi_y) + *(-1/2, A, Fyph + *(Fypp, Fy + xi_y)) + *(-1/2, Fyp, Ah + *(Ap, Fy + xi_y)), coshG, expB2) + *(2, S, Fxdh + *(Fxdp, Fy + xi_y) + *(-1/2, A, Fxph + *(Fxpp, Fy + xi_y)) + *(-1/2, Fxp, Ah + *(Ap, Fy + xi_y)), exp(B1 + B2), sinhG) + *(-3/2, (Fx + xi_x) ^ 2, *(-2, Sdp) + *(A, Spp) + *(Ap, Sp), coshG, exp(B2 + *(2, B1))) + *(-3/2, (Fy + xi_y) ^ 2, *(-2, Sdp) + *(A, Spp) + *(Ap, Sp), coshG, expB2) + *(S, *(2, Gd) + *(-1, A, Gp), Fxh + xi_xy + *(Fxp, Fy + xi_y), coshG, exp(B1 + B2)) + *(S, Fxh + xi_xy + *(Fxp, Fy + xi_y), *(2, B1d) + *(2, B2d) + *(-1, A, B1p + B2p), exp(B1 + B2), sinhG) + *(Sp, (Fy + xi_y) ^ 2, *(3, B2d) + *(-3/2, A, B2p), coshG, expB2) + *(1 / 2, Sp, (Fx + xi_x) ^ 2, *(6, B2d) + *(12, B1d) + *(-3, A, B2p + *(2, B1p)), coshG, exp(B2 + *(2, B1))) + *(-1, S, *(2, B2d) + *(-1, A, B2p), Fyh + xi_yy + *(Fyp, Fy + xi_y), coshG, expB2) + *(-1, S, *(2, Gd) + *(-1, A, Gp), Fyh + xi_yy + *(Fyp, Fy + xi_y), expB2, sinhG) + *(3, Sp, (Fx + xi_x) ^ 2, Gd + *(-1/2, A, Gp), exp(B2 + *(2, B1)), sinhG) + *(3, Sp, (Fy + xi_y) ^ 2, Gd + *(-1/2, A, Gp), expB2, sinhG) + *(3, Sp, Fx + xi_x, *(2, Fxd) + *(-1, A, Fxp), coshG, exp(B2 + *(2, B1))) + *(3, Sp, Fy + xi_y, *(2, Fyd) + *(-1, A, Fyp), coshG, expB2)
+    S = -A*x105 + A*x76 - S*x111*x146 + S*x116*x158 + S*x163*x88 + Sp*x145*x51 + x106*x154 - x107*x158 - x109*x151*x154 + x114*x146*x4*x5 - x134*(S*(x144*x160*x70 - x146*x97 + x16*(x100*x199 + x133*x210 + x2*x211 + x2*(B1dp*x52 + B1dt - B1p*x206 - x130*x202) + x210*x98 + x212*x6) + x163*x72 - x2*x209 - x208*x6) - x199*x62 + x200*x67 + x201*x65 - x204*x6 + x207*x73 + x66*(Sdp*x52 + Sdt - Sp*x206 - x126*x202)) + x138*(S*(x100*x201 + x101*x200 - x199*x96 - x2*x208 + x2*(B1dh + B1dp*x25 - B1p*x203 - x137*x202) + x200*x99 - x209*x6 + x210*x93 - x210*x94 + x211*x91 + x212*x66 + x213*x98) + x102*x207 - x146*x63 - x2*x204 + x200*x92 + x213*x90 + x91*(-A*Spt + 2*Ap*x34 - 4*Sdp*xi_x + 2*Sdt + x136*x139 + x148*x22 + x19*(-x147 + x148 + x149) + x194)/2) - x140*x43 - x140*x55 + x145*x155*x6 + x150*x46 + x150*x57 + x155*x160*(12*B1d + x141 - x159*(B2p + x29)) + x16*x193*(x117*x164*x165 + x120*x165*x214*x42 + x121*x153*x165 - x157*x215*x86 - x195*x197*(B1d^2*S^4*x16*x173 - S*x50*(-Ac*x196 + Fxh*x219 + Fyt*x219 + Gh*x216 - St*x217 - x217*x33 + x219*x79 + x220*x39) + x151*(-Ab*S*x221 - Ah*Sh - As*S + Fxt*x223 + Fyh*x218 + Gh*S*x220 - St*x222 + x216*(B1h + x17 + x68) + x218*xi_yy - x222*x28 - x222*x33 + x223*xi_xx) + x16*(x165*(-Ap*x172 + S*(3*B2d^2 + Gd^2 + 4*phid^2) + Sdp*x159) - x179^2*exp(2*B2))) - x214*x215*x7 - x50*(Fyp*x224 + x118*x167 - x192*x52) + x86*(Fxp*x224 + x119*x167 + x198*x52)) - x164*(x16*(-x83 - x85 + x87) + x7*(-x78 - x79 - x81) + x77)/2 + x193*x42*(Fyp*x169 + x167*(Fyph + x112) - x192*x25) - x193*x7*(Fxp*x169 + x167*(Fxph + x113) + x198*x25) + x48*(-A*x47 + x141)/2 + κ*(S*x89 + x103*x138 - x134*x74 + 3*x48 + 3*x60)
 
 
     return axx, ayy, axy, bx, by, cc, S
