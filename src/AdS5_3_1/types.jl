@@ -88,6 +88,7 @@ struct BulkDeriv{T}
     Duu_S   :: Array{T,3}
     Duu_Fx  :: Array{T,3}
     Duu_Fy  :: Array{T,3}
+    Duu_A   :: Array{T,3}
 end
 
 struct Boundary{T} <: AbstractVars{T}
@@ -180,8 +181,9 @@ function BulkDeriv{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:R
     Duu_S    = Array{T}(undef, Nu, Nx, Ny)
     Duu_Fx   = Array{T}(undef, Nu, Nx, Ny)
     Duu_Fy   = Array{T}(undef, Nu, Nx, Ny)
+    Duu_A    = Array{T}(undef, Nu, Nx, Ny)
     BulkDeriv{T}(Du_B1, Du_B2, Du_G, Du_phi, Du_S, Du_Fx, Du_Fy, Du_A, Duu_B1, Duu_B2,
-                 Duu_G, Duu_phi, Duu_S, Duu_Fx, Duu_Fy)
+                 Duu_G, Duu_phi, Duu_S, Duu_Fx, Duu_Fy, Duu_A)
 end
 
 """

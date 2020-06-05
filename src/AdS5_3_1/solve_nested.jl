@@ -1211,6 +1211,7 @@ function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc
     Duu_S   = deriv.Duu_S
     Duu_Fx  = deriv.Duu_Fx
     Duu_Fy  = deriv.Duu_Fy
+    Duu_A   = deriv.Duu_A
 
     Du  = sys.Du
     Duu = sys.Duu
@@ -1267,8 +1268,9 @@ function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc
     solve_A!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
 
     # take u-derivatives of A. they will be needed for syncing the domains and
-    # also for the xi_t function. TODO: second derivative?
+    # also for the xi_t function
     mul!(Du_A,   Du,  bulk.A)
+    mul!(Duu_A,  Duu, bulk.A)
 
     nothing
 end
