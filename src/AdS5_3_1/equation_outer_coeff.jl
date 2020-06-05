@@ -533,21 +533,22 @@ end
 function xi_t_eq_coeff(vars::Tuple, ::Outer)
     (
         kappa, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
-        B1   , B2   , G   ,  S    , Fx    , Fy    , Sd ,  B1d  , B2d  , Gd,  phid, A    , phi,
-        B1p  , B2p  , Gp  ,  Sp   , Fxp   , Fyp   , Sdp,  B1dp , B2dp , Gdp,       Ap   , phip,
-        B1pp , B2pp , Gpp ,  Spp  , Fxpp  , Fypp  ,                                App,
-        B1_x , B2_x , G_x ,  S_x  , Fx_x  , Fy_x  , Sd_x, B1d_x, B2d_x, Gd_x,      A_x  , phi_x,
-	B1_y , B2_y , G_y ,  S_y  , Fx_y  , Fy_y  , Sd_y, B1d_y, B2d_y, Gd_y,      A_y  , phi_y,
-        B1p_x, B2p_x, Gp_x,  Sp_x , Fxp_x , Fyp_x ,                                Ap_x,
-        B1p_y, B2p_y, Gp_y,  Sp_y , Fxp_y , Fyp_y ,                                Ap_y,
-                                            Fy_xx ,                                A_xx,
-                                    Fx_yy ,                                        A_yy,
-                                    Fx_xy , Fy_xy ,                                A_xy,
+        B1   , B2   , G   , phi  , S    , Fx    , Fy    , Sd ,  B1d  , B2d  , Gd,  phid, A   ,
+        B1p  , B2p  , Gp  , phip , Sp   , Fxp   , Fyp   , Sdp,  B1dp , B2dp , Gdp,       Ap  ,
+        B1pp , B2pp , Gpp ,        Spp  , Fxpp  , Fypp  ,                                App ,
+        B1_x , B2_x , G_x , phi_x, S_x  , Fx_x  , Fy_x  , Sd_x, B1d_x, B2d_x, Gd_x,      A_x ,
+	B1_y , B2_y , G_y , phi_y, S_y  , Fx_y  , Fy_y  , Sd_y, B1d_y, B2d_y, Gd_y,      A_y ,
+        B1p_x, B2p_x, Gp_x,        Sp_x , Fxp_x , Fyp_x ,                                Ap_x,
+        B1p_y, B2p_y, Gp_y,        Sp_y , Fxp_y , Fyp_y ,                                Ap_y,
+                                                  Fy_xx ,                                A_xx,
+                                          Fx_yy ,                                        A_yy,
+                                          Fx_xy , Fy_xy ,                                A_xy,
     ) = vars
 
     @tilde_outer("B1")
     @tilde_outer("B2")
     @tilde_outer("G")
+    @tilde_outer("phi")
     @tilde_outer("S")
     @tilde_outer("Fx")
     @tilde_outer("Fy")
@@ -556,11 +557,11 @@ function xi_t_eq_coeff(vars::Tuple, ::Outer)
     @tilde_outer("B2d")
     @tilde_outer("Gd")
     @tilde_outer("A")
-    @tilde_outer("phi")
 
     @hat_outer("B1")
     @hat_outer("B2")
     @hat_outer("G")
+    @hat_outer("phi")
     @hat_outer("S")
     @hat_outer("Fx")
     @hat_outer("Fy")
@@ -569,7 +570,6 @@ function xi_t_eq_coeff(vars::Tuple, ::Outer)
     @hat_outer("B2d")
     @hat_outer("Gd")
     @hat_outer("A")
-    @hat_outer("phi")
 
     @bar_outer("A")
     @bar_outer("Fy")
@@ -596,24 +596,6 @@ function xi_t_eq_coeff(vars::Tuple, ::Outer)
     @cross_outer("A")
     @cross_outer("Fx")
     @cross_outer("Fy")
-
-    ## FIXME
-    Fydh = 0
-    Fyd  = 0
-    Fxdt = 0
-    Fydt = 0
-    Fxdp = 0
-    Fydp = 0
-    Fxd  = 0
-    Fxdh = 0
-
-##    expB1   = exp(B1)
-##    expB2   = exp(B2)
-##    sinh2G  = sinh(*(2, G))
-##    cosh2G  = cosh(*(2, G))
-##    coshGsq = cosh(G)^2
-##    coshG   = cosh(G)
-##    sinhG   = sinh(G)
 
     κ = kappa
 
