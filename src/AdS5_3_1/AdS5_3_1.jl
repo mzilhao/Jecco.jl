@@ -35,8 +35,9 @@ export BlackBrane, init_data!, init_data
 export ConstantAH
 export AffineNull, EvolTest0
 export BulkEvolved, BulkConstrained, Boundary, Gauge, Bulk
-export System, SystemPartition, BulkEvolvedPartition, BulkConstrainedPartition
-export nested_solver
+export System, SystemPartition
+export BulkEvolvedPartition, BulkConstrainedPartition, BulkDerivPartition
+export Nested
 export Integration, InOut, run_model
 
 end

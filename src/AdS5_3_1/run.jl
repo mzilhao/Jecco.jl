@@ -86,6 +86,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     gauge          = Gauge(grid)
     bulkevols      = BulkEvolvedPartition(grid)
     bulkconstrains = BulkConstrainedPartition(grid)
+    bulkderivs     = BulkDerivPartition(grid)
 
     # initial conditions
     init_data!(bulkevols, boundary, gauge, systems, id)
@@ -94,7 +95,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     evolvars  = EvolVars(boundary, gauge, bulkevols)
 
     # function that updates the state vector
-    rhs! = setup_rhs(bulkconstrains, systems)
+    rhs! = setup_rhs(bulkconstrains, bulkderivs, systems)
 
     dt0  = integration.dt
     tmax = integration.tmax

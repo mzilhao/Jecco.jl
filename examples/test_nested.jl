@@ -33,6 +33,7 @@ id = BlackBrane()
 evoleq = AffineNull(
     phi0       = 0.0,
     potential  = ZeroPotential(),
+    gaugecondition = AdS5_3_1.TestGauge(),
 )
 
 # atlas of grid configuration and respective SystemPartition
@@ -42,18 +43,20 @@ systems   = SystemPartition(grid)
 # allocate variables
 boundary  = Boundary(grid)
 gauge     = Gauge(grid)
+gauge_t   = similar(gauge)
 
 bulkevols      = BulkEvolvedPartition(grid)
 bulkconstrains = BulkConstrainedPartition(grid)
+bulkderivs     = BulkDerivPartition(grid)
 
 # initial conditions
 init_data!(bulkevols, boundary, gauge, systems, id)
 
 # function to solve the nested system, given the initial data
-solve_nested! = nested_solver(systems)
+nested = Nested(systems, bulkconstrains, bulkderivs)
 
 # solve nested system for the constrained variables
-solve_nested!(bulkconstrains, bulkevols, boundary, gauge, evoleq)
+nested(bulkevols, boundary, gauge, evoleq)
 
 # analyze data
 
