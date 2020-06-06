@@ -132,15 +132,46 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
 
     interp = sys.uinterp
 
-    # take u-derivatives of Sd, B1d, B2d and Gd. these are not needed in the
-    # nested system, so they haven't been computed before. since we need them
-    # here, compute them now
-    @sync begin
-        @spawn mul!(deriv.Du_Sd,  Du,  bulkconstrain.Sd)
-        @spawn mul!(deriv.Du_B1d, Du,  bulkconstrain.B1d)
-        @spawn mul!(deriv.Du_B2d, Du,  bulkconstrain.B2d)
-        @spawn mul!(deriv.Du_Gd,  Du,  bulkconstrain.Gd)
-    end
+    B1_uAH      = cache.bulkhorizon.B1_uAH
+    B2_uAH      = cache.bulkhorizon.B2_uAH
+    G_uAH       = cache.bulkhorizon.G_uAH
+    phi_uAH     = cache.bulkhorizon.phi_uAH
+    S_uAH       = cache.bulkhorizon.S_uAH
+    Fx_uAH      = cache.bulkhorizon.Fx_uAH
+    Fy_uAH      = cache.bulkhorizon.Fy_uAH
+    Sd_uAH      = cache.bulkhorizon.Sd_uAH
+    B1d_uAH     = cache.bulkhorizon.B1d_uAH
+    B2d_uAH     = cache.bulkhorizon.B2d_uAH
+    Gd_uAH      = cache.bulkhorizon.Gd_uAH
+    phid_uAH    = cache.bulkhorizon.phid_uAH
+    A_uAH       = cache.bulkhorizon.A_uAH
+    Du_B1_uAH   = cache.bulkhorizon.Du_B1_uAH
+    Du_B2_uAH   = cache.bulkhorizon.Du_B2_uAH
+    Du_G_uAH    = cache.bulkhorizon.Du_G_uAH
+    Du_phi_uAH  = cache.bulkhorizon.Du_phi_uAH
+    Du_S_uAH    = cache.bulkhorizon.Du_S_uAH
+    Du_Fx_uAH   = cache.bulkhorizon.Du_Fx_uAH
+    Du_Fy_uAH   = cache.bulkhorizon.Du_Fy_uAH
+    Du_Sd_uAH   = cache.bulkhorizon.Du_Sd_uAH
+    Du_B1d_uAH  = cache.bulkhorizon.Du_B1d_uAH
+    Du_B2d_uAH  = cache.bulkhorizon.Du_B2d_uAH
+    Du_Gd_uAH   = cache.bulkhorizon.Du_Gd_uAH
+    Du_A_uAH    = cache.bulkhorizon.Du_A_uAH
+    Duu_B1_uAH  = cache.bulkhorizon.Duu_B1_uAH
+    Duu_B2_uAH  = cache.bulkhorizon.Duu_B2_uAH
+    Duu_G_uAH   = cache.bulkhorizon.Duu_G_uAH
+    Duu_S_uAH   = cache.bulkhorizon.Duu_S_uAH
+    Duu_Fx_uAH  = cache.bulkhorizon.Duu_Fx_uAH
+    Duu_Fy_uAH  = cache.bulkhorizon.Duu_Fy_uAH
+    Duu_A_uAH   = cache.bulkhorizon.Duu_A_uAH
+
+    axx         = cache.axx
+    ayy         = cache.ayy
+    axy         = cache.axy
+    bx          = cache.bx
+    by          = cache.by
+    cc          = cache.cc
+    b_vec       = cache.b_vec
 
     xi_t = getxi(gauge_t)
 
@@ -151,52 +182,16 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
     u3 = uAH * uAH * uAH
     u4 = uAH * uAH * uAH * uAH
 
-    T = typeof(uAH)
-    B1_uAH      = zeros(T,1,Nx,Ny)
-    B2_uAH      = zeros(T,1,Nx,Ny)
-    G_uAH       = zeros(T,1,Nx,Ny)
-    phi_uAH     = zeros(T,1,Nx,Ny)
-    S_uAH       = zeros(T,1,Nx,Ny)
-    Fx_uAH      = zeros(T,1,Nx,Ny)
-    Fy_uAH      = zeros(T,1,Nx,Ny)
-    Sd_uAH      = zeros(T,1,Nx,Ny)
-    B1d_uAH     = zeros(T,1,Nx,Ny)
-    B2d_uAH     = zeros(T,1,Nx,Ny)
-    Gd_uAH      = zeros(T,1,Nx,Ny)
-    phid_uAH    = zeros(T,1,Nx,Ny)
-    A_uAH       = zeros(T,1,Nx,Ny)
 
-    Du_B1_uAH   = zeros(T,1,Nx,Ny)
-    Du_B2_uAH   = zeros(T,1,Nx,Ny)
-    Du_G_uAH    = zeros(T,1,Nx,Ny)
-    Du_phi_uAH  = zeros(T,1,Nx,Ny)
-    Du_S_uAH    = zeros(T,1,Nx,Ny)
-    Du_Fx_uAH   = zeros(T,1,Nx,Ny)
-    Du_Fy_uAH   = zeros(T,1,Nx,Ny)
-    Du_Sd_uAH   = zeros(T,1,Nx,Ny)
-    Du_B1d_uAH  = zeros(T,1,Nx,Ny)
-    Du_B2d_uAH  = zeros(T,1,Nx,Ny)
-    Du_Gd_uAH   = zeros(T,1,Nx,Ny)
-    Du_A_uAH    = zeros(T,1,Nx,Ny)
-
-    Duu_B1_uAH  = zeros(T,1,Nx,Ny)
-    Duu_B2_uAH  = zeros(T,1,Nx,Ny)
-    Duu_G_uAH   = zeros(T,1,Nx,Ny)
-    Duu_S_uAH   = zeros(T,1,Nx,Ny)
-    Duu_Fx_uAH  = zeros(T,1,Nx,Ny)
-    Duu_Fy_uAH  = zeros(T,1,Nx,Ny)
-    Duu_A_uAH   = zeros(T,1,Nx,Ny)
-
-
-    M = Nx * Ny
-    axx     = zeros(T,M)
-    ayy     = zeros(T,M)
-    axy     = zeros(T,M)
-    bx      = zeros(T,M)
-    by      = zeros(T,M)
-    cc      = zeros(T,M)
-    b_vec   = zeros(T,M)
-
+    # take u-derivatives of Sd, B1d, B2d and Gd. these are not needed in the
+    # nested system, so they haven't been computed before. since we need them
+    # here, compute them now
+    @sync begin
+        @spawn mul!(deriv.Du_Sd,  Du,  bulkconstrain.Sd)
+        @spawn mul!(deriv.Du_B1d, Du,  bulkconstrain.B1d)
+        @spawn mul!(deriv.Du_B2d, Du,  bulkconstrain.B2d)
+        @spawn mul!(deriv.Du_Gd,  Du,  bulkconstrain.Gd)
+    end
 
     # interpolate bulk functions (and u-derivatives) to the u=uAH surface
     @inbounds Threads.@threads for j in 1:Ny
