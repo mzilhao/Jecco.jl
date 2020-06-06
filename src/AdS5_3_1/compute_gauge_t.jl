@@ -285,7 +285,7 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
         end
     end
 
-    ind2D  = LinearIndices(B1_uAH)
+    ind2D  = LinearIndices(B1_uAH[1,:,:])
 
     # coefficients of the derivative operators
     @fastmath @inbounds Threads.@threads for j in 1:Ny
