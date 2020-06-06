@@ -1,14 +1,126 @@
 
-function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained, bulkevol::BulkEvolved,
-                       deriv::BulkDeriv, gauge::Gauge, sys::System{Outer}, ::ConstantGauge)
+struct BulkHorizon{T}
+    B1_uAH      :: Array{T,3}
+    B2_uAH      :: Array{T,3}
+    G_uAH       :: Array{T,3}
+    phi_uAH     :: Array{T,3}
+    S_uAH       :: Array{T,3}
+    Fx_uAH      :: Array{T,3}
+    Fy_uAH      :: Array{T,3}
+    Sd_uAH      :: Array{T,3}
+    B1d_uAH     :: Array{T,3}
+    B2d_uAH     :: Array{T,3}
+    Gd_uAH      :: Array{T,3}
+    phid_uAH    :: Array{T,3}
+    A_uAH       :: Array{T,3}
+
+    Du_B1_uAH   :: Array{T,3}
+    Du_B2_uAH   :: Array{T,3}
+    Du_G_uAH    :: Array{T,3}
+    Du_phi_uAH  :: Array{T,3}
+    Du_S_uAH    :: Array{T,3}
+    Du_Fx_uAH   :: Array{T,3}
+    Du_Fy_uAH   :: Array{T,3}
+    Du_Sd_uAH   :: Array{T,3}
+    Du_B1d_uAH  :: Array{T,3}
+    Du_B2d_uAH  :: Array{T,3}
+    Du_Gd_uAH   :: Array{T,3}
+    Du_A_uAH    :: Array{T,3}
+
+    Duu_B1_uAH  :: Array{T,3}
+    Duu_B2_uAH  :: Array{T,3}
+    Duu_G_uAH   :: Array{T,3}
+    Duu_S_uAH   :: Array{T,3}
+    Duu_Fx_uAH  :: Array{T,3}
+    Duu_Fy_uAH  :: Array{T,3}
+    Duu_A_uAH   :: Array{T,3}
+end
+function BulkHorizon{T}(Nx::Int, Ny::Int) where {T<:Real}
+    B1_uAH      = Array{T}(undef, 1, Nx, Ny)
+    B2_uAH      = Array{T}(undef, 1, Nx, Ny)
+    G_uAH       = Array{T}(undef, 1, Nx, Ny)
+    phi_uAH     = Array{T}(undef, 1, Nx, Ny)
+    S_uAH       = Array{T}(undef, 1, Nx, Ny)
+    Fx_uAH      = Array{T}(undef, 1, Nx, Ny)
+    Fy_uAH      = Array{T}(undef, 1, Nx, Ny)
+    Sd_uAH      = Array{T}(undef, 1, Nx, Ny)
+    B1d_uAH     = Array{T}(undef, 1, Nx, Ny)
+    B2d_uAH     = Array{T}(undef, 1, Nx, Ny)
+    Gd_uAH      = Array{T}(undef, 1, Nx, Ny)
+    phid_uAH    = Array{T}(undef, 1, Nx, Ny)
+    A_uAH       = Array{T}(undef, 1, Nx, Ny)
+
+    Du_B1_uAH   = Array{T}(undef, 1, Nx, Ny)
+    Du_B2_uAH   = Array{T}(undef, 1, Nx, Ny)
+    Du_G_uAH    = Array{T}(undef, 1, Nx, Ny)
+    Du_phi_uAH  = Array{T}(undef, 1, Nx, Ny)
+    Du_S_uAH    = Array{T}(undef, 1, Nx, Ny)
+    Du_Fx_uAH   = Array{T}(undef, 1, Nx, Ny)
+    Du_Fy_uAH   = Array{T}(undef, 1, Nx, Ny)
+    Du_Sd_uAH   = Array{T}(undef, 1, Nx, Ny)
+    Du_B1d_uAH  = Array{T}(undef, 1, Nx, Ny)
+    Du_B2d_uAH  = Array{T}(undef, 1, Nx, Ny)
+    Du_Gd_uAH   = Array{T}(undef, 1, Nx, Ny)
+    Du_A_uAH    = Array{T}(undef, 1, Nx, Ny)
+
+    Duu_B1_uAH  = Array{T}(undef, 1, Nx, Ny)
+    Duu_B2_uAH  = Array{T}(undef, 1, Nx, Ny)
+    Duu_G_uAH   = Array{T}(undef, 1, Nx, Ny)
+    Duu_S_uAH   = Array{T}(undef, 1, Nx, Ny)
+    Duu_Fx_uAH  = Array{T}(undef, 1, Nx, Ny)
+    Duu_Fy_uAH  = Array{T}(undef, 1, Nx, Ny)
+    Duu_A_uAH   = Array{T}(undef, 1, Nx, Ny)
+
+    BulkHorizon{T}(B1_uAH, B2_uAH, G_uAH, phi_uAH, S_uAH, Fx_uAH, Fy_uAH,
+                   Sd_uAH, B1d_uAH, B2d_uAH, Gd_uAH, phid_uAH, A_uAH, Du_B1_uAH,
+                   Du_B2_uAH, Du_G_uAH, Du_phi_uAH, Du_S_uAH, Du_Fx_uAH,
+                   Du_Fy_uAH, Du_Sd_uAH, Du_B1d_uAH, Du_B2d_uAH, Du_Gd_uAH,
+                   Du_A_uAH, Duu_B1_uAH, Duu_B2_uAH, Duu_G_uAH, Duu_S_uAH,
+                   Duu_Fx_uAH, Duu_Fy_uAH, Duu_A_uAH)
+end
+
+struct HorizonCache{T}
+    bulkhorizon :: BulkHorizon{T}
+    axx         :: Vector{T}
+    ayy         :: Vector{T}
+    axy         :: Vector{T}
+    bx          :: Vector{T}
+    by          :: Vector{T}
+    cc          :: Vector{T}
+    b_vec       :: Vector{T}
+end
+function HorizonCache(sys::System)
+    _, Nx, Ny = size(sys)
+    T = Jecco.coord_eltype(sys.ucoord)
+    M = Nx * Ny
+
+    bulkhorizon = BulkHorizon{T}(Nx, Ny)
+
+    axx         = Vector{T}(undef, M)
+    ayy         = Vector{T}(undef, M)
+    axy         = Vector{T}(undef, M)
+    bx          = Vector{T}(undef, M)
+    by          = Vector{T}(undef, M)
+    cc          = Vector{T}(undef, M)
+    b_vec       = Vector{T}(undef, M)
+
+    HorizonCache{T}(bulkhorizon, axx, ayy, axy, bx, by, cc, b_vec)
+end
+
+
+function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
+                       bulkevol::BulkEvolved, deriv::BulkDeriv, gauge::Gauge,
+                       cache::HorizonCache, sys::System{Outer}, ::ConstantGauge)
     xi_t = getxi(gauge_t)
     fill!(xi_t, 0)
     nothing
 end
 
 # TODO
-function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained, bulkevol::BulkEvolved,
-                       deriv::BulkDeriv, gauge::Gauge, sys::System{Outer}, gaugecondition::ConstantAH)
+function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
+                       bulkevol::BulkEvolved, deriv::BulkDeriv, gauge::Gauge,
+                       cache::HorizonCache, sys::System{Outer},
+                       gaugecondition::ConstantAH)
     _, Nx, Ny = size(sys)
     bulk = Bulk(bulkevol, bulkconstrain)
 

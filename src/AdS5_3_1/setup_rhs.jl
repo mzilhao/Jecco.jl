@@ -4,6 +4,9 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
     # function to solve the nested system
     nested = Nested(systems, bulkconstrains, bulkderivs)
 
+    # pre-allocate arrays for the gauge condition
+    cache  = HorizonCache(systems[end])
+
     function (ff_t::EvolVars, ff::EvolVars, evoleq::EvolutionEquations, t)
         bulkevols_t = getbulkevolvedpartition(ff_t)
         boundary_t  = getboundary(ff_t)
@@ -21,7 +24,7 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
         nested(bulkevols, boundary, gauge, evoleq)
 
         compute_xi_t!(gauge_t, bulkconstrains[Nsys], bulkevols[Nsys], bulkderivs[Nsys],
-                      gauge, systems[Nsys], evoleq.gaugecondition)
+                      gauge, cache, systems[Nsys], evoleq.gaugecondition)
 
         @inbounds for aa in 1:Nsys
             sys           = systems[aa]
