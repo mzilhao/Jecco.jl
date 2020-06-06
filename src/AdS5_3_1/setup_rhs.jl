@@ -5,7 +5,7 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
     nested = Nested(systems, bulkconstrains, bulkderivs)
 
     # pre-allocate arrays for the gauge condition
-    cache  = HorizonCache(systems[end])
+    cache  = HorizonCache(systems[end], 2)
 
     function (ff_t::EvolVars, ff::EvolVars, evoleq::EvolutionEquations, t)
         bulkevols_t = getbulkevolvedpartition(ff_t)

@@ -1,4 +1,7 @@
 
+using Jecco: mul_col!
+using SparseArrays: SparseMatrixCSC
+
 struct BulkHorizon{T}
     B1_uAH      :: Array{T,3}
     B2_uAH      :: Array{T,3}
@@ -79,7 +82,7 @@ function BulkHorizon{T}(Nx::Int, Ny::Int) where {T<:Real}
                    Duu_Fx_uAH, Duu_Fy_uAH, Duu_A_uAH)
 end
 
-struct HorizonCache{T}
+struct HorizonCache{T,D}
     bulkhorizon :: BulkHorizon{T}
     axx         :: Vector{T}
     ayy         :: Vector{T}
@@ -88,23 +91,61 @@ struct HorizonCache{T}
     by          :: Vector{T}
     cc          :: Vector{T}
     b_vec       :: Vector{T}
+    Dx_2D       :: D
+    Dy_2D       :: D
+    Dxx_2D      :: D
+    Dyy_2D      :: D
+    Dxy_2D      :: D
+    _Dx_2D      :: D
+    _Dy_2D      :: D
+    _Dxx_2D     :: D
+    _Dyy_2D     :: D
+    _Dxy_2D     :: D
 end
-function HorizonCache(sys::System)
+function HorizonCache(sys::System, ord::Int)
     _, Nx, Ny = size(sys)
-    T = Jecco.coord_eltype(sys.ucoord)
-    M = Nx * Ny
+    hx = Jecco.delta(sys.xcoord)
+    hy = Jecco.delta(sys.ycoord)
+    T  = Jecco.coord_eltype(sys.ucoord)
+    M  = Nx * Ny
 
     bulkhorizon = BulkHorizon{T}(Nx, Ny)
 
-    axx         = Vector{T}(undef, M)
-    ayy         = Vector{T}(undef, M)
-    axy         = Vector{T}(undef, M)
-    bx          = Vector{T}(undef, M)
-    by          = Vector{T}(undef, M)
-    cc          = Vector{T}(undef, M)
-    b_vec       = Vector{T}(undef, M)
+    axx    = Vector{T}(undef, M)
+    ayy    = Vector{T}(undef, M)
+    axy    = Vector{T}(undef, M)
+    bx     = Vector{T}(undef, M)
+    by     = Vector{T}(undef, M)
+    cc     = Vector{T}(undef, M)
+    b_vec  = Vector{T}(undef, M)
 
-    HorizonCache{T}(bulkhorizon, axx, ayy, axy, bx, by, cc, b_vec)
+    Dx_    = CenteredDiff{1}(1, ord, hx, Nx)
+    Dxx_   = CenteredDiff{1}(2, ord, hx, Nx)
+    Dy_    = CenteredDiff{2}(1, ord, hy, Ny)
+    Dyy_   = CenteredDiff{2}(2, ord, hy, Ny)
+
+    #=
+    use the Kronecker product (kron) to build 2-dimensional derivation matrices
+    from 1-dimensional ones. see for instance:
+
+    https://en.wikipedia.org/wiki/Kronecker_product
+    https://arxiv.org/pdf/1801.01483.pdf (section 5)
+    =#
+    Dx_2D  = kron(I(Ny), SparseMatrixCSC(Dx_))
+    Dxx_2D = kron(I(Ny), SparseMatrixCSC(Dxx_))
+    Dy_2D  = kron(SparseMatrixCSC(Dy_), I(Nx))
+    Dyy_2D = kron(SparseMatrixCSC(Dyy_), I(Nx))
+    Dxy_2D = Dx_2D * Dy_2D
+
+    _Dx_2D  = copy(Dx_2D)
+    _Dxx_2D = copy(Dxx_2D)
+    _Dy_2D  = copy(Dy_2D)
+    _Dyy_2D = copy(Dyy_2D)
+    _Dxy_2D = copy(Dxy_2D)
+
+    HorizonCache{T,typeof(Dx_2D)}(bulkhorizon, axx, ayy, axy, bx, by, cc, b_vec,
+                                  Dx_2D,  Dxx_2D,  Dy_2D,  Dyy_2D,  Dxy_2D,
+                                  _Dx_2D, _Dxx_2D, _Dy_2D, _Dyy_2D, _Dxy_2D)
 end
 
 
@@ -173,6 +214,17 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
     cc          = cache.cc
     b_vec       = cache.b_vec
 
+    Dx_2D       = cache.Dx_2D
+    Dxx_2D      = cache.Dxx_2D
+    Dy_2D       = cache.Dy_2D
+    Dyy_2D      = cache.Dyy_2D
+    Dxy_2D      = cache.Dxy_2D
+    _Dx_2D      = cache._Dx_2D
+    _Dxx_2D     = cache._Dxx_2D
+    _Dy_2D      = cache._Dy_2D
+    _Dyy_2D     = cache._Dyy_2D
+    _Dxy_2D     = cache._Dxy_2D
+
     xi_t = getxi(gauge_t)
 
     uAH   = gaugecondition.u_AH
@@ -233,8 +285,7 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
         end
     end
 
-
-    ind2D   = LinearIndices(B1_uAH)
+    ind2D  = LinearIndices(B1_uAH)
 
     # coefficients of the derivative operators
     @inbounds Threads.@threads for j in 1:Ny
@@ -365,6 +416,23 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
             b_vec[idx] = -S
         end
     end
+
+    copyto!(Dx_2D,  _Dx_2D)
+    copyto!(Dxx_2D, _Dxx_2D)
+    copyto!(Dy_2D,  _Dy_2D)
+    copyto!(Dyy_2D, _Dyy_2D)
+    copyto!(Dxy_2D, _Dxy_2D)
+
+
+    mul_col!(axx, Dxx_2D)
+    mul_col!(ayy, Dyy_2D)
+    mul_col!(axy, Dxy_2D)
+    mul_col!(bx,  Dx_2D)
+    mul_col!(by,  Dy_2D)
+    ccId = Diagonal(cc)
+
+    A_mat = Dxx_2D + Dyy_2D + Dxy_2D + Dx_2D + Dy_2D + ccId
+
 
     nothing
 end
