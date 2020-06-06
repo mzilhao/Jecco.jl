@@ -288,7 +288,7 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
     ind2D  = LinearIndices(B1_uAH)
 
     # coefficients of the derivative operators
-    @inbounds Threads.@threads for j in 1:Ny
+    @fastmath @inbounds Threads.@threads for j in 1:Ny
         @inbounds for i in 1:Nx
             idx   = ind2D[i,j]
 
@@ -431,8 +431,24 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
     mul_col!(by,  Dy_2D)
     ccId = Diagonal(cc)
 
+    # build actual operator to be inverted
     A_mat = Dxx_2D + Dyy_2D + Dxy_2D + Dx_2D + Dy_2D + ccId
 
+    # since we're using periodic boundary conditions, the operator A_mat (just
+    # like the Dx and Dxx operators) is strictly speaking not invertible (it has
+    # zero determinant) since the solution is not unique. indeed, its LU
+    # decomposition shouldn't even be defined. for some reason, however, the
+    # call to "lu" does in fact factorize the matrix. in any case, to be safer,
+    # let's instead use the left division operator. this calls "factorize",
+    # which uses fancy algorithms to determine which is the best way to
+    # factorize (and which performs a QR decomposition if the LU fails). the
+    # inverse that is performed probably returns the minimum norm least squares
+    # solution, or something similar. in any case, for our purposes here we
+    # mostly care about getting a solution (not necessarily the minimum norm
+    # least squares one).
+    sol = A_mat \ b_vec
+
+    copyto!(xi_t, sol)
 
     nothing
 end
