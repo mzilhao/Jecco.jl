@@ -98,6 +98,11 @@ function ChebInterpolator(xmin::T, xmax::T, N::Int) where {T<:Real}
     x  = -cos.(T(pi)*(0:M)/M)
     xp = 0.5 * (xmax + xmin .+ (xmax - xmin) * x)
 
+    # use only one thread for the FFTW! by default it allocates a bunch of them,
+    # and it hurts performance (by a huge amount!) when using this inside loops.
+    # it's much better to thread the loops themselves, which is what we do.
+    FFTW.set_num_threads(1)
+
     # Create the FFT plan for the DCT-I
     fft_plan = FFTW.plan_r2r(x, FFTW.REDFT00)
 
