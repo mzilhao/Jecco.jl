@@ -157,7 +157,27 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
     nothing
 end
 
-# TODO
+
+#= Solving for xi_t
+
+this is a 2D PDE of the type
+
+  (axx Dxx + ayy Dyy + Axy Dxy + bx Dx + by Dy + c Id) xi_t = -S
+
+we first build each operator (Dxx, Dyy, etc) through a Kronecker product and
+then overwrite each of them with the corresponding coefficient. we then sum them
+all up and solve the linear system.
+
+we use SparseMatrices since these are finite differencing operators. also, there
+is no reason to use the same operators as the ones we use elsewhere. here, as
+we're solving a very large linear system, it may be better to use second order
+accurate operators since the resulting matrix is smaller and therefore much
+faster to invert.
+
+since this is a gauge condition, i think it shouldn't affect the overall
+convergence order.
+
+=#
 function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
                        bulkevol::BulkEvolved, deriv::BulkDeriv, gauge::Gauge,
                        cache::HorizonCache, sys::System{Outer},
@@ -233,7 +253,6 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
     u2 = uAH * uAH
     u3 = uAH * uAH * uAH
     u4 = uAH * uAH * uAH * uAH
-
 
     # take u-derivatives of Sd, B1d, B2d and Gd. these are not needed in the
     # nested system, so they haven't been computed before. since we need them
@@ -417,13 +436,16 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
         end
     end
 
+    # each time this routine is called, the operators Dx_2D, Dxx_2D, etc, are
+    # overwritten. so restore them here from _Dx_2D, _Dxx_2D, etc. these are
+    # never overwritten.
     copyto!(Dx_2D,  _Dx_2D)
     copyto!(Dxx_2D, _Dxx_2D)
     copyto!(Dy_2D,  _Dy_2D)
     copyto!(Dyy_2D, _Dyy_2D)
     copyto!(Dxy_2D, _Dxy_2D)
 
-
+    # overwrite the operators with the coefficients computed in the loop above
     mul_col!(axx, Dxx_2D)
     mul_col!(ayy, Dyy_2D)
     mul_col!(axy, Dxy_2D)
