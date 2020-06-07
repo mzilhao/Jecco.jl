@@ -33,7 +33,6 @@ id = BlackBrane()
 evoleq = AffineNull(
     phi0       = 0.0,
     potential  = ZeroPotential(),
-    gaugecondition = AdS5_3_1.TestGauge(),
 )
 
 # atlas of grid configuration and respective SystemPartition
