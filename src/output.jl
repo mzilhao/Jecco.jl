@@ -126,14 +126,16 @@ function write_hdf5(out::Output, grp::HDF5Group, fieldname::String, data::Abstra
     nothing
 end
 
-
 function setup_openpmd_file(out::Output, fid::HDF5File)
+    timenow = now()
+    date    = Dates.format(timenow, "yyyy-mm-dd HH:MM:SS")
+
     attrs(fid)["software"] = out.software
     attrs(fid)["softwareVersion"] = out.software_version
     attrs(fid)["openPMD"] = "1.1.0"
     attrs(fid)["openPMDextension"] = 0
     attrs(fid)["author"] = ENV["USER"]
-    attrs(fid)["date"] = string(now())
+    attrs(fid)["date"] = string(date)
     attrs(fid)["iterationEncoding"] = "fileBased"
     attrs(fid)["iterationFormat"] = "$(out.prefix)%T.h5"
 

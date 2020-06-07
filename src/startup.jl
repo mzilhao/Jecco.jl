@@ -3,9 +3,12 @@ using Dates
 
 function startup()
 
-    date        = string(now())
-    host        = gethostname()
-    user        = ENV["USER"]
+    timenow = now()
+    datef   = Dates.format(timenow, "e, dd u yyyy (HH:MM:SS)")
+
+    date    = string(datef)
+    host    = gethostname()
+    user    = ENV["USER"]
 
     num_threads = try
         ENV["JULIA_NUM_THREADS"]
