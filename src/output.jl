@@ -69,7 +69,7 @@ end
 function Output(dir::String, prefix::String, every::Int, tinfo::TimeInfo{T};
                 remove_existing::Bool=false) where {T<:Real}
     software         = "Jecco"
-    software_version = "0.1.0"
+    software_version = "0.5.0"
     Output{T}(dir, prefix, every, software, software_version, tinfo;
               remove_existing=remove_existing)
 end
