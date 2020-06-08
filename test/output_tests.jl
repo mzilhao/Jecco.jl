@@ -40,7 +40,7 @@ using HDF5
     tinfo  = Jecco.TimeInfo(1, 10.0, 0.1)
     dir    = tempname()
     prefix = "data_"
-    out    = Jecco.Output(dir, prefix, 1, tinfo)
+    out    = Jecco.Output(dir, prefix, tinfo)
     out(field1, field2)
 
     # and now read the file back in
