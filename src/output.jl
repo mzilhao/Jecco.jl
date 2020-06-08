@@ -38,12 +38,11 @@ end
 struct Output{T}
     dir              :: String
     prefix           :: String
-    every            :: Int
     software         :: String
     software_version :: String
     tinfo            :: TimeInfo{T}
 
-    function Output{T}(dir::String, prefix::String, every::Int,
+    function Output{T}(dir::String, prefix::String,
                        software::String, software_version::String, tinfo::TimeInfo{T};
                        remove_existing::Bool=false) where {T}
         # if no name specified, use name of script
@@ -63,14 +62,14 @@ struct Output{T}
             prefix = "data_"
         end
 
-        new(dir, prefix, every, software, software_version, tinfo)
+        new(dir, prefix, software, software_version, tinfo)
     end
 end
-function Output(dir::String, prefix::String, every::Int, tinfo::TimeInfo{T};
+function Output(dir::String, prefix::String, tinfo::TimeInfo{T};
                 remove_existing::Bool=false) where {T<:Real}
     software         = "Jecco"
     software_version = "0.5.0"
-    Output{T}(dir, prefix, every, software, software_version, tinfo;
+    Output{T}(dir, prefix, software, software_version, tinfo;
               remove_existing=remove_existing)
 end
 
@@ -78,35 +77,35 @@ end
 
 function (out::Output)(fields::Union{Vector, Tuple})
     it = out.tinfo.it
-    if it % out.every == 0
-        filename = "$(out.prefix)$(lpad(string(it), 8, string(0))).h5"
-        fullpath = abspath(out.dir, filename)
 
-        # check if file already exists
-        if isfile(fullpath)
-            mode = "r+"
-            firsttime = false
-        else
-            mode = "cw"
-            firsttime = true
-        end
+    filename = "$(out.prefix)$(lpad(string(it), 8, string(0))).h5"
+    fullpath = abspath(out.dir, filename)
 
-        # open file
-        fid = h5open(fullpath, mode)
-
-        # create openPMD structure
-        if firsttime
-            setup_openpmd_file(out, fid)
-        end
-        grp = create_group(out, fid)
-
-        for field in fields
-            write_hdf5(out, grp, field)
-        end
-
-        # close file
-        close(fid)
+    # check if file already exists
+    if isfile(fullpath)
+        mode = "r+"
+        firsttime = false
+    else
+        mode = "cw"
+        firsttime = true
     end
+
+    # open file
+    fid = h5open(fullpath, mode)
+
+    # create openPMD structure
+    if firsttime
+        setup_openpmd_file(out, fid)
+    end
+    grp = create_group(out, fid)
+
+    for field in fields
+        write_hdf5(out, grp, field)
+    end
+
+    # close file
+    close(fid)
+
     nothing
 end
 

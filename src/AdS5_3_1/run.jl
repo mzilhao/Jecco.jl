@@ -20,11 +20,11 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
     Nsys = length(charts)
 
     # output structures
-    out_bdry  = Jecco.Output(io.folder, "boundary_", io.out_boundary_every, tinfo;
+    out_bdry  = Jecco.Output(io.folder, "boundary_", tinfo;
                              remove_existing=io.remove_existing)
-    out_gauge = Jecco.Output(io.folder, "gauge_", io.out_gauge_every, tinfo;
+    out_gauge = Jecco.Output(io.folder, "gauge_", tinfo;
                              remove_existing=io.remove_existing)
-    out_bulk  = Jecco.Output(io.folder, "bulk_", io.out_bulk_every, tinfo;
+    out_bulk  = Jecco.Output(io.folder, "bulk_", tinfo;
                              remove_existing=io.remove_existing)
 
     boundary  = getboundary(u)
@@ -63,10 +63,17 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
             bulkevols_fields[i][4].data = bulkevols[i].phi
         end
 
+        it = tinfo.it
         # write data
-        out_bdry(boundary_fields)
-        out_gauge(gauge_fields)
-        out_bulk.(bulkevols_fields)
+        if it % io.out_boundary_every == 0
+            out_bdry(boundary_fields)
+        end
+        if it % io.out_gauge_every == 0
+            out_gauge(gauge_fields)
+        end
+        if it % io.out_bulk_every == 0
+            out_bulk.(bulkevols_fields)
+        end
 
         nothing
     end
