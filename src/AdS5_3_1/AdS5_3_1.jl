@@ -46,7 +46,7 @@ end
 
 export SpecCartGrid3D
 export Potential, ZeroPotential
-export BlackBrane, init_data!, init_data
+export BlackBrane, BlackBraneB1Pert, init_data!, init_data
 export ConstantAH
 export AffineNull, EvolTest0
 export BulkEvolved, BulkConstrained, Boundary, Gauge, Bulk
