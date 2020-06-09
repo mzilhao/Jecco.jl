@@ -95,8 +95,7 @@ Uses `FFTW`.
 """
 function ChebInterpolator(xmin::T, xmax::T, N::Int) where {T<:Real}
     M  = N - 1
-    x  = -cos.(T(pi)*(0:M)/M)
-    xp = 0.5 * (xmax + xmin .+ (xmax - xmin) * x)
+    x  = Vector{T}(undef, N)
 
     # use only one thread for the FFTW! by default it allocates a bunch of them,
     # and it hurts performance (by a huge amount!) when using this inside loops.
