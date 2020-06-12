@@ -78,4 +78,27 @@ end
 
     @test exp_filter1D.fft_plan * f ≈ exp_filter1D.kernel
 
+
+    # 3D case
+    dimx = 12
+    dimy = 16
+    dimz = 8
+    delta3D_ = zeros(dimx, dimy, dimz)
+    delta3D_[:,1,:] .= 1
+
+    exp_filter3D = Jecco.Exp_Filter{2}(γ, dimx, dimy, dimz)
+
+    f = copy(delta3D_)
+
+    exp_filter3D(f)
+
+    tmp = exp_filter3D.fft_plan * f
+    myarr = []
+    for k in 1:dimz
+        for i in 1:dimx
+            push!(myarr, tmp[i,:,k] ≈ exp_filter3D.kernel)
+        end
+    end
+
+    @test all(myarr)
 end
