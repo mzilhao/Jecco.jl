@@ -63,6 +63,9 @@ function Exp_Filter{N}(α::T, γ::T, Nxx...) where {T<:Real,N}
 
     # REDFT00 is the DCT-I, see http://www.fftw.org/fftw3_doc/Real-even_002fodd-DFTs-_0028cosine_002fsine-transforms_0029.html#Real-even_002fodd-DFTs-_0028cosine_002fsine-transforms_0029
 
+    # let's use only one thread per FFTW so that they don't trample over each other
+    FFTW.set_num_threads(1)
+
     # we want to use the DCT-I since this basis is precisely the one we have by
     # using the Gauss-Lobatto grid points
     fft_plan = FFTW.plan_r2r(_cache, FFTW.REDFT00, N)
@@ -106,7 +109,7 @@ function convolution!(fout::AbstractArray{T,M}, f::AbstractArray{T,M},
     # make sure axis of convolution is contained in the dimensions of f
     @assert N <= M
 
-    f_len = length(axes(f,N))
+    f_len = size(f,N)
     g_len = length(g)
     mid   = div(g_len + 1, 2)
 
@@ -168,4 +171,36 @@ function (filter::FftFilter)(f::AbstractVector)
     # constant, and FFTW defines it as such, cf:
     # http://www.fftw.org/fftw3_doc/1d-Real_002deven-DFTs-_0028DCTs_0029.html#g_t1d-Real_002deven-DFTs-_0028DCTs_0029
     mul!(f, filter.fft_plan, filter._cache)
+end
+
+# filter along N axis
+function (filter::FftFilter{T,N})(f::AbstractArray{T,M}) where {T,N,M}
+    # make sure axis of filtering is contained in the dimensions of f
+    @assert N <= M
+    copyto!(filter._cache, f)
+
+    Rpre  = CartesianIndices(size(f)[1:N-1])
+    Rpost = CartesianIndices(size(f)[N+1:end])
+
+    # use a function barrier here to separate the type-unstable portion
+    _fftfilter!(f, filter._cache, filter.kernel, filter.fft_plan, Rpre,
+                size(f, N), Rpost)
+end
+
+# Multidimensional algorithm adapted from
+# http://julialang.org/blog/2016/02/iteration
+function _fftfilter!(fout, f, kernel, fft_plan::FFTW.Plan, Rpre, n, Rpost)
+    # compute the DCT-I of f
+    mul!(fout, fft_plan, f)
+
+    @fastmath @inbounds for Ipost in Rpost
+        @inbounds for i in 1:n
+            @inbounds @simd for Ipre in Rpre
+                f[Ipre,i,Ipost] = 0.5/(n-1) * kernel[i] * fout[Ipre,i,Ipost]
+            end
+        end
+    end
+
+    # go back to position space using the DCT-I
+    mul!(fout, fft_plan, f)
 end
