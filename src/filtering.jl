@@ -75,7 +75,7 @@ function Exp_Filter{N}(γ::T, Nxx...; α::T=36.0437) where {T<:Real,N}
     FftFilter{T,N,typeof(_cache),typeof(fft_plan)}(kernel, fft_plan, _cache)
 end
 
-FftFilter(args...) = FftFilter{1}(args...)
+Exp_Filter(args...) = Exp_Filter{1}(args...)
 
 
 function convolution!(fout::AbstractVector{T}, f::AbstractVector{T},

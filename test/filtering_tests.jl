@@ -52,22 +52,30 @@
     end
 
     @test all(myarr)
-
 end
 
 
 @testset "Exponential filtering tests:" begin
-
     # kernel test
-
     dim = 49
     γ   = 8.0
-
-    exp_filter = Jecco.Exp_Filter{1}(γ, dim)
-
+    exp_filter   = Jecco.Exp_Filter(γ, dim)
     kernel_bench = [ 1.0, 9.99999999999889e-01, 9.99999999377987e-01, 9.99997121269861e-01,
                      9.88950030743732e-01, 2.22034255471165e-16]
-
     @test exp_filter.kernel[end-5:end] ≈ kernel_bench
+
+
+    # 1D case
+    dim = 16
+    delta_    = zeros(dim)
+    delta_[1] = 1.0
+
+    exp_filter1D = Jecco.Exp_Filter{1}(γ, dim)
+
+    f = copy(delta_)
+
+    exp_filter1D(f)
+
+    @test exp_filter1D.fft_plan * f ≈ exp_filter1D.kernel
 
 end
