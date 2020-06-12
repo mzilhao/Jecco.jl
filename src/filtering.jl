@@ -21,14 +21,14 @@ function KO_kernel(order::Int, sigma_diss::T) where {T<:Real}
     kernel
 end
 
-function exp_kernel!(f::Vector{T}, α::T, γ::T) where {T<:Real}
+function exp_kernel!(f::Vector{T}, γ::T, α::T) where {T<:Real}
     M  = length(f) - 1
     f .= [ exp( -α * ( (i-1)/M )^(γ*M) ) for i in eachindex(f) ]
     nothing
 end
-function exp_kernel(dim::Int, α::T, γ::T) where {T<:Real}
+function exp_kernel(dim::Int, γ::T, α::T) where {T<:Real}
     f  = Array{T}(undef, dim)
-    exp_kernel!(f, α, γ)
+    exp_kernel!(f, γ, α)
     f
 end
 
@@ -57,8 +57,10 @@ KO_Filter(args...) = KO_Filter{1}(args...)
 
 struct Exp_Filter{N} end
 
-function Exp_Filter{N}(α::T, γ::T, Nxx...) where {T<:Real,N}
-    kernel = exp_kernel(Nxx[N], α, γ)
+# α = -log(ϵ) where ϵ is the machine epsilon.
+# for the standard choice of ϵ = 2^-52, α = 36.0437
+function Exp_Filter{N}(γ::T, Nxx...; α::T=36.0437) where {T<:Real,N}
+    kernel = exp_kernel(Nxx[N], γ, α)
     _cache = Array{T}(undef, Nxx...)
 
     # REDFT00 is the DCT-I, see http://www.fftw.org/fftw3_doc/Real-even_002fodd-DFTs-_0028cosine_002fsine-transforms_0029.html#Real-even_002fodd-DFTs-_0028cosine_002fsine-transforms_0029
@@ -161,8 +163,9 @@ function (filter::FftFilter)(f::AbstractVector)
     mul!(f, filter.fft_plan, filter._cache)
 
     # in momentum space, act with the filter kernel [eq (2.5) of the paper above]
-    # 0.5/M .* filter.kernel .* f
+    # filter.kernel .* f
     @inbounds @simd for i in eachindex(f)
+        # the division by 2*(N-1) is to invert the FFT, see below
         filter._cache[i] = 0.5/M * filter.kernel[i] * f[i]
     end
 
