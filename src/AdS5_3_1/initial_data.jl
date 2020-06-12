@@ -14,6 +14,14 @@ Base.@kwdef struct BlackBraneB1Pert{T,TP<:Potential} <: InitialData
     amp           :: T   = 1.e-1
 end
 
+Base.@kwdef struct BlackBranePert_B1B2G{T,TP<:Potential} <: InitialData
+    energy_dens   :: T   = 1.0
+    AH_pos        :: T   = 1.0
+    phi0          :: T   = 0.0
+    potential     :: TP  = ZeroPotential()
+    amp           :: T   = 1.e-1
+end
+
 Base.@kwdef struct IDTest0{T,TP<:Potential} <: InitialData
     b14_0     :: T  = 0.0
     b24_0     :: T  = 0.0
@@ -186,6 +194,155 @@ function init_data!(ff::Boundary, sys::System, id::BlackBraneB1Pert)
 end
 
 function init_data!(ff::Gauge, sys::System, id::BlackBraneB1Pert)
+    a40     = -id.energy_dens/0.75
+    AH_pos  = id.AH_pos
+    xi0     = (-a40)^0.25 - 1/AH_pos
+
+    xi  = getxi(ff)
+
+    fill!(xi, xi0)
+
+    ff
+end
+
+# BlackBranePert_B1B2G initial data
+
+function init_data!(ff::BulkEvolved, sys::System{Inner}, id::BlackBranePert_B1B2G)
+    B1  = getB1(ff)
+    B2  = getB2(ff)
+    G   = getG(ff)
+    phi = getphi(ff)
+
+    fill!(phi, 0)
+
+    # add the perturbation on B1 id
+    pert_amp = id.amp
+    # number of maxima in each direction
+    nx   = 1
+    ny   = 2
+
+    Nu, Nx, Ny = size(sys)
+    uu = sys.ucoord
+    xx = sys.xcoord
+    xmin = xx[1]
+    dx   = xx[2] - xx[1] 
+    xmax = xx[end] + dx
+    yy   = sys.ycoord
+    ymin = yy[1]
+    dy   = yy[2] - yy[1]  
+    ymax = yy[end] + dy
+    
+    for j in 1:Ny
+        for i in 1:Nx
+            for a in 1:Nu
+                x = xx[i]
+                y = yy[j]
+                B1[a,i,j]  = pert_amp * sin(2 * π * nx * (xmax-x)/(xmax-xmin) ) * sin(-2 * π * ny * (ymax-y)/(ymax-ymin) )
+            end
+        end
+    end
+
+    for j in 1:Ny
+        for i in 1:Nx
+            for a in 1:Nu
+                x = xx[i]
+                y = yy[j]
+                B2[a,i,j]  = pert_amp * sin(2 * π * nx * (xmax-x)/(xmax-xmin) ) * sin(-2 * π * ny * (ymax-y)/(ymax-ymin) )
+            end
+        end
+    end
+
+    for j in 1:Ny
+        for i in 1:Nx
+            for a in 1:Nu
+                x = xx[i]
+                y = yy[j]
+                G[a,i,j]  = pert_amp * sin(2 * π * nx * (xmax-x)/(xmax-xmin) ) * sin(-2 * π * ny * (ymax-y)/(ymax-ymin) )
+            end
+        end
+    end
+    
+    ff
+end
+
+function init_data!(ff::BulkEvolved, sys::System{Outer}, id::BlackBranePert_B1B2G)
+    B1  = getB1(ff)
+    B2  = getB2(ff)
+    G   = getG(ff)
+    phi = getphi(ff)
+    
+    fill!(phi, 0)
+    
+    # add the perturbation on B1 id
+    pert_amp = id.amp
+    # number of maxima in each direction
+    nx   = 1
+    ny   = 2
+
+    Nu, Nx, Ny = size(sys)
+    uu = sys.ucoord
+    xx = sys.xcoord
+    xmin = xx[1]
+    dx   = xx[2] - xx[1] 
+    xmax = xx[end] + dx
+    yy   = sys.ycoord
+    ymin = yy[1]
+    dy   = yy[2] - yy[1]  
+    ymax = yy[end] + dy
+
+    for j in 1:Ny
+        for i in 1:Nx
+            for a in 1:Nu
+                x = xx[i]
+                y = yy[j]
+                u = uu[a]
+                B1[a,i,j]  = u^4 * pert_amp * sin(2 * π * nx * (xmax-x)/(xmax-xmin) ) * sin(-2 * π * ny * (ymax-y)/(ymax-ymin) )
+            end
+        end
+    end
+
+    
+    for j in 1:Ny
+        for i in 1:Nx
+            for a in 1:Nu
+                x = xx[i]
+                y = yy[j]
+                u = uu[a]
+                B2[a,i,j]  = u^4 * pert_amp * sin(2 * π * nx * (xmax-x)/(xmax-xmin) ) * sin(-2 * π * ny * (ymax-y)/(ymax-ymin) )
+            end
+        end
+    end
+
+    
+    for j in 1:Ny
+        for i in 1:Nx
+            for a in 1:Nu
+                x = xx[i]
+                y = yy[j]
+                u = uu[a]
+                G[a,i,j]  = u^4 * pert_amp * sin(2 * π * nx * (xmax-x)/(xmax-xmin) ) * sin(-2 * π * ny * (ymax-y)/(ymax-ymin) )
+            end
+        end
+    end
+
+    ff
+end
+
+function init_data!(ff::Boundary, sys::System, id::BlackBranePert_B1B2G)
+    a40 = -id.energy_dens/0.75
+
+    a4  = geta4(ff)
+    fx2 = getfx2(ff)
+    fy2 = getfy2(ff)
+
+    fill!(a4, a40)
+    fill!(fx2, 0)
+    fill!(fy2, 0)
+
+    ff
+end
+
+function init_data!(ff::Gauge, sys::System, id::BlackBranePert_B1B2G)
     a40     = -id.energy_dens/0.75
     AH_pos  = id.AH_pos
     xi0     = (-a40)^0.25 - 1/AH_pos

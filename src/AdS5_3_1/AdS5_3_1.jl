@@ -31,7 +31,7 @@ include("run.jl")
 
 export SpecCartGrid3D
 export Potential, ZeroPotential
-export BlackBrane, BlackBraneB1Pert, init_data!, init_data
+export BlackBrane, BlackBraneB1Pert, BlackBranePert_B1B2G, init_data!, init_data
 export ConstantAH
 export AffineNull, EvolTest0
 export BulkEvolved, BulkConstrained, Boundary, Gauge, Bulk
