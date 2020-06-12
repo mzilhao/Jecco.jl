@@ -259,8 +259,9 @@ function sync_bulkevolved!(bulkevol1_t::BulkEvolved, bulkevol2_t::BulkEvolved,
             # characteristic speed
             c = u0 * u0 * (A/2 - xi_t)
 
-            # if c > 0, mode is entering grid1 from grid2; if c < 0 it goes from
-            # grid2 to grid1. we assume here that grids merely touch at the interface
+            # if c > 0, mode is entering grid1 from grid2;
+            # if c < 0, mode is entering grid2 from grid1.
+            # we assume here that grids merely touch at the interface
             if c > 0
                 B11_t[end,i,j]  = B12_t[1,i,j]
                 B21_t[end,i,j]  = B22_t[1,i,j]
@@ -303,8 +304,9 @@ function sync_bulkevolved!(bulkevol1_t::BulkEvolved, bulkevol2_t::BulkEvolved,
             # characteristic speed
             c = u0 * u0 * (A/2 - xi_t)
 
-            # if c > 0, mode is entering grid1 from grid2; if c < 0 it goes from
-            # grid2 to grid1. we assume here that grids merely touch at the interface
+            # if c > 0, mode is entering grid1 from grid2;
+            # if c < 0, mode is entering grid2 from grid1.
+            # we assume here that grids merely touch at the interface
             if c > 0
                 B11_t[end,i,j]  = B12_t[1,i,j] / u04
                 B21_t[end,i,j]  = B22_t[1,i,j] / u04
@@ -330,8 +332,9 @@ function sync_bulkevolved!(bulkevol1_t::BulkEvolved, bulkevol2_t::BulkEvolved,
             # characteristic speed
             c = u0 * u0 * (A/2 - xi_t)
 
-            # if c > 0, mode is entering grid1 from grid2; if c < 0 it goes from
-            # grid2 to grid1. we assume here that grids merely touch at the interface
+            # if c > 0, mode is entering grid1 from grid2;
+            # if c < 0, mode is entering grid2 from grid1.
+            # we assume here that grids merely touch at the interface
             if c > 0
                 phi1_t[end,i,j] = phi2_t[1,i,j] / (u03 * phi03) + xi_t / (u0 * phi02)
             elseif c < 0
