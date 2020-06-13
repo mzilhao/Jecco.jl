@@ -34,7 +34,8 @@ function (filters::Filters)(bulkevol::BulkEvolved)
 end
 
 function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartition{Nsys},
-                   cache::HorizonCache, systems::SystemPartition) where {Nsys}
+                   cache::HorizonCache, systems::SystemPartition,
+                   integration::Integration) where {Nsys}
     # function to solve the nested system
     nested = Nested(systems, bulkconstrains, bulkderivs)
 
@@ -47,16 +48,14 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
         boundary    = getboundary(ff)
         gauge       = getgauge(ff)
 
-        # TODO: add parameter to turn filtering on or off
+        # filter after each integration (sub)step
         # TODO: see if worthwhile to @spawn here
-        if t > 0
+        if t > 0 && integration.filter_poststep
             @inbounds for aa in 1:Nsys
                 sys = systems[aa]
                 sys.filters(bulkevols[aa])
             end
-
             systems[1].filters(boundary)
-
             systems[Nsys].filters(gauge)
         end
 

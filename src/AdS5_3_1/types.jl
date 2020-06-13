@@ -36,6 +36,12 @@ Base.@kwdef struct AffineNull{T,TP<:Potential,TG<:GaugeCondition} <: EvolutionEq
     gaugecondition :: TG  = ConstantAH()
 end
 
+Base.@kwdef struct Integration{S}
+    dt              :: Float64
+    tmax            :: Float64
+    ODE_method      :: S    = AB3()
+    filter_poststep :: Bool = true
+end
 
 abstract type AbstractVars{T} <: AbstractVector{T} end
 

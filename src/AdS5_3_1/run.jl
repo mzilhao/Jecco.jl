@@ -1,10 +1,4 @@
 
-Base.@kwdef struct Integration
-    dt          :: Float64
-    tmax        :: Float64
-    # ODE_method  :: String   = "RK4"
-end
-
 Base.@kwdef struct InOut
     out_boundary_every :: Int
     out_bulk_every     :: Int
@@ -103,14 +97,13 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     evolvars  = EvolVars(boundary, gauge, bulkevols)
 
     # function that updates the state vector
-    rhs! = setup_rhs(bulkconstrains, bulkderivs, horizoncache, systems)
+    rhs! = setup_rhs(bulkconstrains, bulkderivs, horizoncache, systems, integration)
 
     dt0  = integration.dt
     tmax = integration.tmax
 
     tspan = (0.0, tmax)
-    # TODO: make parameter
-    alg   = AB3()
+    alg   = integration.ODE_method
 
     prob  = ODEProblem(rhs!, evolvars, tspan, evoleq)
     # http://docs.juliadiffeq.org/latest/basics/integrator.html
