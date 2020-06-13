@@ -1,4 +1,38 @@
 
+function (filters::Filters)(boundary::Boundary)
+    filters.ko_filter2D_x(boundary.a4)
+    filters.ko_filter2D_x(boundary.fx2)
+    filters.ko_filter2D_x(boundary.fy2)
+    filters.ko_filter2D_y(boundary.a4)
+    filters.ko_filter2D_y(boundary.fx2)
+    filters.ko_filter2D_y(boundary.fy2)
+    nothing
+end
+
+function (filters::Filters)(gauge::Gauge)
+    filters.ko_filter2D_x(gauge.xi)
+    filters.ko_filter2D_y(gauge.xi)
+    nothing
+end
+
+function (filters::Filters)(bulkevol::BulkEvolved)
+    filters.ko_filter_x(bulkevol.B1)
+    filters.ko_filter_x(bulkevol.B2)
+    filters.ko_filter_x(bulkevol.G)
+    filters.ko_filter_x(bulkevol.phi)
+
+    filters.ko_filter_y(bulkevol.B1)
+    filters.ko_filter_y(bulkevol.B2)
+    filters.ko_filter_y(bulkevol.G)
+    filters.ko_filter_y(bulkevol.phi)
+
+    filters.exp_filter(bulkevol.B1)
+    filters.exp_filter(bulkevol.B2)
+    filters.exp_filter(bulkevol.G)
+    filters.exp_filter(bulkevol.phi)
+    nothing
+end
+
 function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartition{Nsys},
                    cache::HorizonCache, systems::SystemPartition) where {Nsys}
     # function to solve the nested system
@@ -13,7 +47,18 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
         boundary    = getboundary(ff)
         gauge       = getgauge(ff)
 
-        # TODO: add filtering here for t > 0
+        # TODO: add parameter to turn filtering on or off
+        # TODO: see if worthwhile to @spawn here
+        if t > 0
+            @inbounds for aa in 1:Nsys
+                sys = systems[aa]
+                sys.filters(bulkevols[aa])
+            end
+
+            systems[1].filters(boundary)
+
+            systems[Nsys].filters(gauge)
+        end
 
         compute_boundary_t!(boundary_t, bulkevols[1], boundary, gauge, systems[1], evoleq)
 

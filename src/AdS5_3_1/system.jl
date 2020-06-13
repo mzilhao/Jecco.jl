@@ -51,7 +51,29 @@ function Jecco.Atlas(grid::SpecCartGrid3D)
     Atlas([inner_chart; outer_charts])
 end
 
-struct System{GT,Cu,Cx,Cy,Du,Dx,Dy,TI,TF1,TF2,TF3}
+struct Filters{F1,F2,F3,F4,F5}
+    exp_filter    :: F1
+    ko_filter_x   :: F2
+    ko_filter_y   :: F3
+    ko_filter2D_x :: F4
+    ko_filter2D_y :: F5
+end
+function Filters(filter_gamma::T, KO_order::Int, sigma_diss::T,
+                 Nu::Int, Nx::Int, Ny::Int) where {T}
+    exp_filter    = Exp_Filter{1}(filter_gamma, Nu, Nx, Ny)
+
+    ko_filter_x   = KO_Filter{2}(KO_order, sigma_diss, Nu, Nx, Ny)
+    ko_filter_y   = KO_Filter{3}(KO_order, sigma_diss, Nu, Nx, Ny)
+
+    ko_filter2D_x = KO_Filter{2}(KO_order, sigma_diss, 1, Nx, Ny)
+    ko_filter2D_y = KO_Filter{3}(KO_order, sigma_diss, 1, Nx, Ny)
+
+    Filters{typeof(exp_filter), typeof(ko_filter_x), typeof(ko_filter_y), typeof(ko_filter2D_x),
+            typeof(ko_filter2D_y)}(exp_filter, ko_filter_x, ko_filter_y,
+                                   ko_filter2D_x, ko_filter2D_y)
+end
+
+struct System{GT,Cu,Cx,Cy,Du,Dx,Dy,TI,TF}
     gridtype    :: GT
     ucoord      :: Cu
     xcoord      :: Cx
@@ -63,16 +85,12 @@ struct System{GT,Cu,Cx,Cy,Du,Dx,Dy,TI,TF1,TF2,TF3}
     Dy          :: Dy
     Dyy         :: Dy
     uinterp     :: TI
-    exp_filter  :: TF1
-    ko_filter_x :: TF2
-    ko_filter_y :: TF3
+    filters     :: TF
 end
 
 function System(gridtype::GT, ucoord::GaussLobattoCoord,
                 xcoord::CartesianCoord, ycoord::CartesianCoord, ord::Int,
                 filter_gamma::T, sigma_diss::T) where {GT<:GridType,T<:Real}
-    KO_order = ord + 1
-
     Du  = ChebDeriv{1}(1, ucoord.min, ucoord.max, ucoord.nodes)
     Duu = ChebDeriv{1}(2, ucoord.min, ucoord.max, ucoord.nodes)
 
@@ -84,18 +102,14 @@ function System(gridtype::GT, ucoord::GaussLobattoCoord,
 
     uinterp = ChebInterpolator(ucoord.min, ucoord.max, ucoord.nodes)
 
-    exp_filter  = Exp_Filter{1}(filter_gamma, ucoord.nodes, xcoord.nodes,
-                                ycoord.nodes)
-    ko_filter_x = KO_Filter{2}(KO_order, sigma_diss, ucoord.nodes, xcoord.nodes,
-                               ycoord.nodes)
-    ko_filter_y = KO_Filter{3}(KO_order, sigma_diss, ucoord.nodes, xcoord.nodes,
-                               ycoord.nodes)
+    KO_order = ord + 1
+    filters  = Filters(filter_gamma, KO_order, sigma_diss, ucoord.nodes,
+                       xcoord.nodes, ycoord.nodes)
 
     System{GT, typeof(ucoord), typeof(xcoord), typeof(ycoord), typeof(Du),
-           typeof(Dx), typeof(Dy), typeof(uinterp), typeof(exp_filter),
-           typeof(ko_filter_x), typeof(ko_filter_y)}(gridtype, ucoord, xcoord, ycoord,
-                                                     Du, Duu, Dx, Dxx, Dy, Dyy, uinterp,
-                                                     exp_filter, ko_filter_x, ko_filter_y)
+           typeof(Dx), typeof(Dy), typeof(uinterp),
+           typeof(filters)}(gridtype, ucoord, xcoord, ycoord,
+                            Du, Duu, Dx, Dxx, Dy, Dyy, uinterp, filters)
 end
 
 Base.size(sys::System) = (sys.ucoord.nodes, sys.xcoord.nodes, sys.ycoord.nodes)
