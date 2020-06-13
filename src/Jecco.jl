@@ -9,6 +9,7 @@ export Chart, Atlas
 export Cartesian, GaussLobatto
 export CenteredDiff, ChebDeriv
 export ChebInterpolator
+export KO_Filter, Exp_Filter
 
 export OpenPMDTimeSeries, get_field
 

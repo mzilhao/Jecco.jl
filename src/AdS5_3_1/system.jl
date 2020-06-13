@@ -255,3 +255,13 @@ function HorizonCache(sys::System, ord::Int)
                                   Dx_2D,  Dxx_2D,  Dy_2D,  Dyy_2D,  Dxy_2D,
                                   _Dx_2D, _Dxx_2D, _Dy_2D, _Dyy_2D, _Dxy_2D)
 end
+
+function Jecco.KO_Filter{N}(order::Int, sigma_diss::T, sys::System) where {T<:Real,N}
+    Nxx = size(sys)
+    KO_Filter{N}(order, sigma_diss, Nxx...)
+end
+
+function Jecco.Exp_Filter{N}(γ::T, sys::System) where {T<:Real,N}
+    Nxx = size(sys)
+    Exp_Filter{N}(γ, Nxx...)
+end
