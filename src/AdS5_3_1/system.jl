@@ -26,6 +26,8 @@ Base.@kwdef struct SpecCartGrid3D{T<:Real}
     u_outer_nodes    :: Int # number of points per domain
     u_inner_nodes    :: Int
     fd_order         :: Int     = 4
+    filter_γ         :: T       = 8.0
+    sigma_diss       :: T       = 0.2
 end
 
 function Jecco.Atlas(grid::SpecCartGrid3D)
@@ -49,22 +51,27 @@ function Jecco.Atlas(grid::SpecCartGrid3D)
     Atlas([inner_chart; outer_charts])
 end
 
-struct System{GT,Cu,Cx,Cy,Du,Dx,Dy,TI}
-    gridtype :: GT
-    ucoord   :: Cu
-    xcoord   :: Cx
-    ycoord   :: Cy
-    Du       :: Du
-    Duu      :: Du
-    Dx       :: Dx
-    Dxx      :: Dx
-    Dy       :: Dy
-    Dyy      :: Dy
-    uinterp  :: TI
+struct System{GT,Cu,Cx,Cy,Du,Dx,Dy,TI,TF1,TF2,TF3}
+    gridtype    :: GT
+    ucoord      :: Cu
+    xcoord      :: Cx
+    ycoord      :: Cy
+    Du          :: Du
+    Duu         :: Du
+    Dx          :: Dx
+    Dxx         :: Dx
+    Dy          :: Dy
+    Dyy         :: Dy
+    uinterp     :: TI
+    exp_filter  :: TF1
+    ko_filter_x :: TF2
+    ko_filter_y :: TF3
 end
 
 function System(gridtype::GT, ucoord::GaussLobattoCoord,
-                xcoord::CartesianCoord, ycoord::CartesianCoord, ord::Int) where {GT<:GridType}
+                xcoord::CartesianCoord, ycoord::CartesianCoord, ord::Int,
+                filter_gamma::T, sigma_diss::T) where {GT<:GridType,T<:Real}
+    KO_order = ord + 1
 
     Du  = ChebDeriv{1}(1, ucoord.min, ucoord.max, ucoord.nodes)
     Duu = ChebDeriv{1}(2, ucoord.min, ucoord.max, ucoord.nodes)
@@ -77,9 +84,18 @@ function System(gridtype::GT, ucoord::GaussLobattoCoord,
 
     uinterp = ChebInterpolator(ucoord.min, ucoord.max, ucoord.nodes)
 
+    exp_filter  = Exp_Filter{1}(filter_gamma, ucoord.nodes, xcoord.nodes,
+                                ycoord.nodes)
+    ko_filter_x = KO_Filter{2}(KO_order, sigma_diss, ucoord.nodes, xcoord.nodes,
+                               ycoord.nodes)
+    ko_filter_y = KO_Filter{3}(KO_order, sigma_diss, ucoord.nodes, xcoord.nodes,
+                               ycoord.nodes)
+
     System{GT, typeof(ucoord), typeof(xcoord), typeof(ycoord), typeof(Du),
-           typeof(Dx), typeof(Dy), typeof(uinterp)}(gridtype, ucoord, xcoord, ycoord,
-                                                    Du, Duu, Dx, Dxx, Dy, Dyy, uinterp)
+           typeof(Dx), typeof(Dy), typeof(uinterp), typeof(exp_filter),
+           typeof(ko_filter_x), typeof(ko_filter_y)}(gridtype, ucoord, xcoord, ycoord,
+                                                     Du, Duu, Dx, Dxx, Dy, Dyy, uinterp,
+                                                     exp_filter, ko_filter_x, ko_filter_y)
 end
 
 Base.size(sys::System) = (sys.ucoord.nodes, sys.xcoord.nodes, sys.ycoord.nodes)
@@ -124,10 +140,11 @@ function SystemPartition(grid::SpecCartGrid3D)
     xcoord  = Cartesian{2}("x", grid.x_min, grid.x_max, grid.x_nodes, endpoint=false)
     ycoord  = Cartesian{3}("y", grid.y_min, grid.y_max, grid.y_nodes, endpoint=false)
 
-    inner_system = System(Inner(), u_inner_coord, xcoord, ycoord, grid.fd_order)
+    inner_system = System(Inner(), u_inner_coord, xcoord, ycoord, grid.fd_order,
+                          grid.filter_γ, grid.sigma_diss)
 
-    outer_systems = [System(Outer(), u_outer_coords[i], xcoord, ycoord, grid.fd_order)
-                     for i in 1:N_outer_sys]
+    outer_systems = [System(Outer(), u_outer_coords[i], xcoord, ycoord, grid.fd_order,
+                            grid.filter_γ, grid.sigma_diss) for i in 1:N_outer_sys]
 
     SystemPartition([inner_system; outer_systems])
 end
@@ -254,14 +271,4 @@ function HorizonCache(sys::System, ord::Int)
     HorizonCache{T,typeof(Dx_2D)}(bulkhorizon, axx, ayy, axy, bx, by, cc, b_vec,
                                   Dx_2D,  Dxx_2D,  Dy_2D,  Dyy_2D,  Dxy_2D,
                                   _Dx_2D, _Dxx_2D, _Dy_2D, _Dyy_2D, _Dxy_2D)
-end
-
-function Jecco.KO_Filter{N}(order::Int, sigma_diss::T, sys::System) where {T<:Real,N}
-    Nxx = size(sys)
-    KO_Filter{N}(order, sigma_diss, Nxx...)
-end
-
-function Jecco.Exp_Filter{N}(γ::T, sys::System) where {T<:Real,N}
-    Nxx = size(sys)
-    Exp_Filter{N}(γ, Nxx...)
 end
