@@ -122,9 +122,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     output(evolvars)
 
     # for stdout info
-    Aend = bulkconstrains[end].A
-
-    Jecco.out_info(tinfo.it, tinfo.t, 0.0, Aend, "A c=$Nsys", 1, 200)
+    Jecco.out_info(tinfo.it, tinfo.t, 0.0, gauge.xi, "ξ", 1, 200)
 
     tstart = time()
     t0     = tinfo.t
@@ -137,9 +135,11 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
         # write data
         output(u)
 
+        gauge = getgauge(u)
+
         telapsed = (time() - tstart) / 3600
         deltat   = t - t0
-        Jecco.out_info(tinfo.it, tinfo.t, deltat/telapsed, Aend, "A c=$Nsys", 1, 200)
+        Jecco.out_info(tinfo.it, tinfo.t, deltat/telapsed, gauge.xi, "ξ", 1, 200)
     end
 
     println("-------------------------------------------------------------")
