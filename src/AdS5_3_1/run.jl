@@ -25,11 +25,36 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
     gauge     = getgauge(u)
     bulkevols = getbulkevolvedpartition(u)
 
-    # output fields
+    #=
+    for analysis, it's useful to have the boundary behaviour of the bulk fields,
+    so let's output those as well in the boundary file. note that the slicing
+    operation [1,:,:] converts 3D arrays into 2D arrays; since we want the same
+    shape as in the remaining boundary fields -- 3D arrays of size (1,Nx,Ny) --
+    we must reshape them first.
+    =#
+    b14  = reshape(bulkevols[1].B1[1,:,:],  size(chart2D))
+    b24  = reshape(bulkevols[1].B2[1,:,:],  size(chart2D))
+    g4   = reshape(bulkevols[1].G[1,:,:],   size(chart2D))
+    phi3 = reshape(bulkevols[1].phi[1,:,:], size(chart2D))
+
+    #= output fields
+
+    note that the field "phi3" is just the leading boundary behaviour of the
+    "phi" field in the inner grid. to compute the usual "phi2" quantity one
+    needs to do (at the post-processing stage)
+
+      phi2 = phi0^3 phi3 - phi0 xi^2
+
+    at a later stage we may wish to output this quantity directly
+    =#
     boundary_fields = (
-        Jecco.Field("a4",  boundary.a4,  chart2D),
-        Jecco.Field("fx2", boundary.fx2, chart2D),
-        Jecco.Field("fy2", boundary.fy2, chart2D),
+        Jecco.Field("a4",   boundary.a4,  chart2D),
+        Jecco.Field("fx2",  boundary.fx2, chart2D),
+        Jecco.Field("fy2",  boundary.fy2, chart2D),
+        Jecco.Field("b14",  b14,          chart2D),
+        Jecco.Field("b24",  b24,          chart2D),
+        Jecco.Field("g4",   g4,           chart2D),
+        Jecco.Field("phi3", phi3,         chart2D),
     )
     gauge_fields = Jecco.Field("xi", gauge.xi, chart2D)
     bulkevols_fields = ntuple(i -> (
