@@ -72,6 +72,10 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
         boundary_fields[1].data = boundary.a4
         boundary_fields[2].data = boundary.fx2
         boundary_fields[3].data = boundary.fy2
+        @views copyto!(boundary_fields[4].data, bulkevols[1].B1[1,:,:])
+        @views copyto!(boundary_fields[5].data, bulkevols[1].B2[1,:,:])
+        @views copyto!(boundary_fields[6].data, bulkevols[1].G[1,:,:])
+        @views copyto!(boundary_fields[7].data, bulkevols[1].phi[1,:,:])
 
         gauge_fields.data = gauge.xi
 
