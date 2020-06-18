@@ -92,7 +92,7 @@ using Jecco.AdS5_3_1
 
         chart_out_i = atlas.charts[i]
         append!(chart_out, [chart_out_i])
-        
+
         uu_out_i    = chart_out_i.coords[1][:]
         append!(uu_out, [uu_out_i])
 
@@ -133,7 +133,7 @@ using Jecco.AdS5_3_1
     Au_in_reg_exact = zeros(length(A_in))
     a4 = -id.energy_dens/0.75
 
-    # A regularized inner grid    
+    # A regularized inner grid
     for i in 1:length(A_in)
         u = uu_in[i]
         A = A_in[i]
@@ -168,5 +168,5 @@ using Jecco.AdS5_3_1
 
     @test A_out_full_num  ≈ A_out_full_exact
     #@test Au_out_full_num ≈ Au_out_full_exact atol = 1.e-2
-    
+
 end
