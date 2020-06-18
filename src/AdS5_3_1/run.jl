@@ -56,6 +56,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     else
         checkpoint = x -> nothing
     end
+    last_checkpoint_walltime = 0.0
 
     # write initial data
     output_evol(evolvars)
@@ -66,25 +67,30 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
     tstart = time()
     t0     = tinfo.t
+
     # start integration
     for (u,t) in tuples(integrator)
         tinfo.it     += 1
         tinfo.dt      = integrator.dt
         tinfo.t       = t
         tinfo.runtime = time() - tstart
+        telapsed      = tinfo.runtime / 3600
+
+        # write info to stdout
+        gauge  = getgauge(u)
+        deltat = t - t0
+        Jecco.out_info(tinfo.it, tinfo.t, deltat/telapsed, gauge.xi, "ξ", 1, 200)
 
         # write data
         output_evol(u)
         output_constrained(bulkconstrains)
 
         # checkpoint
-        checkpoint(u)
+        if telapsed >= last_checkpoint_walltime + io.checkpoint_every_walltime_hours
+            last_checkpoint_walltime = tinfo.runtime / 3600
+            checkpoint(u)
+        end
 
-        gauge = getgauge(u)
-
-        telapsed = tinfo.runtime / 3600
-        deltat   = t - t0
-        Jecco.out_info(tinfo.it, tinfo.t, deltat/telapsed, gauge.xi, "ξ", 1, 200)
     end
 
     println("-------------------------------------------------------------")

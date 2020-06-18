@@ -166,36 +166,28 @@ function checkpoint_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.Tim
         Jecco.Field("phi c=$i", bulkevols[i].phi, charts[i])
     ), Nsys)
 
-    last_checkpoint_walltime = tinfo.runtime / 3600
-
     function (u::EvolVars)
         boundary  = getboundary(u)
         gauge     = getgauge(u)
         bulkevols = getbulkevolvedpartition(u)
 
-        telapsed  = tinfo.runtime / 3600
+        boundary_fields[1].data = boundary.a4
+        boundary_fields[2].data = boundary.fx2
+        boundary_fields[3].data = boundary.fy2
 
-        if telapsed >= last_checkpoint_walltime + io.checkpoint_every_walltime_hours
-            last_checkpoint_walltime = tinfo.runtime / 3600
+        gauge_fields.data = gauge.xi
 
-            boundary_fields[1].data = boundary.a4
-            boundary_fields[2].data = boundary.fx2
-            boundary_fields[3].data = boundary.fy2
-
-            gauge_fields.data = gauge.xi
-
-            @inbounds for i in 1:Nsys
-                bulkevols_fields[i][1].data = bulkevols[i].B1
-                bulkevols_fields[i][2].data = bulkevols[i].B2
-                bulkevols_fields[i][3].data = bulkevols[i].G
-                bulkevols_fields[i][4].data = bulkevols[i].phi
-            end
-
-            # write data
-            out(boundary_fields)
-            out(gauge_fields)
-            out.(bulkevols_fields)
+        @inbounds for i in 1:Nsys
+            bulkevols_fields[i][1].data = bulkevols[i].B1
+            bulkevols_fields[i][2].data = bulkevols[i].B2
+            bulkevols_fields[i][3].data = bulkevols[i].G
+            bulkevols_fields[i][4].data = bulkevols[i].phi
         end
+
+        # write data
+        out(boundary_fields)
+        out(gauge_fields)
+        out.(bulkevols_fields)
 
         nothing
     end
