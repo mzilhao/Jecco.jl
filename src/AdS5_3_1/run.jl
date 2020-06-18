@@ -60,6 +60,12 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     end
     last_checkpoint_walltime = 0.0
 
+    # remove termination trigger file, if it exists
+    if io.termination_from_file
+        finish_him = abspath(io.folder, io.termination_file)
+        rm(finish_him, force=true)
+    end
+
     # write initial data
     output_evol(evolvars)
     output_constrained(bulkconstrains)
@@ -98,6 +104,15 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
             checkpoint(u)
             terminate!(integrator)
         end
+        if io.termination_from_file && tinfo.it % io.check_file_every == 0
+            if isfile(finish_him)
+                println("(INFO) Found termination file.")
+                println("(INFO) Triggering termination...")
+                checkpoint(u)
+                terminate!(integrator)
+            end
+        end
+
     end
 
     println("-------------------------------------------------------------")

@@ -61,9 +61,14 @@ Base.@kwdef struct InOut
     # stop and checkpoint upon reaching this walltime
     max_walltime       :: Float64 = 1.e20
 
+    # trigger termination
+    termination_from_file :: Bool    = true
+    check_file_every      :: Int     = 10
+    termination_file      :: String  = "TERMINATE"
+
     # use name of script by default
-    folder             :: String  = ""
-    checkpoint_folder  :: String  = ""
+    folder             :: String  = splitext(basename(Base.source_path()))[1]
+    checkpoint_folder  :: String  = splitext(basename(Base.source_path()))[1]
 
     # be very careful with this option! it will remove the whole folder contents
     # if set to true! use only for fast debugging runs
