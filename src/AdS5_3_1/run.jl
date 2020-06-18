@@ -69,32 +69,34 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
         gauge     = getgauge(u)
         bulkevols = getbulkevolvedpartition(u)
 
-        boundary_fields[1].data = boundary.a4
-        boundary_fields[2].data = boundary.fx2
-        boundary_fields[3].data = boundary.fy2
-        @views copyto!(boundary_fields[4].data, bulkevols[1].B1[1,:,:])
-        @views copyto!(boundary_fields[5].data, bulkevols[1].B2[1,:,:])
-        @views copyto!(boundary_fields[6].data, bulkevols[1].G[1,:,:])
-        @views copyto!(boundary_fields[7].data, bulkevols[1].phi[1,:,:])
-
-        gauge_fields.data = gauge.xi
-
-        @inbounds for i in 1:Nsys
-            bulkevols_fields[i][1].data = bulkevols[i].B1
-            bulkevols_fields[i][2].data = bulkevols[i].B2
-            bulkevols_fields[i][3].data = bulkevols[i].G
-            bulkevols_fields[i][4].data = bulkevols[i].phi
-        end
-
         it = tinfo.it
-        # write data
+
         if it % io.out_boundary_every == 0
+            boundary_fields[1].data = boundary.a4
+            boundary_fields[2].data = boundary.fx2
+            boundary_fields[3].data = boundary.fy2
+            @views copyto!(boundary_fields[4].data, bulkevols[1].B1[1,:,:])
+            @views copyto!(boundary_fields[5].data, bulkevols[1].B2[1,:,:])
+            @views copyto!(boundary_fields[6].data, bulkevols[1].G[1,:,:])
+            @views copyto!(boundary_fields[7].data, bulkevols[1].phi[1,:,:])
+            # write data
             out_bdry(boundary_fields)
         end
+
         if it % io.out_gauge_every == 0
+            gauge_fields.data = gauge.xi
+            # write data
             out_gauge(gauge_fields)
         end
+
         if it % io.out_bulk_every == 0
+            @inbounds for i in 1:Nsys
+                bulkevols_fields[i][1].data = bulkevols[i].B1
+                bulkevols_fields[i][2].data = bulkevols[i].B2
+                bulkevols_fields[i][3].data = bulkevols[i].G
+                bulkevols_fields[i][4].data = bulkevols[i].phi
+            end
+            # write data
             out_bulk.(bulkevols_fields)
         end
 
