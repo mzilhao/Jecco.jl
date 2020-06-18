@@ -1,14 +1,4 @@
 
-Base.@kwdef struct InOut
-    out_boundary_every :: Int
-    out_bulk_every     :: Int
-    out_gauge_every    :: Int
-    folder             :: String  = "./data"
-    # be very careful with this option! it will remove the whole folder contents
-    # if set to true! use only for fast debugging runs
-    remove_existing    :: Bool    = false
-end
-
 function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInfo,
                        io::InOut)
     Nsys = length(charts)

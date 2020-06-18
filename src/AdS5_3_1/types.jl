@@ -36,12 +36,32 @@ Base.@kwdef struct AffineNull{T,TP<:Potential,TG<:GaugeCondition} <: EvolutionEq
     gaugecondition :: TG  = ConstantAH()
 end
 
+"""
+Parameters for the time evolution
+"""
 Base.@kwdef struct Integration{S}
     dt              :: Float64
     tmax            :: Float64
     ODE_method      :: S    = AB3()
     filter_poststep :: Bool = true
 end
+
+"""
+Parameters for Input/Output
+"""
+Base.@kwdef struct InOut
+    out_boundary_every :: Int
+    out_bulk_every     :: Int
+    out_gauge_every    :: Int
+
+    # use name of script by default
+    folder             :: String  = ""
+
+    # be very careful with this option! it will remove the whole folder contents
+    # if set to true! use only for fast debugging runs
+    remove_existing    :: Bool    = false
+end
+
 
 abstract type AbstractVars{T} <: AbstractVector{T} end
 
