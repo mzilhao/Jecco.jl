@@ -3,12 +3,13 @@ using Dates
 using Printf
 
 mutable struct TimeInfo{T<:Real}
-    it  :: Int
-    t   :: T
-    dt  :: T
+    it      :: Int
+    t       :: T
+    dt      :: T
+    runtime :: T
 end
-TimeInfo(it::Int, t::T, dt::T) where {T} = TimeInfo{T}(it, t, dt)
-TimeInfo() = TimeInfo(0, 0.0, 0.0)
+TimeInfo(it::Int, t::T, dt::T, runtime::T) where {T} = TimeInfo{T}(it, t, dt, runtime)
+TimeInfo() = TimeInfo(0, 0.0, 0.0, 0.0)
 
 mutable struct Field{A,G}
     name  :: String
