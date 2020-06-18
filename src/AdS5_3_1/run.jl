@@ -94,7 +94,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
         end
 
         # terminate run?
-        if t >= tmax
+        if t >= tmax || telapsed >= io.max_walltime
             checkpoint(u)
             terminate!(integrator)
         end

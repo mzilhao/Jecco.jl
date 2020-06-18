@@ -58,6 +58,9 @@ Base.@kwdef struct InOut
     out_bulkconstrained_every       :: Int     = -1
     checkpoint_every_walltime_hours :: Float64 = -1.0
 
+    # stop and checkpoint upon reaching this walltime
+    max_walltime       :: Float64 = 1.e20
+
     # use name of script by default
     folder             :: String  = ""
     checkpoint_folder  :: String  = ""
