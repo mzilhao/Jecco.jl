@@ -54,6 +54,9 @@ Base.@kwdef struct InOut
     out_bulk_every     :: Int
     out_gauge_every    :: Int
 
+    # negative value suppresses output
+    out_bulkconstrained_every :: Int = -1
+
     # use name of script by default
     folder             :: String  = ""
 

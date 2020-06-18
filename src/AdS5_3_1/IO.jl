@@ -93,3 +93,48 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
         nothing
     end
 end
+
+
+function output_writer(bulkconstrains::BulkPartition{Nsys,BulkConstrained{T}}, charts,
+                       tinfo::Jecco.TimeInfo, io::InOut) where {Nsys,T}
+    @assert Nsys == length(charts)
+
+    # output structure
+    out  = Jecco.Output(io.folder, "constrained_", tinfo;
+                        remove_existing=io.remove_existing)
+
+    # output fields
+    fields = ntuple(i -> (
+        Jecco.Field("S c=$i",    bulkconstrains[i].S,    charts[i]),
+        Jecco.Field("Fx c=$i",   bulkconstrains[i].Fx,   charts[i]),
+        Jecco.Field("Fy c=$i",   bulkconstrains[i].Fy,   charts[i]),
+        Jecco.Field("B1d c=$i",  bulkconstrains[i].B1d,  charts[i]),
+        Jecco.Field("B2d c=$i",  bulkconstrains[i].B2d,  charts[i]),
+        Jecco.Field("Gd c=$i",   bulkconstrains[i].Gd,   charts[i]),
+        Jecco.Field("phid c=$i", bulkconstrains[i].phid, charts[i]),
+        Jecco.Field("Sd c=$i",   bulkconstrains[i].Sd,   charts[i]),
+        Jecco.Field("A c=$i",    bulkconstrains[i].A,    charts[i])
+    ), Nsys)
+
+    function (bulkconstrains)
+        it = tinfo.it
+
+        if it % io.out_bulkconstrained_every == 0
+            @inbounds for i in 1:Nsys
+                fields[i][1].data = bulkconstrains[i].S
+                fields[i][2].data = bulkconstrains[i].Fx
+                fields[i][3].data = bulkconstrains[i].Fy
+                fields[i][4].data = bulkconstrains[i].B1d
+                fields[i][5].data = bulkconstrains[i].B2d
+                fields[i][6].data = bulkconstrains[i].Gd
+                fields[i][7].data = bulkconstrains[i].phid
+                fields[i][8].data = bulkconstrains[i].Sd
+                fields[i][9].data = bulkconstrains[i].A
+            end
+            # write data
+            out.(fields)
+        end
+
+        nothing
+    end
+end

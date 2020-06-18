@@ -44,6 +44,12 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     # prepare function to write data
     output_evol = output_writer(evolvars, chart2D, atlas.charts, tinfo, io)
 
+    if io.out_bulkconstrained_every > 0
+        output_constrained = output_writer(bulkconstrains, atlas.charts, tinfo, io)
+    else
+        output_constrained = x -> nothing
+    end
+
     # write initial data
     output_evol(evolvars)
 
@@ -60,6 +66,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
         # write data
         output_evol(u)
+        output_constrained(bulkconstrains)
 
         gauge = getgauge(u)
 
