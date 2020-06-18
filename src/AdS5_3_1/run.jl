@@ -28,7 +28,9 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     dt0  = integration.dt
     tmax = integration.tmax
 
-    tspan = (0.0, tmax)
+    # decide in the evolution loop when to terminate the run, so set here an
+    # impossibly large value for tstop
+    tspan = (0.0, 1.e20)
     alg   = integration.ODE_method
 
     prob  = ODEProblem(rhs!, evolvars, tspan, evoleq)
@@ -87,10 +89,15 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
         # checkpoint
         if telapsed >= last_checkpoint_walltime + io.checkpoint_every_walltime_hours
-            last_checkpoint_walltime = tinfo.runtime / 3600
+            last_checkpoint_walltime = telapsed
             checkpoint(u)
         end
 
+        # terminate run?
+        if t >= tmax
+            checkpoint(u)
+            terminate!(integrator)
+        end
     end
 
     println("-------------------------------------------------------------")
