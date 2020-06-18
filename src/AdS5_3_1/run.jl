@@ -41,7 +41,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     empty   = Cartesian{1}("u", 0.0, 0.0, 1)
     chart2D = Chart(empty, systems[1].xcoord, systems[1].ycoord)
 
-    # prepare function to write data
+    # prepare functions to write data
     output_evol = output_writer(evolvars, chart2D, atlas.charts, tinfo, io)
 
     if io.out_bulkconstrained_every > 0
@@ -50,8 +50,16 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
         output_constrained = x -> nothing
     end
 
+    # prepare checkpointing function
+    if io.checkpoint_every_walltime_hours > 0
+        checkpoint = checkpoint_writer(evolvars, chart2D, atlas.charts, tinfo, io)
+    else
+        checkpoint = x -> nothing
+    end
+
     # write initial data
     output_evol(evolvars)
+    output_constrained(bulkconstrains)
 
     # for stdout info
     Jecco.out_info(tinfo.it, tinfo.t, 0.0, gauge.xi, "ξ", 1, 200)
@@ -60,17 +68,21 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     t0     = tinfo.t
     # start integration
     for (u,t) in tuples(integrator)
-        tinfo.it += 1
-        tinfo.dt  = integrator.dt
-        tinfo.t   = t
+        tinfo.it     += 1
+        tinfo.dt      = integrator.dt
+        tinfo.t       = t
+        tinfo.runtime = time() - tstart
 
         # write data
         output_evol(u)
         output_constrained(bulkconstrains)
 
+        # checkpoint
+        checkpoint(u)
+
         gauge = getgauge(u)
 
-        telapsed = (time() - tstart) / 3600
+        telapsed = tinfo.runtime / 3600
         deltat   = t - t0
         Jecco.out_info(tinfo.it, tinfo.t, deltat/telapsed, gauge.xi, "ξ", 1, 200)
     end

@@ -138,3 +138,65 @@ function output_writer(bulkconstrains::BulkPartition{Nsys,BulkConstrained{T}}, c
         nothing
     end
 end
+
+
+function checkpoint_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInfo,
+                           io::InOut)
+    Nsys = length(charts)
+
+    # output structure
+    out  = Jecco.Output(io.checkpoint_folder, "checkpoint_it", tinfo;
+                        remove_existing=false)
+
+    boundary  = getboundary(u)
+    gauge     = getgauge(u)
+    bulkevols = getbulkevolvedpartition(u)
+
+    # output fields
+    boundary_fields = (
+        Jecco.Field("a4",   boundary.a4,  chart2D),
+        Jecco.Field("fx2",  boundary.fx2, chart2D),
+        Jecco.Field("fy2",  boundary.fy2, chart2D),
+    )
+    gauge_fields = Jecco.Field("xi", gauge.xi, chart2D)
+    bulkevols_fields = ntuple(i -> (
+        Jecco.Field("B1 c=$i",  bulkevols[i].B1,  charts[i]),
+        Jecco.Field("B2 c=$i",  bulkevols[i].B2,  charts[i]),
+        Jecco.Field("G c=$i",   bulkevols[i].G,   charts[i]),
+        Jecco.Field("phi c=$i", bulkevols[i].phi, charts[i])
+    ), Nsys)
+
+    last_checkpoint_walltime = tinfo.runtime / 3600
+
+    function (u::EvolVars)
+        boundary  = getboundary(u)
+        gauge     = getgauge(u)
+        bulkevols = getbulkevolvedpartition(u)
+
+        telapsed  = tinfo.runtime / 3600
+
+        if telapsed >= last_checkpoint_walltime + io.checkpoint_every_walltime_hours
+            last_checkpoint_walltime = tinfo.runtime / 3600
+
+            boundary_fields[1].data = boundary.a4
+            boundary_fields[2].data = boundary.fx2
+            boundary_fields[3].data = boundary.fy2
+
+            gauge_fields.data = gauge.xi
+
+            @inbounds for i in 1:Nsys
+                bulkevols_fields[i][1].data = bulkevols[i].B1
+                bulkevols_fields[i][2].data = bulkevols[i].B2
+                bulkevols_fields[i][3].data = bulkevols[i].G
+                bulkevols_fields[i][4].data = bulkevols[i].phi
+            end
+
+            # write data
+            out(boundary_fields)
+            out(gauge_fields)
+            out.(bulkevols_fields)
+        end
+
+        nothing
+    end
+end
