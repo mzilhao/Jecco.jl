@@ -36,8 +36,8 @@ io = InOut(
 )
 
 integration = Integration(
-    dt              = 0.004,
-    tmax            = 10.0,
+    dt              = 0.001,
+    tmax            = 5.0,
     ODE_method      = AdS5_3_1.AB3(),
     filter_poststep = true,
 )
