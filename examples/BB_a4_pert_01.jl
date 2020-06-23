@@ -7,18 +7,18 @@ grid = SpecCartGrid3D(
     x_nodes          =  128,
     y_min            = -5.0,
     y_max            =  5.0,
-    y_nodes          =  12,
+    y_nodes          =  6,
     u_outer_min      =  0.1,
     u_outer_max      =  1.01,
     u_outer_domains  =  1,
-    u_outer_nodes    =  56,
+    u_outer_nodes    =  48,
     u_inner_nodes    =  12,
     fd_order         =  4,
     sigma_diss       =  0.2,
 )
 
 id = BlackBraneB1_a4_pert(
-    energy_dens = 0.01,
+    energy_dens = 1.0,
     AH_pos = 1.0,
 )
 
