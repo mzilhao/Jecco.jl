@@ -93,7 +93,7 @@ julia> ts.current_i
 
 ```
 """
-function get_field(ts::OpenPMDTimeSeries; it::Int, field::String)
+function get_field(ts::OpenPMDTimeSeries; it::Int, field::String, verbose::Bool=false)
     # index that corresponds to the closest iteration requested
     ts.current_i = argmin(abs.(it .- ts.iterations))
     # the closest iteration found (it need not be the requested one)
@@ -101,6 +101,9 @@ function get_field(ts::OpenPMDTimeSeries; it::Int, field::String)
     # and corresponding file
     filename = ts.files[ts.current_i]
 
+    if verbose
+        println("Reading file $filename")
+    end
     # open file
     fid = h5open(filename, "r")
 
