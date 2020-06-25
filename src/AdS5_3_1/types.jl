@@ -66,9 +66,12 @@ Base.@kwdef struct InOut
     check_file_every      :: Int     = 10
     termination_file      :: String  = "TERMINATE"
 
+    # name of script
+    _parfile           :: String  = splitext(basename(Base.source_path()))[1]
+
     # use name of script by default
-    folder             :: String  = splitext(basename(Base.source_path()))[1]
-    checkpoint_folder  :: String  = splitext(basename(Base.source_path()))[1]
+    folder             :: String  = _parfile
+    checkpoint_folder  :: String  = _parfile
 
     # be very careful with this option! it will remove the whole folder contents
     # if set to true! use only for fast debugging runs
