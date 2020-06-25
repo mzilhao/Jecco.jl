@@ -248,8 +248,11 @@ end
 # recover all evolved variables from a checkpoint file
 function recover(bulkevols::BulkPartition, boundary::Boundary, gauge::Gauge,
                  recovery_dir::String)
-
-    ts = OpenPMDTimeSeries(recovery_dir; prefix="checkpoint_it")
+    ts = try
+        OpenPMDTimeSeries(recovery_dir; prefix="checkpoint_it")
+    catch e
+        throw(e)
+    end
     # grab last iteration of the timeseries, which should be the latest checkpoint
     it = ts.iterations[end]
 
@@ -257,5 +260,5 @@ function recover(bulkevols::BulkPartition, boundary::Boundary, gauge::Gauge,
     restore!(boundary, ts, it)
     restore!(gauge, ts, it)
 
-    ts
+    ts.current_iteration, ts.current_t
 end
