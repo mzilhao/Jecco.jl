@@ -9,12 +9,17 @@ mutable struct OpenPMDTimeSeries
     current_i         :: Int64
     current_iteration :: Int64
     current_t         :: Float64
-
-    function OpenPMDTimeSeries(foldername::String, prefix::String)
-        iterations, files = list_h5_files(foldername, prefix=prefix)
-        new(iterations, files, 0, 0, 0.0)
-    end
 end
+
+function OpenPMDTimeSeries(foldername::String, prefix::String)
+    iterations, files = list_h5_files(foldername, prefix=prefix)
+
+    if length(iterations) == 0
+        throw(ErrorException("No files found."))
+    end
+    OpenPMDTimeSeries(iterations, files, 0, 0, 0.0)
+end
+
 
 """
     OpenPMDTimeSeries(foldername::String; prefix::String="")
