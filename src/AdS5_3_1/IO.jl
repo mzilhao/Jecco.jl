@@ -4,11 +4,11 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
     Nsys = length(charts)
 
     # output structures
-    out_bdry  = Jecco.Output(io.folder, "boundary_", tinfo;
+    out_bdry  = Jecco.Output(io.out_dir, "boundary_", tinfo;
                              remove_existing=io.remove_existing)
-    out_gauge = Jecco.Output(io.folder, "gauge_", tinfo;
+    out_gauge = Jecco.Output(io.out_dir, "gauge_", tinfo;
                              remove_existing=io.remove_existing)
-    out_bulk  = Jecco.Output(io.folder, "bulk_", tinfo;
+    out_bulk  = Jecco.Output(io.out_dir, "bulk_", tinfo;
                              remove_existing=io.remove_existing)
 
     boundary  = getboundary(u)
@@ -100,7 +100,7 @@ function output_writer(bulkconstrains::BulkPartition{Nsys,BulkConstrained{T}}, c
     @assert Nsys == length(charts)
 
     # output structure
-    out  = Jecco.Output(io.folder, "constrained_", tinfo;
+    out  = Jecco.Output(io.out_dir, "constrained_", tinfo;
                         remove_existing=io.remove_existing)
 
     # output fields
@@ -145,7 +145,7 @@ function checkpoint_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.Tim
     Nsys = length(charts)
 
     # output structure
-    out  = Jecco.Output(io.checkpoint_folder, "checkpoint_it", tinfo;
+    out  = Jecco.Output(io.checkpoint_dir, "checkpoint_it", tinfo;
                         remove_existing=false)
 
     boundary  = getboundary(u)

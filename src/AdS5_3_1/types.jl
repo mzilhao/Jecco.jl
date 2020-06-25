@@ -70,8 +70,8 @@ Base.@kwdef struct InOut
     _parfile           :: String  = splitext(basename(Base.source_path()))[1]
 
     # use name of script by default
-    folder             :: String  = _parfile
-    checkpoint_folder  :: String  = _parfile
+    out_dir            :: String  = _parfile
+    checkpoint_dir     :: String  = _parfile
 
     # be very careful with this option! it will remove the whole folder contents
     # if set to true! use only for fast debugging runs

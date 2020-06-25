@@ -62,7 +62,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
     # remove termination trigger file, if it exists
     if io.termination_from_file
-        finish_him = abspath(io.folder, io.termination_file)
+        finish_him = abspath(io.out_dir, io.termination_file)
         rm(finish_him, force=true)
     end
 
