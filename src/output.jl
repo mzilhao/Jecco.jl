@@ -46,9 +46,9 @@ struct Output{T}
     function Output{T}(dir::String, prefix::String,
                        software::String, software_version::String, tinfo::TimeInfo{T};
                        remove_existing::Bool=false) where {T}
-        # if no name specified, use name of script
+        # if no name specified error out
         if dir == ""
-            dir = splitext(basename(Base.source_path()))[1]
+            error("Output folder cannot be empty string.")
         end
 
         # create folder if it doesn't exist already

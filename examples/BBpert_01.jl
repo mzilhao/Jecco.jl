@@ -31,7 +31,6 @@ io = InOut(
     out_boundary_every  = 10,
     out_bulk_every      = 200,
     out_gauge_every     = 10,
-    folder              = "",
 )
 
 integration = Integration(

@@ -4,11 +4,11 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
     Nsys = length(charts)
 
     # output structures
-    out_bdry  = Jecco.Output(io.folder, "boundary_", tinfo;
+    out_bdry  = Jecco.Output(io.out_dir, "boundary_", tinfo;
                              remove_existing=io.remove_existing)
-    out_gauge = Jecco.Output(io.folder, "gauge_", tinfo;
+    out_gauge = Jecco.Output(io.out_dir, "gauge_", tinfo;
                              remove_existing=io.remove_existing)
-    out_bulk  = Jecco.Output(io.folder, "bulk_", tinfo;
+    out_bulk  = Jecco.Output(io.out_dir, "bulk_", tinfo;
                              remove_existing=io.remove_existing)
 
     boundary  = getboundary(u)
@@ -100,7 +100,7 @@ function output_writer(bulkconstrains::BulkPartition{Nsys,BulkConstrained{T}}, c
     @assert Nsys == length(charts)
 
     # output structure
-    out  = Jecco.Output(io.folder, "constrained_", tinfo;
+    out  = Jecco.Output(io.out_dir, "constrained_", tinfo;
                         remove_existing=io.remove_existing)
 
     # output fields
@@ -145,7 +145,7 @@ function checkpoint_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.Tim
     Nsys = length(charts)
 
     # output structure
-    out  = Jecco.Output(io.checkpoint_folder, "checkpoint_it", tinfo;
+    out  = Jecco.Output(io.checkpoint_dir, "checkpoint_it", tinfo;
                         remove_existing=false)
 
     boundary  = getboundary(u)
@@ -191,4 +191,71 @@ function checkpoint_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.Tim
 
         nothing
     end
+end
+
+
+# restore all bulk evolved fields
+function restore!(bulkevols::BulkPartition{Nsys}, ts::OpenPMDTimeSeries,
+                  it::Int) where {Nsys}
+    for i in 1:Nsys
+        B1, chart = get_field(ts, it=it, field="B1 c=$i")
+        @assert size(B1) == size(bulkevols[i].B1)
+        copyto!(bulkevols[i].B1, B1)
+
+        B2, chart = get_field(ts, it=it, field="B2 c=$i")
+        @assert size(B2) == size(bulkevols[i].B2)
+        copyto!(bulkevols[i].B2, B2)
+
+        G, chart = get_field(ts, it=it, field="G c=$i")
+        @assert size(G) == size(bulkevols[i].G)
+        copyto!(bulkevols[i].G, G)
+
+        phi, chart = get_field(ts, it=it, field="phi c=$i")
+        @assert size(phi) == size(bulkevols[i].phi)
+        copyto!(bulkevols[i].phi, phi)
+    end
+
+    nothing
+end
+
+# restore all boundary fields
+function restore!(boundary::Boundary, ts::OpenPMDTimeSeries, it::Int)
+
+    a4, chart = get_field(ts, it=it, field="a4")
+    @assert size(a4) == size(boundary.a4)
+    copyto!(boundary.a4, a4)
+
+    fx2, chart = get_field(ts, it=it, field="fx2")
+    @assert size(fx2) == size(boundary.fx2)
+    copyto!(boundary.fx2, fx2)
+
+    fy2, chart = get_field(ts, it=it, field="fy2")
+    @assert size(fy2) == size(boundary.fy2)
+    copyto!(boundary.fy2, fy2)
+
+    nothing
+end
+
+# restore gauge field
+function restore!(gauge::Gauge, ts::OpenPMDTimeSeries, it::Int)
+    xi, chart = get_field(ts, it=it, field="xi")
+    @assert size(xi) == size(gauge.xi)
+    copyto!(gauge.xi, xi)
+    nothing
+end
+
+
+# recover all evolved variables from a checkpoint file
+function recover(bulkevols::BulkPartition, boundary::Boundary, gauge::Gauge,
+                 recovery_dir::String)
+
+    ts = OpenPMDTimeSeries(recovery_dir; prefix="checkpoint_it")
+    # grab last iteration of the timeseries, which should be the latest checkpoint
+    it = ts.iterations[end]
+
+    restore!(bulkevols, ts, it)
+    restore!(boundary, ts, it)
+    restore!(gauge, ts, it)
+
+    ts
 end
