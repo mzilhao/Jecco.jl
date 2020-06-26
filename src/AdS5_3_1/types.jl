@@ -73,6 +73,9 @@ Base.@kwdef struct InOut
     out_dir            :: String  = _parfile
     checkpoint_dir     :: String  = _parfile
 
+    recover            :: Symbol  = :auto
+    recover_dir        :: String  = _parfile
+
     # be very careful with this option! it will remove the whole folder contents
     # if set to true! use only for fast debugging runs
     remove_existing    :: Bool  = false

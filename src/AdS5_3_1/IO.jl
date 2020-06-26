@@ -255,6 +255,7 @@ function recover(bulkevols::BulkPartition, boundary::Boundary, gauge::Gauge,
     end
     # grab last iteration of the timeseries, which should be the latest checkpoint
     it = ts.iterations[end]
+    println("INFO: Recovering from checkpoint file $(ts.files[end])")
 
     restore!(bulkevols, ts, it)
     restore!(boundary, ts, it)
