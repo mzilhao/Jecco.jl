@@ -169,9 +169,9 @@ function Sd_eq_coeff!(ABCS::Vector, vars::Tuple, ::Outer)
     @cross_outer("G")
     @cross_outer("S")
 
-    VV  = -3 - 3/2 * phi0 * u * (1 - 2*u*xi) + u*u*u*u * UU(phi, potential)
+    VV = -3 -3/2 * phi^2 + phi^4*UU(phi,potential)
 
-    # VVp = -3 * phi0*u * (1 - u*xi + phi0*phi0 * u*u * phi) + u*u*u * Up(phi)
+   # VVp = -3 * phi + phi^4 * UUp(phi,potential) + 4*phi^3 * UU(phi,potential) 
 
     expB1   = exp(B1)
     expB2   = exp(B2)
@@ -425,9 +425,9 @@ function phid_eq_coeff!(ABCS::Vector, vars::Tuple, ::Outer)
     # @cross_outer("S")
     @cross_outer("phi")
 
-    # VV  = -3 - 3/2 * phi0 * u * (1 - 2*u*xi) + u*u*u*u * UU(phi, potential)
+   # VV = -3 -3/2 * phi^2 + phi^4*UU(phi,potential)
 
-    VVp = -3 * phi0*u * (1 - u*xi + phi0*phi0 * u*u * phi) + u*u*u * UUp(phi, potential)
+    VVp = -3 * phi + phi^4 * UUp(phi,potential) + 4*phi^3 * UU(phi,potential)
 
 
 
@@ -506,9 +506,10 @@ function A_eq_coeff!(ABCS::Vector, vars::Tuple, ::Outer)
     @cross_outer("S")
     @cross_outer("phi")
 
-    VV  = -3 - 3/2 * phi0 * u * (1 - 2*u*xi) + u*u*u*u * UU(phi, potential)
+    VV = -3 -3/2 * phi^2 + phi^4*UU(phi,potential)
 
-    # VVp = -3 * phi0*u * (1 - u*xi + phi0*phi0 * u*u * phi) + u*u*u * Up(phi)
+   # VVp = -3 * phi + phi^4 * UUp(phi,potential) + 4*phi^3 * UU(phi,potential)
+
 
     expB1   = exp(B1)
     expB2   = exp(B2)
