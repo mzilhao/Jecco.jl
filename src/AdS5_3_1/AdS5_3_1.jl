@@ -50,6 +50,7 @@ end
 export SpecCartGrid3D
 export Potential, ZeroPotential, Phi8Potential
 export BlackBrane, BlackBraneB1Pert, BlackBranePert_B1B2G, BlackBraneB1_a4_pert
+export PhiGaussian_u
 export init_data!, init_data, restore!
 export ConstantAH
 export AffineNull, EvolTest0

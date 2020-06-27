@@ -1,4 +1,17 @@
 
+Base.@kwdef struct IDTest0{T,TP<:Potential} <: InitialData
+    b14_0     :: T  = 0.0
+    b24_0     :: T  = 0.0
+    g4_0      :: T  = 0.0
+    phi0      :: T  = 0.0
+    phi2_0    :: T  = 0.0
+    a4_0      :: T  = 0.0
+    fx2_0     :: T  = 0.0
+    fy2_0     :: T  = 0.0
+    xi_0      :: T  = 0.0
+    potential :: TP = ZeroPotential()
+end
+
 Base.@kwdef struct BlackBrane{T,TP<:Potential} <: InitialData
     energy_dens   :: T   = 1.0
     AH_pos        :: T   = 1.0
@@ -32,19 +45,16 @@ Base.@kwdef struct BlackBranePert_B1B2G{T,TP<:Potential} <: InitialData
     amp           :: T   = 1.e-1
 end
 
-Base.@kwdef struct IDTest0{T,TP<:Potential} <: InitialData
-    b14_0     :: T  = 0.0
-    b24_0     :: T  = 0.0
-    g4_0      :: T  = 0.0
-    phi0      :: T  = 0.0
-    phi2_0    :: T  = 0.0
-    a4_0      :: T  = 0.0
-    fx2_0     :: T  = 0.0
-    fy2_0     :: T  = 0.0
-    xi_0      :: T  = 0.0
-    potential :: TP = ZeroPotential()
+Base.@kwdef struct PhiGaussian_u{T,TP<:Potential} <: InitialData
+    energy_dens   :: T   = 1.0
+    AH_pos        :: T   = 1.0
+    phi0          :: T   = 0.0
+    phi2          :: T   = 0.0
+    amp           :: T   = 0.0
+    u0            :: T   = 0.0
+    sigma         :: T   = 0.1
+    potential     :: TP
 end
-
 
 function init_data!(bulkevols, boundary::Boundary, gauge::Gauge,
                     systems::SystemPartition, id::InitialData)
@@ -447,6 +457,164 @@ function init_data!(ff::Gauge, sys::System, id::BlackBranePert_B1B2G)
     fill!(xi, xi0)
 
     ff
+end
+
+
+# PhiGaussian_u initial data
+
+function analytic_phi(u, x, y, id::PhiGaussian_u)
+    phi0   = id.phi0
+    phi2   = id.phi2
+    amp    = id.amp
+    sigma  = id.sigma
+    u0     = id.u0
+
+    phi03  = phi0 * phi0 * phi0
+    sigma2 = sigma * sigma
+
+    myfunc = amp * exp( -(u-u0)*(u-u0) / (2*sigma2) )
+
+    (phi2 + u * myfunc) / phi03
+end
+
+
+function init_data!(bulkevols, boundary::Boundary, gauge::Gauge,
+                    systems::SystemPartition, id::PhiGaussian_u)
+
+    init_data!(boundary, systems[1],   id)
+    init_data!(gauge,    systems[end], id)
+    init_data!(bulkevols, gauge, systems, id)
+
+    nothing
+end
+
+function init_data!(bulkevols, gauge::Gauge, systems::SystemPartition,
+                    id::PhiGaussian_u) where {Nsys,T<:BulkEvolved}
+    # the Ref() makes its argument a scalar with respect to broadcast
+    init_data!.(bulkevols, Ref(gauge), systems, Ref(id))
+end
+
+
+function init_data!(ff::Boundary, sys::System, id::PhiGaussian_u)
+    a4  = geta4(ff)
+    fx2 = getfx2(ff)
+    fy2 = getfy2(ff)
+
+    epsilon = id.energy_dens
+    phi0    = id.phi0
+    phi2    = id.phi2
+    oophiM2 = id.potential.oophiM2
+    phi04   = phi0 * phi0 * phi0 * phi0
+
+    # TODO: does this change with nonzero phiQ ?
+    a40 = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
+
+    fill!(a4, a40)
+    fill!(fx2, 0)
+    fill!(fy2, 0)
+
+    ff
+end
+
+function init_data!(ff::Gauge, sys::System, id::PhiGaussian_u)
+    epsilon = id.energy_dens
+    phi0    = id.phi0
+    phi2    = id.phi2
+    AH_pos  = id.AH_pos
+    oophiM2 = id.potential.oophiM2
+    phi04   = phi0 * phi0 * phi0 * phi0
+
+    # TODO: does this change with nonzero phiQ ?
+    a40 = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
+
+    # FIXME: this is only valid for the conformal case! this routine needs to be
+    # fixed once we can search for the AH
+    xi0 = (-a40)^0.25 - 1/AH_pos
+
+    xi  = getxi(ff)
+
+    fill!(xi, xi0)
+
+    ff
+end
+
+function init_data!(bulk::BulkEvolved, gauge::Gauge, sys::System{Inner},
+                    id::PhiGaussian_u)
+    Nu, Nx, Ny = size(sys)
+    xx = sys.xcoord
+    yy = sys.ycoord
+    uu = sys.ucoord
+
+    B1  = getB1(bulk)
+    B2  = getB2(bulk)
+    G   = getG(bulk)
+    phi = getphi(bulk)
+    xi  = getxi(gauge)
+
+    phi0 = id.phi0
+
+    fill!(B1,  0)
+    fill!(B2,  0)
+    fill!(G,   0)
+
+    for j in 1:Ny
+        for i in 1:Nx
+            for a in 1:Nu
+                u       = uu[a]
+                x       = xx[i]
+                y       = yy[j]
+                xi_ij   = xi[1,i,j]
+                aux     = 1 + xi_ij * u
+                u_old   = u / aux
+                phi_old = analytic_phi(u_old, x, y, id)
+
+                phi[a,i,j] = xi_ij * xi_ij / (phi0 * phi0 * aux) +
+                    phi_old / (aux * aux * aux)
+            end
+        end
+    end
+
+    bulk
+end
+
+function init_data!(bulk::BulkEvolved, gauge::Gauge, sys::System{Outer},
+                    id::PhiGaussian_u)
+    Nu, Nx, Ny = size(sys)
+    xx = sys.xcoord
+    yy = sys.ycoord
+    uu = sys.ucoord
+
+    B1  = getB1(bulk)
+    B2  = getB2(bulk)
+    G   = getG(bulk)
+    phi = getphi(bulk)
+    xi  = getxi(gauge)
+
+    phi0 = id.phi0
+
+    fill!(B1,  0)
+    fill!(B2,  0)
+    fill!(G,   0)
+
+    for j in 1:Ny
+        for i in 1:Nx
+            for a in 1:Nu
+                u         = uu[a]
+                x         = xx[i]
+                y         = yy[j]
+                xi_ij     = xi[1,i,j]
+                aux       = 1 + xi_ij * u
+                u_old     = u / aux
+                phi_old   = analytic_phi(u_old, x, y, id)
+                phi_inner = xi_ij * xi_ij / (phi0 * phi0 * aux) +
+                    phi_old / (aux * aux * aux)
+
+                phi[a,i,j] = u * phi0 - u^2 * phi0 * xi_ij + u^3 * phi0^3 * phi_inner
+            end
+        end
+    end
+
+    bulk
 end
 
 
