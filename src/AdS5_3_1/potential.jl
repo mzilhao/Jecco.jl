@@ -27,7 +27,8 @@ function UU(phi, potential::Phi8Potential)
     phi6 = phi2 * phi4
     phi8 = phi4 * phi4
 
-    oophiM4 = potential.oophiM2 * potential.oophiM2
+    oophiM2 = potential.oophiM2
+    oophiM4 = oophiM2 * oophiM2
     oophiQ  = potential.oophiQ
     oophiQ2 = oophiQ * oophiQ
 
@@ -48,7 +49,8 @@ function UUp(phi, potential::Phi8Potential)
     phi5 = phi3 * phi2
     phi7 = phi5 * phi2
 
-    oophiM4 = potential.oophiM2 * potential.oophiM2
+    oophiM2 = potential.oophiM2
+    oophiM4 = oophiM2 * oophiM2
     oophiQ  = potential.oophiQ
     oophiQ2 = oophiQ * oophiQ
 
