@@ -12,11 +12,20 @@ mutable struct OpenPMDTimeSeries
 end
 
 function OpenPMDTimeSeries(foldername::String, prefix::String)
-    iterations, files = list_h5_files(foldername, prefix=prefix)
+    iterations, files = try
+        list_h5_files(foldername, prefix=prefix)
+    catch e
+        if isa(e, SystemError) && e.errnum == 2 # "No such file or directory"
+            throw(ErrorException("No files found."))
+        else
+            throw(e)
+        end
+    end
 
     if length(iterations) == 0
         throw(ErrorException("No files found."))
     end
+
     OpenPMDTimeSeries(iterations, files, 0, 0, 0.0)
 end
 

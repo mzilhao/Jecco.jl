@@ -29,7 +29,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
             it0, t0 = recover(bulkevols, boundary, gauge, io.recover_dir)
             do_id   = false
         catch e
-            if e.msg == "No files found."
+            if isa(e, ErrorException) && e.msg == "No files found."
                 println("INFO: No checkpoint data found. Will run initial data.")
             else
                 throw(e)
