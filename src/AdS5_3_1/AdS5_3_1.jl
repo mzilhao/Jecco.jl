@@ -48,9 +48,10 @@ function __init__()
 end
 
 export SpecCartGrid3D
-export Potential, ZeroPotential
+export Potential, ZeroPotential, Phi8Potential
 export BlackBrane, BlackBraneB1Pert, BlackBranePert_B1B2G, BlackBraneB1_a4_pert
-export init_data!, init_data
+export PhiGaussian_u
+export init_data!, init_data, restore!
 export ConstantAH
 export AffineNull, EvolTest0
 export BulkEvolved, BulkConstrained, Boundary, Gauge, Bulk

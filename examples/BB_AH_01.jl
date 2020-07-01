@@ -31,7 +31,6 @@ io = InOut(
     out_boundary_every  = 10,
     out_bulk_every      = 100,
     out_gauge_every     = 10,
-    folder              = "",   # use name of script
     # remove_existing     = true,
 )
 

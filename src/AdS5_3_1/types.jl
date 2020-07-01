@@ -54,15 +54,31 @@ Base.@kwdef struct InOut
     out_bulk_every     :: Int
     out_gauge_every    :: Int
 
-    # negative value suppresses output
-    out_bulkconstrained_every :: Int = -1
+    # negative values suppress output
+    out_bulkconstrained_every       :: Int     = -1
+    checkpoint_every_walltime_hours :: Float64 = -1.0
+
+    # stop and checkpoint upon reaching this walltime
+    max_walltime       :: Float64 = 1.e20
+
+    # trigger termination
+    termination_from_file :: Bool    = true
+    check_file_every      :: Int     = 10
+    termination_file      :: String  = "TERMINATE"
+
+    # name of script
+    _parfile           :: String  = splitext(basename(Base.source_path()))[1]
 
     # use name of script by default
-    folder             :: String  = ""
+    out_dir            :: String  = _parfile
+    checkpoint_dir     :: String  = _parfile
+
+    recover            :: Symbol  = :auto
+    recover_dir        :: String  = _parfile
 
     # be very careful with this option! it will remove the whole folder contents
     # if set to true! use only for fast debugging runs
-    remove_existing    :: Bool    = false
+    remove_existing    :: Bool  = false
 end
 
 

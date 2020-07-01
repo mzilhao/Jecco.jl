@@ -9,12 +9,26 @@ mutable struct OpenPMDTimeSeries
     current_i         :: Int64
     current_iteration :: Int64
     current_t         :: Float64
-
-    function OpenPMDTimeSeries(foldername::String, prefix::String)
-        iterations, files = list_h5_files(foldername, prefix=prefix)
-        new(iterations, files, 0, 0, 0.0)
-    end
 end
+
+function OpenPMDTimeSeries(foldername::String, prefix::String)
+    iterations, files = try
+        list_h5_files(foldername, prefix=prefix)
+    catch e
+        if isa(e, SystemError) && e.errnum == 2 # "No such file or directory"
+            throw(ErrorException("No files found."))
+        else
+            throw(e)
+        end
+    end
+
+    if length(iterations) == 0
+        throw(ErrorException("No files found."))
+    end
+
+    OpenPMDTimeSeries(iterations, files, 0, 0, 0.0)
+end
+
 
 """
     OpenPMDTimeSeries(foldername::String; prefix::String="")
@@ -93,7 +107,7 @@ julia> ts.current_i
 
 ```
 """
-function get_field(ts::OpenPMDTimeSeries; it::Int, field::String)
+function get_field(ts::OpenPMDTimeSeries; it::Int, field::String, verbose::Bool=false)
     # index that corresponds to the closest iteration requested
     ts.current_i = argmin(abs.(it .- ts.iterations))
     # the closest iteration found (it need not be the requested one)
@@ -101,6 +115,9 @@ function get_field(ts::OpenPMDTimeSeries; it::Int, field::String)
     # and corresponding file
     filename = ts.files[ts.current_i]
 
+    if verbose
+        println("Reading file $filename")
+    end
     # open file
     fid = h5open(filename, "r")
 

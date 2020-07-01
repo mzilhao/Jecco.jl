@@ -37,7 +37,7 @@ using HDF5
     field2 = Jecco.Field("g", g, chart)
 
     # write the contents
-    tinfo  = Jecco.TimeInfo(1, 10.0, 0.1)
+    tinfo  = Jecco.TimeInfo(1, 10.0, 0.1, 0.0)
     dir    = tempname()
     prefix = "data_"
     out    = Jecco.Output(dir, prefix, tinfo)
