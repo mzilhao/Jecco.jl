@@ -20,9 +20,7 @@ step_it = 30
 final_it = 1830
 
 
-
-
-
+#Computation of the energy stress tensor. Each component is going to be a 3D array, where the index are [time,x,y].
 u, x, y = get_field(files,it=initial_it,field="a4")[2][:]
 n_t = Int(floor((final_it-initial_it)/step_it))+1
 n_x, n_y = length(x), length(y)
@@ -57,7 +55,7 @@ for it in initial_it:step_it:final_it
 
 end
 
-
+#Writing the data into a h5df file.
 if To_hdf5 == "yes"
 
     output = string(dirname,"Stress-Tensor.h5df")
@@ -84,32 +82,91 @@ if To_hdf5 == "yes"
     close(fid)
 end
 
+
+
+
+
+
+#This writes into a .m with the format of n_t arrays of 3D data {x,y,function}.
 if To_mathematica == "yes"
     file_e = open(string(dirname,"e.m"),"w")
+    file_Jx = open(string(dirname,"Jx.m"),"w")
+    file_Jy = open(string(dirname,"Jy.m"),"w")
+    file_px = open(string(dirname,"px.m"),"w")
+    file_py = open(string(dirname,"py.m"),"w")
+    file_pxy = open(string(dirname,"pxy.m"),"w")
+    file_pz = open(string(dirname,"pz.m"),"w")
     
     write(file_e,"ee={")
+    write(file_Jx,"Jx={")
+    write(file_Jy,"Jy={")
+    write(file_px,"px={")
+    write(file_py,"py={")
+    write(file_pxy,"pxy={")
+    write(file_pz,"pz={")
     for i in 1:n_t
         write(file_e,"{")
+        write(file_Jx,"{")
+        write(file_Jy,"{")
+        write(file_px,"{")
+        write(file_py,"{")
+        write(file_pxy,"{")
+        write(file_pz,"{")
         for j in 1:n_x
             for k in 1:n_y
                 if j == n_x && k == n_y
                     write(file_e, string("{",x[j],",",y[k],",",e[i,j,k],"}"))
+                    write(file_Jx, string("{",x[j],",",y[k],",",Jx[i,j,k],"}"))
+                    write(file_Jy, string("{",x[j],",",y[k],",",Jy[i,j,k],"}"))
+                    write(file_px, string("{",x[j],",",y[k],",",px[i,j,k],"}"))
+                    write(file_py, string("{",x[j],",",y[k],",",py[i,j,k],"}"))
+                    write(file_pxy, string("{",x[j],",",y[k],",",pxy[i,j,k],"}"))
+                    write(file_pz, string("{",x[j],",",y[k],",",pz[i,j,k],"}"))
+                    
                 else
                     write(file_e, string("{",x[j],",",y[k],",",e[i,j,k],"},"))
+                    write(file_Jx, string("{",x[j],",",y[k],",",Jx[i,j,k],"},"))
+                    write(file_Jy, string("{",x[j],",",y[k],",",Jy[i,j,k],"},"))
+                    write(file_px, string("{",x[j],",",y[k],",",px[i,j,k],"},"))
+                    write(file_py, string("{",x[j],",",y[k],",",py[i,j,k],"},"))
+                    write(file_pxy, string("{",x[j],",",y[k],",",pxy[i,j,k],"},"))
+                    write(file_pz, string("{",x[j],",",y[k],",",pz[i,j,k],"},"))
                 end
             end
         end
         if i == n_t
             write(file_e,"}")
+            write(file_Jx,"}")
+            write(file_Jy,"}")
+            write(file_px,"}")
+            write(file_py,"}")
+            write(file_pxy,"}")
+            write(file_pz,"}")
         else
             write(file_e,"},")
+            write(file_Jx,"},")
+            write(file_Jy,"},")
+            write(file_px,"},")
+            write(file_py,"},")
+            write(file_pxy,"},")
+            write(file_pz,"},")
         end
     end
     write(file_e,"}")
+    write(file_Jx,"}")
+    write(file_Jy,"}")
+    write(file_px,"}")
+    write(file_py,"}")
+    write(file_pxy,"}")
+    write(file_pz,"}")
+
     close(file_e)
-
-
-
+    close(file_Jx)
+    close(file_Jy)
+    close(file_px)
+    close(file_py)
+    close(file_pxy)
+    close(file_pz)
 
 end
 
