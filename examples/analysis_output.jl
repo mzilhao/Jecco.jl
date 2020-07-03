@@ -9,15 +9,17 @@ dirname = "/home/mikel/Documentos/Jecco.jl/BB_AH_01/"
 phi0 = 0.0
 IphiM2 = -1.0
 
-To_hdf5 = "no"
+To_hdf5 = "yes"
 To_mathematica = "yes"
-Read_tensor = "yes"
+#Read_tensor = "yes"
 
 files = OpenPMDTimeSeries(dirname,prefix="boundary")
 #Specify the initial iteration, the final and the step in the jump.
 initial_it = 0
 step_it = 30
 final_it = 1830
+
+
 
 
 #Computation of the energy stress tensor. Each component is going to be a 3D array, where the index are [time,x,y].
@@ -87,86 +89,47 @@ end
 
 
 
-#This writes into a .m with the format of n_t arrays of 3D data {x,y,function}.
+#This writes into a h5df file that has the mathematica array format directly
 if To_mathematica == "yes"
-    file_e = open(string(dirname,"e.m"),"w")
-    file_Jx = open(string(dirname,"Jx.m"),"w")
-    file_Jy = open(string(dirname,"Jy.m"),"w")
-    file_px = open(string(dirname,"px.m"),"w")
-    file_py = open(string(dirname,"py.m"),"w")
-    file_pxy = open(string(dirname,"pxy.m"),"w")
-    file_pz = open(string(dirname,"pz.m"),"w")
-    
-    write(file_e,"ee={")
-    write(file_Jx,"Jx={")
-    write(file_Jy,"Jy={")
-    write(file_px,"px={")
-    write(file_py,"py={")
-    write(file_pxy,"pxy={")
-    write(file_pz,"pz={")
+    e_m, Jx_m, Jy_m = zeros(4,n_x*n_y*n_t), zeros(4,n_x*n_y*n_t), zeros(4,n_x*n_y*n_t)
+    px_m, py_m, pxy_m, pz_m = zeros(4,n_x*n_y*n_t), zeros(4,n_x*n_y*n_t), zeros(4,n_x*n_y*n_t), zeros(4,n_x*n_y*n_t)
+    O_phi_m = zeros(4,n_x*n_y*n_t)
+    n = 0
     for i in 1:n_t
-        write(file_e,"{")
-        write(file_Jx,"{")
-        write(file_Jy,"{")
-        write(file_px,"{")
-        write(file_py,"{")
-        write(file_pxy,"{")
-        write(file_pz,"{")
         for j in 1:n_x
             for k in 1:n_y
-                if j == n_x && k == n_y
-                    write(file_e, string("{",x[j],",",y[k],",",e[i,j,k],"}"))
-                    write(file_Jx, string("{",x[j],",",y[k],",",Jx[i,j,k],"}"))
-                    write(file_Jy, string("{",x[j],",",y[k],",",Jy[i,j,k],"}"))
-                    write(file_px, string("{",x[j],",",y[k],",",px[i,j,k],"}"))
-                    write(file_py, string("{",x[j],",",y[k],",",py[i,j,k],"}"))
-                    write(file_pxy, string("{",x[j],",",y[k],",",pxy[i,j,k],"}"))
-                    write(file_pz, string("{",x[j],",",y[k],",",pz[i,j,k],"}"))
-                    
-                else
-                    write(file_e, string("{",x[j],",",y[k],",",e[i,j,k],"},"))
-                    write(file_Jx, string("{",x[j],",",y[k],",",Jx[i,j,k],"},"))
-                    write(file_Jy, string("{",x[j],",",y[k],",",Jy[i,j,k],"},"))
-                    write(file_px, string("{",x[j],",",y[k],",",px[i,j,k],"},"))
-                    write(file_py, string("{",x[j],",",y[k],",",py[i,j,k],"},"))
-                    write(file_pxy, string("{",x[j],",",y[k],",",pxy[i,j,k],"},"))
-                    write(file_pz, string("{",x[j],",",y[k],",",pz[i,j,k],"},"))
-                end
+                global n += 1
+                e_m[:,n] = [t[i] x[j] y[k] e[i,j,k]]
+                Jx_m[:,n] = [t[i] x[j] y[k] Jx[i,j,k]]
+                Jy_m[:,n] = [t[i] x[j] y[k] Jy[i,j,k]]
+                px_m[:,n] = [t[i] x[j] y[k] px[i,j,k]]
+                py_m[:,n] = [t[i] x[j] y[k] py[i,j,k]]
+                pxy_m[:,n] = [t[i] x[j] y[k] pxy[i,j,k]]
+                pz_m[:,n] = [t[i] x[j] y[k] pz[i,j,k]]
+                O_phi_m[:,n] = [t[i] x[j] y[k] O_phi[i,j,k]]
+
             end
         end
-        if i == n_t
-            write(file_e,"}")
-            write(file_Jx,"}")
-            write(file_Jy,"}")
-            write(file_px,"}")
-            write(file_py,"}")
-            write(file_pxy,"}")
-            write(file_pz,"}")
-        else
-            write(file_e,"},")
-            write(file_Jx,"},")
-            write(file_Jy,"},")
-            write(file_px,"},")
-            write(file_py,"},")
-            write(file_pxy,"},")
-            write(file_pz,"},")
-        end
     end
-    write(file_e,"}")
-    write(file_Jx,"}")
-    write(file_Jy,"}")
-    write(file_px,"}")
-    write(file_py,"}")
-    write(file_pxy,"}")
-    write(file_pz,"}")
 
-    close(file_e)
-    close(file_Jx)
-    close(file_Jy)
-    close(file_px)
-    close(file_py)
-    close(file_pxy)
-    close(file_pz)
+    output = string(dirname,"Stress-Tensor_mathematica.h5df")
+    fid = h5open(output,"w")
+
+    group_st = g_create(fid, "Stress-Tensor")
+    group_svev = g_create(fid, "Scalar_VEV")
+
+   
+    Jecco.write_dataset(group_st, "e", e_m)
+    Jecco.write_dataset(group_st, "Jx",Jx_m)
+    Jecco.write_dataset(group_st, "Jy",Jy_m)
+    Jecco.write_dataset(group_st, "px",px_m)
+    Jecco.write_dataset(group_st, "py",py_m)
+    Jecco.write_dataset(group_st, "pxy",pxy_m)
+    Jecco.write_dataset(group_st, "pz",pz_m)
+
+    Jecco.write_dataset(group_svev, "O_phi",O_phi_m)
+            
+    close(fid)
 
 end
 
