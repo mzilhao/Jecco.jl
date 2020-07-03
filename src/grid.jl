@@ -33,7 +33,7 @@ function Cartesian{N}(name::String, xmin::T, xmax::T, nodes::Integer;
     end
     CartesianCoord{N,T}(name, min_, max_, nodes)
 end
-Cartesian(args...) = Cartesian{1}(args...)
+Cartesian(args...; endpoint=true) = Cartesian{1}(args...; endpoint=endpoint)
 
 struct GaussLobatto{N} end
 function GaussLobatto{N}(name::String, xmin::T, xmax::T,
@@ -100,11 +100,6 @@ A `Chart` is a collection of `AbstractCoord`s
 Chart(coords::A) where {A} = Chart{A}(coords)
 
 Chart(coords::Vararg{AbstractCoord,N}) where {N} = Chart(coords)
-
-function Chart(coord::AbstractCoord)
-    coords = (coord)
-    Chart(coords)
-end
 
 function Chart(coord_types::Vector, names::Vector, mins::Vector, maxs::Vector,
                nodess)
