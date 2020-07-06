@@ -20,9 +20,9 @@ using Test
         include("AdS5_3_1_equation_outer_coeff.jl")
     end
 
-    @time @testset "AdS5_3_1 homogeneous black brane tests:" begin
-        include("AdS5_3_1_homog_Bbrane.jl")
-    end
+    # @time @testset "AdS5_3_1 homogeneous black brane tests:" begin
+    #     include("AdS5_3_1_homog_Bbrane.jl")
+    # end
 
 end
 
