@@ -71,7 +71,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     chart2D = Chart(empty, systems[1].xcoord, systems[1].ycoord)
 
     # prepare functions to write data
-    output_evol = output_writer(evolvars, chart2D, atlas.charts, tinfo, io)
+    output_evol = output_writer(evolvars, chart2D, atlas.charts, tinfo, io, evoleq.phi0)
 
     if io.out_bulkconstrained_every > 0
         output_constrained = output_writer(bulkconstrains, atlas.charts, tinfo, io)

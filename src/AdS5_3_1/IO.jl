@@ -1,6 +1,6 @@
 
 function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInfo,
-                       io::InOut)
+                       io::InOut, phi0)
     Nsys = length(charts)
 
     # output structures
@@ -27,16 +27,10 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
     g4   = reshape(bulkevols[1].G[1,:,:],   size(chart2D))
     phi3 = reshape(bulkevols[1].phi[1,:,:], size(chart2D))
 
-    #= output fields
+    # phi2 = phi0^3 phi3 - phi0 xi^2
+    phi2 = phi0*phi0*phi0 .* phi3 .- phi0 .* gauge.xi .* gauge.xi
 
-    note that the field "phi3" is just the leading boundary behaviour of the
-    "phi" field in the inner grid. to compute the usual "phi2" quantity one
-    needs to do (at the post-processing stage)
-
-      phi2 = phi0^3 phi3 - phi0 xi^2
-
-    at a later stage we may wish to output this quantity directly
-    =#
+    # output fields
     boundary_fields = (
         Jecco.Field("a4",   boundary.a4,  chart2D),
         Jecco.Field("fx2",  boundary.fx2, chart2D),
@@ -44,7 +38,7 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
         Jecco.Field("b14",  b14,          chart2D),
         Jecco.Field("b24",  b24,          chart2D),
         Jecco.Field("g4",   g4,           chart2D),
-        Jecco.Field("phi3", phi3,         chart2D),
+        Jecco.Field("phi2", phi2,         chart2D),
     )
     gauge_fields = Jecco.Field("xi", gauge.xi, chart2D)
     bulkevols_fields = ntuple(i -> (
@@ -68,7 +62,13 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
             @views copyto!(boundary_fields[4].data, bulkevols[1].B1[1,:,:])
             @views copyto!(boundary_fields[5].data, bulkevols[1].B2[1,:,:])
             @views copyto!(boundary_fields[6].data, bulkevols[1].G[1,:,:])
-            @views copyto!(boundary_fields[7].data, bulkevols[1].phi[1,:,:])
+
+            @views copyto!(phi2, bulkevols[1].phi[1,:,:])
+            # phi2 = phi0^3 phi[1,:,:] - phi0 xi^2
+            phi2 .= phi0*phi0*phi0 .* phi2 .- phi0 .* gauge.xi .* gauge.xi
+
+            boundary_fields[7].data = phi2
+
             # write data
             out_bdry(boundary_fields)
         end
