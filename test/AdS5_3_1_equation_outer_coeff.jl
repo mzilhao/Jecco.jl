@@ -1,9 +1,4 @@
 
-using Test
-
-using Jecco
-using Jecco.AdS5_3_1
-
 ABCS  = zeros(4)
 AA    = zeros(2,2)
 BB    = zeros(2,2)
@@ -37,7 +32,7 @@ end
 @testset "Sd equation outer grid coefficients:" begin
     AdS5_3_1.Sd_eq_coeff!(ABCS, sdvars, AdS5_3_1.Outer())
 
-    @test all( ABCS .≈ [0.0, -32.61938194150854, 65.23876388301709,1037.7259866620095])# 1102.9647505450266] )
+    @test all( ABCS .≈ [0.0, -32.61938194150854, 65.23876388301709,1037.7259866620095])
 end
 
 @testset "B2d equation outer grid coefficients:" begin
@@ -64,7 +59,7 @@ end
 @testset "A equations outer grid coefficients:" begin
     AdS5_3_1.A_eq_coeff!(ABCS, avars, AdS5_3_1.Outer())
 
-    @test all( ABCS .≈ [16.30969097075427, 32.61938194150854, 0.0,-2722.8310332986166 ])# -2788.0697971816335] )
+    @test all( ABCS .≈ [16.30969097075427, 32.61938194150854, 0.0,-2722.8310332986166 ])
 end
 
 @testset "xi_t equation coefficients:" begin
@@ -72,4 +67,3 @@ end
 
     @test all( abccS .≈ (-61.98720613207489, -8.389056098930649, 34.73451018945725, -303.7973949812715, 83.3896552507381, -828.73362702863, -2046.0855701645924) )
 end
-nothing
