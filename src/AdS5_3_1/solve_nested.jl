@@ -1356,7 +1356,7 @@ function set_innerBCs!(bc::BC, bulk::BulkEvolved, boundary::Boundary,
             bc.Fy_u[i,j] = -2 * fy2 * xi - 12 / 15 * (-b14_y + b24_y - g4_x) +
                 4/15 * phi0 * phi2_y
 
-            bc.Sd[i,j] = a4 / 2
+            bc.Sd[i,j] = a4 / 2 - 5 * phi04/36 + phi0 * phi2/2
 
             bc.B2d[i,j] = -2 * b24
             bc.B1d[i,j] = -2 * b14
