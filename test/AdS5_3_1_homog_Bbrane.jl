@@ -138,15 +138,10 @@
         A_exact  = 1 ./ uu.^2 .+ 2 .* xi0 ./ uu .+ xi0^2 .+
             uu.^2 .* a4 ./ (1 .+ 2 .* xi0 .* uu .+ xi0^2 .* uu.^2)
 
-        A_u_exact = -2 ./ uu.^3 .- 2 .* xi0 ./ uu.^2 .-
-            uu.^2 .* a4 .* (2*xi0 .+ 2 .* uu .* xi0) ./ (1 .+ 2 .* xi0 .* uu .+ xi0^2 .* uu.^2).^2 .+
-            2 .* a4 .* uu ./ (1 .+ 2 .* xi0 .* uu .+ xi0^2 .* uu.^2)
+        A_u_exact = 2 .* (.- 1 .- uu .* xi0 + a4 .* uu.^4 ./ (1 .+ uu .* xi0).^3 ) ./ uu.^3
 
         @test A   ≈ A_exact
-
-        # FIXME
-        # @test A_u ≈ A_u_exact atol = 1.e-2
-        # @show (A_u .- A_u_exact) ./ A_u_exact * 100
+        @test A_u ≈ A_u_exact
 
     end
 
