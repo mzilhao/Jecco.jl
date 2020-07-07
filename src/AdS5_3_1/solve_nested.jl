@@ -1222,17 +1222,6 @@ function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc
 
     bulk = Bulk(bulkevol, bulkconstrain)
 
-    @sync begin
-        @spawn mul!(Du_B1,  Du,  bulk.B1)
-        @spawn mul!(Du_B2,  Du,  bulk.B2)
-        @spawn mul!(Du_G,   Du,  bulk.G)
-        @spawn mul!(Du_phi, Du,  bulk.phi)
-        @spawn mul!(Duu_B1, Duu, bulk.B1)
-        @spawn mul!(Duu_B2, Duu, bulk.B2)
-        @spawn mul!(Duu_G,  Duu, bulk.G)
-        @spawn mul!(Duu_phi,Duu, bulk.phi)
-    end
-
     # solve for S
     solve_S!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
 
@@ -1463,6 +1452,22 @@ function solve_nesteds!(bulkconstrains, bulkevols, boundary::Boundary, gauge::Ga
                         systems::SystemPartition, evoleq::AffineNull)
     Nsys = length(systems)
 
+    # take all u-derivatives of the bulkevols functions
+    @sync begin
+        # TODO: check if it's worth to keep the @spawn, or if its overhead is
+        # actually making things slower
+        @inbounds for i in 1:Nsys
+            @spawn mul!(derivs[i].Du_B1,  systems[i].Du,  bulkevols[i].B1)
+            @spawn mul!(derivs[i].Du_B2,  systems[i].Du,  bulkevols[i].B2)
+            @spawn mul!(derivs[i].Du_G,   systems[i].Du,  bulkevols[i].G)
+            @spawn mul!(derivs[i].Du_phi, systems[i].Du,  bulkevols[i].phi)
+            @spawn mul!(derivs[i].Duu_B1, systems[i].Duu, bulkevols[i].B1)
+            @spawn mul!(derivs[i].Duu_B2, systems[i].Duu, bulkevols[i].B2)
+            @spawn mul!(derivs[i].Duu_G,  systems[i].Duu, bulkevols[i].G)
+            @spawn mul!(derivs[i].Duu_phi,systems[i].Duu, bulkevols[i].phi)
+        end
+    end
+
     set_innerBCs!(bcs[1], bulkevols[1], boundary, gauge, derivs[1], systems[1], evoleq)
 
     solve_nested!(bulkconstrains[1], bulkevols[1], bcs[1], gauge,
@@ -1470,7 +1475,7 @@ function solve_nesteds!(bulkconstrains, bulkevols, boundary::Boundary, gauge::Ga
 
     set_outerBCs!(bcs[2], bulkconstrains[1], gauge, derivs[1], systems[1], evoleq)
 
-    for i in 2:Nsys-1
+    @inbounds for i in 2:Nsys-1
         solve_nested!(bulkconstrains[i], bulkevols[i], bcs[i], gauge,
                       derivs[i], aux_accs[i], systems[i], evoleq)
         syncBCs!(bcs[i+1], bulkconstrains[i], derivs[i])

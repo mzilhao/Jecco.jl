@@ -1,11 +1,5 @@
-using Test
-
-using Jecco
-using Jecco.AdS5_3_1
 
 @time @testset "Homogeneous Black brane tests:" begin
-
-    out_doms = 4
 
     grid = SpecCartGrid3D(
         x_min            = -5.0,
@@ -16,8 +10,8 @@ using Jecco.AdS5_3_1
         y_nodes          =  6,
         u_outer_min      =  0.1,
         u_outer_max      =  1.0,
-        u_outer_domains  =  out_doms,
-        u_outer_nodes    =  30,
+        u_outer_domains  =  4,
+        u_outer_nodes    =  32,
         u_inner_nodes    =  12,
     )
 
@@ -51,122 +45,109 @@ using Jecco.AdS5_3_1
     # solve nested system for the constrained variables
     nested(bulkevols, boundary, gauge, evoleq)
 
-    #################
-    # analyze data  #
-    #################
+    # analyze data
 
-    # gauge
-    xi     = gauge.xi[1,1,1] #due to homogeneity; change for non-homog.
     Du_in  = systems[1].Du
     Du_out = systems[2].Du
 
     # inner grid
-    i = 1
-
-    bulk_in = Bulk(bulkevols[i], bulkconstrains[i])
-
-    chart_in = atlas.charts[i]
+    bulk_in  = bulkconstrains[1]
+    chart_in = atlas.charts[1]
     uu_in    = chart_in.coords[1][:]
 
-    A_in  = bulk_in.A[:,1,1];
-    Au_in = Du_in*A_in;
+    # first outer grid
+    bulk_out_1  = bulkconstrains[2]
+    chart_out_1 = atlas.charts[2]
+    uu_out_1    = chart_out_1.coords[1][:]
 
-    # outer grids
-    num_out_domains = grid.u_outer_domains
+    # take u-derivatives
+    Du_A_in    = Du_in * bulk_in.A
+    Du_A_out_1 = Du_out * bulk_out_1.A
 
-    # FIXME type stability
-    bulk_out  = []
-    chart_out = []
-    uu_out    = []
 
-    A_out          = []
-    Au_out         = []
+    # Compare value of A and its u-derivative on the inner-outer domain interface
 
-    uu_out_full    = []
-    A_out_full_num = []
+    xi0         = gauge.xi[1,1,1]
+    A0_in       = bulk_in.A[:,1,1]
+    A0_out      = bulk_out_1.A[:,1,1]
+    Du_A0_in    = Du_A_in[:,1,1]
+    Du_A0_out_1 = Du_A_out_1[:,1,1]
 
-    for i in 2:num_out_domains+1
+    Aout_in_end = 1/uu_in[end]^2 + 2*xi0/uu_in[end] + xi0^2 + uu_in[end]^2 * A0_in[end]
 
-        bulk_out_i = Bulk(bulkevols[i], bulkconstrains[i])
-        append!(bulk_out, [bulk_out_i])
-
-        chart_out_i = atlas.charts[i]
-        append!(chart_out, [chart_out_i])
-
-        uu_out_i    = chart_out_i.coords[1][:]
-        append!(uu_out, [uu_out_i])
-
-        A_out_i = bulk_out_i.A[:,1,1]
-        append!(A_out,  [A_out_i])
-        append!(Au_out, [Du_out*A_out_i])
-
-    end
-
-    #################################################
-    # Compare value of A on the interface of domains#
-    #################################################
-
-    A_in_end = (1/(uu_in[end]^2) + 2.0*xi/uu_in[end] +   xi^2 + uu_in[end]^2 * A_in[end])
-    Au_in_end = (-2/(uu_in[end]^3) - 2.0*xi/(uu_in[end]^2)  + 2.0* uu_in[end]* A_in[end] + (uu_in[end]^2)* Au_in[end])
+    Du_Aout_in_end = -2/uu_in[end]^3 - 2*xi0/uu_in[end]^2 + 2*uu_in[end] * A0_in[end] +
+        uu_in[end]^2 * Du_A0_in[end]
 
     # in-out interface
-    @test A_in_end  ≈ A_out[1][1]
-    @test Au_in_end ≈ Au_out[1][1]
+    @test Aout_in_end    ≈ A0_out[1]
+    @test Du_Aout_in_end ≈ Du_A0_out_1[1]
 
-    # mutliple out domains interface
-    if num_out_domains>=2
-        for i in 2:num_out_domains
-            @test A_out[i-1][end]  ≈ A_out[i][1]
-            @test Au_out[i-1][end] ≈ Au_out[i][1]
-        end
+
+    # remaining outer grids
+    for i in 2:grid.u_outer_domains
+        Du_1    = systems[i].Du
+        bulk_1  = bulkconstrains[i]
+        chart_1 = atlas.charts[i]
+        uu_1    = chart_1.coords[1][:]
+
+        Du_2    = systems[i+1].Du
+        bulk_2  = bulkconstrains[i+1]
+        chart_2 = atlas.charts[i+1]
+        uu_2    = chart_2.coords[1][:]
+
+        # take u-derivatives
+        Du_A_1    = Du_1 * bulk_1.A
+        Du_A_2    = Du_2 * bulk_2.A
+
+        # 1-2 interface
+        @test all(bulk_1.A[end,:,:] .≈ bulk_2.A[1,:,:])
+        @test all(Du_A_1[end,:,:]   .≈ Du_A_2[1,:,:])
     end
 
-    #######################################################
-    # compare the function in,out domains and full domain #
-    # be careful of redefs in different domains           #
-    #######################################################
 
-    # comparison inner grid only
-    A_in_reg_num = zeros(length(A_in))
-    A_in_reg_exact = zeros(length(A_in))
-    Au_in_reg_num = zeros(length(A_in))
-    Au_in_reg_exact = zeros(length(A_in))
+    # now check if the result matches the expected value. since the
+    # configuration is homogeneous, let's compare at
+    i = 1; j = 1
+
+    # first let's check inner grid
+    A_in    = bulk_in.A[:,i,j]
+    A_u_in  = 2 .* uu_in .* bulk_in.A[:,i,j] .+ uu_in .* uu_in .* Du_A_in[:,i,j]
+
     a4 = -id.energy_dens/0.75
+    A_in_exact = a4 ./ (1 .+ 2 .* xi0 .* uu_in .+ xi0^2 .* uu_in .* uu_in)
 
-    # A regularized inner grid
-    for i in 1:length(A_in)
-        u = uu_in[i]
-        A = A_in[i]
-        Au = Au_in[i]
-        A_in_reg_num[i]    = xi^2 + u^2 * A
-        Au_in_reg_num[i]   = 2.0*u * A + u^2 * Au
-        A_in_reg_exact[i]  = xi^2 + u^2 * a4 /(1.0 + 2.0* xi *u + xi^2 *u^2 )
-        Au_in_reg_exact[i] =  (2.0 * u * a4)/((1.0 + xi *u)^3)
+    A_u_in_exact = 2 .* uu_in .* a4 ./ (1 .+ xi0 .* uu_in).^3
+
+    @test A_in    ≈ A_in_exact
+    @test A_u_in  ≈ A_u_in_exact
+
+
+    # now for the outer grids
+    for i in 2:grid.u_outer_domains+1
+        Du    = systems[i].Du
+        bulk  = bulkconstrains[i]
+        chart = atlas.charts[i]
+        uu    = chart.coords[1][:]
+
+        # take u-derivative
+        Du_A  = Du * bulk.A
+
+        A     = bulk.A[:,i,j]
+        A_u   = Du_A[:,i,j]
+
+        A_exact  = 1 ./ uu.^2 .+ 2 .* xi0 ./ uu .+ xi0^2 .+
+            uu.^2 .* a4 ./ (1 .+ 2 .* xi0 .* uu .+ xi0^2 .* uu.^2)
+
+        A_u_exact = -2 ./ uu.^3 .- 2 .* xi0 ./ uu.^2 .-
+            uu.^2 .* a4 .* (2*xi0 .+ 2 .* uu .* xi0) ./ (1 .+ 2 .* xi0 .* uu .+ xi0^2 .* uu.^2).^2 .+
+            2 .* a4 .* uu ./ (1 .+ 2 .* xi0 .* uu .+ xi0^2 .* uu.^2)
+
+        @test A   ≈ A_exact
+
+        # FIXME
+        # @test A_u ≈ A_u_exact atol = 1.e-2
+        # @show (A_u .- A_u_exact) ./ A_u_exact * 100
+
     end
-
-    @test A_in_reg_num  ≈ A_in_reg_exact
-    @test Au_in_reg_num ≈ Au_in_reg_exact
-
-    # comparison outer grids only
-    uu_out_full    = []
-    A_out_full_num = []
-    Au_out_full_num = []
-    for i in 1:num_out_domains
-        append!(uu_out_full, uu_out[i])
-        append!(A_out_full_num, A_out[i])
-        append!(Au_out_full_num, Au_out[i])
-    end
-
-    #exact
-    A_out_full_exact = zeros(length(A_out_full_num))
-    Au_out_full_exact = zeros(length(A_out_full_num))
-    for i in 1:length(A_out_full_num)
-        u = uu_out_full[i]
-        A_out_full_exact[i] = 1/(u^2) + 2.0*xi/u + xi^2 + u^2 * a4/(1.0 + 2.0* xi *u + xi^2 *u^2)
-        Au_out_full_exact[i] = -2/(u^3) - 2.0*xi/(u^2)  - u^2 * a4 * (2*xi + 2*u*xi)/((1.0 + 2.0* xi *u + xi^2 *u^2)^2) + 2*a4*u/(1.0 + 2.0* xi *u + xi^2 *u^2)
-    end
-
-    @test A_out_full_num  ≈ A_out_full_exact
-    #@test Au_out_full_num ≈ Au_out_full_exact atol = 1.e-2
 
 end

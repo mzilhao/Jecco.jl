@@ -1,9 +1,4 @@
 
-using Test
-
-using Jecco
-using Jecco.AdS5_3_1
-
 ABCS  = zeros(4)
 AA    = zeros(2,2)
 BB    = zeros(2,2)
@@ -36,7 +31,7 @@ end
 @testset "Sd equation inner grid coefficients:" begin
     AdS5_3_1.Sd_eq_coeff!(ABCS, sdvars, AdS5_3_1.Inner())
 
-    @test all( ABCS .≈ [0.0, -880.7233124207306, -2544.311791437666, 273918.94409251545]) #, 279203.2839670398] )
+    @test all( ABCS .≈ [0.0, -880.7233124207306, -2544.311791437666, 273918.94409251545])
 end
 
 @testset "B2d equation inner grid coefficients:" begin
@@ -63,7 +58,5 @@ end
 @testset "A equations inner grid coefficients:" begin
     AdS5_3_1.A_eq_coeff!(ABCS, avars, AdS5_3_1.Inner())
 
-    @test all( ABCS .≈ [1321.084968631096, 7926.5098117865755, 7926.5098117865755, -827587.7882250317 ])#-832872.1280995568] )
+    @test all( ABCS .≈ [1321.084968631096, 7926.5098117865755, 7926.5098117865755, -827587.7882250317 ])
 end
-
-nothing

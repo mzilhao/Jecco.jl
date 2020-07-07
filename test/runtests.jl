@@ -1,6 +1,7 @@
+using Test
 
 using Jecco
-using Test
+using Jecco.AdS5_3_1
 
 @testset "All tests:" begin
 
