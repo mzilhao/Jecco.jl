@@ -12,12 +12,9 @@ function Fourier_modes_2D(e :: Array{T,2}, x :: Array{T,1}, y :: Array{T,1}, ord
     xmid, ymid = (x[end]+x[1])/2, (y[end]+y[1])/2
     nx, ny = length(x),length(y)
     a, b = zeros(order_x+1,order_y+1), zeros(order_x+1,order_y+1)
-    if integration_method == "trapezoidal" || integration_method == "simps"
-        if integration_method == "trapezoidal"
-            method = Trapezoidal()
-        else
-            method = SimpsonEven()
-        end
+
+    if integration_method == "trapezoidal"
+        method = Trapezoidal()
         xx, yy = zeros(nx,ny), zeros(nx,ny)
         for i in 1:ny
             xx[:,i] = x
@@ -40,6 +37,42 @@ function Fourier_modes_2D(e :: Array{T,2}, x :: Array{T,1}, y :: Array{T,1}, ord
             end
         end
 
+    elseif integration_method == "simpson"
+        xx, yy = zeros(nx,ny), zeros(nx,ny)
+        kx, ky = zeros(nx), zeros(ny)
+        dx, dy = x[2]-x[1], y[2]-y[1]
+        for i in 1:ny
+            xx[:,i] = x
+            if i == 1 || i == ny
+                ky[i] = 1
+            elseif i%2 == 0
+                ky[i] = 2
+            else
+                ky[i] = 4
+            end
+        end
+        for i in 1:nx
+            yy[i,:] = y
+            if i == 1 || i == nx
+                kx[i] = 1
+            elseif i%2 == 0
+                kx[i] = 2
+            else
+                kx[i] = 4
+            end
+        end
+        aux = zeros(nx)
+        for mx in 0:order_x
+            for my in 0:order_y
+                integrand_cos = 2/(Lx*Ly).*e.*cos.(2*π*(mx/Lx.*(xx.-xmid).+my/Ly.*(yy.-ymid)))
+                integrand_sin = 2/(Lx*Ly).*e.*sin.(2*π*(mx/Lx.*(xx.-xmid).+my/Ly.*(yy.-ymid)))
+                mul!(aux, integrand_cos, ky)
+                a[mx+1,my+1] = dx*dy/9*sum(kx.*aux)
+                mul!(aux, integrand_sin, ky)
+                b[mx+1,my+1] = dx*dy/9*sum(kx.*aux)
+            end
+        end
+
     elseif integration_method == "quad"
         for mx in 0:order_x
             for my in 0:order_y
@@ -59,7 +92,7 @@ function Fourier_modes_2D(e :: Array{T,2}, x :: Array{T,1}, y :: Array{T,1}, ord
             end
         end
     elseif integration_method == "gauss"
-        num_nodes_x, num_nodes_y = 1000, 1000
+        num_nodes_x, num_nodes_y = nx, ny
         xx, yy, aux = zeros(nx,ny), zeros(nx,ny), zeros(num_nodes_x)
         for i in 1:ny
             xx[:,i] = x
