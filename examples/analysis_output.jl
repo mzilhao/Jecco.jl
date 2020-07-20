@@ -6,8 +6,7 @@ include("./Fourier_modes.jl")
 
 
 dirname = "/Users/apple/Documents/Jecco.jl/data/old_potential_e_10/"
-#Specify the initial iteration, the final and the step in the jump.
-#Remember to set same output frequency for both boundary and gauge files
+#Specify the initial iteration, the final and the desired step.
 initial_it = 0
 step_it = 500
 final_it = 100000
@@ -27,10 +26,10 @@ files = OpenPMDTimeSeries(dirname,prefix="boundary")
 files_xi = OpenPMDTimeSeries(dirname,prefix="gauge")
 
 
-#Computation of the energy stress tensor. Each component is going to be a 3D array, where the index are [time,x,y].
+
 u, x, y = get_field(files,it=initial_it,field="a4")[2][:]
 nt = Int(floor((final_it-initial_it)/step_it))+1
-#TODO: Add the last point
+# Add the last point
 append!(x, x[end]+(x[2]-x[1]))
 append!(y, y[end]+(y[2]-y[1]))
 nx, ny = length(x), length(y)
@@ -71,7 +70,7 @@ for it in initial_it:step_it:final_it
 
     t[i] = files.current_t
 
-    #TODO :Add the last points
+    #Add the last points
     e[i,end,:], e[i,:,end], e[i,end,end] = e[i,1,:], e[i,:,1], e[i,1,1]
     Jx[i,end,:], Jx[i,:,end], Jx[i,end,end] = Jx[i,1,:], Jx[i,:,1], Jx[i,1,1]
     Jy[i,end,:], Jy[i,:,end], Jy[i,end,end] = Jy[i,1,:], Jy[i,:,1], Jy[i,1,1]

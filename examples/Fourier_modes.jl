@@ -4,9 +4,9 @@ using Interpolations
 using FastGaussQuadrature
 using LinearAlgebra
 #Function to compute Fourier modes in 2D for real funcitons.
-#All methods seem to give really bad results for such small amount number of points besides the trapezoidal that is fast
-#and has a discrepancy of 10^-6 with respect to mathematica.
-#Maybe try our own method? I don't know why these other methods work so badly.
+#All methods seem to give really bad results for the usual density of points I use in simulations besides the trapezoidal that is fast
+#and has a discrepancy of 10^-10 with respect to mathematica.
+#Implementing Simpons's rule by myself gives bad results.
 function Fourier_modes_2D(e :: Array{T,2}, x :: Array{T,1}, y :: Array{T,1}, order_x :: Integer, order_y :: Integer, integration_method :: String) where {T<:Real}
     Lx, Ly = x[end]-x[1], y[end]-y[1]
     xmid, ymid = (x[end]+x[1])/2, (y[end]+y[1])/2
