@@ -93,11 +93,11 @@ end
 x_min    = -5.0
 x_max    =  5.0
 x_nodes  =  128
-# x_nodes  =  1024
+# x_nodes  =  256
 y_min    = -5.0
 y_max    =  5.0
 y_nodes  =  64
-# y_nodes  =  1024
+# y_nodes  =  256
 
 ord = 4
 # ord = 2
@@ -135,67 +135,66 @@ by      = zeros(M)
 cc      = zeros(M)
 f0      = zeros(M)
 
-
-@inbounds for idx in eachindex(f0)
-    f0[idx] = fsol[idx]
-end
-
+itmax = 8
 
 # start looping here
+for it in 1:itmax
 
-compute_residual!(res, fsol, xcoord[:], ycoord[:], Dxx_op, Dyy_op, Dx_op, Dy_op)
+    compute_residual!(res, fsol, xcoord[:], ycoord[:], Dxx_op, Dyy_op, Dx_op, Dy_op)
+    max_res = maximum(abs.(res))
 
+    @show it, max_res
 
-# FIXME
+    # build (linearized) operator
+    # A = Dxx + Dyy + x y Dxy + (x + 2 f0_x + x y f0_y) Dx + (y + 2 f0_y + x y f0_x) Dy + (x^2 + y^2)
 
-# build (linearized) operator A = Dxx + Dyy + x y Dxy + f_y(0) Dx + f_x(0) Dy + (x^2 + y^2)
+    @inbounds for idx in eachindex(f0)
+        f0[idx] = fsol[idx]
+    end
+    f0_x = Dx_ * f0
+    f0_y = Dy_ * f0
 
+    for j in 1:Ny, i in 1:Nx
+        idx = ind2D[i,j]
 
-f0_x = Dx * f0
-f0_y = Dy * f0
+        x1  = xcoord[i]
+        y1  = ycoord[j]
 
-# FIXME
-for j in 1:Ny, i in 1:Nx
-    idx = ind2D[i,j]
+        axy[idx] = x1 * y1
+        bx[idx]  = x1 + 2 * f0_x[idx] + x1 * y1 * f0_y[idx]
+        by[idx]  = y1 + 2 * f0_y[idx] + x1 * y1 * f0_x[idx]
+        cc[idx]  = x1^2 + y1^2
 
-    xi  = xcoord[i]
-    yi  = ycoord[j]
+        b_vec[idx] = -res[idx]
+    end
 
-    axy[idx] = xi * yi
-    bx[idx]  = f0_x[idx]
-    by[idx]  = f0_y[idx]
-    cc[idx]  = xi^2 + yi^2
+    Dxx = copy(Dxx_)
+    Dyy = copy(Dyy_)
+    Dxy = copy(Dxy_)
+    Dx  = copy(Dx_)
+    Dy  = copy(Dy_)
 
-    b_vec[idx] = source(xi, yi)
+    A_mat = build_jacobian(Dxx, Dyy, Dxy, Dx, Dy, axx, ayy, axy, bx, by, cc)
+
+    # since we're using periodic boundary conditions, the operator A_mat (just like
+    # the Dx and Dxx operators) is strictly speaking not invertible (it has zero
+    # determinant) since the solution is not unique. indeed, its LU decomposition
+    # shouldn't even be defined. for some reason, however, the call to "lu" does in
+    # fact factorize the matrix. in any case, to be safer, let's instead call
+    # "factorize", which uses fancy algorithms to determine which is the best way to
+    # factorize (and which performs a QR decomposition if the LU fails). the inverse
+    # that is performed probably returns the minimum norm least squares solution, or
+    # something similar. in any case, for our purposes here we mostly care about
+    # getting a solution (not necessarily the minimum norm least squares one).
+    A_fact = factorize(A_mat)
+    ldiv!(f0, A_fact, b_vec)
+
+    # update solution
+    @inbounds for idx in eachindex(fsol)
+        fsol[idx] += f0[idx]
+    end
+
 end
-
-
-Dxx = copy(Dxx_)
-Dyy = copy(Dyy_)
-Dxy = copy(Dxy_)
-Dx  = copy(Dx_)
-Dy  = copy(Dy_)
-
-A_mat = build_jacobian(Dxx, Dyy, Dxy, Dx, Dy, axx, ayy, axy, bx, by, cc)
-
-# since we're using periodic boundary conditions, the operator A_mat (just like
-# the Dx and Dxx operators) is strictly speaking not invertible (it has zero
-# determinant) since the solution is not unique. indeed, its LU decomposition
-# shouldn't even be defined. for some reason, however, the call to "lu" does in
-# fact factorize the matrix. in any case, to be safer, let's instead call
-# "factorize", which uses fancy algorithms to determine which is the best way to
-# factorize (and which performs a QR decomposition if the LU fails). the inverse
-# that is performed probably returns the minimum norm least squares solution, or
-# something similar. in any case, for our purposes here we mostly care about
-# getting a solution (not necessarily the minimum norm least squares one).
-A_fact = factorize(A_mat)
-ldiv!(f0, A_fact, b_vec)
-
-@inbounds for idx in eachindex(fsol)
-    fsol[idx] = f0[idx]
-end
-
-# finish looping
 
 
 j_slice = div(Ny,2) + 1
