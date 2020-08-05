@@ -43,23 +43,6 @@ function compute_residual!(res::Array, f::Array, x::Vector, y::Vector,
 end
 
 
-
-# returns axx Dxx + ayy Dyy + axy Dxy + bx Dx + by Dy + cc. note that this
-# function overwrites the input matrices to save memory
-function build_operator(Dxx::SparseMatrixCSC, Dyy::SparseMatrixCSC, Dxy::SparseMatrixCSC,
-                        Dx::SparseMatrixCSC, Dy::SparseMatrixCSC,
-                        axx::Vector, ayy::Vector, axy::Vector,
-                        bx::Vector, by::Vector, cc::Vector)
-    Jecco.mul_col!(axx, Dxx)
-    Jecco.mul_col!(ayy, Dyy)
-    Jecco.mul_col!(axy, Dxy)
-    Jecco.mul_col!(bx,  Dx)
-    Jecco.mul_col!(by,  Dy)
-    ccId = Diagonal(cc)
-
-    Dxx + Dyy + Dxy + Dx + Dy + ccId
-end
-
 function deriv_operators(hx, hy, Nx::Int, Ny::Int, ord::Int)
     Dx_op  = CenteredDiff{1}(1, ord, hx, Nx)
     Dxx_op = CenteredDiff{1}(2, ord, hx, Nx)
@@ -89,6 +72,24 @@ function deriv_matrices(Dxx_op::Jecco.FiniteDiffDeriv, Dyy_op::Jecco.FiniteDiffD
 end
 
 
+# returns axx Dxx + ayy Dyy + axy Dxy + bx Dx + by Dy + cc. note that this
+# function overwrites the input matrices to save memory
+function build_jacobian(Dxx::SparseMatrixCSC, Dyy::SparseMatrixCSC, Dxy::SparseMatrixCSC,
+                        Dx::SparseMatrixCSC, Dy::SparseMatrixCSC,
+                        axx::Vector, ayy::Vector, axy::Vector,
+                        bx::Vector, by::Vector, cc::Vector)
+    Jecco.mul_col!(axx, Dxx)
+    Jecco.mul_col!(ayy, Dyy)
+    Jecco.mul_col!(axy, Dxy)
+    Jecco.mul_col!(bx,  Dx)
+    Jecco.mul_col!(by,  Dy)
+    ccId = Diagonal(cc)
+
+    Dxx + Dyy + Dxy + Dx + Dy + ccId
+end
+
+
+
 x_min    = -5.0
 x_max    =  5.0
 x_nodes  =  128
@@ -114,31 +115,41 @@ f_exact = [exp(-xcoord[i]^2 - ycoord[j]^2) for i in 1:Nx, j in 1:Ny]
 
 
 Dxx_op, Dyy_op, Dx_op, Dy_op = deriv_operators(hx, hy, Nx, Ny, ord)
-Dxx, Dyy, Dxy, Dx, Dy        = deriv_matrices(Dxx_op, Dyy_op, Dx_op, Dy_op)
+Dxx_, Dyy_, Dxy_, Dx_, Dy_   = deriv_matrices(Dxx_op, Dyy_op, Dx_op, Dy_op)
 
-fsol   = zeros(Nx,Ny)
+# initial guess
+# fsol   = zeros(Nx,Ny)
+fsol   = copy(f_exact)
+
+res    = zeros(Nx,Ny)
 ind2D  = LinearIndices(fsol)
-
-fsol = copy(f_exact)
-
-res = similar(fsol)
-
-compute_residual!(res, fsol, xcoord[:], ycoord[:], Dxx_op, Dyy_op, Dx_op, Dy_op)
-
 
 M = Nx * Ny
 
-b_vec = zeros(M)
-
+b_vec   = zeros(M)
 axx     = ones(M)
 ayy     = ones(M)
 axy     = zeros(M)
 bx      = zeros(M)
 by      = zeros(M)
 cc      = zeros(M)
+f0      = zeros(M)
 
-# f0      = zeros(M)
-f0      = f_exact[:]
+
+@inbounds for idx in eachindex(f0)
+    f0[idx] = fsol[idx]
+end
+
+
+# start looping here
+
+compute_residual!(res, fsol, xcoord[:], ycoord[:], Dxx_op, Dyy_op, Dx_op, Dy_op)
+
+
+# FIXME
+
+# build (linearized) operator A = Dxx + Dyy + x y Dxy + f_y(0) Dx + f_x(0) Dy + (x^2 + y^2)
+
 
 f0_x = Dx * f0
 f0_y = Dy * f0
@@ -158,9 +169,14 @@ for j in 1:Ny, i in 1:Nx
     b_vec[idx] = source(xi, yi)
 end
 
-# FIXME
-# build (linearized) operator A = Dxx + Dyy + x y Dxy + f_y(0) Dx + f_x(0) Dy + (x^2 + y^2)
-A_mat = build_operator(Dxx, Dyy, Dxy, Dx, Dy, axx, ayy, axy, bx, by, cc)
+
+Dxx = copy(Dxx_)
+Dyy = copy(Dyy_)
+Dxy = copy(Dxy_)
+Dx  = copy(Dx_)
+Dy  = copy(Dy_)
+
+A_mat = build_jacobian(Dxx, Dyy, Dxy, Dx, Dy, axx, ayy, axy, bx, by, cc)
 
 # since we're using periodic boundary conditions, the operator A_mat (just like
 # the Dx and Dxx operators) is strictly speaking not invertible (it has zero
@@ -173,11 +189,14 @@ A_mat = build_operator(Dxx, Dyy, Dxy, Dx, Dy, axx, ayy, axy, bx, by, cc)
 # something similar. in any case, for our purposes here we mostly care about
 # getting a solution (not necessarily the minimum norm least squares one).
 A_fact = factorize(A_mat)
-sol    = A_fact \ b_vec
+ldiv!(f0, A_fact, b_vec)
 
 @inbounds for idx in eachindex(fsol)
-    fsol[idx] = sol[idx]
+    fsol[idx] = f0[idx]
 end
+
+# finish looping
+
 
 j_slice = div(Ny,2) + 1
 x = xcoord[:]
