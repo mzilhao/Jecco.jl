@@ -135,15 +135,18 @@ by      = zeros(M)
 cc      = zeros(M)
 f0      = zeros(M)
 
-itmax = 8
+itmax   = 8
+epsilon = 1e-12
 
-# start looping here
 for it in 1:itmax
 
     compute_residual!(res, fsol, xcoord[:], ycoord[:], Dxx_op, Dyy_op, Dx_op, Dy_op)
     max_res = maximum(abs.(res))
 
     @show it, max_res
+    if max_res < epsilon
+        break
+    end
 
     # build (linearized) operator
     # A = Dxx + Dyy + x y Dxy + (x + 2 f0_x + x y f0_y) Dx + (y + 2 f0_y + x y f0_x) Dy + (x^2 + y^2)
