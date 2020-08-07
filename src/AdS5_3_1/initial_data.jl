@@ -481,23 +481,6 @@ analytic_B1(u, x, y, id::PhiGaussian_u) = 0
 analytic_B2(u, x, y, id::PhiGaussian_u) = 0
 analytic_G(u, x, y, id::PhiGaussian_u) = 0
 
-function init_data!(bulkevols, boundary::Boundary, gauge::Gauge,
-                    systems::SystemPartition, id::PhiGaussian_u)
-
-    init_data!(boundary, systems[1],   id)
-    init_data!(gauge,    systems[end], id)
-    init_data!(bulkevols, gauge, systems, id)
-
-    nothing
-end
-
-function init_data!(bulkevols, gauge::Gauge, systems::SystemPartition,
-                    id::PhiGaussian_u) where {Nsys,T<:BulkEvolved}
-    # the Ref() makes its argument a scalar with respect to broadcast
-    init_data!.(bulkevols, Ref(gauge), systems, Ref(id))
-end
-
-
 function init_data!(ff::Boundary, sys::System, id::PhiGaussian_u)
     a4  = geta4(ff)
     fx2 = getfx2(ff)
@@ -539,6 +522,40 @@ function init_data!(ff::Gauge, sys::System, id::PhiGaussian_u)
     fill!(xi, xi0)
 
     ff
+end
+
+
+function init_data!(bulkevols, boundary::Boundary, gauge::Gauge,
+                    systems::SystemPartition, id::PhiGaussian_u)
+    _, Nx, Ny = size(systems[end])
+    AH_pos = id.AH_pos
+
+    init_data!(boundary, systems[1],   id)
+
+    init_data!(gauge,    systems[end], id)
+    init_data!(bulkevols, gauge, systems, id)
+
+    # find AH here. need to solve the nested system first...
+
+    # assuming that the AH has been found, we now update xi and the bulk variables
+    uAH = AH_pos # FIXME
+    for j in 1:Ny
+        for i in 1:Nx
+            xi[1,i,j] += -1 / AH_pos + 1 / uAH # FIXME
+        end
+    end
+
+    init_data!(bulkevols, gauge, systems, id)
+
+    # find AH here. need to solve the nested system first...
+
+    nothing
+end
+
+function init_data!(bulkevols, gauge::Gauge, systems::SystemPartition,
+                    id::PhiGaussian_u) where {Nsys,T<:BulkEvolved}
+    # the Ref() makes its argument a scalar with respect to broadcast
+    init_data!.(bulkevols, Ref(gauge), systems, Ref(id))
 end
 
 function init_data!(bulk::BulkEvolved, gauge::Gauge, sys::System{Inner},
