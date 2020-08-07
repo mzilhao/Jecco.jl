@@ -477,6 +477,9 @@ function analytic_phi(u, x, y, id::PhiGaussian_u)
     (phi2 + u * myfunc) / phi03
 end
 
+analytic_B1(u, x, y, id::PhiGaussian_u) = 0
+analytic_B2(u, x, y, id::PhiGaussian_u) = 0
+analytic_G(u, x, y, id::PhiGaussian_u) = 0
 
 function init_data!(bulkevols, boundary::Boundary, gauge::Gauge,
                     systems::SystemPartition, id::PhiGaussian_u)
@@ -553,10 +556,6 @@ function init_data!(bulk::BulkEvolved, gauge::Gauge, sys::System{Inner},
 
     phi0 = id.phi0
 
-    fill!(B1,  0)
-    fill!(B2,  0)
-    fill!(G,   0)
-
     for j in 1:Ny
         for i in 1:Nx
             for a in 1:Nu
@@ -565,11 +564,19 @@ function init_data!(bulk::BulkEvolved, gauge::Gauge, sys::System{Inner},
                 y       = yy[j]
                 xi_ij   = xi[1,i,j]
                 aux     = 1 + xi_ij * u
+                aux3    = aux * aux * aux
+                aux4    = aux * aux3
                 u_old   = u / aux
+                B1_old  = analytic_B1(u_old, x, y, id)
+                B2_old  = analytic_B2(u_old, x, y, id)
+                G_old   = analytic_G(u_old, x, y, id)
                 phi_old = analytic_phi(u_old, x, y, id)
 
+                B1[a,i,j]  = B1_old / aux4
+                B2[a,i,j]  = B2_old / aux4
+                G[a,i,j]   = G_old  / aux4
                 phi[a,i,j] = xi_ij * xi_ij / (phi0 * phi0 * aux) +
-                    phi_old / (aux * aux * aux)
+                    phi_old / aux3
             end
         end
     end
@@ -592,10 +599,6 @@ function init_data!(bulk::BulkEvolved, gauge::Gauge, sys::System{Outer},
 
     phi0 = id.phi0
 
-    fill!(B1,  0)
-    fill!(B2,  0)
-    fill!(G,   0)
-
     for j in 1:Ny
         for i in 1:Nx
             for a in 1:Nu
@@ -604,11 +607,22 @@ function init_data!(bulk::BulkEvolved, gauge::Gauge, sys::System{Outer},
                 y         = yy[j]
                 xi_ij     = xi[1,i,j]
                 aux       = 1 + xi_ij * u
+                aux3      = aux * aux * aux
+                aux4      = aux * aux3
                 u_old     = u / aux
+                B1_old    = analytic_B1(u_old, x, y, id)
+                B2_old    = analytic_B2(u_old, x, y, id)
+                G_old     = analytic_G(u_old, x, y, id)
                 phi_old   = analytic_phi(u_old, x, y, id)
+                B1_inner  = B1_old / aux4
+                B2_inner  = B2_old / aux4
+                G_inner   = G_old  / aux4
                 phi_inner = xi_ij * xi_ij / (phi0 * phi0 * aux) +
-                    phi_old / (aux * aux * aux)
+                    phi_old / aux3
 
+                B1[a,i,j]  = u^4 * B1_inner
+                B2[a,i,j]  = u^4 * B2_inner
+                G[a,i,j]   = u^4 * G_inner
                 phi[a,i,j] = u * phi0 - u^2 * phi0 * xi_ij + u^3 * phi0^3 * phi_inner
             end
         end
