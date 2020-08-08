@@ -56,8 +56,10 @@ Base.@kwdef struct PhiGaussian_u{T,TP<:Potential} <: InitialData
     potential     :: TP
 end
 
-function init_data!(bulkevols, boundary::Boundary, gauge::Gauge,
-                    systems::SystemPartition, id::InitialData)
+# FIXME: set bulkconstrains
+function init_data!(bulkconstrains, bulkevols, boundary::Boundary, gauge::Gauge,
+                    systems::SystemPartition, evoleq::EvolutionEquations,
+                    id::InitialData)
 
     init_data!(bulkevols, systems, id)
     init_data!(boundary, systems[1],   id)
@@ -525,17 +527,24 @@ function init_data!(ff::Gauge, sys::System, id::PhiGaussian_u)
 end
 
 
-function init_data!(bulkevols, boundary::Boundary, gauge::Gauge,
-                    systems::SystemPartition, id::PhiGaussian_u)
+function init_data!(bulkconstrains, bulkevols, boundary::Boundary, gauge::Gauge,
+                    systems::SystemPartition, evoleq::EvolutionEquations,
+                    id::PhiGaussian_u)
     _, Nx, Ny = size(systems[end])
     AH_pos = id.AH_pos
+
+    # function to solve the nested system
+    nested = Nested(systems, bulkconstrains)
 
     init_data!(boundary, systems[1],   id)
 
     init_data!(gauge,    systems[end], id)
     init_data!(bulkevols, gauge, systems, id)
 
-    # find AH here. need to solve the nested system first...
+    # solve nested system for the constrained variables
+    nested(bulkevols, boundary, gauge, evoleq)
+
+    # TODO: find AH here
 
     # assuming that the AH has been found, we now update xi and the bulk variables
     uAH = AH_pos # FIXME
@@ -547,7 +556,10 @@ function init_data!(bulkevols, boundary::Boundary, gauge::Gauge,
 
     init_data!(bulkevols, gauge, systems, id)
 
-    # find AH here. need to solve the nested system first...
+    # solve nested system for the constrained variables
+    nested(bulkevols, boundary, gauge, evoleq)
+
+    # TODO: find AH here
 
     nothing
 end

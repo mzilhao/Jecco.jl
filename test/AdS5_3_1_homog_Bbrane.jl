@@ -37,7 +37,7 @@
     bulkderivs     = BulkDerivPartition(grid)
 
     # initial conditions
-    init_data!(bulkevols, boundary, gauge, systems, id)
+    init_data!(bulkconstrains, bulkevols, boundary, gauge, systems, evoleq, id)
 
     # function to solve the nested system, given the initial data
     nested = Nested(systems, bulkconstrains, bulkderivs)

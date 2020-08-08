@@ -43,7 +43,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
     # if we are not recovering from a checkpoint, run initial conditions
     if do_id
-        init_data!(bulkevols, boundary, gauge, systems, id)
+        init_data!(bulkconstrains, bulkevols, boundary, gauge, systems, evoleq, id)
     end
 
     # full state vector
@@ -123,6 +123,8 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
             last_checkpoint_walltime = telapsed
             checkpoint(u)
         end
+
+        # TODO: find AH
 
         # terminate run?
         if t >= tmax || telapsed >= io.max_walltime
