@@ -18,7 +18,11 @@ grid = SpecCartGrid3D(
 )
 
 id = BlackBraneB1Pert(
-    amp = 0.005,
+    amp  = 0.005,
+    xmax = grid.x_max,
+    xmin = grid.x_min,
+    ymax = grid.y_max,
+    ymin = grid.y_min,
 )
 
 evoleq = AffineNull(
