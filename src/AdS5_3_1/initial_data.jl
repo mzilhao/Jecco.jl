@@ -1,17 +1,4 @@
 
-Base.@kwdef struct IDTest0{T,TP<:Potential} <: InitialData
-    b14_0     :: T  = 0.0
-    b24_0     :: T  = 0.0
-    g4_0      :: T  = 0.0
-    phi0      :: T  = 0.0
-    phi2_0    :: T  = 0.0
-    a4_0      :: T  = 0.0
-    fx2_0     :: T  = 0.0
-    fy2_0     :: T  = 0.0
-    xi_0      :: T  = 0.0
-    potential :: TP = ZeroPotential()
-end
-
 Base.@kwdef struct BlackBrane{T,TP<:Potential} <: InitialData
     energy_dens   :: T   = 1.0
     AH_pos        :: T   = 1.0
@@ -45,201 +32,6 @@ Base.@kwdef struct PhiGaussian_u{T,TP<:Potential} <: InitialData
     u0            :: T   = 0.0
     sigma         :: T   = 0.1
     potential     :: TP
-end
-
-
-# BlackBrane initial data
-
-analytic_B1(u, x, y, id::BlackBrane)  = 0
-analytic_B2(u, x, y, id::BlackBrane)  = 0
-analytic_G(u, x, y, id::BlackBrane)   = 0
-analytic_phi(u, x, y, id::BlackBrane) = 0
-
-function init_data!(ff::Boundary, sys::System, id::BlackBrane)
-    a40 = -id.energy_dens/0.75
-
-    a4  = geta4(ff)
-    fx2 = getfx2(ff)
-    fy2 = getfy2(ff)
-
-    fill!(a4, a40)
-    fill!(fx2, 0)
-    fill!(fy2, 0)
-
-    ff
-end
-
-function init_data!(ff::Gauge, sys::System, id::BlackBrane)
-    a40     = -id.energy_dens/0.75
-    AH_pos  = id.AH_pos
-    xi0     = (-a40)^0.25 - 1/AH_pos
-
-    xi  = getxi(ff)
-
-    fill!(xi, xi0)
-
-    ff
-end
-
-
-# BlackBranePert initial data
-
-analytic_phi(u, x, y, id::BlackBranePert) = 0
-
-function analytic_B1(u, x, y, id::BlackBranePert)
-    # add the perturbation on B1
-    pert_amp = id.B1_amp
-    xmax     = id.xmax
-    xmin     = id.xmin
-    ymax     = id.ymax
-    ymin     = id.ymin
-    # number of maxima in each direction
-    nx   = 1
-    ny   = 2
-
-    pert_amp * sin( 2 * π * nx * (xmax-x)/(xmax-xmin) ) *
-        sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
-end
-
-function analytic_B2(u, x, y, id::BlackBranePert)
-    # add the perturbation on B2
-    pert_amp = id.B2_amp
-    xmax     = id.xmax
-    xmin     = id.xmin
-    ymax     = id.ymax
-    ymin     = id.ymin
-    # number of maxima in each direction
-    nx   = 1
-    ny   = 2
-
-    pert_amp * sin( 2 * π * nx * (xmax-x)/(xmax-xmin) ) *
-        sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
-end
-
-function analytic_G(u, x, y, id::BlackBranePert)
-    # add the perturbation on G
-    pert_amp = id.G_amp
-    xmax     = id.xmax
-    xmin     = id.xmin
-    ymax     = id.ymax
-    ymin     = id.ymin
-    # number of maxima in each direction
-    nx   = 1
-    ny   = 2
-
-    pert_amp * sin( 2 * π * nx * (xmax-x)/(xmax-xmin) ) *
-        sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
-end
-
-function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBranePert)
-    a40  = -id.energy_dens/0.75
-    # a4 perturbation amplitude
-    amp  = id.a4_amp
-    # number of maxima
-    kx   = id.a4_k
-    xmax = id.xmax
-    xmin = id.xmin
-    xmid = (max + xmin) / 2
-    # ymax = id.ymax
-    # ymin = id.ymin
-
-    _, Nx, Ny = size(sys)
-    xx = sys.xcoord
-    yy = sys.ycoord
-
-    a4  = geta4(ff)
-    fx2 = getfx2(ff)
-    fy2 = getfy2(ff)
-
-    fill!(a4, a40)
-    fill!(fx2, 0)
-    fill!(fy2, 0)
-
-    for j in 1:Ny
-        for i in 1:Nx
-            x = xx[i]
-            a4[1,i,j]  += -a40 * amp * cos(2 * π * kx * (x-xmid)/(xmax-xmin) )
-        end
-    end
-
-    ff
-end
-
-function init_data!(ff::Gauge, sys::System, id::BlackBranePert)
-    a40     = -id.energy_dens/0.75
-    AH_pos  = id.AH_pos
-    xi0     = (-a40)^0.25 - 1/AH_pos
-
-    xi  = getxi(ff)
-
-    fill!(xi, xi0)
-
-    ff
-end
-
-
-# PhiGaussian_u initial data
-
-function analytic_phi(u, x, y, id::PhiGaussian_u)
-    phi0   = id.phi0
-    phi2   = id.phi2
-    amp    = id.amp
-    sigma  = id.sigma
-    u0     = id.u0
-
-    phi03  = phi0 * phi0 * phi0
-    sigma2 = sigma * sigma
-
-    myfunc = amp * exp( -(u-u0)*(u-u0) / (2*sigma2) )
-
-    (phi2 + u * myfunc) / phi03
-end
-
-analytic_B1(u, x, y, id::PhiGaussian_u) = 0
-analytic_B2(u, x, y, id::PhiGaussian_u) = 0
-analytic_G(u, x, y, id::PhiGaussian_u) = 0
-
-function init_data!(ff::Boundary, sys::System, id::PhiGaussian_u)
-    a4  = geta4(ff)
-    fx2 = getfx2(ff)
-    fy2 = getfy2(ff)
-
-    epsilon = id.energy_dens
-    phi0    = id.phi0
-    phi2    = id.phi2
-    oophiM2 = id.potential.oophiM2
-    phi04   = phi0 * phi0 * phi0 * phi0
-
-    # TODO: does this change with nonzero phiQ ?
-    a40 = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
-
-    fill!(a4, a40)
-    fill!(fx2, 0)
-    fill!(fy2, 0)
-
-    ff
-end
-
-function init_data!(ff::Gauge, sys::System, id::PhiGaussian_u)
-    epsilon = id.energy_dens
-    phi0    = id.phi0
-    phi2    = id.phi2
-    AH_pos  = id.AH_pos
-    oophiM2 = id.potential.oophiM2
-    phi04   = phi0 * phi0 * phi0 * phi0
-
-    # TODO: does this change with nonzero phiQ ?
-    a40 = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
-
-    # FIXME: this is only valid for the conformal case! this routine needs to be
-    # fixed once we can search for the AH
-    xi0 = (-a40)^0.25 - 1/AH_pos
-
-    xi  = getxi(ff)
-
-    fill!(xi, xi0)
-
-    ff
 end
 
 
@@ -420,99 +212,196 @@ function init_data!(bulk::BulkEvolved, gauge::Gauge, sys::System{Outer},
 end
 
 
-# IDTest0
+# BlackBrane initial data
 
-function init_data!(ff::BulkEvolved, sys::System{Outer}, id::IDTest0)
-    Nu, Nx, Ny = size(sys)
-    ucoord = sys.ucoord
-    xcoord = sys.xcoord
-    ycoord = sys.ycoord
+analytic_B1(u, x, y, id::BlackBrane)  = 0
+analytic_B2(u, x, y, id::BlackBrane)  = 0
+analytic_G(u, x, y, id::BlackBrane)   = 0
+analytic_phi(u, x, y, id::BlackBrane) = 0
 
-    B1  = getB1(ff)
-    B2  = getB2(ff)
-    G   = getG(ff)
-    phi = getphi(ff)
+function init_data!(ff::Boundary, sys::System, id::BlackBrane)
+    a40 = -id.energy_dens/0.75
 
-    b14_0  = id.b14_0
-    b24_0  = id.b24_0
+    a4  = geta4(ff)
+    fx2 = getfx2(ff)
+    fy2 = getfy2(ff)
 
-    g4_0   = id.g4_0
+    fill!(a4, a40)
+    fill!(fx2, 0)
+    fill!(fy2, 0)
 
-    phi0   = id.phi0
-    phi2_0 = id.phi2_0
+    ff
+end
+
+function init_data!(ff::Gauge, sys::System, id::BlackBrane)
+    a40     = -id.energy_dens/0.75
+    AH_pos  = id.AH_pos
+    xi0     = (-a40)^0.25 - 1/AH_pos
+
+    xi  = getxi(ff)
+
+    fill!(xi, xi0)
+
+    ff
+end
+
+
+# BlackBranePert initial data
+
+analytic_phi(u, x, y, id::BlackBranePert) = 0
+
+function analytic_B1(u, x, y, id::BlackBranePert)
+    # add the perturbation on B1
+    pert_amp = id.B1_amp
+    xmax     = id.xmax
+    xmin     = id.xmin
+    ymax     = id.ymax
+    ymin     = id.ymin
+    # number of maxima in each direction
+    nx   = 1
+    ny   = 2
+
+    pert_amp * sin( 2 * π * nx * (xmax-x)/(xmax-xmin) ) *
+        sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
+end
+
+function analytic_B2(u, x, y, id::BlackBranePert)
+    # add the perturbation on B2
+    pert_amp = id.B2_amp
+    xmax     = id.xmax
+    xmin     = id.xmin
+    ymax     = id.ymax
+    ymin     = id.ymin
+    # number of maxima in each direction
+    nx   = 1
+    ny   = 2
+
+    pert_amp * sin( 2 * π * nx * (xmax-x)/(xmax-xmin) ) *
+        sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
+end
+
+function analytic_G(u, x, y, id::BlackBranePert)
+    # add the perturbation on G
+    pert_amp = id.G_amp
+    xmax     = id.xmax
+    xmin     = id.xmin
+    ymax     = id.ymax
+    ymin     = id.ymin
+    # number of maxima in each direction
+    nx   = 1
+    ny   = 2
+
+    pert_amp * sin( 2 * π * nx * (xmax-x)/(xmax-xmin) ) *
+        sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
+end
+
+function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBranePert)
+    a40  = -id.energy_dens/0.75
+    # a4 perturbation amplitude
+    amp  = id.a4_amp
+    # number of maxima
+    kx   = id.a4_k
+    xmax = id.xmax
+    xmin = id.xmin
+    xmid = (max + xmin) / 2
+    # ymax = id.ymax
+    # ymin = id.ymin
+
+    _, Nx, Ny = size(sys)
+    xx = sys.xcoord
+    yy = sys.ycoord
+
+    a4  = geta4(ff)
+    fx2 = getfx2(ff)
+    fy2 = getfy2(ff)
+
+    fill!(a4, a40)
+    fill!(fx2, 0)
+    fill!(fy2, 0)
 
     for j in 1:Ny
         for i in 1:Nx
-            for a in 1:Nu
-                u = ucoord[a]
-                x = xcoord[i]
-                y = ycoord[j]
-                B1[a,i,j]  = u^4 * b14_0
-                B2[a,i,j]  = u^4 * b24_0
-                phi[a,i,j] = phi0 * u + phi2_0 * u^3
-                G[a,i,j]   = u^4 * g4_0
-            end
+            x = xx[i]
+            a4[1,i,j]  += -a40 * amp * cos(2 * π * kx * (x-xmid)/(xmax-xmin) )
         end
     end
 
     ff
 end
 
-function init_data!(ff::BulkEvolved, sys::System{Inner}, id::IDTest0)
-    # Nu, Nx, Ny = size(sys)
-    # ucoord = sys.ucoord
-    # xcoord = sys.xcoord
-    # ycoord = sys.ycoord
+function init_data!(ff::Gauge, sys::System, id::BlackBranePert)
+    a40     = -id.energy_dens/0.75
+    AH_pos  = id.AH_pos
+    xi0     = (-a40)^0.25 - 1/AH_pos
 
-    B1  = getB1(ff)
-    B2  = getB2(ff)
-    G   = getG(ff)
-    phi = getphi(ff)
+    xi  = getxi(ff)
 
-    b14_0  = id.b14_0
-    b24_0  = id.b24_0
-
-    g4_0   = id.g4_0
-
-    phi0   = id.phi0
-    phi2_0 = id.phi2_0
-
-    fill!(B1,  b14_0)
-    fill!(B2,  b24_0)
-    fill!(G,   g4_0)
-    fill!(phi, phi2_0)
+    fill!(xi, xi0)
 
     ff
 end
 
-function init_data!(ff::Boundary, sys::System{Inner}, id::IDTest0)
-    # _, Nx, Ny = size(sys)
-    # xcoord = sys.xcoord
-    # ycoord = sys.ycoord
 
+# PhiGaussian_u initial data
+
+function analytic_phi(u, x, y, id::PhiGaussian_u)
+    phi0   = id.phi0
+    phi2   = id.phi2
+    amp    = id.amp
+    sigma  = id.sigma
+    u0     = id.u0
+
+    phi03  = phi0 * phi0 * phi0
+    sigma2 = sigma * sigma
+
+    myfunc = amp * exp( -(u-u0)*(u-u0) / (2*sigma2) )
+
+    (phi2 + u * myfunc) / phi03
+end
+
+analytic_B1(u, x, y, id::PhiGaussian_u) = 0
+analytic_B2(u, x, y, id::PhiGaussian_u) = 0
+analytic_G(u, x, y, id::PhiGaussian_u)  = 0
+
+function init_data!(ff::Boundary, sys::System, id::PhiGaussian_u)
     a4  = geta4(ff)
     fx2 = getfx2(ff)
     fy2 = getfy2(ff)
 
-    a4_0   = id.a4_0
-    fx2_0  = id.fx2_0
-    fy2_0  = id.fy2_0
+    epsilon = id.energy_dens
+    phi0    = id.phi0
+    phi2    = id.phi2
+    oophiM2 = id.potential.oophiM2
+    phi04   = phi0 * phi0 * phi0 * phi0
 
-    fill!(a4,  a4_0)
-    fill!(fx2, fx2_0)
-    fill!(fy2, fy2_0)
+    # TODO: does this change with nonzero phiQ ?
+    a40 = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
+
+    fill!(a4, a40)
+    fill!(fx2, 0)
+    fill!(fy2, 0)
 
     ff
 end
 
-function init_data!(ff::Gauge, sys::System{Outer}, id::IDTest0)
-    # _, Nx, Ny = size(sys)
-    # xcoord = sys.xcoord
-    # ycoord = sys.ycoord
+function init_data!(ff::Gauge, sys::System, id::PhiGaussian_u)
+    epsilon = id.energy_dens
+    phi0    = id.phi0
+    phi2    = id.phi2
+    AH_pos  = id.AH_pos
+    oophiM2 = id.potential.oophiM2
+    phi04   = phi0 * phi0 * phi0 * phi0
 
-    xi   = getxi(ff)
-    xi_0 = id.xi_0
-    fill!(xi,  xi_0)
+    # TODO: does this change with nonzero phiQ ?
+    a40 = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
+
+    # FIXME: this is only valid for the conformal case! this routine needs to be
+    # fixed once we can search for the AH
+    xi0 = (-a40)^0.25 - 1/AH_pos
+
+    xi  = getxi(ff)
+
+    fill!(xi, xi0)
 
     ff
 end
