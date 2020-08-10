@@ -303,7 +303,7 @@ function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBranePert)
     kx   = id.a4_k
     xmax = id.xmax
     xmin = id.xmin
-    xmid = (max + xmin) / 2
+    xmid = (xmax + xmin) / 2
     # ymax = id.ymax
     # ymin = id.ymin
 
