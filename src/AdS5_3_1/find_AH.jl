@@ -130,32 +130,14 @@ function compute_residual_AH!(res::Array, sigma::Array,
     res
 end
 
-
-#= Finding the Apparent Horizon
-
-this is a 2D (non-linear) PDE of the type
-
-  axx f_xx + ayy f_yy + axy f_xy + bxx (f_x)^2 + byy (f_y)^2 + bxy (f_x) (f_y)
-   + cx f_x + cy f_y + S = 0
-
-we solve this equation with a Newton-Kantorovich method where, starting with a
-guess, we solve the associated linear problem (using the same strategy as in
-compute_xi_t!) to improve our guess until a sufficiently precise solution is
-reached.
-=#
-function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
-                  bulkevol::BulkEvolved, deriv::BulkDeriv, gauge::Gauge,
-                  cache::HorizonCache, sys::System{Outer})
+function compute_coeffs_AH!(sigma::Array, gauge::Gauge, cache::HorizonCache,
+                            sys::System{Outer})
     _, Nx, Ny = size(sys)
-    bulk = Bulk(bulkevol, bulkconstrain)
 
-    Du  = sys.Du
     Dx  = sys.Dx
     Dxx = sys.Dxx
     Dy  = sys.Dy
     Dyy = sys.Dyy
-
-    interp = sys.uinterp
 
     B1_uAH      = cache.bulkhorizon.B1_uAH
     B2_uAH      = cache.bulkhorizon.B2_uAH
@@ -186,88 +168,8 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
     bx          = cache.bx
     by          = cache.by
     cc          = cache.cc
-    b_vec       = cache.b_vec
-
-    Dx_2D       = cache.Dx_2D
-    Dxx_2D      = cache.Dxx_2D
-    Dy_2D       = cache.Dy_2D
-    Dyy_2D      = cache.Dyy_2D
-    Dxy_2D      = cache.Dxy_2D
-    _Dx_2D      = cache._Dx_2D
-    _Dxx_2D     = cache._Dxx_2D
-    _Dy_2D      = cache._Dy_2D
-    _Dyy_2D     = cache._Dyy_2D
-    _Dxy_2D     = cache._Dxy_2D
-
-    # take all u-derivatives. we assume that they've not been computed beforehand
-    @sync begin
-        @spawn mul!(deriv.Du_B1,  Du,  bulk.B1)
-        @spawn mul!(deriv.Du_B2,  Du,  bulk.B2)
-        @spawn mul!(deriv.Du_G,   Du,  bulk.G)
-        @spawn mul!(deriv.Du_S,   Du,  bulk.S)
-        @spawn mul!(deriv.Du_Fx,  Du,  bulk.Fx)
-        @spawn mul!(deriv.Du_Fy,  Du,  bulk.Fy)
-        @spawn mul!(deriv.Du_Sd,  Du,  bulk.Sd)
-    end
-
 
     ind2D  = LinearIndices(B1_uAH[1,:,:])
-
-
-    res = 0 * sigma
-
-    itmax   = 8
-    epsilon = 1e-12
-
-    # start loop here
-    # for it in 1:itmax
-    it = 1
-
-
-    # interpolate bulk functions (and u-derivatives) to the 1/u = r = sigma surface
-    @inbounds Threads.@threads for j in 1:Ny
-        @inbounds for i in 1:Nx
-            uAH = 1 / sigma[1,i,j]
-            u2  = uAH * uAH
-            u3  = uAH * uAH * uAH
-            u4  = uAH * uAH * uAH * uAH
-
-            B1_uAH[1,i,j]       = interp(view(bulk.B1,  :,i,j))(uAH)
-            B2_uAH[1,i,j]       = interp(view(bulk.B2,  :,i,j))(uAH)
-            G_uAH[1,i,j]        = interp(view(bulk.G,   :,i,j))(uAH)
-            S_uAH[1,i,j]        = interp(view(bulk.S,   :,i,j))(uAH)
-            Fx_uAH[1,i,j]       = interp(view(bulk.Fx,  :,i,j))(uAH)
-            Fy_uAH[1,i,j]       = interp(view(bulk.Fy,  :,i,j))(uAH)
-            Sd_uAH[1,i,j]       = interp(view(bulk.Sd,  :,i,j))(uAH)
-
-            Du_B1_uAH[1,i,j]    = interp(view(deriv.Du_B1,  :,i,j))(uAH)
-            Du_B2_uAH[1,i,j]    = interp(view(deriv.Du_B2,  :,i,j))(uAH)
-            Du_G_uAH[1,i,j]     = interp(view(deriv.Du_G,   :,i,j))(uAH)
-            Du_S_uAH[1,i,j]     = interp(view(deriv.Du_S,   :,i,j))(uAH)
-            Du_Fx_uAH[1,i,j]    = interp(view(deriv.Du_Fx,  :,i,j))(uAH)
-            Du_Fy_uAH[1,i,j]    = interp(view(deriv.Du_Fy,  :,i,j))(uAH)
-            Du_Sd_uAH[1,i,j]    = interp(view(deriv.Du_Sd,  :,i,j))(uAH)
-
-            Duu_B1_uAH[1,i,j]   = interp(view(deriv.Duu_B1,  :,i,j))(uAH)
-            Duu_B2_uAH[1,i,j]   = interp(view(deriv.Duu_B2,  :,i,j))(uAH)
-            Duu_G_uAH[1,i,j]    = interp(view(deriv.Duu_G,   :,i,j))(uAH)
-            Duu_S_uAH[1,i,j]    = interp(view(deriv.Duu_S,   :,i,j))(uAH)
-            Duu_Fx_uAH[1,i,j]   = interp(view(deriv.Duu_Fx,  :,i,j))(uAH)
-            Duu_Fy_uAH[1,i,j]   = interp(view(deriv.Duu_Fy,  :,i,j))(uAH)
-        end
-    end
-
-
-
-    compute_residual_AH!(res, sigma, gauge, cache, sys)
-    max_res = maximum(abs.(res))
-
-    @show it, max_res
-    # if max_res < epsilon
-    #     break
-    # end
-
-
 
     # coefficients of the derivative operators
     @fastmath @inbounds Threads.@threads for j in 1:Ny
@@ -369,63 +271,189 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
             bx[idx]    = b1
             by[idx]    = b2
             cc[idx]    = c
-            b_vec[idx] = -res[1,i,j]
         end
     end
 
-    # each time this routine is called, the operators Dx_2D, Dxx_2D, etc, are
-    # overwritten. so restore them here from _Dx_2D, _Dxx_2D, etc. these are
-    # never overwritten.
-    copyto!(Dx_2D,  _Dx_2D)
-    copyto!(Dxx_2D, _Dxx_2D)
-    copyto!(Dy_2D,  _Dy_2D)
-    copyto!(Dyy_2D, _Dyy_2D)
-    copyto!(Dxy_2D, _Dxy_2D)
-
-    # overwrite the operators with the coefficients computed in the loop above
-    mul_col!(axx, Dxx_2D)
-    mul_col!(ayy, Dyy_2D)
-    mul_col!(axy, Dxy_2D)
-    mul_col!(bx,  Dx_2D)
-    mul_col!(by,  Dy_2D)
-    ccId = Diagonal(cc)
-
-    # build actual operator to be inverted
-    A_mat = Dxx_2D + Dyy_2D + Dxy_2D + Dx_2D + Dy_2D + ccId
-
-    # since we're using periodic boundary conditions, the operator A_mat (just
-    # like the Dx and Dxx operators) is strictly speaking not invertible (it has
-    # zero determinant) since the solution is not unique. indeed, its LU
-    # decomposition shouldn't even be defined. for some reason, however, the
-    # call to "lu" does in fact factorize the matrix. in any case, to be safer,
-    # let's instead use the left division operator. this calls "factorize",
-    # which uses fancy algorithms to determine which is the best way to
-    # factorize (and which performs a QR decomposition if the LU fails). the
-    # inverse that is performed probably returns the minimum norm least squares
-    # solution, or something similar. in any case, for our purposes here we
-    # mostly care about getting a solution (not necessarily the minimum norm
-    # least squares one).
+    nothing
+end
 
 
-    A_fact = factorize(A_mat)
+#= Finding the Apparent Horizon
+
+this is a 2D (non-linear) PDE of the type
+
+  axx f_xx + ayy f_yy + axy f_xy + bxx (f_x)^2 + byy (f_y)^2 + bxy (f_x) (f_y)
+   + cx f_x + cy f_y + S = 0
+
+we solve this equation with a Newton-Kantorovich method where, starting with a
+guess, we solve the associated linear problem (using the same strategy as in
+compute_xi_t!) to improve our guess until a sufficiently precise solution is
+reached.
+=#
+function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
+                  bulkevol::BulkEvolved, deriv::BulkDeriv, gauge::Gauge,
+                  cache::HorizonCache, sys::System{Outer})
+    _, Nx, Ny = size(sys)
+    bulk = Bulk(bulkevol, bulkconstrain)
+
+    Du  = sys.Du
+    Dx  = sys.Dx
+    Dxx = sys.Dxx
+    Dy  = sys.Dy
+    Dyy = sys.Dyy
+
+    interp = sys.uinterp
+
+    B1_uAH      = cache.bulkhorizon.B1_uAH
+    B2_uAH      = cache.bulkhorizon.B2_uAH
+    G_uAH       = cache.bulkhorizon.G_uAH
+    S_uAH       = cache.bulkhorizon.S_uAH
+    Fx_uAH      = cache.bulkhorizon.Fx_uAH
+    Fy_uAH      = cache.bulkhorizon.Fy_uAH
+    Sd_uAH      = cache.bulkhorizon.Sd_uAH
+
+    Du_B1_uAH   = cache.bulkhorizon.Du_B1_uAH
+    Du_B2_uAH   = cache.bulkhorizon.Du_B2_uAH
+    Du_G_uAH    = cache.bulkhorizon.Du_G_uAH
+    Du_S_uAH    = cache.bulkhorizon.Du_S_uAH
+    Du_Fx_uAH   = cache.bulkhorizon.Du_Fx_uAH
+    Du_Fy_uAH   = cache.bulkhorizon.Du_Fy_uAH
+    Du_Sd_uAH   = cache.bulkhorizon.Du_Sd_uAH
+
+    Duu_B1_uAH  = cache.bulkhorizon.Duu_B1_uAH
+    Duu_B2_uAH  = cache.bulkhorizon.Duu_B2_uAH
+    Duu_G_uAH   = cache.bulkhorizon.Duu_G_uAH
+    Duu_S_uAH   = cache.bulkhorizon.Duu_S_uAH
+    Duu_Fx_uAH  = cache.bulkhorizon.Duu_Fx_uAH
+    Duu_Fy_uAH  = cache.bulkhorizon.Duu_Fy_uAH
+
+    axx         = cache.axx
+    ayy         = cache.ayy
+    axy         = cache.axy
+    bx          = cache.bx
+    by          = cache.by
+    cc          = cache.cc
+    b_vec       = cache.b_vec
+
+    Dx_2D       = cache.Dx_2D
+    Dxx_2D      = cache.Dxx_2D
+    Dy_2D       = cache.Dy_2D
+    Dyy_2D      = cache.Dyy_2D
+    Dxy_2D      = cache.Dxy_2D
+    _Dx_2D      = cache._Dx_2D
+    _Dxx_2D     = cache._Dxx_2D
+    _Dy_2D      = cache._Dy_2D
+    _Dyy_2D     = cache._Dyy_2D
+    _Dxy_2D     = cache._Dxy_2D
+
+    # take all u-derivatives. we assume that they've not been computed beforehand
+    @sync begin
+        @spawn mul!(deriv.Du_B1,  Du,  bulk.B1)
+        @spawn mul!(deriv.Du_B2,  Du,  bulk.B2)
+        @spawn mul!(deriv.Du_G,   Du,  bulk.G)
+        @spawn mul!(deriv.Du_S,   Du,  bulk.S)
+        @spawn mul!(deriv.Du_Fx,  Du,  bulk.Fx)
+        @spawn mul!(deriv.Du_Fy,  Du,  bulk.Fy)
+        @spawn mul!(deriv.Du_Sd,  Du,  bulk.Sd)
+    end
 
     # TODO
-    # ldiv!(f0, A_fact, b_vec)
+    res = 0 * sigma
+    f0  = 0 * b_vec
 
-    # update solution
-    # @inbounds for idx in eachindex(fsol)
-        # fsol[idx] += f0[idx]
-    # end
+    # TODO: make parameters
+    itmax   = 8
+    epsilon = 1e-12
 
+    # start relaxation method
+    for it in 1:itmax
 
+        # interpolate bulk functions (and u-derivatives) to the 1/u = r = sigma surface
+        @inbounds Threads.@threads for j in 1:Ny
+            @inbounds for i in 1:Nx
+                uAH = 1 / sigma[1,i,j]
+                u2  = uAH * uAH
+                u3  = uAH * uAH * uAH
+                u4  = uAH * uAH * uAH * uAH
 
-    # sol = A_mat \ b_vec
+                B1_uAH[1,i,j]       = interp(view(bulk.B1,  :,i,j))(uAH)
+                B2_uAH[1,i,j]       = interp(view(bulk.B2,  :,i,j))(uAH)
+                G_uAH[1,i,j]        = interp(view(bulk.G,   :,i,j))(uAH)
+                S_uAH[1,i,j]        = interp(view(bulk.S,   :,i,j))(uAH)
+                Fx_uAH[1,i,j]       = interp(view(bulk.Fx,  :,i,j))(uAH)
+                Fy_uAH[1,i,j]       = interp(view(bulk.Fy,  :,i,j))(uAH)
+                Sd_uAH[1,i,j]       = interp(view(bulk.Sd,  :,i,j))(uAH)
 
-    # FIXME
-    # copyto!(xi_t, sol)
+                Du_B1_uAH[1,i,j]    = interp(view(deriv.Du_B1,  :,i,j))(uAH)
+                Du_B2_uAH[1,i,j]    = interp(view(deriv.Du_B2,  :,i,j))(uAH)
+                Du_G_uAH[1,i,j]     = interp(view(deriv.Du_G,   :,i,j))(uAH)
+                Du_S_uAH[1,i,j]     = interp(view(deriv.Du_S,   :,i,j))(uAH)
+                Du_Fx_uAH[1,i,j]    = interp(view(deriv.Du_Fx,  :,i,j))(uAH)
+                Du_Fy_uAH[1,i,j]    = interp(view(deriv.Du_Fy,  :,i,j))(uAH)
+                Du_Sd_uAH[1,i,j]    = interp(view(deriv.Du_Sd,  :,i,j))(uAH)
 
-# end # end loop
+                Duu_B1_uAH[1,i,j]   = interp(view(deriv.Duu_B1,  :,i,j))(uAH)
+                Duu_B2_uAH[1,i,j]   = interp(view(deriv.Duu_B2,  :,i,j))(uAH)
+                Duu_G_uAH[1,i,j]    = interp(view(deriv.Duu_G,   :,i,j))(uAH)
+                Duu_S_uAH[1,i,j]    = interp(view(deriv.Duu_S,   :,i,j))(uAH)
+                Duu_Fx_uAH[1,i,j]   = interp(view(deriv.Duu_Fx,  :,i,j))(uAH)
+                Duu_Fy_uAH[1,i,j]   = interp(view(deriv.Duu_Fy,  :,i,j))(uAH)
+            end
+        end
 
+        compute_residual_AH!(res, sigma, gauge, cache, sys)
+        max_res = maximum(abs.(res))
+
+        @show it, max_res
+        if max_res < epsilon
+            break
+        end
+
+        # compute axx, ayy, axy, bx, by and cc coefficients of the linearized
+        # equation (stored in the cache struct)
+        compute_coeffs_AH!(sigma, gauge, cache, sys)
+
+        # each time the mul_col! routine is called (below), the operators Dx_2D,
+        # Dxx_2D, etc, are overwritten. so restore them here from _Dx_2D,
+        # _Dxx_2D, etc, which are never overwritten.
+        copyto!(Dx_2D,  _Dx_2D)
+        copyto!(Dxx_2D, _Dxx_2D)
+        copyto!(Dy_2D,  _Dy_2D)
+        copyto!(Dyy_2D, _Dyy_2D)
+        copyto!(Dxy_2D, _Dxy_2D)
+
+        # overwrite the operators with the coefficients computed above
+        mul_col!(axx, Dxx_2D)
+        mul_col!(ayy, Dyy_2D)
+        mul_col!(axy, Dxy_2D)
+        mul_col!(bx,  Dx_2D)
+        mul_col!(by,  Dy_2D)
+        ccId = Diagonal(cc)
+
+        # build actual operator to be inverted
+        A_mat = Dxx_2D + Dyy_2D + Dxy_2D + Dx_2D + Dy_2D + ccId
+
+        # since we're using periodic boundary conditions, the operator A_mat (just
+        # like the Dx and Dxx operators) is strictly speaking not invertible (it has
+        # zero determinant) since the solution is not unique. indeed, its LU
+        # decomposition shouldn't even be defined. for some reason, however, the
+        # call to "lu" does in fact factorize the matrix. in any case, to be safer,
+        # let's instead use the left division operator. this calls "factorize",
+        # which uses fancy algorithms to determine which is the best way to
+        # factorize (and which performs a QR decomposition if the LU fails). the
+        # inverse that is performed probably returns the minimum norm least squares
+        # solution, or something similar. in any case, for our purposes here we
+        # mostly care about getting a solution (not necessarily the minimum norm
+        # least squares one).
+        A_fact = factorize(A_mat)
+        ldiv!(f0, A_fact, b_vec)
+
+        # update solution
+        @inbounds for idx in eachindex(sigma)
+            sigma[idx] += f0[idx]
+        end
+
+    end # end loop
 
     nothing
 end
