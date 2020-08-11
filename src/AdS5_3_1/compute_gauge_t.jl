@@ -273,7 +273,7 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
                                                   Fx_xy , Fy_xy ,                                A_xy
             )
 
-            a11, a22, a12, b1, b2, c, S = xi_t_eq_coeff(vars, sys.gridtype)
+            a11, a22, a12, b1, b2, c, SS = xi_t_eq_coeff(vars, sys.gridtype)
 
             axx[idx]   = a11
             ayy[idx]   = a22
@@ -282,7 +282,7 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
             by[idx]    = b2
             cc[idx]    = c
 
-            b_vec[idx] = -S
+            b_vec[idx] = -SS
         end
     end
 
