@@ -184,12 +184,12 @@ end
 function AH_eq_res(vars::Tuple, ::Outer)
     (
         sigma0, sigma0_x, sigma0_y, sigma0_xx, sigma0_yy, sigma0_xy,
-        xi   , xi_x   , xi_y   , xi_xx   , xi_yy,
+        xi    , xi_x    , xi_y    , xi_xx    , xi_yy,
         B1   , B2   , G   ,  S    , Fx    , Fy    , Sd ,
         B1p  , B2p  , Gp  ,  Sp   , Fxp   , Fyp   , Sdp,
         B1pp , B2pp , Gpp ,  Spp  , Fxpp  , Fypp  ,
-        B1_x , B2_x , G_x ,  S_x  ,
-	B1_y , B2_y , G_y ,  S_y  ,
+        B1_x , B2_x , G_x ,  S_x  , Fx_x  , Fy_x  , Sd_x,
+        B1_y , B2_y , G_y ,  S_y  , Fx_y  , Fy_y  , Sd_y,
     ) = vars
 
     @tilde_outer("B1")
