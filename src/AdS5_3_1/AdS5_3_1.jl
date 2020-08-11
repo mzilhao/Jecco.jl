@@ -28,6 +28,10 @@ include("compute_boundary_t.jl")
 include("compute_gauge_t.jl")
 include("compute_bulkevolved_t.jl")
 
+# finding the Apparent Horizon
+include("equations_AH.jl")
+include("find_AH.jl")
+
 # input/output
 include("IO.jl")
 
