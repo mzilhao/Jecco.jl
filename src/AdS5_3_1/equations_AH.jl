@@ -6,8 +6,10 @@ function AH_eq_coeff(vars::Tuple, ::Outer)
         B1   , B2   , G   ,  S    , Fx    , Fy    , Sd ,
         B1p  , B2p  , Gp  ,  Sp   , Fxp   , Fyp   , Sdp,
         B1pp , B2pp , Gpp ,  Spp  , Fxpp  , Fypp  ,
-        B1_x , B2_x , G_x ,  S_x  ,
-	B1_y , B2_y , G_y ,  S_y  ,
+        B1_x , B2_x , G_x ,  S_x  , Fx_x  , Fy_x  , Sd_x,
+	B1_y , B2_y , G_y ,  S_y  , Fx_y  , Fy_y  , Sd_y,
+        B1p_x, B2p_x, Gp_x,  Sp_x , Fxp_x , Fyp_x ,
+        B1p_y, B2p_y, Gp_y,  Sp_y , Fxp_y , Fyp_y ,
     ) = vars
 
     @tilde_outer("B1")
@@ -25,6 +27,20 @@ function AH_eq_coeff(vars::Tuple, ::Outer)
     @hat_outer("Fx")
     @hat_outer("Fy")
     @hat_outer("Sd")
+
+    @tilde_outer("B1p")
+    @tilde_outer("B2p")
+    @tilde_outer("Gp")
+    @tilde_outer("Sp")
+    @tilde_outer("Fxp")
+    @tilde_outer("Fyp")
+
+    @hat_outer("B1p")
+    @hat_outer("B2p")
+    @hat_outer("Gp")
+    @hat_outer("Sp")
+    @hat_outer("Fxp")
+    @hat_outer("Fyp")
 
 
     x0 = exp(B1 + B2)
@@ -160,14 +176,14 @@ function AH_eq_coeff(vars::Tuple, ::Outer)
 
     cc = x119*(-B1p*x118 + Fxp*x46*x54*x56 - 2*Fxp*x74 + Fyp*x45*x46*x47 + 2*Fyp*x99 + Gp*x49*x5*x52 + S*(B1p*x84 - Gp*x101*x6 + Gp*x102*x103 - x101*x34*x47 + x102*x35*x77 + x20*(Sd*x46 + Sdp*x78 - x103*x106*x70 - x103*(Fx*Fxpp + Fxpp*sigma0_x + Fxpt) + x104*x105*x47 + x104*x34*x5 - x105*x106*x77 + x6*(Fx*Fypp + Fypp*sigma0_x + Fypt)) - x47*(2*Fyph + Fypp*x100) + x77*(2*Fxph + Fxpp*x100)) + Sp*x50*x51 + Sp*x58*(6*B1p + x51) + Sp*x85 - x115*(B1p*x65 + Gp*x63*x87 + S*(B1p*x71 - Gp*x91 - Gp*x93 - x1*x110 - x109*x3 + x20*(x1*(B1pp*Fx + B1pp*sigma0_x + B1pt + B2pp*Fx + B2pp*sigma0_x + B2pt + Fx*x111 + Gp*Gt + sigma0_x*x111) + x3*(B1p*x23 + B1p*x26 + B1t*Gp + B2p*x23 + B2p*x26 + B2t*Gp + x112))) + Sp*x72 - x107*x3 - x108*x61 + x64*(Fx*Spp + Spp*sigma0_x + Spt)) + x117*(B1p*x88 - Gp*x62 + S*(B1p*x95 + B1p*x96 - x1*x109 + x1*(B1ph + B1pp*x44) - x108*x92 - x110*x3 + x112*x64 + x116*x94 + x29*x69 + x59*x89 - x59*x90 + x87*(B2pp*x53 + B2pt)) + Sp*x97 - x1*x107 + x116*x86 - x87*(Fxp*x52 + Spp*x113 + Spp*x114 - Spt + x48*xi_x)) + x34*x45*x99 - x35*x54*x74 + x48*x50 + x48*x58 + x52*x55*x57*x59)
 
-    SS = x118*x119
+    # SS = x118*x119
 
-    return axx, ayy, axy, bx, by, cc, SS
+    return axx, ayy, axy, bx, by, cc
 end
 
 function AH_eq_res(vars::Tuple, ::Outer)
     (
-        sigma, sigma_x, sigma_y, sigma_xx, sigma_yy, sigma_xy,
+        sigma0, sigma0_x, sigma0_y, sigma0_xx, sigma0_yy, sigma0_xy,
         xi   , xi_x   , xi_y   , xi_xx   , xi_yy,
         B1   , B2   , G   ,  S    , Fx    , Fy    , Sd ,
         B1p  , B2p  , Gp  ,  Sp   , Fxp   , Fyp   , Sdp,
@@ -192,27 +208,27 @@ function AH_eq_res(vars::Tuple, ::Outer)
     @hat_outer("Fy")
     @hat_outer("Sd")
 
-    x0 = Fy + sigma_y
+    x0 = Fy + sigma0_y
     x1 = cosh(G)
     x2 = exp(B2)
     x3 = x1*x2
     x4 = 3*Sp
-    x5 = Fx + sigma_x
+    x5 = Fx + sigma0_x
     x6 = sinh(G)
     x7 = exp(B1 + B2)
-    x8 = 2*sigma_xy
+    x8 = 2*sigma0_xy
     x9 = 2*Fy
-    x10 = 2*sigma_y
+    x10 = 2*sigma0_y
     x11 = exp(B1)
     x12 = 2*Fx
-    x13 = 2*sigma_x
+    x13 = 2*sigma0_x
     x14 = Sp*x0
     x15 = x1*x11
     x16 = B2p*x0
     x17 = Gp*x0
-    x18 = Fx*Gp + Gp*sigma_x + Gt
+    x18 = Fx*Gp + Gp*sigma0_x + Gt
     x19 = x11*x6
 
-    (S*(x11*(6*S*Sd - x1*x7*(Fxp*x12 + Fxp*x13 + 2*Fxt + 2*sigma_xx) + x2*x6*(Fyp*x12 + Fyp*x13 + 2*Fyt + x8)) - x3*(2*Fyh + Fyp*x10 + Fyp*x9 + 2*sigma_yy) + x6*x7*(2*Fxh + 2*Fxp*x0 + x8)) + x1*x4*(x5 + xi_x)^2*exp(2*B1 + B2) + x2*(x10 + x9 + 2*xi_y)*(S*(x1*(B1h + B1p*x0) - x1*(B2h + x16) + x15*x18 + x19*(B2p*x5 + B2t) - x6*(Gh + x17)) + x1*(-Sh - x14) + x19*(-Sp*x12 - Sp*x13 + St - x4*xi_x)) + x3*x4*(x0 + xi_y)^2 - x7*(x12 + x13 + 2*xi_x)*(S*(x1*(-Gh - x17) + x11*(x1*(B1t + B2t + x5*(B1p + B2p)) + x18*x6) + x6*(-B2h - x16)) + x15*(Fx*Sp + Sp*sigma_x + St) - x6*(Sh + x14)))*exp(-B1)/2
+    (S*(x11*(6*S*Sd - x1*x7*(Fxp*x12 + Fxp*x13 + 2*Fxt + 2*sigma0_xx) + x2*x6*(Fyp*x12 + Fyp*x13 + 2*Fyt + x8)) - x3*(2*Fyh + Fyp*x10 + Fyp*x9 + 2*sigma0_yy) + x6*x7*(2*Fxh + 2*Fxp*x0 + x8)) + x1*x4*(x5 + xi_x)^2*exp(2*B1 + B2) + x2*(x10 + x9 + 2*xi_y)*(S*(x1*(B1h + B1p*x0) - x1*(B2h + x16) + x15*x18 + x19*(B2p*x5 + B2t) - x6*(Gh + x17)) + x1*(-Sh - x14) + x19*(-Sp*x12 - Sp*x13 + St - x4*xi_x)) + x3*x4*(x0 + xi_y)^2 - x7*(x12 + x13 + 2*xi_x)*(S*(x1*(-Gh - x17) + x11*(x1*(B1t + B2t + x5*(B1p + B2p)) + x18*x6) + x6*(-B2h - x16)) + x15*(Fx*Sp + Sp*sigma0_x + St) - x6*(Sh + x14)))*exp(-B1)/2
 
 end
