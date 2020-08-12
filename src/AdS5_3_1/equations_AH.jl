@@ -176,9 +176,9 @@ function AH_eq_coeff(vars::Tuple, ::Outer)
 
     cc = x119*(-B1p*x118 + Fxp*x46*x54*x56 - 2*Fxp*x74 + Fyp*x45*x46*x47 + 2*Fyp*x99 + Gp*x49*x5*x52 + S*(B1p*x84 - Gp*x101*x6 + Gp*x102*x103 - x101*x34*x47 + x102*x35*x77 + x20*(Sd*x46 + Sdp*x78 - x103*x106*x70 - x103*(Fx*Fxpp + Fxpp*sigma0_x + Fxpt) + x104*x105*x47 + x104*x34*x5 - x105*x106*x77 + x6*(Fx*Fypp + Fypp*sigma0_x + Fypt)) - x47*(2*Fyph + Fypp*x100) + x77*(2*Fxph + Fxpp*x100)) + Sp*x50*x51 + Sp*x58*(6*B1p + x51) + Sp*x85 - x115*(B1p*x65 + Gp*x63*x87 + S*(B1p*x71 - Gp*x91 - Gp*x93 - x1*x110 - x109*x3 + x20*(x1*(B1pp*Fx + B1pp*sigma0_x + B1pt + B2pp*Fx + B2pp*sigma0_x + B2pt + Fx*x111 + Gp*Gt + sigma0_x*x111) + x3*(B1p*x23 + B1p*x26 + B1t*Gp + B2p*x23 + B2p*x26 + B2t*Gp + x112))) + Sp*x72 - x107*x3 - x108*x61 + x64*(Fx*Spp + Spp*sigma0_x + Spt)) + x117*(B1p*x88 - Gp*x62 + S*(B1p*x95 + B1p*x96 - x1*x109 + x1*(B1ph + B1pp*x44) - x108*x92 - x110*x3 + x112*x64 + x116*x94 + x29*x69 + x59*x89 - x59*x90 + x87*(B2pp*x53 + B2pt)) + Sp*x97 - x1*x107 + x116*x86 - x87*(Fxp*x52 + Spp*x113 + Spp*x114 - Spt + x48*xi_x)) + x34*x45*x99 - x35*x54*x74 + x48*x50 + x48*x58 + x52*x55*x57*x59)
 
-    # SS = x118*x119
+    SS = x118*x119
 
-    return axx, ayy, axy, bx, by, cc
+    return axx, ayy, axy, bx, by, cc, SS
 end
 
 function AH_eq_res(vars::Tuple, ::Outer)

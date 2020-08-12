@@ -168,6 +168,7 @@ function compute_coeffs_AH!(sigma::Array, gauge::Gauge, cache::HorizonCache,
     bx          = cache.bx
     by          = cache.by
     cc          = cache.cc
+    b_vec       = cache.b_vec
 
     ind2D  = LinearIndices(B1_uAH[1,:,:])
 
@@ -263,7 +264,7 @@ function compute_coeffs_AH!(sigma::Array, gauge::Gauge, cache::HorizonCache,
                 B1p_y, B2p_y, Gp_y,  Sp_y , Fxp_y , Fyp_y ,
             )
 
-            a11, a22, a12, b1, b2, c = AH_eq_coeff(vars, sys.gridtype)
+            a11, a22, a12, b1, b2, c, SS = AH_eq_coeff(vars, sys.gridtype)
 
             axx[idx]   = a11
             ayy[idx]   = a22
@@ -271,6 +272,7 @@ function compute_coeffs_AH!(sigma::Array, gauge::Gauge, cache::HorizonCache,
             bx[idx]    = b1
             by[idx]    = b2
             cc[idx]    = c
+            b_vec[idx] = -SS
         end
     end
 
