@@ -12,8 +12,14 @@ Base.@kwdef struct BlackBranePert{T,TP<:Potential} <: InitialData
     phi0          :: T   = 0.0
     potential     :: TP  = ZeroPotential()
     B1_amp        :: T   = 0.0
+    B1_nx         :: Int = 1
+    B1_ny         :: Int = 2
     B2_amp        :: T   = 0.0
+    B2_nx         :: Int = 1
+    B2_ny         :: Int = 2
     G_amp         :: T   = 0.0
+    G_nx          :: Int = 1
+    G_ny          :: Int = 2
     phi_amp       :: T   = 0.0
     a4_amp        :: T   = 0.0
     a4_k          :: Int = 1
@@ -258,8 +264,8 @@ function analytic_B1(u, x, y, id::BlackBranePert)
     ymax     = id.ymax
     ymin     = id.ymin
     # number of maxima in each direction
-    nx   = 1
-    ny   = 2
+    nx       = id.B1_nx
+    ny       = id.B1_ny
 
     pert_amp * sin( 2 * π * nx * (xmax-x)/(xmax-xmin) ) *
         sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
@@ -273,8 +279,8 @@ function analytic_B2(u, x, y, id::BlackBranePert)
     ymax     = id.ymax
     ymin     = id.ymin
     # number of maxima in each direction
-    nx   = 1
-    ny   = 2
+    nx       = id.B2_nx
+    ny       = id.B2_ny
 
     pert_amp * sin( 2 * π * nx * (xmax-x)/(xmax-xmin) ) *
         sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
@@ -288,8 +294,8 @@ function analytic_G(u, x, y, id::BlackBranePert)
     ymax     = id.ymax
     ymin     = id.ymin
     # number of maxima in each direction
-    nx   = 1
-    ny   = 2
+    nx       = id.G_nx
+    ny       = id.G_ny
 
     pert_amp * sin( 2 * π * nx * (xmax-x)/(xmax-xmin) ) *
         sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
