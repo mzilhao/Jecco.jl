@@ -284,8 +284,8 @@ end
 
 this is a 2D (non-linear) PDE of the type
 
-  axx f_xx + ayy f_yy + axy f_xy + bxx (f_x)^2 + byy (f_y)^2 + bxy (f_x) (f_y)
-   + cx f_x + cy f_y + S = 0
+  αxx f_xx + αyy f_yy + αxy f_xy + βxx (f_x)^2 + βyy (f_y)^2 + βxy (f_x) (f_y)
+   + γx f_x + γy f_y + S = 0
 
 we solve this equation with a Newton-Kantorovich method where, starting with a
 guess, we solve the associated linear problem (using the same strategy as in
@@ -299,6 +299,7 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
     bulk = Bulk(bulkevol, bulkconstrain)
 
     Du  = sys.Du
+    Duu = sys.Duu
     Dx  = sys.Dx
     Dxx = sys.Dxx
     Dy  = sys.Dy
@@ -357,6 +358,14 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
         @spawn mul!(deriv.Du_Fx,  Du,  bulk.Fx)
         @spawn mul!(deriv.Du_Fy,  Du,  bulk.Fy)
         @spawn mul!(deriv.Du_Sd,  Du,  bulk.Sd)
+
+        @spawn mul!(deriv.Duu_B1, Duu, bulk.B1)
+        @spawn mul!(deriv.Duu_B2, Duu, bulk.B2)
+        @spawn mul!(deriv.Duu_G,  Duu, bulk.G)
+        @spawn mul!(deriv.Duu_S,  Duu, bulk.S)
+        @spawn mul!(deriv.Duu_Fx, Duu, bulk.Fx)
+        @spawn mul!(deriv.Duu_Fy, Duu, bulk.Fy)
+        # @spawn mul!(deriv.Duu_Sd, Duu, bulk.Sd)
     end
 
     # TODO
@@ -454,6 +463,8 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
         @inbounds for idx in eachindex(sigma)
             sigma[idx] += f0[idx]
         end
+
+        # TODO: check if sigma inside domain.
 
     end # end loop
 
