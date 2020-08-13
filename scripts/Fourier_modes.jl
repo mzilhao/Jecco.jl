@@ -46,7 +46,7 @@ function Fourier_modes_2D(e :: Array{T,2}, x :: Array{T,1}, y :: Array{T,1}, ord
     elseif integration_method == "FFTW"
 
         plan = plan_rfft(e)
-        fft_z = (1/(nx*ny).*(plan*e)[:,1:order_y+1])
+        fft_z = (1/(nx*ny).*(plan*e)[1:order_x+1,1:order_y+1])
         a = 2 .*real(fft_z) 
         b = -2 .*imag(fft_z)
 
