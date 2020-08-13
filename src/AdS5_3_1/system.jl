@@ -227,6 +227,17 @@ function BulkConstrainedPartition(grid::SpecCartGrid3D{T}) where {T}
 
     BulkPartition((bulk_in, bulk_out...))
 end
+"""
+    BulkConstrainedPartition(systems::SystemPartition)
+
+Returns `BulkPartition`, of `length = length(systems)`
+"""
+function BulkConstrainedPartition(systems::SystemPartition)
+    T     = Jecco.coord_eltype(systems[1].ucoord)
+    bulks = [BulkConstrained{T}(undef, size(sys)...) for sys in systems]
+
+    BulkPartition(bulks...)
+end
 
 function BulkDerivPartition(grid::SpecCartGrid3D{T}) where {T}
     Nx = grid.x_nodes
@@ -239,6 +250,12 @@ function BulkDerivPartition(grid::SpecCartGrid3D{T}) where {T}
     bulk_out  = [BulkDeriv{T}(undef, Nu_out, Nx, Ny) for i in 1:N_outer_sys]
 
     BulkPartition((bulk_in, bulk_out...))
+end
+function BulkDerivPartition(systems::SystemPartition)
+    T     = Jecco.coord_eltype(systems[1].ucoord)
+    bulks = [BulkDeriv{T}(undef, size(sys)...) for sys in systems]
+
+    BulkPartition(bulks...)
 end
 
 function HorizonCache(sys::System, ord::Int)

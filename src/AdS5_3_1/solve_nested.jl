@@ -1518,6 +1518,26 @@ function Nested(systems::SystemPartition, bulkconstrains::BulkPartition,
                                          aux_accs)
 end
 
+function Nested(systems::SystemPartition, bulkconstrains::BulkPartition)
+    T        = Jecco.coord_eltype(systems[1].ucoord)
+    bcs      = BCs(systems)
+    aux_accs = [Aux{T}(sys) for sys in systems]
+    derivs   = BulkDerivPartition(systems)
+
+    Nested(systems, bulkconstrains, derivs)
+end
+
+function Nested(systems::SystemPartition)
+    T        = Jecco.coord_eltype(systems[1].ucoord)
+    bcs      = BCs(systems)
+    aux_accs = [Aux{T}(sys) for sys in systems]
+
+    bulkconstrains = BulkConstrainedPartition(systems)
+    derivs         = BulkDerivPartition(systems)
+
+    Nested(systems, bulkconstrains, derivs)
+end
+
 function (nested::Nested)(bulkevols::BulkPartition, boundary::Boundary,
                           gauge::Gauge, evoleq::EvolutionEquations)
     solve_nesteds!(nested.bulkconstrains, bulkevols, boundary, gauge, nested.bcs,

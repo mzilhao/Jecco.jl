@@ -28,6 +28,10 @@ include("compute_boundary_t.jl")
 include("compute_gauge_t.jl")
 include("compute_bulkevolved_t.jl")
 
+# finding the Apparent Horizon
+include("equations_AH.jl")
+include("find_AH.jl")
+
 # input/output
 include("IO.jl")
 
@@ -49,7 +53,7 @@ end
 
 export SpecCartGrid3D
 export Potential, ZeroPotential, Phi8Potential
-export BlackBrane, BlackBraneB1Pert, BlackBranePert_B1B2G, BlackBraneB1_a4_pert
+export BlackBrane, BlackBranePert
 export PhiGaussian_u
 export init_data!, init_data, restore!
 export ConstantAH
