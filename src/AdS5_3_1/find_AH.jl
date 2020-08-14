@@ -368,9 +368,8 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
         # @spawn mul!(deriv.Duu_Sd, Duu, bulk.Sd)
     end
 
-    # TODO
-    res = 0 * sigma
-    f0  = 0 * b_vec
+    res = similar(sigma)
+    f0  = similar(b_vec)
 
     # TODO: make parameters
     itmax   = 50
@@ -378,6 +377,8 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
     epsilon = 1e-12
     # epsilon = 1e-8
 
+    println("INFO (AH): Looking for the apparent horizon...")
+    println("    it \t max_res")
     # start relaxation method
     for it in 1:itmax
 
@@ -416,8 +417,8 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
 
         compute_residual_AH!(res, sigma, gauge, cache, sys)
         max_res = maximum(abs.(res))
+        println("    $it \t $max_res")
 
-        @show it, max_res
         if max_res < epsilon
             break
         end
@@ -469,9 +470,14 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
             sigma[idx] += f0[idx]
         end
 
-        # check if sigma inside domain. TODO: maybe don't use assert, so that it
-        # doesn't abort?
-        @assert all( sys.ucoord[1] .< 1 ./ sigma .< sys.ucoord[end] )
+        # check if sigma inside domain
+        min_uAH = 1/maximum(sigma)
+        max_uAH = 1/minimum(sigma)
+        if ( min_uAH < sys.ucoord[1] || max_uAH > sys.ucoord[end] )
+            println("INFO (AH): guess outside domain, min_uAH = $min_uAH, max_uAH = $max_uAH")
+            println("INFO (AH): giving up")
+            break
+        end
 
     end # end relaxation loop
 
