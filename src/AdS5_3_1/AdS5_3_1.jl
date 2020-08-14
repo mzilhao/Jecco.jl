@@ -56,7 +56,7 @@ export Potential, ZeroPotential, Phi8Potential
 export BlackBrane, BlackBranePert
 export PhiGaussian_u
 export init_data!, init_data, restore!
-export ConstantAH
+export ConstantAH, AHF
 export AffineNull, EvolTest0
 export BulkEvolved, BulkConstrained, Boundary, Gauge, Bulk
 export System, SystemPartition

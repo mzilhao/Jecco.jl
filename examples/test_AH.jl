@@ -42,6 +42,8 @@ evoleq = AffineNull(
     gaugecondition = ConstantAH(u_AH = id.AH_pos),
 )
 
+ahf = AHF()
+
 # atlas of grid configuration and respective SystemPartition
 atlas     = Atlas(grid)
 systems   = SystemPartition(grid)
@@ -74,7 +76,7 @@ fill!(sigma, 1/uAH)
 res = 0 * sigma
 
 AdS5_3_1.find_AH!(sigma, bulkconstrains[end], bulkevols[end], bulkderivs[end], gauge,
-                  horizoncache, systems[end])
+                  horizoncache, systems[end], ahf)
 
 # AdS5_3_1.compute_residual_AH!(res, sigma, gauge, horizoncache, systems[end])
 

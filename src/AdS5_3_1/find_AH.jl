@@ -294,7 +294,7 @@ reached.
 =#
 function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
                   bulkevol::BulkEvolved, deriv::BulkDeriv, gauge::Gauge,
-                  cache::HorizonCache, sys::System{Outer})
+                  cache::HorizonCache, sys::System{Outer}, ahf::AHF)
     _, Nx, Ny = size(sys)
     bulk = Bulk(bulkevol, bulkconstrain)
 
@@ -371,16 +371,10 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
     res = similar(sigma)
     f0  = similar(b_vec)
 
-    # TODO: make parameters
-    itmax   = 50
-    # itmax   = 8
-    epsilon = 1e-12
-    # epsilon = 1e-8
-
     println("INFO (AH): Looking for the apparent horizon...")
     println("    it \t max_res")
     # start relaxation method
-    for it in 1:itmax
+    for it in 1:ahf.itmax
 
         # interpolate bulk functions (and u-derivatives) to the 1/u = r = sigma surface
         @inbounds Threads.@threads for j in 1:Ny
@@ -419,7 +413,7 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
         max_res = maximum(abs.(res))
         println("    $it \t $max_res")
 
-        if max_res < epsilon
+        if max_res < ahf.epsilon
             break
         end
 

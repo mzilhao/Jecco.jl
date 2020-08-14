@@ -81,6 +81,14 @@ Base.@kwdef struct InOut
     remove_existing    :: Bool  = false
 end
 
+"""
+Parameters for the Apparent Horizon Finder
+"""
+Base.@kwdef struct AHF
+    itmax   :: Int      = 20
+    epsilon :: Float64  = 1e-12
+end
+
 
 abstract type AbstractVars{T} <: AbstractVector{T} end
 
