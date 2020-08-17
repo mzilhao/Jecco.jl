@@ -2,7 +2,7 @@
 function AH_eq_coeff(vars::Tuple, ::Outer)
     (
         sigma0, sigma0_x, sigma0_y, sigma0_xx, sigma0_yy, sigma0_xy,
-        xi    , xi_x    , xi_y    , xi_xx    , xi_yy,
+        xi    , xi_x    , xi_y    , xi_xx    , xi_yy, xi_xy,
         B1   , B2   , G   ,  S    , Fx    , Fy    , Sd ,
         B1p  , B2p  , Gp  ,  Sp   , Fxp   , Fyp   , Sdp,
         B1pp , B2pp , Gpp ,  Spp  , Fxpp  , Fypp  ,
@@ -55,114 +55,110 @@ function AH_eq_coeff(vars::Tuple, ::Outer)
     x9 = B2h*S
     x10 = Fyp*S
     x11 = Sp*sigma0_y
-    x12 = 2*xi_y
-    x13 = Sp*x12
-    x14 = S*xi_y
-    x15 = B2p*x14
-    x16 = 2*Fy
-    x17 = B2p*S
-    x18 = 2*sigma0_y
-    x19 = x17*x18
-    x20 = exp(B1)
-    x21 = S*x20
-    x22 = Gt*x21
-    x23 = Fx*Gp
-    x24 = 2*x21
-    x25 = x23*x24
-    x26 = Gp*sigma0_x
-    x27 = x24*x26
-    x28 = S*xi_x
-    x29 = Gp*x20
-    x30 = x28*x29
-    x31 = x16 + x18
-    x32 = S*(Gh + Gp*(x31 + xi_y))
-    x33 = 2*B1p
-    x34 = 2*B2p
-    x35 = x33 + x34
-    x36 = Fx*S
-    x37 = S*x33
-    x38 = Fx*Sp
-    x39 = Sp*sigma0_x
-    x40 = 2*xi_x
-    x41 = S*x34
-    x42 = B2p*x28 + B2t*S + Fxp*S - Sp*x40 + St + sigma0_x*x41 - x38 - x39
-    x43 = -Sh
-    x44 = Fy + sigma0_y
-    x45 = x44 + xi_y
-    x46 = 6*Sp
-    x47 = x1*x4
-    x48 = 3*Spp
-    x49 = x45^2
-    x50 = x47*x49
-    x51 = 3*B2p
-    x52 = 3*Sp
-    x53 = Fx + sigma0_x
-    x54 = x53 + xi_x
-    x55 = exp(2*B1 + B2)
-    x56 = x1*x55
-    x57 = x54^2
-    x58 = x56*x57
-    x59 = Gp*x3
-    x60 = Sp*x44
-    x61 = Sh + x60
+    x12 = Sp*xi_y
+    x13 = 2*B2p
+    x14 = S*x13
+    x15 = sigma0_y*x14
+    x16 = x14*xi_y
+    x17 = exp(B1)
+    x18 = S*x17
+    x19 = Gt*x18
+    x20 = Fx*Gp
+    x21 = 2*x18*x20
+    x22 = 2*sigma0_x
+    x23 = Gp*x18
+    x24 = x22*x23
+    x25 = 2*xi_x
+    x26 = x23*x25
+    x27 = Fy + xi_y
+    x28 = sigma0_y + x27
+    x29 = Gp*x28
+    x30 = S*(Gh + 2*x29)
+    x31 = 2*B1p
+    x32 = x13 + x31
+    x33 = Fx*S
+    x34 = S*x31
+    x35 = Fx*Sp
+    x36 = B2t*S + Fxp*S - Sp*sigma0_x - Sp*xi_x + St + sigma0_x*x14 + x14*xi_x - x35
+    x37 = -Sh
+    x38 = Sp*x28
+    x39 = x1*x4
+    x40 = x28^2
+    x41 = x39*x40
+    x42 = 3*Spp
+    x43 = 3*B2p
+    x44 = 3*Sp
+    x45 = sigma0_x + xi_x
+    x46 = Fx + x45
+    x47 = 6*Sp
+    x48 = exp(2*B1 + B2)
+    x49 = x1*x48
+    x50 = x46^2
+    x51 = x49*x50
+    x52 = Gp*x3
+    x53 = Sp*x45
+    x54 = St - 2*x35 - 2*x53
+    x55 = x17*x3
+    x56 = x54*x55
+    x57 = B1h + B1p*x28
+    x58 = B2p*x28
+    x59 = B2h + x58
+    x60 = x1*x59
+    x61 = Gh + x29
     x62 = x3*x61
-    x63 = St + x38 + x39
-    x64 = x1*x20
-    x65 = x63*x64
-    x66 = B2p*x44
-    x67 = Gp*x44
-    x68 = Gt + x23 + x26
-    x69 = x3*x68
-    x70 = B1p + B2p
-    x71 = x20*(x1*(B1t + B2t + x53*x70) + x69)
-    x72 = x1*(-Gh - x67) + x3*(-B2h - x66) + x71
-    x73 = S*x72 - x62 + x65
-    x74 = x0*x73
-    x75 = 2*sigma0_xy
-    x76 = Fxp*x44
-    x77 = x0*x3
-    x78 = 6*S
-    x79 = Fx*Fyp
-    x80 = Fyp*sigma0_x
-    x81 = Fx*Fxp
-    x82 = Fxp*sigma0_x
-    x83 = x0*x1
-    x84 = x20*(Sd*x78 + x5*(2*Fyt + x75 + 2*x79 + 2*x80) - x83*(2*Fxt + 2*sigma0_xx + 2*x81 + 2*x82))
-    x85 = -x47*(2*Fyh + Fyp*x16 + Fyp*x18 + 2*sigma0_yy) + x77*(2*Fxh + x75 + 2*x76) + x84
-    x86 = St - 2*x38 - 2*x39 - x52*xi_x
-    x87 = x20*x3
-    x88 = x86*x87
-    x89 = B1h + B1p*x44
-    x90 = B2h + x66
-    x91 = x1*x90
-    x92 = Gh + x67
-    x93 = x3*x92
-    x94 = B2p*x53 + B2t
-    x95 = x87*x94
-    x96 = x64*x68
-    x97 = x1*x89 - x91 - x93 + x95 + x96
-    x98 = S*x97 + x1*(x43 - x60) + x88
-    x99 = x4*x98
-    x100 = 2*x44
-    x101 = Fy*Fyp + Fyh + Fyp*sigma0_y + sigma0_yy
-    x102 = Fxh + sigma0_xy + x76
-    x103 = 2*x83
-    x104 = Fyt + sigma0_xy + x79 + x80
-    x105 = 2*Gp
-    x106 = Fxt + sigma0_xx + x81 + x82
-    x107 = Sph + Spp*x44
-    x108 = Gp*x1
-    x109 = B2ph + B2pp*x44
-    x110 = Gph + Gpp*x44
-    x111 = Gp^2
-    x112 = Fx*Gpp + Gpp*sigma0_x + Gpt
-    x113 = 2*Fx
-    x114 = 2*sigma0_x
-    x115 = x0*(x113 + x114 + x40)
-    x116 = Gp*x64
-    x117 = x4*(x12 + x31)
-    x118 = S*x85 - x115*x73 + x117*x98 + x50*x52 + x52*x58
-    x119 = exp(x7)/2
+    x63 = B2p*x46 + B2t
+    x64 = x55*x63
+    x65 = Gp*x45 + Gt + x20
+    x66 = x1*x17
+    x67 = x65*x66
+    x68 = x1*x57 - x60 - x62 + x64 + x67
+    x69 = S*x68 + x1*(x37 - x38) + x56
+    x70 = x4*x69
+    x71 = Sh + x38
+    x72 = x3*x71
+    x73 = St + x35 + x53
+    x74 = x66*x73
+    x75 = B1p*x46 + B1t
+    x76 = x1*x63
+    x77 = x3*x65
+    x78 = x17*(x1*x75 + x76 + x77)
+    x79 = x1*(-Gh - x29) + x3*(-B2h - x58) + x78
+    x80 = S*x79 - x72 + x74
+    x81 = x0*x80
+    x82 = Fxp*x28
+    x83 = 2*sigma0_xy + 2*xi_xy
+    x84 = x0*x3
+    x85 = Fyp*sigma0_y
+    x86 = Fyp*x27
+    x87 = 6*S
+    x88 = Fyp*sigma0_x
+    x89 = Fx + xi_x
+    x90 = Fyp*x89
+    x91 = Fxp*sigma0_x
+    x92 = Fxp*x89
+    x93 = x0*x1
+    x94 = x17*(Sd*x87 + x5*(2*Fyt + x83 + 2*x88 + 2*x90) - x93*(2*Fxt + 2*sigma0_xx + 2*x91 + 2*x92 + 2*xi_xx))
+    x95 = -x39*(2*Fyh + 2*sigma0_yy + 2*x85 + 2*x86 + 2*xi_yy) + x84*(2*Fxh + 2*x82 + x83) + x94
+    x96 = 2*x28
+    x97 = Fyh + sigma0_yy + x85 + x86 + xi_yy
+    x98 = sigma0_xy + xi_xy
+    x99 = Fxh + x82 + x98
+    x100 = 2*x93
+    x101 = Fyt + x88 + x90 + x98
+    x102 = 2*Gp
+    x103 = Fxt + sigma0_xx + x91 + x92 + xi_xx
+    x104 = Sph + Spp*x28
+    x105 = Gp*x1
+    x106 = B2ph + B2pp*x28
+    x107 = Gph + Gpp*x28
+    x108 = B2pp*x46 + B2pt
+    x109 = Fx*Gpp + Gpp*x45 + Gpt
+    x110 = 2*Fx
+    x111 = x0*(x110 + x22 + x25)
+    x112 = Gp*x17
+    x113 = x4*(2*Fy + 2*sigma0_y + 2*xi_y)
+    x114 = S*x95 - x111*x80 + x113*x69 + x41*x44 + x44*x51
+    x115 = exp(x7)/2
 
     axx = -x0*x2
 
@@ -170,13 +166,13 @@ function AH_eq_coeff(vars::Tuple, ::Outer)
 
     ayy = -x2*x8
 
-    bx = x4*(x1*(-x20*(B1p*x28 + B1t*S + sigma0_x*x37 + x35*x36 + x42) + x32) + x3*(-Fy*Sp + Sh + x10 - x11 - x13 + x15 + x16*x17 + x19 - x22 - x25 - x27 - x30 + x9))
+    bx = x4*(x1*(-x17*(B1t*S + sigma0_x*x34 + x32*x33 + x34*xi_x + x36) + x30) + x3*(-Fy*Sp + Fy*x14 + Sh + x10 - x11 - x12 + x15 + x16 - x19 - x21 - x24 - x26 + x9))
 
-    by = x8*(x1*(B1h*S + B1p*S*x18 + B1p*x14 + Fy*(Sp + x37 - x41) - x10 + x11 + x13 - x15 - x19 + x22 + x25 + x27 + x30 + x43 - x9) + x3*(x20*(x34*x36 + x42) - x32))
+    by = x8*(x1*(B1h*S + Fy*(Sp - x14 + x34) + sigma0_y*x34 - x10 + x11 + x12 - x15 - x16 + x19 + x21 + x24 + x26 + x34*xi_y + x37 - x9) + x3*(x17*(x13*x33 + x36) - x30))
 
-    cc = x119*(-B1p*x118 + Fxp*x46*x54*x56 - 2*Fxp*x74 + Fyp*x45*x46*x47 + 2*Fyp*x99 + Gp*x49*x5*x52 + S*(B1p*x84 - Gp*x101*x6 + Gp*x102*x103 - x101*x34*x47 + x102*x35*x77 + x20*(Sd*x46 + Sdp*x78 - x103*x106*x70 - x103*(Fx*Fxpp + Fxpp*sigma0_x + Fxpt) + x104*x105*x47 + x104*x34*x5 - x105*x106*x77 + x6*(Fx*Fypp + Fypp*sigma0_x + Fypt)) - x47*(2*Fyph + Fypp*x100) + x77*(2*Fxph + Fxpp*x100)) + Sp*x50*x51 + Sp*x58*(6*B1p + x51) + Sp*x85 - x115*(B1p*x65 + Gp*x63*x87 + S*(B1p*x71 - Gp*x91 - Gp*x93 - x1*x110 - x109*x3 + x20*(x1*(B1pp*Fx + B1pp*sigma0_x + B1pt + B2pp*Fx + B2pp*sigma0_x + B2pt + Fx*x111 + Gp*Gt + sigma0_x*x111) + x3*(B1p*x23 + B1p*x26 + B1t*Gp + B2p*x23 + B2p*x26 + B2t*Gp + x112))) + Sp*x72 - x107*x3 - x108*x61 + x64*(Fx*Spp + Spp*sigma0_x + Spt)) + x117*(B1p*x88 - Gp*x62 + S*(B1p*x95 + B1p*x96 - x1*x109 + x1*(B1ph + B1pp*x44) - x108*x92 - x110*x3 + x112*x64 + x116*x94 + x29*x69 + x59*x89 - x59*x90 + x87*(B2pp*x53 + B2pt)) + Sp*x97 - x1*x107 + x116*x86 - x87*(Fxp*x52 + Spp*x113 + Spp*x114 - Spt + x48*xi_x)) + x34*x45*x99 - x35*x54*x74 + x48*x50 + x48*x58 + x52*x55*x57*x59)
+    cc = x115*(-B1p*x114 + Fxp*x46*x47*x49 - 2*Fxp*x81 + 6*Fyp*x38*x39 + 2*Fyp*x70 + Gp*x40*x44*x5 + S*(B1p*x94 + Gp*x100*x99 - Gp*x6*x97 - x13*x39*x97 + x17*(Sd*x47 + Sdp*x87 - x100*x103*(B1p + B2p) - x100*(Fx*Fxpp + Fxpp*x45 + Fxpt) + x101*x102*x39 + x101*x13*x5 - x102*x103*x84 + x6*(Fx*Fypp + Fypp*x45 + Fypt)) + x32*x84*x99 - x39*(2*Fyph + Fypp*x96) + x84*(2*Fxph + Fxpp*x96)) + Sp*x41*x43 + Sp*x51*(6*B1p + x43) + Sp*x95 - x111*(B1p*x74 + Gp*x55*x73 + S*(B1p*x78 - Gp*x60 - Gp*x62 - x1*x107 - x106*x3 + x17*(x1*x108 + x1*(B1pp*x46 + B1pt) + x105*x65 + x109*x3 + x52*x63 + x52*x75)) + Sp*x79 - x104*x3 - x105*x71 + x66*(Fx*Spp + Spp*x45 + Spt)) + x113*(B1p*x56 + Gp*x54*x66 - Gp*x72 + S*(B1p*x64 + B1p*x67 - x1*x106 + x1*(B1ph + B1pp*x28) - x105*x61 - x107*x3 + x108*x55 + x109*x66 + x112*x76 + x112*x77 + x52*x57 - x52*x59) + Sp*x68 - x1*x104 - x55*(Fxp*x44 + Spp*x110 + Spp*x22 + Spp*x25 - Spt)) + x13*x28*x70 - x32*x46*x81 + x41*x42 + x42*x51 + x44*x48*x50*x52)
 
-    SS = x118*x119
+    SS = x114*x115
 
     return axx, ayy, axy, bx, by, cc, SS
 end
@@ -184,7 +180,7 @@ end
 function AH_eq_res(vars::Tuple, ::Outer)
     (
         sigma0, sigma0_x, sigma0_y, sigma0_xx, sigma0_yy, sigma0_xy,
-        xi    , xi_x    , xi_y    , xi_xx    , xi_yy,
+        xi    , xi_x    , xi_y    , xi_xx    , xi_yy, xi_xy,
         B1   , B2   , G   ,  S    , Fx    , Fy    , Sd ,
         B1p  , B2p  , Gp  ,  Sp   , Fxp   , Fyp   , Sdp,
         B1pp , B2pp , Gpp ,  Spp  , Fxpp  , Fypp  ,
@@ -208,27 +204,32 @@ function AH_eq_res(vars::Tuple, ::Outer)
     @hat_outer("Fy")
     @hat_outer("Sd")
 
-    x0 = Fy + sigma0_y
-    x1 = cosh(G)
-    x2 = exp(B2)
-    x3 = x1*x2
-    x4 = 3*Sp
-    x5 = Fx + sigma0_x
-    x6 = sinh(G)
-    x7 = exp(B1 + B2)
-    x8 = 2*sigma0_xy
-    x9 = 2*Fy
-    x10 = 2*sigma0_y
-    x11 = exp(B1)
-    x12 = 2*Fx
-    x13 = 2*sigma0_x
-    x14 = Sp*x0
-    x15 = x1*x11
-    x16 = B2p*x0
-    x17 = Gp*x0
-    x18 = Fx*Gp + Gp*sigma0_x + Gt
-    x19 = x11*x6
+    x0 = Fy + xi_y
+    x1 = sigma0_y + x0
+    x2 = cosh(G)
+    x3 = exp(B2)
+    x4 = x2*x3
+    x5 = 3*Sp
+    x6 = Fx + xi_x
+    x7 = sigma0_x + x6
+    x8 = 2*sigma0_y
+    x9 = Sp*x1
+    x10 = 2*Fx
+    x11 = sigma0_x + xi_x
+    x12 = Sp*x11
+    x13 = exp(B1)
+    x14 = sinh(G)
+    x15 = x13*x14
+    x16 = B2p*x1
+    x17 = Gp*x1
+    x18 = B2p*x7 + B2t
+    x19 = Fx*Gp + Gp*x11 + Gt
+    x20 = x13*x2
+    x21 = exp(B1 + B2)
+    x22 = 2*sigma0_xy + 2*xi_xy
+    x23 = 2*sigma0_x
+    x24 = 2*x6
 
-    (S*(x11*(6*S*Sd - x1*x7*(Fxp*x12 + Fxp*x13 + 2*Fxt + 2*sigma0_xx) + x2*x6*(Fyp*x12 + Fyp*x13 + 2*Fyt + x8)) - x3*(2*Fyh + Fyp*x10 + Fyp*x9 + 2*sigma0_yy) + x6*x7*(2*Fxh + 2*Fxp*x0 + x8)) + x1*x4*(x5 + xi_x)^2*exp(2*B1 + B2) + x2*(x10 + x9 + 2*xi_y)*(S*(x1*(B1h + B1p*x0) - x1*(B2h + x16) + x15*x18 + x19*(B2p*x5 + B2t) - x6*(Gh + x17)) + x1*(-Sh - x14) + x19*(-Sp*x12 - Sp*x13 + St - x4*xi_x)) + x3*x4*(x0 + xi_y)^2 - x7*(x12 + x13 + 2*xi_x)*(S*(x1*(-Gh - x17) + x11*(x1*(B1t + B2t + x5*(B1p + B2p)) + x18*x6) + x6*(-B2h - x16)) + x15*(Fx*Sp + Sp*sigma0_x + St) - x6*(Sh + x14)))*exp(-B1)/2
+     (S*(x13*(6*S*Sd + x14*x3*(Fyp*x23 + Fyp*x24 + 2*Fyt + x22) - x2*x21*(Fxp*x23 + Fxp*x24 + 2*Fxt + 2*sigma0_xx + 2*xi_xx)) + x14*x21*(2*Fxh + 2*Fxp*x1 + x22) - x4*(2*Fyh + 2*Fyp*x0 + Fyp*x8 + 2*sigma0_yy + 2*xi_yy)) + x1^2*x4*x5 + x2*x5*x7^2*exp(2*B1 + B2) - x21*(x10 + x23 + 2*xi_x)*(S*(x13*(x14*x19 + x18*x2 + x2*(B1p*x7 + B1t)) + x14*(-B2h - x16) + x2*(-Gh - x17)) - x14*(Sh + x9) + x20*(Fx*Sp + St + x12)) + x3*(2*Fy + x8 + 2*xi_y)*(S*(-x14*(Gh + x17) + x15*x18 + x19*x20 + x2*(B1h + B1p*x1) - x2*(B2h + x16)) + x15*(-Sp*x10 + St - 2*x12) + x2*(-Sh - x9)))*exp(-B1)/2
 
 end
