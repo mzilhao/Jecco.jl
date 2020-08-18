@@ -81,20 +81,22 @@ AdS5_3_1.find_AH!(sigma, bulkconstrains[end], bulkevols[end], bulkderivs[end], g
                   horizoncache, systems[end])
 
 Dx = systems[end].Dx
-bulk = Bulk(bulkevols[end], bulkconstrains[end])
 
-#This two are the same as for this scenario S = r+xi, so S_AH = sigma+xi. We have to derivate and then evaluate at the horizon as the expressions I use already make a chain rule. Or we can evaluate at AH and then derivate, modifying the expressions we are using.
-sigma_x, S_x = similar(sigma[1,:,:]), similar(sigma[1,:,:])
+sigma_x, S_x, Sp = similar(sigma[1,:,:]), similar(sigma[1,:,:]), similar(sigma[1,:,:])
 for i in 1:12
     for j in 1:12 
-        sigma_x = Dx(sigma, 1,i,j)
-        S_x = Dx(horizoncache.bulkhorizon.S_uAH, 1,i,j)
+        sigma_x[i,j] = Dx(sigma, 1,i,j)
+        S_x[i,j] = Dx(horizoncache.bulkhorizon.S_uAH, 1,i,j)
+        Sp[i,j] = -1/(sigma[1,i,j])^2*horizoncache.bulkhorizon.Du_S_uAH[1,i,j]
     end
 end
-sigma_x-S_x
+#This is what the bx coefficients reduces to for this case.
+bbxx = 3 .*Sp.*sigma_x-S_x
 
-# AdS5_3_1.compute_residual_AH!(res, sigma, gauge, horizoncache, systems[end])
+#AdS5_3_1.compute_residual_AH!(res, sigma, gauge, horizoncache, systems[end])
 
-#bla = reshape(horizoncache.bx, (12,12));
+bla = reshape(horizoncache.bx, (12,12));
+
+bla-bbxx
 
 #maximum(abs.(bla))
