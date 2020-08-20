@@ -4,8 +4,8 @@ using Jecco.AdS5_3_1
 grid = SpecCartGrid3D(
     x_min            = -5.0,
     x_max            =  5.0,
-    #x_nodes          =  32,
-    x_nodes          =  12,
+    x_nodes          =  32,
+    # x_nodes          =  12,
     y_min            = -5.0,
     y_max            =  5.0,
     # y_nodes          =  32,
@@ -15,8 +15,8 @@ grid = SpecCartGrid3D(
     u_outer_max      =  1.005,
     # u_outer_domains  =  3,
     u_outer_domains  =  5,
-    # u_outer_nodes    =  32,
-    u_outer_nodes    =  48,
+    u_outer_nodes    =  32,
+    # u_outer_nodes    =  48,
     u_inner_nodes    =  12,
 )
 
@@ -26,8 +26,8 @@ id = BlackBranePert(
     # B1_amp = 0.0001,
     B1_nx  = 1,
     B1_ny  = 1,
-    #a4_amp = 0.00001,
-    a4_amp = 0.01,
+    a4_amp = 0.00001,
+    # a4_amp = 0.01,
     a4_k   = 1,
     xmax   = grid.x_max,
     xmin   = grid.x_min,
@@ -58,7 +58,8 @@ bulkevols      = BulkEvolvedPartition(grid)
 bulkconstrains = BulkConstrainedPartition(grid)
 bulkderivs     = BulkDerivPartition(grid)
 
-AH_fd_order  = 4
+# AH_fd_order  = 4
+AH_fd_order  = 2
 
 horizoncache   = AdS5_3_1.HorizonCache(systems[end], AH_fd_order)
 
@@ -66,8 +67,8 @@ horizoncache   = AdS5_3_1.HorizonCache(systems[end], AH_fd_order)
 init_data!(bulkconstrains, bulkevols, boundary, gauge, systems, evoleq, id)
 
 # guess
-uAH = id.AH_pos
-# uAH = 0.9
+# uAH = id.AH_pos
+uAH = 0.9
 # uAH = 1.9
 # uAH = 2.0
 
@@ -84,20 +85,15 @@ AdS5_3_1.find_AH!(sigma, bulkconstrains[end], bulkevols[end], bulkderivs[end], g
 
 Dx = systems[end].Dx
 
-sigma_x, S_x, Sp = similar(sigma[1,:,:]), similar(sigma[1,:,:]), similar(sigma[1,:,:])
-for i in 1:12
-    for j in 1:12 
-        sigma_x[i,j] = Dx(sigma, 1,i,j)
-        S_x[i,j] = Dx(horizoncache.bulkhorizon.S_uAH, 1,i,j)
-        Sp[i,j] = -1/(sigma[1,i,j])^2*horizoncache.bulkhorizon.Du_S_uAH[1,i,j]
-    end
-end
+sigma_x = Dx * sigma
+S_x     = Dx * horizoncache.bulkhorizon.S_uAH
+Sp      = -1 ./ sigma.^2 .* horizoncache.bulkhorizon.Du_S_uAH
+
 #This is what the bx coefficients reduces to for this case.
-bbxx = 3 .*Sp.*sigma_x-S_x
+tmp  = 3 .* Sp .* sigma_x .- S_x
+bbxx = reshape(tmp, (grid.x_nodes,grid.y_nodes))
 
-#AdS5_3_1.compute_residual_AH!(res, sigma, gauge, horizoncache, systems[end])
-
-bla = reshape(horizoncache.bx, (12,12));
+bla = reshape(horizoncache.bx, (grid.x_nodes,grid.y_nodes))
 
 bla-bbxx
 
