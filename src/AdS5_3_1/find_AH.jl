@@ -48,6 +48,7 @@ function compute_residual_AH!(res::Array, sigma::Array,
             xi_y  = Dy(gauge.xi, 1,i,j)
             xi_xx = Dxx(gauge.xi, 1,i,j)
             xi_yy = Dyy(gauge.xi, 1,i,j)
+            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
             sigma0    = sigma[1,i,j]
             sigma0_x  = Dx(sigma, 1,i,j)
@@ -115,7 +116,7 @@ function compute_residual_AH!(res::Array, sigma::Array,
 
             vars = (
                 sigma0, sigma0_x, sigma0_y, sigma0_xx, sigma0_yy, sigma0_xy,
-                xi    , xi_x    , xi_y    , xi_xx    , xi_yy,
+                xi    , xi_x    , xi_y    , xi_xx    , xi_yy, xi_xy,
                 B1   , B2   , G   ,  S    , Fx    , Fy    , Sd ,
                 B1p  , B2p  , Gp  ,  Sp   , Fxp   , Fyp   , Sdp,
                 B1pp , B2pp , Gpp ,  Spp  , Fxpp  , Fypp  ,
@@ -187,6 +188,7 @@ function compute_coeffs_AH!(sigma::Array, gauge::Gauge, cache::HorizonCache,
             xi_y  = Dy(gauge.xi, 1,i,j)
             xi_xx = Dxx(gauge.xi, 1,i,j)
             xi_yy = Dyy(gauge.xi, 1,i,j)
+            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
             sigma0    = sigma[1,i,j]
             sigma0_x  = Dx(sigma, 1,i,j)
@@ -254,7 +256,7 @@ function compute_coeffs_AH!(sigma::Array, gauge::Gauge, cache::HorizonCache,
 
             vars = (
                 sigma0, sigma0_x, sigma0_y, sigma0_xx, sigma0_yy, sigma0_xy,
-                xi    , xi_x    , xi_y    , xi_xx    , xi_yy,
+                xi    , xi_x    , xi_y    , xi_xx    , xi_yy, xi_xy,
                 B1   , B2   , G   ,  S    , Fx    , Fy    , Sd ,
                 B1p  , B2p  , Gp  ,  Sp   , Fxp   , Fyp   , Sdp,
                 B1pp , B2pp , Gpp ,  Spp  , Fxpp  , Fypp  ,
