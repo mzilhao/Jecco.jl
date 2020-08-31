@@ -84,39 +84,39 @@ function compute_residual_AH!(res::Array, sigma::Array,
 
             # x and y derivatives
 
-            B1_x    = Dx(B1_uAH,   1,i,j)
-            B2_x    = Dx(B2_uAH,   1,i,j)
-            G_x     = Dx(G_uAH,    1,i,j)
-            S_x     = Dx(S_uAH,    1,i,j)
-            Fx_x    = Dx(Fx_uAH,   1,i,j)
-            Fy_x    = Dx(Fy_uAH,   1,i,j)
-            Sd_x    = Dx(Sd_uAH,   1,i,j)
+            B1_x    = Dx(B1_uAH,   1,i,j) - B1p * sigma0_x
+            B2_x    = Dx(B2_uAH,   1,i,j) - B2p * sigma0_x
+            G_x     = Dx(G_uAH,    1,i,j) -  Gp * sigma0_x
+            S_x     = Dx(S_uAH,    1,i,j) -  Sp * sigma0_x
+            Fx_x    = Dx(Fx_uAH,   1,i,j) - Fxp * sigma0_x
+            Fy_x    = Dx(Fy_uAH,   1,i,j) - Fyp * sigma0_x
+            Sd_x    = Dx(Sd_uAH,   1,i,j) - Sdp * sigma0_x
 
-            B1_y    = Dy(B1_uAH,   1,i,j)
-            B2_y    = Dy(B2_uAH,   1,i,j)
-            G_y     = Dy(G_uAH,    1,i,j)
-            S_y     = Dy(S_uAH,    1,i,j)
-            Fx_y    = Dy(Fx_uAH,   1,i,j)
-            Fy_y    = Dy(Fy_uAH,   1,i,j)
-            Sd_y    = Dy(Sd_uAH,   1,i,j)
+            B1_y    = Dy(B1_uAH,   1,i,j) - B1p * sigma0_y
+            B2_y    = Dy(B2_uAH,   1,i,j) - B2p * sigma0_y
+            G_y     = Dy(G_uAH,    1,i,j) -  Gp * sigma0_y
+            S_y     = Dy(S_uAH,    1,i,j) -  Sp * sigma0_y
+            Fx_y    = Dy(Fx_uAH,   1,i,j) - Fxp * sigma0_y
+            Fy_y    = Dy(Fy_uAH,   1,i,j) - Fyp * sigma0_y
+            Sd_y    = Dy(Sd_uAH,   1,i,j) - Sdp * sigma0_y
 
-            B1p_x   = -u2 * Dx(Du_B1_uAH, 1,i,j)
-            B2p_x   = -u2 * Dx(Du_B2_uAH, 1,i,j)
-            Gp_x    = -u2 * Dx(Du_G_uAH,  1,i,j)
-            Sp_x    = -u2 * Dx(Du_S_uAH,  1,i,j)
-            Fxp_x   = -u2 * Dx(Du_Fx_uAH, 1,i,j)
-            Fyp_x   = -u2 * Dx(Du_Fy_uAH, 1,i,j)
+            B1p_x   = -u2 * Dx(Du_B1_uAH, 1,i,j) - B1pp * sigma0_x
+            B2p_x   = -u2 * Dx(Du_B2_uAH, 1,i,j) - B2pp * sigma0_x
+            Gp_x    = -u2 * Dx(Du_G_uAH,  1,i,j) -  Gpp * sigma0_x
+            Sp_x    = -u2 * Dx(Du_S_uAH,  1,i,j) -  Spp * sigma0_x
+            Fxp_x   = -u2 * Dx(Du_Fx_uAH, 1,i,j) - Fxpp * sigma0_x
+            Fyp_x   = -u2 * Dx(Du_Fy_uAH, 1,i,j) - Fypp * sigma0_x
 
-            B1p_y   = -u2 * Dy(Du_B1_uAH, 1,i,j)
-            B2p_y   = -u2 * Dy(Du_B2_uAH, 1,i,j)
-            Gp_y    = -u2 * Dy(Du_G_uAH,  1,i,j)
-            Sp_y    = -u2 * Dy(Du_S_uAH,  1,i,j)
-            Fxp_y   = -u2 * Dy(Du_Fx_uAH, 1,i,j)
-            Fyp_y   = -u2 * Dy(Du_Fy_uAH, 1,i,j)
+            B1p_y   = -u2 * Dy(Du_B1_uAH, 1,i,j) - B1pp * sigma0_y
+            B2p_y   = -u2 * Dy(Du_B2_uAH, 1,i,j) - B2pp * sigma0_y
+            Gp_y    = -u2 * Dy(Du_G_uAH,  1,i,j) -  Gpp * sigma0_y
+            Sp_y    = -u2 * Dy(Du_S_uAH,  1,i,j) -  Spp * sigma0_y
+            Fxp_y   = -u2 * Dy(Du_Fx_uAH, 1,i,j) - Fxpp * sigma0_y
+            Fyp_y   = -u2 * Dy(Du_Fy_uAH, 1,i,j) - Fypp * sigma0_y
 
             vars = (
                 sigma0, sigma0_x, sigma0_y, sigma0_xx, sigma0_yy, sigma0_xy,
-                xi    , xi_x    , xi_y    , xi_xx    , xi_yy, xi_xy,
+                xi    , xi_x    , xi_y    , xi_xx    , xi_yy    , xi_xy,
                 B1   , B2   , G   ,  S    , Fx    , Fy    , Sd ,
                 B1p  , B2p  , Gp  ,  Sp   , Fxp   , Fyp   , Sdp,
                 B1pp , B2pp , Gpp ,  Spp  , Fxpp  , Fypp  ,
@@ -224,39 +224,39 @@ function compute_coeffs_AH!(sigma::Array, gauge::Gauge, cache::HorizonCache,
 
             # x and y derivatives
 
-            B1_x    = Dx(B1_uAH,   1,i,j)
-            B2_x    = Dx(B2_uAH,   1,i,j)
-            G_x     = Dx(G_uAH,    1,i,j)
-            S_x     = Dx(S_uAH,    1,i,j)
-            Fx_x    = Dx(Fx_uAH,   1,i,j)
-            Fy_x    = Dx(Fy_uAH,   1,i,j)
-            Sd_x    = Dx(Sd_uAH,   1,i,j)
+            B1_x    = Dx(B1_uAH,   1,i,j) - B1p * sigma0_x
+            B2_x    = Dx(B2_uAH,   1,i,j) - B2p * sigma0_x
+            G_x     = Dx(G_uAH,    1,i,j) -  Gp * sigma0_x
+            S_x     = Dx(S_uAH,    1,i,j) -  Sp * sigma0_x
+            Fx_x    = Dx(Fx_uAH,   1,i,j) - Fxp * sigma0_x
+            Fy_x    = Dx(Fy_uAH,   1,i,j) - Fyp * sigma0_x
+            Sd_x    = Dx(Sd_uAH,   1,i,j) - Sdp * sigma0_x
 
-            B1_y    = Dy(B1_uAH,   1,i,j)
-            B2_y    = Dy(B2_uAH,   1,i,j)
-            G_y     = Dy(G_uAH,    1,i,j)
-            S_y     = Dy(S_uAH,    1,i,j)
-            Fx_y    = Dy(Fx_uAH,   1,i,j)
-            Fy_y    = Dy(Fy_uAH,   1,i,j)
-            Sd_y    = Dy(Sd_uAH,   1,i,j)
+            B1_y    = Dy(B1_uAH,   1,i,j) - B1p * sigma0_y
+            B2_y    = Dy(B2_uAH,   1,i,j) - B2p * sigma0_y
+            G_y     = Dy(G_uAH,    1,i,j) -  Gp * sigma0_y
+            S_y     = Dy(S_uAH,    1,i,j) -  Sp * sigma0_y
+            Fx_y    = Dy(Fx_uAH,   1,i,j) - Fxp * sigma0_y
+            Fy_y    = Dy(Fy_uAH,   1,i,j) - Fyp * sigma0_y
+            Sd_y    = Dy(Sd_uAH,   1,i,j) - Sdp * sigma0_y
 
-            B1p_x   = -u2 * Dx(Du_B1_uAH, 1,i,j)
-            B2p_x   = -u2 * Dx(Du_B2_uAH, 1,i,j)
-            Gp_x    = -u2 * Dx(Du_G_uAH,  1,i,j)
-            Sp_x    = -u2 * Dx(Du_S_uAH,  1,i,j)
-            Fxp_x   = -u2 * Dx(Du_Fx_uAH, 1,i,j)
-            Fyp_x   = -u2 * Dx(Du_Fy_uAH, 1,i,j)
+            B1p_x   = -u2 * Dx(Du_B1_uAH, 1,i,j) - B1pp * sigma0_x
+            B2p_x   = -u2 * Dx(Du_B2_uAH, 1,i,j) - B2pp * sigma0_x
+            Gp_x    = -u2 * Dx(Du_G_uAH,  1,i,j) -  Gpp * sigma0_x
+            Sp_x    = -u2 * Dx(Du_S_uAH,  1,i,j) -  Spp * sigma0_x
+            Fxp_x   = -u2 * Dx(Du_Fx_uAH, 1,i,j) - Fxpp * sigma0_x
+            Fyp_x   = -u2 * Dx(Du_Fy_uAH, 1,i,j) - Fypp * sigma0_x
 
-            B1p_y   = -u2 * Dy(Du_B1_uAH, 1,i,j)
-            B2p_y   = -u2 * Dy(Du_B2_uAH, 1,i,j)
-            Gp_y    = -u2 * Dy(Du_G_uAH,  1,i,j)
-            Sp_y    = -u2 * Dy(Du_S_uAH,  1,i,j)
-            Fxp_y   = -u2 * Dy(Du_Fx_uAH, 1,i,j)
-            Fyp_y   = -u2 * Dy(Du_Fy_uAH, 1,i,j)
+            B1p_y   = -u2 * Dy(Du_B1_uAH, 1,i,j) - B1pp * sigma0_y
+            B2p_y   = -u2 * Dy(Du_B2_uAH, 1,i,j) - B2pp * sigma0_y
+            Gp_y    = -u2 * Dy(Du_G_uAH,  1,i,j) -  Gpp * sigma0_y
+            Sp_y    = -u2 * Dy(Du_S_uAH,  1,i,j) -  Spp * sigma0_y
+            Fxp_y   = -u2 * Dy(Du_Fx_uAH, 1,i,j) - Fxpp * sigma0_y
+            Fyp_y   = -u2 * Dy(Du_Fy_uAH, 1,i,j) - Fypp * sigma0_y
 
             vars = (
                 sigma0, sigma0_x, sigma0_y, sigma0_xx, sigma0_yy, sigma0_xy,
-                xi    , xi_x    , xi_y    , xi_xx    , xi_yy, xi_xy,
+                xi    , xi_x    , xi_y    , xi_xx    , xi_yy    , xi_xy,
                 B1   , B2   , G   ,  S    , Fx    , Fy    , Sd ,
                 B1p  , B2p  , Gp  ,  Sp   , Fxp   , Fyp   , Sdp,
                 B1pp , B2pp , Gpp ,  Spp  , Fxpp  , Fypp  ,
