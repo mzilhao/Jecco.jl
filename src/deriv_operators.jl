@@ -5,18 +5,56 @@ using SparseArrays
 
 abstract type AbstractDerivOperator{T,N} end
 
-D1_21_weights() = [-1.0,  0.0, 1.0] ./ 2.0
-D2_21_weights() = [ 1.0, -2.0, 1.0]
+"""
+    compute_weights(m, n, s)
 
-D1_42_weights() = [ 1.0, -8.0,   0.0,  8.0, -1.0] ./ 12.0
-D2_42_weights() = [-1.0, 16.0, -30.0, 16.0, -1.0] ./ 12.0
+Return finite difference weights. Notation follows that of Fornberg, used in
+Mathematica as well:
+https://reference.wolfram.com/language/tutorial/NDSolveMethodOfLines.html
 
-struct FiniteDiffDeriv{T<:Real,N,T2,S} <: AbstractDerivOperator{T,N}
+# Arguments
+* `m::Int`: order of the derivative
+* `n::Int`: number of grid intervals enclosed in the stencil
+* `s::Int`: number of grid intervals between the point at which the derivative
+            is approximated and the leftmost edge of the stencil. centred
+            formulas always have s=n/2.
+"""
+function compute_weights(m::Int, n::Int, s::Int) where {T<:Real}
+    # TODO: we could implement the Fornberg (1988) algorithm
+    # (https://doi.org/10.1090/S0025-5718-1988-0935077-0), as done in the
+    # DiffEqOperators module, but for now let's just hardcode the ones we use
+
+    if n == 2
+        if m == 1
+            weights = [-1, 0, 1] ./ 2
+        elseif derivative_order == 2
+            weights = [ 1, -2, 1]
+        else
+            error("derivative order not implemented yet")
+        end
+    elseif n == 4
+        if m == 1
+            weights = [ 1, -8, 0, 8, -1] ./ 12
+        elseif m == 2
+            weights = [-1, 16, -30, 16, -1] ./ 12
+        else
+            error("derivative order not implemented yet")
+        end
+    else
+        error("approximation order not implemented yet")
+    end
+
+    weights
+end
+
+
+struct FiniteDiffDeriv{T<:AbstractFloat,N,S} <: AbstractDerivOperator{T,N}
     derivative_order        :: Int
     approximation_order     :: Int
-    dx                      :: T2
+    dx                      :: T
     len                     :: Int
     stencil_length          :: Int
+    stencil_offset          :: Int
     stencil_coefs           :: S
 end
 
@@ -36,32 +74,14 @@ function CenteredDiff{N}(derivative_order::Int,
     stencil_length = derivative_order + approximation_order - 1 +
         (derivative_order+approximation_order)%2
 
-    # TODO: this can all be improved...
-
-    if approximation_order == 2
-        if derivative_order == 1
-            weights = D1_21_weights()
-        elseif derivative_order == 2
-            weights = D2_21_weights()
-        else
-            error("derivative_order not implemented yet")
-        end
-    elseif approximation_order == 4
-        if derivative_order == 1
-            weights = D1_42_weights()
-        elseif derivative_order == 2
-            weights = D2_42_weights()
-        else
-            error("derivative_order not implemented yet")
-        end
-    else
-        error("approximation_order not implemented yet")
-    end
+    stencil_offset = div(stencil_length-1,2)
+    weights = compute_weights(derivative_order, stencil_length-1, stencil_offset)
 
     stencil_coefs = (1/dx^derivative_order) .* weights
 
-    FiniteDiffDeriv{T,N,T,typeof(stencil_coefs)}(derivative_order, approximation_order,
-                                                 dx, len, stencil_length, stencil_coefs)
+    FiniteDiffDeriv{T,N,typeof(stencil_coefs)}(derivative_order, approximation_order,
+                                               dx, len, stencil_length,
+                                               stencil_offset, stencil_coefs)
 end
 
 CenteredDiff(args...) = CenteredDiff{1}(args...)
@@ -112,8 +132,8 @@ end
 
 
 # make FiniteDiffDeriv a callable struct, to compute derivatives at a given point
-function (A::FiniteDiffDeriv{T,N,T2,S})(f::AbstractArray{T,M},
-                                        idx::Vararg{Int,M}) where {T<:Real,N,T2,S,M}
+function (A::FiniteDiffDeriv{T,N})(f::AbstractArray{T,M},
+                                   idx::Vararg{Int,M}) where {T<:Real,N,M}
 
     # make sure axis of differentiation is contained in the dimensions of f
     @assert N <= M
@@ -242,8 +262,8 @@ end
 # now for cross-derivatives. we assume that A acts on the first and B on the
 # second axis of the x Matrix.
 
-function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S}, x::AbstractMatrix{T},
-                                         i::Int, j::Int) where {T<:Real,T2,S,N1,N2}
+function (A::FiniteDiffDeriv{T,N1})(B::FiniteDiffDeriv{T,N2}, x::AbstractMatrix{T},
+                                    i::Int, j::Int) where {T<:Real,N1,N2}
     NA   = A.len
     NB   = B.len
     qA   = A.stencil_coefs
@@ -285,9 +305,9 @@ end
 
 # and now for any Array.
 
-function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S},
-                                         f::AbstractArray{T,M},
-                                         idx::Vararg{Int,M}) where {T<:Real,T2,S,N1,N2,M}
+function (A::FiniteDiffDeriv{T,N1})(B::FiniteDiffDeriv{T,N2},
+                                    f::AbstractArray{T,M},
+                                    idx::Vararg{Int,M}) where {T<:Real,N1,N2,M}
     NA   = A.len
     NB   = B.len
     qA   = A.stencil_coefs
@@ -348,8 +368,8 @@ function copyto!(M::AbstractMatrix{T}, A::FiniteDiffDeriv) where {T<:Real}
     M
 end
 
-LinearAlgebra.Array(A::AbstractDerivOperator{T,N}) where {T,N} =
+LinearAlgebra.Array(A::AbstractDerivOperator{T}) where {T} =
     copyto!(zeros(T, A.len, A.len), A)
 
-SparseArrays.SparseMatrixCSC(A::FiniteDiffDeriv{T,N,T2,S}) where {T,N,T2,S} =
+SparseArrays.SparseMatrixCSC(A::FiniteDiffDeriv{T}) where {T} =
     copyto!(spzeros(T, A.len, A.len), A)
