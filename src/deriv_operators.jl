@@ -11,7 +11,6 @@ D2_21_weights() = [ 1.0, -2.0, 1.0]
 D1_42_weights() = [ 1.0, -8.0,   0.0,  8.0, -1.0] ./ 12.0
 D2_42_weights() = [-1.0, 16.0, -30.0, 16.0, -1.0] ./ 12.0
 
-
 struct FiniteDiffDeriv{T<:Real,N,T2,S} <: AbstractDerivOperator{T,N}
     derivative_order        :: Int
     approximation_order     :: Int
@@ -31,7 +30,7 @@ struct CenteredDiff{N} end
 
 function CenteredDiff{N}(derivative_order::Int,
                          approximation_order::Int, dx::T,
-                         len::Int) where {T<:Real,N}
+                         len::Int) where {T<:AbstractFloat,N}
     @assert approximation_order > 1 "approximation_order must be greater than 1."
 
     stencil_length = derivative_order + approximation_order - 1 +
@@ -92,8 +91,12 @@ ChebDeriv(args...) = ChebDeriv{1}(args...)
     coeffs = A.stencil_coefs
     mid    = div(A.stencil_length, 2) + 1
 
-    # note: without the assumption of periodicity this needs to be adapted
-    idx  = mod1(j - i + mid, N)
+    if 1 <= j - i + mid <= N
+        idx  = j - i + mid
+    else
+        # note: imposing periodicity
+        idx  = mod1(j - i + mid, N)
+    end
 
     if idx < 1 || idx > A.stencil_length
         return 0.0
