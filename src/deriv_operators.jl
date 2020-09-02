@@ -27,7 +27,7 @@ function compute_weights(m::Int, n::Int, s::Int) where {T<:Real}
     if n == 2
         if m == 1
             weights = [-1, 0, 1] ./ 2
-        elseif derivative_order == 2
+        elseif m == 2
             weights = [ 1, -2, 1]
         else
             error("derivative order not implemented yet")
@@ -109,13 +109,13 @@ ChebDeriv(args...) = ChebDeriv{1}(args...)
 @inline function Base.getindex(A::FiniteDiffDeriv, i::Int, j::Int)
     N      = A.len
     coeffs = A.stencil_coefs
-    mid    = div(A.stencil_length, 2) + 1
+    s      = A.stencil_offset + 1
 
-    if 1 <= j - i + mid <= N
-        idx  = j - i + mid
+    if 1 <= j - i + s <= N
+        idx  = j - i + s
     else
         # note: imposing periodicity
-        idx  = mod1(j - i + mid, N)
+        idx  = mod1(j - i + s, N)
     end
 
     if idx < 1 || idx > A.stencil_length
@@ -134,19 +134,18 @@ end
 # make FiniteDiffDeriv a callable struct, to compute derivatives at a given point
 function (A::FiniteDiffDeriv{T,N})(f::AbstractArray{T,M},
                                    idx::Vararg{Int,M}) where {T<:Real,N,M}
-
     # make sure axis of differentiation is contained in the dimensions of f
     @assert N <= M
 
     coeffs = A.stencil_coefs
-    mid = div(A.stencil_length, 2) + 1
-    i   = idx[N] # point where derivative will be taken (with respect to the N-axis)
+    s      = A.stencil_offset + 1
+    i      = idx[N] # point where derivative will be taken (with respect to the N-axis)
 
     sum_i = zero(T)
 
-    if mid <= i <= (A.len-mid+1)
+    if s <= i <= (A.len-s+1)
         @fastmath @inbounds for aa in 1:A.stencil_length
-            i_circ = i - (mid - aa)
+            i_circ = i - (s - aa)
             I = Base.setindex(idx, i_circ, N)
 
             sum_i += coeffs[aa] * f[I...]
@@ -154,7 +153,7 @@ function (A::FiniteDiffDeriv{T,N})(f::AbstractArray{T,M},
     else
         @fastmath @inbounds for aa in 1:A.stencil_length
             # imposing periodicity
-            i_circ = mod1(i - (mid-aa), A.len)
+            i_circ = mod1(i - (s-aa), A.len)
             I = Base.setindex(idx, i_circ, N)
 
             sum_i += coeffs[aa] * f[I...]
@@ -268,20 +267,20 @@ function (A::FiniteDiffDeriv{T,N1})(B::FiniteDiffDeriv{T,N2}, x::AbstractMatrix{
     NB   = B.len
     qA   = A.stencil_coefs
     qB   = B.stencil_coefs
-    midA = div(A.stencil_length, 2) + 1
-    midB = div(B.stencil_length, 2) + 1
+    sA   = A.stencil_offset + 1
+    sB   = B.stencil_offset + 1
 
     @assert( (NA, NB) == size(x) )
     @assert( N2 > N1 )
 
     sum_ij = zero(T)
 
-    if midA <= i <= (NA-midA+1) && midB <= j <= (NB-midB+1)
+    if sA <= i <= (NA-sA+1) && sB <= j <= (NB-sB+1)
         @fastmath @inbounds for jj in 1:B.stencil_length
-            j_circ = j - (midB-jj)
+            j_circ = j - (sB-jj)
             sum_i  = zero(T)
             @inbounds for ii in 1:A.stencil_length
-                i_circ = i - (midA-ii)
+                i_circ = i - (sA-ii)
                 sum_i += qA[ii] * qB[jj] * x[i_circ,j_circ]
             end
             sum_ij += sum_i
@@ -289,11 +288,11 @@ function (A::FiniteDiffDeriv{T,N1})(B::FiniteDiffDeriv{T,N2}, x::AbstractMatrix{
     else
         @fastmath @inbounds for jj in 1:B.stencil_length
             # imposing periodicity
-            j_circ = mod1(j - (midB-jj), NB)
+            j_circ = mod1(j - (sB-jj), NB)
             sum_i  = zero(T)
             @inbounds for ii in 1:A.stencil_length
                 # imposing periodicity
-                i_circ = mod1(i - (midA-ii), NA)
+                i_circ = mod1(i - (sA-ii), NA)
                 sum_i += qA[ii] * qB[jj] * x[i_circ,j_circ]
             end
             sum_ij += sum_i
@@ -312,8 +311,8 @@ function (A::FiniteDiffDeriv{T,N1})(B::FiniteDiffDeriv{T,N2},
     NB   = B.len
     qA   = A.stencil_coefs
     qB   = B.stencil_coefs
-    midA = div(A.stencil_length, 2) + 1
-    midB = div(B.stencil_length, 2) + 1
+    sA   = A.stencil_offset + 1
+    sB   = B.stencil_offset + 1
 
     # make sure axes of differentiation are contained in the dimensions of f
     @assert N1 < N2 <= M
@@ -324,13 +323,13 @@ function (A::FiniteDiffDeriv{T,N1})(B::FiniteDiffDeriv{T,N2},
 
     sum_ij = zero(T)
 
-    if midA <= i <= (NA-midA+1) && midB <= j <= (NB-midB+1)
+    if sA <= i <= (NA-sA+1) && sB <= j <= (NB-sB+1)
         @fastmath @inbounds for jj in 1:B.stencil_length
-            j_circ = j - (midB-jj)
+            j_circ = j - (sB-jj)
             Itmp   = Base.setindex(idx, j_circ, N2)
             sum_i  = zero(T)
             @inbounds for ii in 1:A.stencil_length
-                i_circ = i - (midA-ii)
+                i_circ = i - (sA-ii)
                 I      = Base.setindex(Itmp, i_circ, N1)
                 sum_i += qA[ii] * qB[jj] * f[I...]
             end
@@ -339,12 +338,12 @@ function (A::FiniteDiffDeriv{T,N1})(B::FiniteDiffDeriv{T,N2},
     else
         @fastmath @inbounds for jj in 1:B.stencil_length
             # imposing periodicity
-            j_circ = mod1(j - (midB-jj), NB)
+            j_circ = mod1(j - (sB-jj), NB)
             Itmp   = Base.setindex(idx, j_circ, N2)
             sum_i  = zero(T)
             @inbounds for ii in 1:A.stencil_length
                 # imposing periodicity
-                i_circ = mod1(i - (midA-ii), NA)
+                i_circ = mod1(i - (sA-ii), NA)
                 I      = Base.setindex(Itmp, i_circ, N1)
                 sum_i += qA[ii] * qB[jj] * f[I...]
             end
