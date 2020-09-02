@@ -93,7 +93,7 @@ ChebDeriv(args...) = ChebDeriv{1}(args...)
     mid    = div(A.stencil_length, 2) + 1
 
     # note: without the assumption of periodicity this needs to be adapted
-    idx  = 1 + mod(j - i + mid - 1, N)
+    idx  = mod1(j - i + mid, N)
 
     if idx < 1 || idx > A.stencil_length
         return 0.0
@@ -131,7 +131,7 @@ function (A::FiniteDiffDeriv{T,N,T2,S})(f::AbstractArray{T,M},
     else
         @fastmath @inbounds for aa in 1:A.stencil_length
             # imposing periodicity
-            i_circ = 1 + mod(i - (mid-aa) - 1, A.len)
+            i_circ = mod1(i - (mid-aa), A.len)
             I = Base.setindex(idx, i_circ, N)
 
             sum_i += coeffs[aa] * f[I...]
@@ -266,11 +266,11 @@ function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S}, x::Abstr
     else
         @fastmath @inbounds for jj in 1:B.stencil_length
             # imposing periodicity
-            j_circ = 1 + mod(j - (midB-jj) - 1, NB)
+            j_circ = mod1(j - (midB-jj), NB)
             sum_i  = zero(T)
             @inbounds for ii in 1:A.stencil_length
                 # imposing periodicity
-                i_circ = 1 + mod(i - (midA-ii) - 1, NA)
+                i_circ = mod1(i - (midA-ii), NA)
                 sum_i += qA[ii] * qB[jj] * x[i_circ,j_circ]
             end
             sum_ij += sum_i
@@ -316,12 +316,12 @@ function (A::FiniteDiffDeriv{T,N1,T2,S})(B::FiniteDiffDeriv{T,N2,T2,S},
     else
         @fastmath @inbounds for jj in 1:B.stencil_length
             # imposing periodicity
-            j_circ = 1 + mod(j - (midB-jj) - 1, NB)
+            j_circ = mod1(j - (midB-jj), NB)
             Itmp   = Base.setindex(idx, j_circ, N2)
             sum_i  = zero(T)
             @inbounds for ii in 1:A.stencil_length
                 # imposing periodicity
-                i_circ = 1 + mod(i - (midA-ii) - 1, NA)
+                i_circ = mod1(i - (midA-ii), NA)
                 I      = Base.setindex(Itmp, i_circ, N1)
                 sum_i += qA[ii] * qB[jj] * f[I...]
             end
