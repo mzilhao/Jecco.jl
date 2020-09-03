@@ -137,32 +137,51 @@ function (A::FiniteDiffDeriv{T,N})(f::AbstractArray{T,M},
     # make sure axis of differentiation is contained in the dimensions of f
     @assert N <= M
 
+    s = A.stencil_offset + 1
+    i = idx[N] # point where derivative will be taken (with respect to the N-axis)
+
+    if s <= i <= (A.len-s+1)
+        return _D_interior(A, f, idx)
+    else
+        return _D_bdr(A, f, idx)
+    end
+
+end
+
+# interior points
+function _D_interior(A::FiniteDiffDeriv{T,N}, f::AbstractArray, idx) where {T<:Real,N}
     coeffs = A.stencil_coefs
     s      = A.stencil_offset + 1
     i      = idx[N] # point where derivative will be taken (with respect to the N-axis)
 
-    sum_i = zero(T)
-
-    if s <= i <= (A.len-s+1)
-        @fastmath @inbounds for aa in 1:A.stencil_length
-            i_circ = i - (s - aa)
-            I = Base.setindex(idx, i_circ, N)
-
-            sum_i += coeffs[aa] * f[I...]
-        end
-    else
-        @fastmath @inbounds for aa in 1:A.stencil_length
-            # imposing periodicity
-            i_circ = mod1(i - (s-aa), A.len)
-            I = Base.setindex(idx, i_circ, N)
-
-            sum_i += coeffs[aa] * f[I...]
-        end
+    sum_i  = zero(T)
+    @fastmath @inbounds for aa in 1:A.stencil_length
+        i_circ = i - (s - aa)
+        I      = Base.setindex(idx, i_circ, N)
+        sum_i += coeffs[aa] * f[I...]
     end
 
     sum_i
 end
 
+# boundary points
+function _D_bdr(A::FiniteDiffDeriv{T,N}, f::AbstractArray, idx) where {T<:Real,N}
+    coeffs = A.stencil_coefs
+    s      = A.stencil_offset + 1
+    i      = idx[N] # point where derivative will be taken (with respect to the N-axis)
+
+    sum_i  = zero(T)
+    @fastmath @inbounds for aa in 1:A.stencil_length
+        # imposing periodicity
+        i_circ = mod1(i - (s-aa), A.len)
+        I      = Base.setindex(idx, i_circ, N)
+        sum_i += coeffs[aa] * f[I...]
+    end
+
+    sum_i
+end
+
+# TODO: split these loops manually?
 function LinearAlgebra.mul!(df::AbstractVector, A::FiniteDiffDeriv, f::AbstractVector)
     @fastmath @inbounds for idx in eachindex(f)
         df[idx] = A(f,idx)
