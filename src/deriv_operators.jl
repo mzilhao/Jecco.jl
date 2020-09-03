@@ -5,6 +5,8 @@ using SparseArrays
 
 abstract type AbstractDerivOperator{T,N} end
 
+abstract type AbstractFiniteDiff{T,N} <: AbstractDerivOperator{T,N} end
+
 """
     compute_weights(m, n, s)
 
@@ -47,8 +49,17 @@ function compute_weights(m::Int, n::Int, s::Int) where {T<:Real}
     weights
 end
 
+struct PeriodicFD{T<:AbstractFloat,N,S} <: AbstractFiniteDiff{T,N}
+    derivative_order        :: Int
+    approximation_order     :: Int
+    dx                      :: T
+    len                     :: Int
+    stencil_length          :: Int
+    stencil_offset          :: Int
+    stencil_coefs           :: S
+end
 
-struct FiniteDiffDeriv{T<:AbstractFloat,N,S} <: AbstractDerivOperator{T,N}
+struct FiniteDiffDeriv{T<:AbstractFloat,N,S} <: AbstractFiniteDiff{T,N}
     derivative_order        :: Int
     approximation_order     :: Int
     dx                      :: T
