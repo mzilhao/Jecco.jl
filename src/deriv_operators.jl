@@ -48,9 +48,9 @@ function CenteredDiff{N}(derivative_order::Int,
 
     stencil_coefs = (1/dx^derivative_order) .* weights
 
-    FiniteDiffDeriv{T,N,typeof(stencil_coefs)}(derivative_order, approximation_order,
-                                               dx, len, stencil_length,
-                                               stencil_offset, stencil_coefs)
+    PeriodicFD{T,N,typeof(stencil_coefs)}(derivative_order, approximation_order,
+                                          dx, len, stencil_length,
+                                          stencil_offset, stencil_coefs)
 end
 
 CenteredDiff(args...) = CenteredDiff{1}(args...)
@@ -75,6 +75,7 @@ end
 ChebDeriv(args...) = ChebDeriv{1}(args...)
 
 
+# FIXME
 @inline function Base.getindex(A::FiniteDiffDeriv, i::Int, j::Int)
     N      = A.len
     coeffs = A.stencil_coefs
@@ -94,15 +95,35 @@ ChebDeriv(args...) = ChebDeriv{1}(args...)
     end
 end
 
-@inline Base.getindex(A::FiniteDiffDeriv, i::Int, ::Colon) =
+@inline function Base.getindex(A::PeriodicFD, i::Int, j::Int)
+    N      = A.len
+    coeffs = A.stencil_coefs
+    s      = A.stencil_offset + 1
+
+    if 1 <= j - i + s <= N
+        idx  = j - i + s
+    else
+        # note: imposing periodicity
+        idx  = mod1(j - i + s, N)
+    end
+
+    if idx < 1 || idx > A.stencil_length
+        return 0.0
+    else
+        return coeffs[idx]
+    end
+end
+
+
+@inline Base.getindex(A::AbstractFiniteDiff, i::Int, ::Colon) =
     [A[i,j] for j in 1:A.len]
 
 @inline Base.getindex(A::SpectralDeriv, i, j) = A.D[i,j]
 
 
 # make FiniteDiffDeriv a callable struct, to compute derivatives at a given point
-function (A::FiniteDiffDeriv{T,N})(f::AbstractArray{T,M},
-                                   idx::Vararg{Int,M}) where {T<:Real,N,M}
+function (A::AbstractFiniteDiff{T,N})(f::AbstractArray{T,M},
+                                      idx::Vararg{Int,M}) where {T<:Real,N,M}
     # make sure axis of differentiation is contained in the dimensions of f
     @assert N <= M
 
@@ -118,7 +139,7 @@ function (A::FiniteDiffDeriv{T,N})(f::AbstractArray{T,M},
 end
 
 # interior points
-function _D_interior(A::FiniteDiffDeriv{T,N}, f::AbstractArray, idx) where {T<:Real,N}
+function _D_interior(A::AbstractFiniteDiff{T,N}, f::AbstractArray, idx) where {T<:Real,N}
     coeffs = A.stencil_coefs
     s      = A.stencil_offset + 1
     i      = idx[N] # point where derivative will be taken (with respect to the N-axis)
@@ -134,7 +155,7 @@ function _D_interior(A::FiniteDiffDeriv{T,N}, f::AbstractArray, idx) where {T<:R
 end
 
 # boundary points
-function _D_bdr(A::FiniteDiffDeriv{T,N}, f::AbstractArray, idx) where {T<:Real,N}
+function _D_bdr(A::PeriodicFD{T,N}, f::AbstractArray, idx) where {T<:Real,N}
     coeffs = A.stencil_coefs
     s      = A.stencil_offset + 1
     i      = idx[N] # point where derivative will be taken (with respect to the N-axis)
@@ -151,14 +172,14 @@ function _D_bdr(A::FiniteDiffDeriv{T,N}, f::AbstractArray, idx) where {T<:Real,N
 end
 
 # TODO: split these loops manually?
-function LinearAlgebra.mul!(df::AbstractVector, A::FiniteDiffDeriv, f::AbstractVector)
+function LinearAlgebra.mul!(df::AbstractVector, A::AbstractFiniteDiff, f::AbstractVector)
     @fastmath @inbounds for idx in eachindex(f)
         df[idx] = A(f,idx)
     end
     nothing
 end
 
-function LinearAlgebra.mul!(df::AbstractArray, A::FiniteDiffDeriv, f::AbstractArray)
+function LinearAlgebra.mul!(df::AbstractArray, A::AbstractFiniteDiff, f::AbstractArray)
     @fastmath @inbounds for idx in CartesianIndices(f)
         df[idx] = A(f,idx.I...)
     end
@@ -248,9 +269,9 @@ end
 
 # now for cross-derivatives. we assume that A acts on the first and B on the
 # second axis of the x Matrix.
-function (A::FiniteDiffDeriv{T,N1})(B::FiniteDiffDeriv{T,N2},
-                                    f::AbstractArray{T,M},
-                                    idx::Vararg{Int,M}) where {T<:Real,N1,N2,M}
+function (A::AbstractFiniteDiff{T,N1})(B::AbstractFiniteDiff{T,N2},
+                                       f::AbstractArray{T,M},
+                                       idx::Vararg{Int,M}) where {T<:Real,N1,N2,M}
     NA   = A.len
     NB   = B.len
     sA   = A.stencil_offset + 1
@@ -272,7 +293,7 @@ function (A::FiniteDiffDeriv{T,N1})(B::FiniteDiffDeriv{T,N2},
 end
 
 # interior points
-function _D_interior(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
+function _D_interior(A::AbstractFiniteDiff{T,N1}, B::AbstractFiniteDiff{T,N2},
                      f::AbstractArray, idx) where {T<:Real,N1,N2}
     NA   = A.len
     NB   = B.len
@@ -302,7 +323,7 @@ function _D_interior(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
 end
 
 # boundary points
-function _D_bdr(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
+function _D_bdr(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
                 f::AbstractArray, idx) where {T<:Real,N1,N2}
     NA   = A.len
     NB   = B.len
@@ -339,7 +360,7 @@ end
 copyto!(M::AbstractMatrix{T}, A::SpectralDeriv) where {T<:Real} =
     copyto!(M, A.D)
 
-function copyto!(M::AbstractMatrix{T}, A::FiniteDiffDeriv) where {T<:Real}
+function copyto!(M::AbstractMatrix{T}, A::AbstractFiniteDiff) where {T<:Real}
     for idx in CartesianIndices(M)
         M[idx] = A[idx.I...]
     end
@@ -349,5 +370,5 @@ end
 LinearAlgebra.Array(A::AbstractDerivOperator{T}) where {T} =
     copyto!(zeros(T, A.len, A.len), A)
 
-SparseArrays.SparseMatrixCSC(A::FiniteDiffDeriv{T}) where {T} =
+SparseArrays.SparseMatrixCSC(A::AbstractFiniteDiff{T}) where {T} =
     copyto!(spzeros(T, A.len, A.len), A)
