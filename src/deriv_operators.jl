@@ -284,8 +284,6 @@ function (A::FiniteDiffDeriv{T,N1})(B::FiniteDiffDeriv{T,N2},
                                     idx::Vararg{Int,M}) where {T<:Real,N1,N2,M}
     NA   = A.len
     NB   = B.len
-    qA   = A.stencil_coefs
-    qB   = B.stencil_coefs
     sA   = A.stencil_offset + 1
     sB   = B.stencil_offset + 1
 
@@ -296,34 +294,71 @@ function (A::FiniteDiffDeriv{T,N1})(B::FiniteDiffDeriv{T,N2},
     i  = idx[N1]
     j  = idx[N2]
 
-    sum_ij = zero(T)
-
     if sA <= i <= (NA-sA+1) && sB <= j <= (NB-sB+1)
-        @fastmath @inbounds for jj in 1:B.stencil_length
-            j_circ = j - (sB-jj)
-            Itmp   = Base.setindex(idx, j_circ, N2)
-            sum_i  = zero(T)
-            @inbounds for ii in 1:A.stencil_length
-                i_circ = i - (sA-ii)
-                I      = Base.setindex(Itmp, i_circ, N1)
-                sum_i += qA[ii] * qB[jj] * f[I...]
-            end
-            sum_ij += sum_i
-        end
+        return _D_interior(A, B, f, idx)
     else
-        @fastmath @inbounds for jj in 1:B.stencil_length
-            # imposing periodicity
-            j_circ = mod1(j - (sB-jj), NB)
-            Itmp   = Base.setindex(idx, j_circ, N2)
-            sum_i  = zero(T)
-            @inbounds for ii in 1:A.stencil_length
-                # imposing periodicity
-                i_circ = mod1(i - (sA-ii), NA)
-                I      = Base.setindex(Itmp, i_circ, N1)
-                sum_i += qA[ii] * qB[jj] * f[I...]
-            end
-            sum_ij += sum_i
+        return _D_bdr(A, B, f, idx)
+    end
+
+end
+
+# interior points
+function _D_interior(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
+                     f::AbstractArray, idx) where {T<:Real,N1,N2}
+    NA   = A.len
+    NB   = B.len
+    qA   = A.stencil_coefs
+    qB   = B.stencil_coefs
+    sA   = A.stencil_offset + 1
+    sB   = B.stencil_offset + 1
+
+    # points where derivative will be taken (along their respective axes)
+    i  = idx[N1]
+    j  = idx[N2]
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.stencil_length
+        j_circ = j - (sB-jj)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.stencil_length
+            i_circ = i - (sA-ii)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
         end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+
+# boundary points
+function _D_bdr(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
+                f::AbstractArray, idx) where {T<:Real,N1,N2}
+    NA   = A.len
+    NB   = B.len
+    qA   = A.stencil_coefs
+    qB   = B.stencil_coefs
+    sA   = A.stencil_offset + 1
+    sB   = B.stencil_offset + 1
+
+    # points where derivative will be taken (along their respective axes)
+    i  = idx[N1]
+    j  = idx[N2]
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.stencil_length
+        # imposing periodicity
+        j_circ = mod1(j - (sB-jj), NB)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.stencil_length
+            # imposing periodicity
+            i_circ = mod1(i - (sA-ii), NA)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
+        end
+        sum_ij += sum_i
     end
 
     sum_ij
