@@ -279,50 +279,6 @@ end
 
 # now for cross-derivatives. we assume that A acts on the first and B on the
 # second axis of the x Matrix.
-
-function (A::FiniteDiffDeriv{T,N1})(B::FiniteDiffDeriv{T,N2}, x::AbstractMatrix{T},
-                                    i::Int, j::Int) where {T<:Real,N1,N2}
-    NA   = A.len
-    NB   = B.len
-    qA   = A.stencil_coefs
-    qB   = B.stencil_coefs
-    sA   = A.stencil_offset + 1
-    sB   = B.stencil_offset + 1
-
-    @assert( (NA, NB) == size(x) )
-    @assert( N2 > N1 )
-
-    sum_ij = zero(T)
-
-    if sA <= i <= (NA-sA+1) && sB <= j <= (NB-sB+1)
-        @fastmath @inbounds for jj in 1:B.stencil_length
-            j_circ = j - (sB-jj)
-            sum_i  = zero(T)
-            @inbounds for ii in 1:A.stencil_length
-                i_circ = i - (sA-ii)
-                sum_i += qA[ii] * qB[jj] * x[i_circ,j_circ]
-            end
-            sum_ij += sum_i
-        end
-    else
-        @fastmath @inbounds for jj in 1:B.stencil_length
-            # imposing periodicity
-            j_circ = mod1(j - (sB-jj), NB)
-            sum_i  = zero(T)
-            @inbounds for ii in 1:A.stencil_length
-                # imposing periodicity
-                i_circ = mod1(i - (sA-ii), NA)
-                sum_i += qA[ii] * qB[jj] * x[i_circ,j_circ]
-            end
-            sum_ij += sum_i
-        end
-    end
-
-    sum_ij
-end
-
-# and now for any Array.
-
 function (A::FiniteDiffDeriv{T,N1})(B::FiniteDiffDeriv{T,N2},
                                     f::AbstractArray{T,M},
                                     idx::Vararg{Int,M}) where {T<:Real,N1,N2,M}
