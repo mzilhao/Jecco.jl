@@ -33,7 +33,7 @@ function calculate_weights(m::Int, n::Int, s::Int)
 
     c1 = 1
     c4 = x[1] - x0
-    C = zeros(N, m+1)
+    C = zeros(Rational{Int}, N, m+1)
     C[1,1] = 1
     @inbounds for i in 1:N-1
         i1 = i + 1
@@ -41,22 +41,22 @@ function calculate_weights(m::Int, n::Int, s::Int)
         c2 = 1
         c5 = c4
         c4 = x[i1] - x0
-        for j in 0 : i-1
+        for j in 0:i-1
             j1 = j + 1
             c3 = x[i1] - x[j1]
             c2 *= c3
             if j == i-1
                 for s in mn:-1:1
                     s1 = s + 1
-                    C[i1,s1] = c1*(s*C[i,s] - c5*C[i,s1]) / c2
+                    C[i1,s1] = c1*(s*C[i,s] - c5*C[i,s1]) // c2
                 end
-                C[i1,1] = -c1*c5*C[i,1] / c2
+                C[i1,1] = -c1*c5*C[i,1] // c2
            end
             for s in mn:-1:1
                 s1 = s + 1
-                C[j1,s1] = (c4*C[j1,s1] - s*C[j1,s]) / c3
+                C[j1,s1] = (c4*C[j1,s1] - s*C[j1,s]) // c3
             end
-            C[j1,1] = c4 * C[j1,1] / c3
+            C[j1,1] = c4 * C[j1,1] // c3
         end
         c1 = c2
     end
