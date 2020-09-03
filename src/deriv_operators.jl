@@ -7,48 +7,6 @@ abstract type AbstractDerivOperator{T,N} end
 
 abstract type AbstractFiniteDiff{T,N} <: AbstractDerivOperator{T,N} end
 
-"""
-    compute_weights(m, n, s)
-
-Return finite difference weights. Notation follows that of Fornberg, used in
-Mathematica as well:
-https://reference.wolfram.com/language/tutorial/NDSolveMethodOfLines.html
-
-# Arguments
-* `m::Int`: order of the derivative
-* `n::Int`: number of grid intervals enclosed in the stencil
-* `s::Int`: number of grid intervals between the point at which the derivative
-            is approximated and the leftmost edge of the stencil. centred
-            formulas always have s=n/2.
-"""
-function compute_weights(m::Int, n::Int, s::Int) where {T<:Real}
-    # TODO: we could implement the Fornberg (1988) algorithm
-    # (https://doi.org/10.1090/S0025-5718-1988-0935077-0), as done in the
-    # DiffEqOperators module, but for now let's just hardcode the ones we use
-
-    if n == 2
-        if m == 1
-            weights = [-1, 0, 1] ./ 2
-        elseif m == 2
-            weights = [ 1, -2, 1]
-        else
-            error("derivative order not implemented yet")
-        end
-    elseif n == 4
-        if m == 1
-            weights = [ 1, -8, 0, 8, -1] ./ 12
-        elseif m == 2
-            weights = [-1, 16, -30, 16, -1] ./ 12
-        else
-            error("derivative order not implemented yet")
-        end
-    else
-        error("approximation order not implemented yet")
-    end
-
-    weights
-end
-
 struct PeriodicFD{T<:AbstractFloat,N,S} <: AbstractFiniteDiff{T,N}
     derivative_order        :: Int
     approximation_order     :: Int
@@ -86,7 +44,7 @@ function CenteredDiff{N}(derivative_order::Int,
         (derivative_order+approximation_order)%2
 
     stencil_offset = div(stencil_length-1,2)
-    weights = compute_weights(derivative_order, stencil_length-1, stencil_offset)
+    weights = calculate_weights(derivative_order, stencil_length-1, stencil_offset)
 
     stencil_coefs = (1/dx^derivative_order) .* weights
 
