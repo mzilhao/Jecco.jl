@@ -17,14 +17,19 @@ struct PeriodicFD{T<:AbstractFloat,N,S} <: AbstractFiniteDiff{T,N}
     stencil_coefs           :: S
 end
 
-struct FiniteDiffDeriv{T<:AbstractFloat,N,S} <: AbstractFiniteDiff{T,N}
+struct FiniteDiffDeriv{T<:AbstractFloat,N,S1,S2,S3} <: AbstractFiniteDiff{T,N}
     derivative_order        :: Int
     approximation_order     :: Int
     dx                      :: T
     len                     :: Int
     stencil_length          :: Int
     stencil_offset          :: Int
-    stencil_coefs           :: S
+    stencil_coefs           :: S1
+    boundary_stencil_length :: Int
+    low_boundary_offsets    :: Vector{Int}
+    low_boundary_coefs      :: S2
+    high_boundary_offsets   :: Vector{Int}
+    high_boundary_coefs     :: S3
 end
 
 struct SpectralDeriv{T<:Real,N,S} <: AbstractDerivOperator{T,N}
@@ -54,6 +59,56 @@ function CenteredDiff{N}(derivative_order::Int,
 end
 
 CenteredDiff(args...) = CenteredDiff{1}(args...)
+
+
+struct EqualSizeStencilFD{N} end
+
+"""
+    EqualSizeStencilFD{N}(derivative_order, approximation_order, dx, len)
+
+Finite difference operator where interior and boundary stencils have the same
+length and same approximation order. Low (high) boundary operators will use as
+many points to the left (right) as possible. For approximation_order > 2 there
+is more than one boundary point, and each boundary point uses a different
+stencil. Note that these are *not* truncation matched.
+"""
+function EqualSizeStencilFD{N}(derivative_order::Int,
+                               approximation_order::Int, dx::T,
+                               len::Int) where {T<:AbstractFloat,N}
+    @assert approximation_order > 1 "approximation_order must be greater than 1."
+
+    stencil_length = derivative_order + approximation_order - 1 +
+        (derivative_order+approximation_order)%2
+    stencil_offset = div(stencil_length-1,2)
+    weights = calculate_weights(derivative_order, stencil_length-1, stencil_offset)
+
+    stencil_coefs = (1/dx^derivative_order) .* weights
+
+    boundary_stencil_length = stencil_length
+
+    low_boundary_size  = div(approximation_order,2)
+    high_boundary_size = div(approximation_order,2)
+
+    low_boundary_offsets  = collect(0:low_boundary_size-1)
+    high_boundary_offsets = collect(high_boundary_size+1:boundary_stencil_length-1)
+
+    low_weights = [calculate_weights(derivative_order, stencil_length-1, offset)
+                   for offset in low_boundary_offsets]
+    low_boundary_coefs = (1/dx^derivative_order) .* low_weights
+
+    high_weights = [calculate_weights(derivative_order, stencil_length-1, offset)
+                    for offset in high_boundary_offsets]
+    high_boundary_coefs = (1/dx^derivative_order) .* high_weights
+
+    FiniteDiffDeriv{T,N,typeof(stencil_coefs),typeof(low_boundary_coefs),
+                    typeof(high_boundary_coefs)}(
+                        derivative_order, approximation_order,
+                        dx, len, stencil_length,
+                        stencil_offset, stencil_coefs,
+                        boundary_stencil_length, low_boundary_offsets,
+                        low_boundary_coefs, high_boundary_offsets, high_boundary_coefs
+                    )
+end
 
 
 struct ChebDeriv{N} end

@@ -1,4 +1,16 @@
 
+# TODO
+@testset "Fornberg FD weights tests:" begin
+
+
+end
+
+# TODO
+@testset "EqualSizeStencilFD tests:" begin
+
+end
+
+
 @testset "FD Derivative tests:" begin
 
     Dx = CenteredDiff{1}(1, 4, 1.0, 10)
