@@ -13,6 +13,7 @@ export KO_Filter, Exp_Filter
 
 export OpenPMDTimeSeries, get_field
 
+include("fornberg.jl")
 include("deriv_operators.jl")
 include("grid.jl")
 include("input.jl")
