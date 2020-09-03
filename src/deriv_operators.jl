@@ -26,6 +26,7 @@ struct FiniteDiffDeriv{T<:AbstractFloat,N,S1,S2,S3} <: AbstractFiniteDiff{T,N}
     stencil_offset          :: Int
     stencil_coefs           :: S1
     boundary_stencil_length :: Int
+    # these are assumed to be ordered from the boundary inwards
     low_boundary_offsets    :: Vector{Int}
     low_boundary_coefs      :: S2
     high_boundary_offsets   :: Vector{Int}
@@ -89,8 +90,10 @@ function EqualSizeStencilFD{N}(derivative_order::Int,
     low_boundary_size  = div(approximation_order,2)
     high_boundary_size = div(approximation_order,2)
 
+    # remember to order from the boundary inwards, which means the offset array
+    # is increasing in the low boundary and decreasing in the high boundary
     low_boundary_offsets  = collect(0:low_boundary_size-1)
-    high_boundary_offsets = collect(high_boundary_size+1:boundary_stencil_length-1)
+    high_boundary_offsets = collect(boundary_stencil_length-1:-1:high_boundary_size+1)
 
     low_weights = [calculate_weights(derivative_order, stencil_length-1, offset)
                    for offset in low_boundary_offsets]
@@ -176,7 +179,7 @@ end
 @inline Base.getindex(A::SpectralDeriv, i, j) = A.D[i,j]
 
 
-# make FiniteDiffDeriv a callable struct, to compute derivatives at a given point
+# make it a callable struct, to compute derivatives at a given point
 function (A::AbstractFiniteDiff{T,N})(f::AbstractArray{T,M},
                                       idx::Vararg{Int,M}) where {T<:Real,N,M}
     # make sure axis of differentiation is contained in the dimensions of f
@@ -187,10 +190,11 @@ function (A::AbstractFiniteDiff{T,N})(f::AbstractArray{T,M},
 
     if s <= i <= (A.len-s+1)
         return _D_interior(A, f, idx)
-    else
-        return _D_bdr(A, f, idx)
+    elseif i < s
+        return _D_low_bdr(A, f, idx)
+    else # i > (A.len-s+1)
+        return _D_high_bdr(A, f, idx)
     end
-
 end
 
 # interior points
@@ -210,10 +214,25 @@ function _D_interior(A::AbstractFiniteDiff{T,N}, f::AbstractArray, idx) where {T
 end
 
 # boundary points
-function _D_bdr(A::PeriodicFD{T,N}, f::AbstractArray, idx) where {T<:Real,N}
+function _D_low_bdr(A::PeriodicFD{T,N}, f::AbstractArray, idx) where {T<:Real,N}
     coeffs = A.stencil_coefs
     s      = A.stencil_offset + 1
-    i      = idx[N] # point where derivative will be taken (with respect to the N-axis)
+    i      = idx[N]
+
+    sum_i  = zero(T)
+    @fastmath @inbounds for aa in 1:A.stencil_length
+        # imposing periodicity
+        i_circ = mod1(i - (s-aa), A.len)
+        I      = Base.setindex(idx, i_circ, N)
+        sum_i += coeffs[aa] * f[I...]
+    end
+
+    sum_i
+end
+function _D_high_bdr(A::PeriodicFD{T,N}, f::AbstractArray, idx) where {T<:Real,N}
+    coeffs = A.stencil_coefs
+    s      = A.stencil_offset + 1
+    i      = idx[N]
 
     sum_i  = zero(T)
     @fastmath @inbounds for aa in 1:A.stencil_length
@@ -226,7 +245,40 @@ function _D_bdr(A::PeriodicFD{T,N}, f::AbstractArray, idx) where {T<:Real,N}
     sum_i
 end
 
-# TODO: split these loops manually?
+# low boundary points
+function _D_low_bdr(A::FiniteDiffDeriv{T,N}, f::AbstractArray, idx) where {T<:Real,N}
+    i      = idx[N]
+
+    sum_i  = zero(T)
+    @fastmath @inbounds for aa in 1:A.boundary_stencil_length
+        coeffs = A.low_boundary_coefs[i]
+        s      = A.low_boundary_offsets[i] + 1
+        i_circ = i - (s - aa)
+        I      = Base.setindex(idx, i_circ, N)
+        sum_i += coeffs[aa] * f[I...]
+    end
+
+    sum_i
+end
+
+# high boundary points
+function _D_high_bdr(A::FiniteDiffDeriv{T,N}, f::AbstractArray, idx) where {T<:Real,N}
+    i      = idx[N]
+    ii     = A.len-i+1
+
+    sum_i  = zero(T)
+    @fastmath @inbounds for aa in 1:A.boundary_stencil_length
+        coeffs = A.high_boundary_coefs[ii]
+        s      = A.high_boundary_offsets[ii] + 1
+        i_circ = i - (s - aa)
+        I      = Base.setindex(idx, i_circ, N)
+        sum_i += coeffs[aa] * f[I...]
+    end
+
+    sum_i
+end
+
+
 function LinearAlgebra.mul!(df::AbstractVector, A::AbstractFiniteDiff, f::AbstractVector)
     @fastmath @inbounds for idx in eachindex(f)
         df[idx] = A(f,idx)
