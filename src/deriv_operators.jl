@@ -704,6 +704,230 @@ function _D_highA_highB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
 end
 
 
+# now for FiniteDiffDeriv structs
+
+function _D_intA_lowB(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
+                      f::AbstractArray, idx) where {T<:Real,N1,N2}
+    NA   = A.len
+    NB   = B.len
+    qA   = A.stencil_coefs
+    sA   = A.stencil_offset + 1
+
+    # points where derivative will be taken (along their respective axes)
+    i  = idx[N1]
+    j  = idx[N2]
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.boundary_stencil_length
+        qB     = B.low_boundary_coefs[j]
+        sB     = B.low_boundary_offsets[j] + 1
+        j_circ = j - (sB-jj)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.stencil_length
+            i_circ = i - (sA-ii)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+
+function _D_intA_highB(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
+                       f::AbstractArray, idx) where {T<:Real,N1,N2}
+    NB   = B.len
+    qA   = A.stencil_coefs
+    sA   = A.stencil_offset + 1
+
+    i     = idx[N1]
+    j     = idx[N2]
+    jhigh = NB-j+1
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.boundary_stencil_length
+        qB     = B.high_boundary_coefs[jhigh]
+        sB     = B.high_boundary_offsets[jhigh] + 1
+        j_circ = j - (sB-jj)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.stencil_length
+            i_circ = i - (sA-ii)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+
+function _D_lowA_intB(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
+                      f::AbstractArray, idx) where {T<:Real,N1,N2}
+    qB   = B.stencil_coefs
+    sB   = B.stencil_offset + 1
+
+    i  = idx[N1]
+    j  = idx[N2]
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.stencil_length
+        j_circ = j - (sB-jj)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.boundary_stencil_length
+            qA     = A.low_boundary_coefs[i]
+            sA     = A.low_boundary_offsets[i] + 1
+            i_circ = i - (sA-ii)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+
+function _D_highA_intB(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
+                       f::AbstractArray, idx) where {T<:Real,N1,N2}
+    NA   = A.len
+    qB   = B.stencil_coefs
+    sB   = B.stencil_offset + 1
+
+    i     = idx[N1]
+    j     = idx[N2]
+    ihigh = NA-i+1
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.stencil_length
+        j_circ = j - (sB-jj)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.boundary_stencil_length
+            qA     = A.high_boundary_coefs[ihigh]
+            sA     = A.high_boundary_offsets[ihigh] + 1
+            i_circ = i - (sA-ii)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+
+function _D_lowA_lowB(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
+                      f::AbstractArray, idx) where {T<:Real,N1,N2}
+    i  = idx[N1]
+    j  = idx[N2]
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.boundary_stencil_length
+        qB     = B.low_boundary_coefs[j]
+        sB     = B.low_boundary_offsets[j] + 1
+        j_circ = j - (sB-jj)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.boundary_stencil_length
+            qA     = A.low_boundary_coefs[i]
+            sA     = A.low_boundary_offsets[i] + 1
+            i_circ = i - (sA-ii)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+
+function _D_lowA_highB(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
+                       f::AbstractArray, idx) where {T<:Real,N1,N2}
+    NB = B.len
+
+    i     = idx[N1]
+    j     = idx[N2]
+    jhigh = NB-j+1
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.boundary_stencil_length
+        qB     = B.high_boundary_coefs[jhigh]
+        sB     = B.high_boundary_offsets[jhigh] + 1
+        j_circ = j - (sB-jj)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.boundary_stencil_length
+            qA     = A.low_boundary_coefs[i]
+            sA     = A.low_boundary_offsets[i] + 1
+            i_circ = i - (sA-ii)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+
+function _D_highA_lowB(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
+                       f::AbstractArray, idx) where {T<:Real,N1,N2}
+    NA = A.len
+
+    i     = idx[N1]
+    j     = idx[N2]
+    ihigh = NA-i+1
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.boundary_stencil_length
+        qB     = B.low_boundary_coefs[j]
+        sB     = B.low_boundary_offsets[j] + 1
+        j_circ = j - (sB-jj)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.boundary_stencil_length
+            qA     = A.high_boundary_coefs[ihigh]
+            sA     = A.high_boundary_offsets[ihigh] + 1
+            i_circ = i - (sA-ii)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+
+function _D_highA_highB(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
+                        f::AbstractArray, idx) where {T<:Real,N1,N2}
+    NA = A.len
+    NB = B.len
+
+    i     = idx[N1]
+    j     = idx[N2]
+    ihigh = NA-i+1
+    jhigh = NB-j+1
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.boundary_stencil_length
+        qB     = B.high_boundary_coefs[jhigh]
+        sB     = B.high_boundary_offsets[jhigh] + 1
+        j_circ = j - (sB-jj)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.boundary_stencil_length
+            qA     = A.high_boundary_coefs[ihigh]
+            sA     = A.high_boundary_offsets[ihigh] + 1
+            i_circ = i - (sA-ii)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+
 
 
 # Casting to matrix types

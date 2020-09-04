@@ -271,8 +271,7 @@ end
     @test Dx(Dy, f, 42,300) ≈ dxyf[42,300]
 end
 
-@testset "FD cross derivative for general arrays tests:" begin
-
+@testset "PeriodicFD cross derivative for general arrays tests:" begin
     xmin   = -2.0*pi
     xmax   =  2.0*pi
     xnodes =  600
@@ -311,6 +310,55 @@ end
 
     Dz  = CenteredDiff{1}(1, ord, hz, length(z))
     Dx  = CenteredDiff{3}(1, ord, hx, length(x))
+
+    dxzg  = Dx * (Dz * g)
+
+    @test Dz(Dx, g, 100,2,1)     ≈ dxzg[100,2,1]
+    @test Dz(Dx, g, 1,1,1)       ≈ dxzg[1,1,1]
+    @test Dz(Dx, g, 300,16,600)  ≈ dxzg[300,16,600]
+    @test Dz(Dx, g, 10,8,150)    ≈ dxzg[10,8,150]
+end
+
+
+@testset "EqualSizeStencilFD cross derivative for general arrays tests:" begin
+    xmin   = -2.0*pi
+    xmax   =  2.0*pi
+    xnodes =  600
+    ord    =  6
+
+    ymin   = -1.0
+    ymax   =  1.0
+    ynodes =  16
+
+    zmin   = -1.0*pi
+    zmax   =  1.0*pi
+    znodes =  300
+
+
+    hx     = (xmax - xmin) / xnodes
+    hz     = (zmax - zmin) / znodes
+
+    x      = collect(xmin:hx:xmax-hx)
+    y,     = Jecco.cheb(ymin, ymax, ynodes)
+    z      = collect(zmin:hz:zmax-hz)
+
+    f   = [0.5 * sin.(x1) .* x2.^2 .* sin.(x3)  for x1 in x, x2 in y, x3 in z]
+
+    Dx  = EqualSizeStencilFD{1}(1, ord, hx, length(x))
+    Dz  = EqualSizeStencilFD{3}(1, ord, hz, length(z))
+
+    dxzf  = Dx * (Dz * f)
+
+    @test Dx(Dz, f, 2,16,1)     ≈ dxzf[2,16,1]
+    @test Dx(Dz, f, 1,12,2)     ≈ dxzf[1,12,2]
+    @test Dx(Dz, f, 100,12,300) ≈ dxzf[100,12,300]
+    @test Dx(Dz, f, 600,8,100)  ≈ dxzf[600,8,100]
+
+
+    g   = [sin.(x3) .* 0.5 * sin.(x2) .* x1.^2 for x3 in z, x1 in y, x2 in x]
+
+    Dz  = EqualSizeStencilFD{1}(1, ord, hz, length(z))
+    Dx  = EqualSizeStencilFD{3}(1, ord, hx, length(x))
 
     dxzg  = Dx * (Dz * g)
 
