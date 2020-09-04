@@ -400,10 +400,35 @@ function (A::AbstractFiniteDiff{T,N1})(B::AbstractFiniteDiff{T,N2},
     i  = idx[N1]
     j  = idx[N2]
 
-    if sA <= i <= (NA-sA+1) && sB <= j <= (NB-sB+1)
+    if sA <= i <= NA-sA+1 && sB <= j <= NB-sB+1
         return _D_interior(A, B, f, idx)
+
+    elseif sA <= i <= NA-sA+1 && j < sB
+        return _D_intA_lowB(A, B, f, idx)
+
+    elseif sA <= i <= NA-sA+1 && j > NB-sB+1
+        return _D_intA_highB(A, B, f, idx)
+
+    elseif i < sA && sB <= j <= NB-sB+1
+        return _D_lowA_intB(A, B, f, idx)
+
+    elseif i > NA-sA+1 && sB <= j <= NB-sB+1
+        return _D_highA_intB(A, B, f, idx)
+
+    elseif i < sA && j < sB
+        return _D_lowA_lowB(A, B, f, idx)
+
+    elseif i < sA && j > NB-sB+1
+        return _D_lowA_highB(A, B, f, idx)
+
+    elseif i > NA-sA+1 && j < sB
+        return _D_highA_lowB(A, B, f, idx)
+
+    elseif i > NA-sA+1 && j > NB-sB+1
+        return _D_highA_highB(A, B, f, idx)
+
     else
-        return _D_bdr(A, B, f, idx)
+        error("I shouldn't be here...")
     end
 
 end
@@ -439,8 +464,8 @@ function _D_interior(A::AbstractFiniteDiff{T,N1}, B::AbstractFiniteDiff{T,N2},
 end
 
 # boundary points
-function _D_bdr(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
-                f::AbstractArray, idx) where {T<:Real,N1,N2}
+function _D_intA_lowB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
+                      f::AbstractArray, idx) where {T<:Real,N1,N2}
     NA   = A.len
     NB   = B.len
     qA   = A.stencil_coefs
@@ -469,6 +494,218 @@ function _D_bdr(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
 
     sum_ij
 end
+function _D_intA_highB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
+                       f::AbstractArray, idx) where {T<:Real,N1,N2}
+    NA   = A.len
+    NB   = B.len
+    qA   = A.stencil_coefs
+    qB   = B.stencil_coefs
+    sA   = A.stencil_offset + 1
+    sB   = B.stencil_offset + 1
+
+    # points where derivative will be taken (along their respective axes)
+    i  = idx[N1]
+    j  = idx[N2]
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.stencil_length
+        # imposing periodicity
+        j_circ = mod1(j - (sB-jj), NB)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.stencil_length
+            # imposing periodicity
+            i_circ = mod1(i - (sA-ii), NA)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+function _D_lowA_intB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
+                      f::AbstractArray, idx) where {T<:Real,N1,N2}
+    NA   = A.len
+    NB   = B.len
+    qA   = A.stencil_coefs
+    qB   = B.stencil_coefs
+    sA   = A.stencil_offset + 1
+    sB   = B.stencil_offset + 1
+
+    # points where derivative will be taken (along their respective axes)
+    i  = idx[N1]
+    j  = idx[N2]
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.stencil_length
+        # imposing periodicity
+        j_circ = mod1(j - (sB-jj), NB)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.stencil_length
+            # imposing periodicity
+            i_circ = mod1(i - (sA-ii), NA)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+function _D_highA_intB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
+                       f::AbstractArray, idx) where {T<:Real,N1,N2}
+    NA   = A.len
+    NB   = B.len
+    qA   = A.stencil_coefs
+    qB   = B.stencil_coefs
+    sA   = A.stencil_offset + 1
+    sB   = B.stencil_offset + 1
+
+    # points where derivative will be taken (along their respective axes)
+    i  = idx[N1]
+    j  = idx[N2]
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.stencil_length
+        # imposing periodicity
+        j_circ = mod1(j - (sB-jj), NB)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.stencil_length
+            # imposing periodicity
+            i_circ = mod1(i - (sA-ii), NA)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+function _D_lowA_lowB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
+                      f::AbstractArray, idx) where {T<:Real,N1,N2}
+    NA   = A.len
+    NB   = B.len
+    qA   = A.stencil_coefs
+    qB   = B.stencil_coefs
+    sA   = A.stencil_offset + 1
+    sB   = B.stencil_offset + 1
+
+    # points where derivative will be taken (along their respective axes)
+    i  = idx[N1]
+    j  = idx[N2]
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.stencil_length
+        # imposing periodicity
+        j_circ = mod1(j - (sB-jj), NB)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.stencil_length
+            # imposing periodicity
+            i_circ = mod1(i - (sA-ii), NA)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+function _D_lowA_highB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
+                       f::AbstractArray, idx) where {T<:Real,N1,N2}
+    NA   = A.len
+    NB   = B.len
+    qA   = A.stencil_coefs
+    qB   = B.stencil_coefs
+    sA   = A.stencil_offset + 1
+    sB   = B.stencil_offset + 1
+
+    # points where derivative will be taken (along their respective axes)
+    i  = idx[N1]
+    j  = idx[N2]
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.stencil_length
+        # imposing periodicity
+        j_circ = mod1(j - (sB-jj), NB)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.stencil_length
+            # imposing periodicity
+            i_circ = mod1(i - (sA-ii), NA)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+function _D_highA_lowB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
+                       f::AbstractArray, idx) where {T<:Real,N1,N2}
+    NA   = A.len
+    NB   = B.len
+    qA   = A.stencil_coefs
+    qB   = B.stencil_coefs
+    sA   = A.stencil_offset + 1
+    sB   = B.stencil_offset + 1
+
+    # points where derivative will be taken (along their respective axes)
+    i  = idx[N1]
+    j  = idx[N2]
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.stencil_length
+        # imposing periodicity
+        j_circ = mod1(j - (sB-jj), NB)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.stencil_length
+            # imposing periodicity
+            i_circ = mod1(i - (sA-ii), NA)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+function _D_highA_highB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
+                        f::AbstractArray, idx) where {T<:Real,N1,N2}
+    NA   = A.len
+    NB   = B.len
+    qA   = A.stencil_coefs
+    qB   = B.stencil_coefs
+    sA   = A.stencil_offset + 1
+    sB   = B.stencil_offset + 1
+
+    # points where derivative will be taken (along their respective axes)
+    i  = idx[N1]
+    j  = idx[N2]
+
+    sum_ij = zero(T)
+    @fastmath @inbounds for jj in 1:B.stencil_length
+        # imposing periodicity
+        j_circ = mod1(j - (sB-jj), NB)
+        Itmp   = Base.setindex(idx, j_circ, N2)
+        sum_i  = zero(T)
+        @inbounds for ii in 1:A.stencil_length
+            # imposing periodicity
+            i_circ = mod1(i - (sA-ii), NA)
+            I      = Base.setindex(Itmp, i_circ, N1)
+            sum_i += qA[ii] * qB[jj] * f[I...]
+        end
+        sum_ij += sum_i
+    end
+
+    sum_ij
+end
+
+
 
 
 # Casting to matrix types
