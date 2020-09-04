@@ -486,8 +486,7 @@ function _D_intA_lowB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
         Itmp   = Base.setindex(idx, j_circ, N2)
         sum_i  = zero(T)
         @inbounds for ii in 1:A.stencil_length
-            # imposing periodicity
-            i_circ = mod1(i - (sA-ii), NA)
+            i_circ = i - (sA-ii)
             I      = Base.setindex(Itmp, i_circ, N1)
             sum_i += qA[ii] * qB[jj] * f[I...]
         end
@@ -516,8 +515,7 @@ function _D_intA_highB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
         Itmp   = Base.setindex(idx, j_circ, N2)
         sum_i  = zero(T)
         @inbounds for ii in 1:A.stencil_length
-            # imposing periodicity
-            i_circ = mod1(i - (sA-ii), NA)
+            i_circ = i - (sA-ii)
             I      = Base.setindex(Itmp, i_circ, N1)
             sum_i += qA[ii] * qB[jj] * f[I...]
         end
@@ -541,8 +539,7 @@ function _D_lowA_intB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
 
     sum_ij = zero(T)
     @fastmath @inbounds for jj in 1:B.stencil_length
-        # imposing periodicity
-        j_circ = mod1(j - (sB-jj), NB)
+        j_circ = j - (sB-jj)
         Itmp   = Base.setindex(idx, j_circ, N2)
         sum_i  = zero(T)
         @inbounds for ii in 1:A.stencil_length
@@ -571,8 +568,7 @@ function _D_highA_intB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
 
     sum_ij = zero(T)
     @fastmath @inbounds for jj in 1:B.stencil_length
-        # imposing periodicity
-        j_circ = mod1(j - (sB-jj), NB)
+        j_circ = j - (sB-jj)
         Itmp   = Base.setindex(idx, j_circ, N2)
         sum_i  = zero(T)
         @inbounds for ii in 1:A.stencil_length
