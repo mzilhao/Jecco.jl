@@ -133,7 +133,7 @@ end
 ChebDeriv(args...) = ChebDeriv{1}(args...)
 
 
-function Base.getindex(A::FiniteDiffDeriv, i::Int, j::Int)
+function Base.getindex(A::FiniteDiffDeriv{T}, i::Int, j::Int) where {T}
     s = A.stencil_offset + 1
 
     # interior points
@@ -156,13 +156,13 @@ function Base.getindex(A::FiniteDiffDeriv, i::Int, j::Int)
     end
 
     if idx < 1 || idx > stencil_length
-        return 0.0
+        return zero(T)
     else
         return coeffs[idx]
     end
 end
 
-function Base.getindex(A::PeriodicFD, i::Int, j::Int)
+function Base.getindex(A::PeriodicFD{T}, i::Int, j::Int) where {T}
     N      = A.len
     coeffs = A.stencil_coefs
     s      = A.stencil_offset + 1
@@ -175,7 +175,7 @@ function Base.getindex(A::PeriodicFD, i::Int, j::Int)
     end
 
     if idx < 1 || idx > A.stencil_length
-        return 0.0
+        return zero(T)
     else
         return coeffs[idx]
     end
