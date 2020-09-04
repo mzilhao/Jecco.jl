@@ -113,6 +113,8 @@ function EqualSizeStencilFD{N}(derivative_order::Int,
                     )
 end
 
+EqualSizeStencilFD(args...) = EqualSizeStencilFD{1}(args...)
+
 
 struct ChebDeriv{N} end
 

@@ -7,7 +7,7 @@ using FFTW
 export AbstractCoord, CartesianCoord, GaussLobattoCoord
 export Chart, Atlas
 export Cartesian, GaussLobatto
-export CenteredDiff, ChebDeriv
+export CenteredDiff, EqualSizeStencilFD, ChebDeriv
 export ChebInterpolator
 export KO_Filter, Exp_Filter
 
