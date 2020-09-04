@@ -133,27 +133,36 @@ end
 ChebDeriv(args...) = ChebDeriv{1}(args...)
 
 
-# FIXME
-@inline function Base.getindex(A::FiniteDiffDeriv, i::Int, j::Int)
-    N      = A.len
-    coeffs = A.stencil_coefs
-    s      = A.stencil_offset + 1
+function Base.getindex(A::FiniteDiffDeriv, i::Int, j::Int)
+    s = A.stencil_offset + 1
 
-    if 1 <= j - i + s <= N
+    # interior points
+    if s <= i <= (A.len-s+1)
         idx  = j - i + s
-    else
-        # note: imposing periodicity
-        idx  = mod1(j - i + s, N)
+        coeffs = A.stencil_coefs
+        ss     = s
+        stencil_length = A.stencil_length
+    elseif i < s
+        coeffs = A.low_boundary_coefs[i]
+        ss     = A.low_boundary_offsets[i] + 1
+        idx    = j - i + ss
+        stencil_length = A.boundary_stencil_length
+    else # i > (A.len-s+1)
+        ii     = A.len-i+1
+        coeffs = A.high_boundary_coefs[ii]
+        ss     = A.high_boundary_offsets[ii] + 1
+        idx    = j - i + ss
+        stencil_length = A.boundary_stencil_length
     end
 
-    if idx < 1 || idx > A.stencil_length
+    if idx < 1 || idx > stencil_length
         return 0.0
     else
         return coeffs[idx]
     end
 end
 
-@inline function Base.getindex(A::PeriodicFD, i::Int, j::Int)
+function Base.getindex(A::PeriodicFD, i::Int, j::Int)
     N      = A.len
     coeffs = A.stencil_coefs
     s      = A.stencil_offset + 1
@@ -161,7 +170,7 @@ end
     if 1 <= j - i + s <= N
         idx  = j - i + s
     else
-        # note: imposing periodicity
+        # imposing periodicity
         idx  = mod1(j - i + s, N)
     end
 
