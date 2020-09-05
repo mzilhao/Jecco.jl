@@ -375,7 +375,8 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
     println("INFO (AH): Looking for the apparent horizon...")
     println("    it \t max_res")
     # start relaxation method
-    for it in 1:ahf.itmax
+    it = 0
+    while true
 
         # interpolate bulk functions (and u-derivatives) to the 1/u = r = sigma surface
         @inbounds Threads.@threads for j in 1:Ny
@@ -423,6 +424,12 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
         compute_coeffs_AH!(sigma, gauge, cache, sys)
         copyto!(cache.b_vec, res)
 
+        if it >= ahf.itmax
+            println("INFO (AH): maximum iteration reached.")
+            println("INFO (AH): giving up")
+            break
+        end
+
         # each time the mul_col! routine is called (below), the operators Dx_2D,
         # Dxx_2D, etc, are overwritten. so restore them here from _Dx_2D,
         # _Dxx_2D, etc, which are never overwritten.
@@ -462,6 +469,7 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
         @inbounds for idx in eachindex(sigma)
             sigma[idx] -= f0[idx]
         end
+        it += 1
 
         # check if sigma inside domain
         min_uAH = 1/maximum(sigma)
