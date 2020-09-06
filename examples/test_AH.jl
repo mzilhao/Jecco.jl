@@ -43,7 +43,8 @@ evoleq = AffineNull(
     gaugecondition = ConstantAH(u_AH = id.AH_pos),
 )
 
-ahf = AHF()
+ahf = AHF(itmax=8)
+# ahf = AHF()
 
 # atlas of grid configuration and respective SystemPartition
 atlas     = Atlas(grid)
@@ -83,18 +84,35 @@ AdS5_3_1.compute_coeffs_AH!(sigma, gauge, horizoncache, systems[end])
 AdS5_3_1.find_AH!(sigma, bulkconstrains[end], bulkevols[end], bulkderivs[end], gauge,
                   horizoncache, systems[end], ahf)
 
-Dx = systems[end].Dx
+Du   = systems[end].Du
+Duu  = systems[end].Duu
+Dx   = systems[end].Dx
+Dxx  = systems[end].Dxx
 
-sigma_x = Dx * sigma
-S_x     = Dx * horizoncache.bulkhorizon.S_uAH
-Sp      = -1 ./ sigma.^2 .* horizoncache.bulkhorizon.Du_S_uAH
+sigma_x  = Dx * sigma
+sigma_xx = Dxx * sigma
+S        = horizoncache.bulkhorizon.S_uAH
+Sd       = horizoncache.bulkhorizon.Sd_uAH
+Sp       = -1 ./ sigma.^2 .* horizoncache.bulkhorizon.Du_S_uAH
+Sdp      = -1 ./ sigma.^2 .* horizoncache.bulkhorizon.Du_Sd_uAH
+Spp      =  2 ./ sigma.^3 .* horizoncache.bulkhorizon.Du_S_uAH +
+    1 ./ sigma.^4 .* horizoncache.bulkhorizon.Duu_S_uAH
 
-#This is what the bx coefficients reduces to for this case.
-tmp  = 3 .* Sp .* sigma_x .- S_x
-bbxx = reshape(tmp, (grid.x_nodes,grid.y_nodes))
+# should be zero, but let's check
+S_x     = Dx * horizoncache.bulkhorizon.S_uAH - Sp .* sigma_x
 
-bla = reshape(horizoncache.bx, (grid.x_nodes,grid.y_nodes))
+tmp = Sp .* sigma_x .- S_x
+bxx = tmp[1,:,:]
 
-bla-bbxx
+axx = -S[1,:,:]
 
-#maximum(abs.(bla))
+tmp = 6 * S .* Sd .* Sp .+ 3 * S.^2 .* Sdp + 0.5 * Spp .* sigma_x.^2 .- Sp .* sigma_xx
+cc  = tmp[1,:,:]
+
+axx_ = reshape(horizoncache.axx, (grid.x_nodes,grid.y_nodes))
+bxx_ = reshape(horizoncache.bx,  (grid.x_nodes,grid.y_nodes))
+cc_  = reshape(horizoncache.cc,  (grid.x_nodes,grid.y_nodes))
+
+diffa = abs.(axx-axx_)
+diffb = abs.(bxx-bxx_)
+diffc = abs.(cc - cc_)
