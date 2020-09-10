@@ -1,4 +1,6 @@
 
+using SparseArrays: SparseMatrixCSC
+
 #= iterative improvement to a solution of a linear system A x = b
 
 cf. Numerical Recipes (2007), sec 2.5
@@ -29,4 +31,19 @@ function refine_solution!(sol::Vector, A_fact, A_mat::AbstractMatrix, b_vec::Vec
     mul!(b_vec, A_mat, sol, 1, -1)
     ldiv!(A_fact, b_vec)
     sol .-= b_vec
+end
+
+
+# returns A_ij = x_i A_ij (no sum in i). note that A itself is also changed.
+# this is equivalent to the operation A = x .* A, but it's much more efficient
+function mul_col!(x::Vector, A::SparseMatrixCSC)
+    @assert size(x)[1] == size(A)[1]
+
+    rows = rowvals(A)
+    vals = nonzeros(A)
+    @inbounds for idx in eachindex(vals)
+        row = rows[idx]
+        vals[idx] *= x[row]
+    end
+    A
 end

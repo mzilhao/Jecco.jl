@@ -1,7 +1,6 @@
 module KG_3_1
 
 using Jecco
-using Parameters
 
 export ParamBase, ParamGrid, ParamID, ParamEvol, ParamIO
 export Potential

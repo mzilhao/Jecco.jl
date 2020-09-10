@@ -1,17 +1,30 @@
 
-@testset "FD Derivative tests:" begin
+# TODO
+@testset "Fornberg FD weights tests:" begin
 
-    Dx = CenteredDiff{1}(1, 4, 1, 10)
-    @test 12*Dx[1,:]  == [0.0, 8.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, -8.0]
-    @test 12*Dx[2,:]  == [-8.0, 0.0, 8.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-    @test 12*Dx[3,:]  == [1.0, -8.0, 0.0, 8.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    @test 12*Dx[4,:]  == [0.0, 1.0, -8.0, 0.0, 8.0, -1.0, 0.0, 0.0, 0.0, 0.0]
-    @test 12*Dx[5,:]  == [0.0, 0.0, 1.0, -8.0, 0.0, 8.0, -1.0, 0.0, 0.0, 0.0]
-    @test 12*Dx[6,:]  == [0.0, 0.0, 0.0, 1.0, -8.0, 0.0, 8.0, -1.0, 0.0, 0.0]
-    @test 12*Dx[7,:]  == [0.0, 0.0, 0.0, 0.0, 1.0, -8.0, 0.0, 8.0, -1.0, 0.0]
-    @test 12*Dx[8,:]  == [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, -8.0, 0.0, 8.0, -1.0]
-    @test 12*Dx[9,:]  == [-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, -8.0, 0.0, 8.0]
-    @test 12*Dx[10,:] == [8.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, -8.0, 0.0]
+
+end
+
+# TODO
+@testset "EqualSizeStencilFD tests:" begin
+
+end
+
+
+
+@testset "Periodic Derivative tests:" begin
+
+    Dx = CenteredDiff{1}(1, 4, 1.0, 10)
+    @test 12*Dx[1,:]  ≈ [0.0, 8.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, -8.0] atol=1e-15
+    @test 12*Dx[2,:]  ≈ [-8.0, 0.0, 8.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0] atol=1e-15
+    @test 12*Dx[3,:]  ≈ [1.0, -8.0, 0.0, 8.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0] atol=1e-15
+    @test 12*Dx[4,:]  ≈ [0.0, 1.0, -8.0, 0.0, 8.0, -1.0, 0.0, 0.0, 0.0, 0.0] atol=1e-15
+    @test 12*Dx[5,:]  ≈ [0.0, 0.0, 1.0, -8.0, 0.0, 8.0, -1.0, 0.0, 0.0, 0.0] atol=1e-15
+    @test 12*Dx[6,:]  ≈ [0.0, 0.0, 0.0, 1.0, -8.0, 0.0, 8.0, -1.0, 0.0, 0.0] atol=1e-15
+    @test 12*Dx[7,:]  ≈ [0.0, 0.0, 0.0, 0.0, 1.0, -8.0, 0.0, 8.0, -1.0, 0.0] atol=1e-15
+    @test 12*Dx[8,:]  ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, -8.0, 0.0, 8.0, -1.0] atol=1e-15
+    @test 12*Dx[9,:]  ≈ [-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, -8.0, 0.0, 8.0] atol=1e-15
+    @test 12*Dx[10,:] ≈ [8.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, -8.0, 0.0] atol=1e-15
 
     # 1D case
 
@@ -65,6 +78,83 @@
 
     Dxx    = CenteredDiff{1}(2, ord, hx, length(x))
     Dzz    = CenteredDiff{3}(2, ord, hz, length(z))
+
+    dxf    = Dx * f
+    dzf    = Dz * f
+    dxzf   = Dx * (Dz * f)
+
+    @test dxf  ≈ dxf0
+    @test dzf  ≈ dzf0
+    @test dxzf ≈ dxzf0
+
+    d2xf   = Dxx * f
+    d2zf   = Dzz * f
+
+    @test d2xf ≈ -f
+    @test d2zf ≈ -f
+
+
+    # now for callable, point-wise, methods
+    @test Dx(f,2,10,120)  == dxf[2,10,120]
+    @test Dx(f,42,20,300) == dxf[42,20,300]
+    @test Dz(f,2,10,120)  == dzf[2,10,120]
+    @test Dz(f,42,20,300) == dzf[42,20,300]
+end
+
+@testset "EqualSizeStencilFD Derivative tests:" begin
+
+    # 1D case
+
+    xmin   = -2.0*pi
+    xmax   =  2.0*pi
+    xnodes =  600
+    ord    =  6
+
+    hx     = (xmax - xmin) / xnodes
+
+    x  = collect(xmin:hx:xmax-hx)
+    f  = sin.(x)
+
+    D1 = EqualSizeStencilFD(1, ord, hx, length(x))
+    D2 = EqualSizeStencilFD(2, ord, hx, length(x))
+
+    df  = D1 * f
+    d2f = D2 * f
+
+    @test df  ≈ cos.(x)
+    @test d2f ≈ -f
+
+    # now for the callable, point-wise, methods
+    for i in eachindex(f)
+        @test D1(f,i) == df[i]
+    end
+
+    # 3D case
+
+    ymin   = -1.0*pi
+    ymax   =  1.0*pi
+    ynodes =  20
+    zmin   = -1.0*pi
+    zmax   =  1.0*pi
+    znodes =  300
+
+    hy     = (ymax - ymin) / ynodes
+    hz     = (zmax - zmin) / znodes
+
+    y      = collect(ymin:hy:ymax-hy)
+    z      = collect(zmin:hz:zmax-hz)
+
+    f      = [sin.(x1) .* sin.(x2) .* sin.(x3) for x1 in x, x2 in y, x3 in z]
+    dxf0   = [cos.(x1) .* sin.(x2) .* sin.(x3) for x1 in x, x2 in y, x3 in z]
+    dyf0   = [sin.(x1) .* cos.(x2) .* sin.(x3) for x1 in x, x2 in y, x3 in z]
+    dzf0   = [sin.(x1) .* sin.(x2) .* cos.(x3) for x1 in x, x2 in y, x3 in z]
+    dxzf0  = [cos.(x1) .* sin.(x2) .* cos.(x3) for x1 in x, x2 in y, x3 in z]
+
+    Dx     = EqualSizeStencilFD{1}(1, ord, hx, length(x))
+    Dz     = EqualSizeStencilFD{3}(1, ord, hz, length(z))
+
+    Dxx    = EqualSizeStencilFD{1}(2, ord, hx, length(x))
+    Dzz    = EqualSizeStencilFD{3}(2, ord, hz, length(z))
 
     dxf    = Dx * f
     dzf    = Dz * f
@@ -181,8 +271,7 @@ end
     @test Dx(Dy, f, 42,300) ≈ dxyf[42,300]
 end
 
-@testset "FD cross derivative for general arrays tests:" begin
-
+@testset "PeriodicFD cross derivative for general arrays tests:" begin
     xmin   = -2.0*pi
     xmax   =  2.0*pi
     xnodes =  600
@@ -221,6 +310,55 @@ end
 
     Dz  = CenteredDiff{1}(1, ord, hz, length(z))
     Dx  = CenteredDiff{3}(1, ord, hx, length(x))
+
+    dxzg  = Dx * (Dz * g)
+
+    @test Dz(Dx, g, 100,2,1)     ≈ dxzg[100,2,1]
+    @test Dz(Dx, g, 1,1,1)       ≈ dxzg[1,1,1]
+    @test Dz(Dx, g, 300,16,600)  ≈ dxzg[300,16,600]
+    @test Dz(Dx, g, 10,8,150)    ≈ dxzg[10,8,150]
+end
+
+
+@testset "EqualSizeStencilFD cross derivative for general arrays tests:" begin
+    xmin   = -2.0*pi
+    xmax   =  2.0*pi
+    xnodes =  600
+    ord    =  6
+
+    ymin   = -1.0
+    ymax   =  1.0
+    ynodes =  16
+
+    zmin   = -1.0*pi
+    zmax   =  1.0*pi
+    znodes =  300
+
+
+    hx     = (xmax - xmin) / xnodes
+    hz     = (zmax - zmin) / znodes
+
+    x      = collect(xmin:hx:xmax-hx)
+    y,     = Jecco.cheb(ymin, ymax, ynodes)
+    z      = collect(zmin:hz:zmax-hz)
+
+    f   = [0.5 * sin.(x1) .* x2.^2 .* sin.(x3)  for x1 in x, x2 in y, x3 in z]
+
+    Dx  = EqualSizeStencilFD{1}(1, ord, hx, length(x))
+    Dz  = EqualSizeStencilFD{3}(1, ord, hz, length(z))
+
+    dxzf  = Dx * (Dz * f)
+
+    @test Dx(Dz, f, 2,16,1)     ≈ dxzf[2,16,1]
+    @test Dx(Dz, f, 1,12,2)     ≈ dxzf[1,12,2]
+    @test Dx(Dz, f, 100,12,300) ≈ dxzf[100,12,300]
+    @test Dx(Dz, f, 600,8,100)  ≈ dxzf[600,8,100]
+
+
+    g   = [sin.(x3) .* 0.5 * sin.(x2) .* x1.^2 for x3 in z, x1 in y, x2 in x]
+
+    Dz  = EqualSizeStencilFD{1}(1, ord, hz, length(z))
+    Dx  = EqualSizeStencilFD{3}(1, ord, hx, length(x))
 
     dxzg  = Dx * (Dz * g)
 

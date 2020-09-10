@@ -33,7 +33,7 @@ function Cartesian{N}(name::String, xmin::T, xmax::T, nodes::Integer;
     end
     CartesianCoord{N,T}(name, min_, max_, nodes)
 end
-Cartesian(args...) = Cartesian{1}(args...)
+Cartesian(args...; endpoint=true) = Cartesian{1}(args...; endpoint=endpoint)
 
 struct GaussLobatto{N} end
 function GaussLobatto{N}(name::String, xmin::T, xmax::T,
@@ -41,6 +41,17 @@ function GaussLobatto{N}(name::String, xmin::T, xmax::T,
     GaussLobattoCoord{N,T}(name, xmin, xmax, nodes)
 end
 GaussLobatto(args...) = GaussLobatto{1}(args...)
+
+struct Coord{N} end
+function Coord{N}(coord_type::String, name::String, min::T, max::T, nodes::Int) where {T<:Real,N}
+    if coord_type == "Cartesian"
+        return CartesianCoord{N,T}(name, min, max, nodes)
+    elseif coord_type == "GaussLobatto"
+        return GaussLobattoCoord{N,T}(name, min, max, nodes)
+    else
+        error("Unknown coord type")
+    end
+end
 
 
 @inline function delta(coord::CartesianCoord) where {T<:Real,N}
@@ -71,66 +82,85 @@ end
 @inline Base.getindex(coord::AbstractCoord, ::Colon) = [coord[i] for i in 1:coord.nodes]
 
 
-struct Grid{A}
-    ndim    :: Int
-    coords  :: A
-
-    function Grid{A}(coords) where {A}
-        ndim = length(coords)
-        for a in 1:ndim
+struct Chart{N,A}
+    coords :: A
+    function Chart{A}(coords) where {A}
+        N = length(coords)
+        for a in 1:N
             @assert(coord_axis(coords[a]) == a, "wrong order in grid array")
         end
-        new(ndim, coords)
+        new{N,A}(coords)
     end
 end
-Grid(coords) = Grid{typeof(coords)}(coords)
+"""
+    Chart(coords::A)
 
-function Grid(coords::Tuple)
-    ndim = length(coords)
-    Grid{typeof(coords)}(ndim, coords)
+A `Chart` is a collection of `AbstractCoord`s
+"""
+Chart(coords::A) where {A} = Chart{A}(coords)
+
+Chart(coords::Vararg{AbstractCoord,N}) where {N} = Chart(coords)
+
+function Chart(coord_types::Vector, names::Vector, mins::Vector, maxs::Vector,
+               nodess)
+    dim_ = length(names)
+    @assert(length(mins) == length(maxs) == length(nodess) == length(coord_types) == dim_)
+    coords_ = [Coord{i}(coord_types[i], names[i], mins[i], maxs[i], nodess[i]) for i in 1:dim_]
+    coords  = Tuple(coords_)
+    Chart(coords)
 end
 
-function Grid(coords::Vararg{AbstractCoord,N}) where {N}
-    Grid{typeof(coords)}(coords)
+
+@inline Base.ndims(chart::Chart{N}) where {N} = N
+
+@inline function Base.getindex(chart::Chart{N}, idx::Vararg{Int,N}) where {N}
+    [chart.coords[a][idx[a]] for a in 1:N]
 end
 
-function Grid(coord::AbstractCoord)
-    ndim   = 1
-    coords = (coord)
-    Grid{typeof(coords)}(coords)
+@inline function Base.getindex(chart::Chart{N}, ::Colon) where {N}
+    [chart.coords[a][:] for a in 1:N]
 end
 
-
-@inline function Base.getindex(grid::Grid, idx::Vararg{Int,N}) where {N}
-    [grid.coords[a][idx[a]] for a in 1:N]
+@inline function name(chart::Chart{N}) where {N}
+    [chart.coords[a].name for a in 1:N]
 end
 
-@inline function Base.getindex(grid::Grid, ::Colon)
-    [grid.coords[a][:] for a in 1:grid.ndim]
+@inline function min(chart::Chart{N}) where {N}
+    [chart.coords[a].min for a in 1:N]
 end
 
-@inline function name(grid::Grid)
-    [grid.coords[a].name for a in 1:grid.ndim]
+@inline function max(chart::Chart{N}) where {N}
+    [chart.coords[a].max for a in 1:N]
 end
 
-@inline function min(grid::Grid)
-    [grid.coords[a].min for a in 1:grid.ndim]
+@inline function nodes(chart::Chart{N}) where {N}
+    [chart.coords[a].nodes for a in 1:N]
 end
 
-@inline function max(grid::Grid)
-    [grid.coords[a].max for a in 1:grid.ndim]
+@inline function delta(chart::Chart{N}) where {N}
+    [delta(chart.coords[a]) for a in 1:N]
 end
 
-@inline function nodes(grid::Grid)
-    [grid.coords[a].nodes for a in 1:grid.ndim]
+@inline function coord_type(chart::Chart{N}) where {N}
+    [coord_type(chart.coords[a]) for a in 1:N]
 end
 
-@inline function delta(grid::Grid)
-    [delta(grid.coords[a]) for a in 1:grid.ndim]
+@inline Base.size(chart::Chart) = Tuple(nodes(chart))
+
+
+struct Atlas{N,A<:Chart}
+    charts :: NTuple{N,A}
 end
 
-@inline function coord_type(grid::Grid)
-    [coord_type(grid.coords[a]) for a in 1:grid.ndim]
-end
+"""
+    Atlas(charts::A)
 
-@inline Base.size(grid::Grid) = Tuple(nodes(grid))
+An `Atlas` is a collection of `Chart`s
+"""
+Atlas(charts::Vararg{Chart,N}) where {N} = Atlas(charts)
+Atlas(xx::Vector) = Atlas(Tuple(xx))
+
+function Atlas(chart::Chart)
+    charts = (chart)
+    Atlas(charts)
+end

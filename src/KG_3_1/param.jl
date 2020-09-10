@@ -1,9 +1,9 @@
 
-@with_kw struct ParamBase
+Base.@kwdef struct ParamBase
     which_potential :: String
 end
 
-@with_kw struct ParamGrid
+Base.@kwdef struct ParamGrid
     xmin        :: Float64
     xmax        :: Float64
     xnodes      :: Int
@@ -16,7 +16,7 @@ end
     unodes      :: Int # number of points per domain
 end
 
-@with_kw struct ParamID
+Base.@kwdef struct ParamID
     ID_type     :: String
     A0x         :: Float64  = 0.0
     A0y         :: Float64  = 0.0
@@ -24,13 +24,13 @@ end
     Ly          :: Float64  = 1.0
 end
 
-@with_kw struct ParamEvol
+Base.@kwdef struct ParamEvol
     dt          :: Float64
     tmax        :: Float64
     ODE_method  :: String   = "RK4"
 end
 
-@with_kw struct ParamIO
+Base.@kwdef struct ParamIO
     out_every   :: Int
     folder      :: String  = "./data"
     prefix      :: String  = "phi_"

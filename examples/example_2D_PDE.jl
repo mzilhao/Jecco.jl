@@ -6,31 +6,17 @@ using Plots
 
 source(x,y) = exp(-x^2 - y^2) * (-4 + 3 * (x^2 + y^2) + 4 * x^2 * y^2)
 
-# returns A_ij = x_i A_ij (no sum in i). note that A itself is also changed.
-# this is equivalent to the operation A = x .* A, but it's much more efficient
-function mul_col!(x::Vector, A::SparseMatrixCSC)
-    @assert size(x)[1] == size(A)[1]
-
-    rows = rowvals(A)
-    vals = nonzeros(A)
-    @inbounds for idx in eachindex(vals)
-        row = rows[idx]
-        vals[idx] *= x[row]
-    end
-    A
-end
-
 # returns axx Dxx + ayy Dyy + axy Dxy + bx Dx + by Dy + cc. note that this
 # function overwrites the input matrices to save memory
 function build_operator(Dxx::SparseMatrixCSC, Dyy::SparseMatrixCSC, Dxy::SparseMatrixCSC,
                         Dx::SparseMatrixCSC, Dy::SparseMatrixCSC,
                         axx::Vector, ayy::Vector, axy::Vector,
                         bx::Vector, by::Vector, cc::Vector)
-    mul_col!(axx, Dxx)
-    mul_col!(ayy, Dyy)
-    mul_col!(axy, Dxy)
-    mul_col!(bx,  Dx)
-    mul_col!(by,  Dy)
+    Jecco.mul_col!(axx, Dxx)
+    Jecco.mul_col!(ayy, Dyy)
+    Jecco.mul_col!(axy, Dxy)
+    Jecco.mul_col!(bx,  Dx)
+    Jecco.mul_col!(by,  Dy)
     ccId = Diagonal(cc)
 
     Dxx + Dyy + Dxy + Dx + Dy + ccId

@@ -9,12 +9,26 @@ mutable struct OpenPMDTimeSeries
     current_i         :: Int64
     current_iteration :: Int64
     current_t         :: Float64
-
-    function OpenPMDTimeSeries(foldername::String, prefix::String)
-        iterations, files = list_h5_files(foldername, prefix=prefix)
-        new(iterations, files, 0, 0, 0.0)
-    end
 end
+
+function OpenPMDTimeSeries(foldername::String, prefix::String)
+    iterations, files = try
+        list_h5_files(foldername, prefix=prefix)
+    catch e
+        if isa(e, SystemError) && e.errnum == 2 # "No such file or directory"
+            throw(ErrorException("No files found."))
+        else
+            throw(e)
+        end
+    end
+
+    if length(iterations) == 0
+        throw(ErrorException("No files found."))
+    end
+
+    OpenPMDTimeSeries(iterations, files, 0, 0, 0.0)
+end
+
 
 """
     OpenPMDTimeSeries(foldername::String; prefix::String="")
@@ -74,13 +88,13 @@ end
 """
     get_field(ts::OpenPMDTimeSeries; it::Int, field::String)
 
-Given a time series, extract the requested field (and corresponding grid) from
+Given a time series, extract the requested field (and corresponding chart) from
 an HDF5 file in the openPMD format. As side-effects, ```ts.current_i```,
 ```ts.current_iteration``` and ```ts.current_t``` are correspondingly modified.
 
 # Example
 ```
-julia> psi, grid=get_field(ts, it=20, field="psi");
+julia> psi, chart=get_field(ts, it=20, field="psi");
 
 julia> ts.current_t
 20.0
@@ -93,7 +107,7 @@ julia> ts.current_i
 
 ```
 """
-function get_field(ts::OpenPMDTimeSeries; it::Int, field::String)
+function get_field(ts::OpenPMDTimeSeries; it::Int, field::String, verbose::Bool=false)
     # index that corresponds to the closest iteration requested
     ts.current_i = argmin(abs.(it .- ts.iterations))
     # the closest iteration found (it need not be the requested one)
@@ -101,6 +115,9 @@ function get_field(ts::OpenPMDTimeSeries; it::Int, field::String)
     # and corresponding file
     filename = ts.files[ts.current_i]
 
+    if verbose
+        println("Reading file $filename")
+    end
     # open file
     fid = h5open(filename, "r")
 
@@ -108,12 +125,12 @@ function get_field(ts::OpenPMDTimeSeries; it::Int, field::String)
     grp, ts.current_t = read_openpmd_file(fid, ts.current_iteration, field)
 
     # read actual data
-    data, grid = read_dataset(grp, field)
+    data, chart = read_dataset(grp, field)
 
     # close file
     close(fid)
 
-    data, grid
+    data, chart
 end
 
 function read_openpmd_file(fid::HDF5File, it::Integer, var::String)
@@ -127,7 +144,7 @@ function read_openpmd_file(fid::HDF5File, it::Integer, var::String)
 
     time = read(attrs(grp_base)["time"])
 
-    # pointer to mesh group (with the actual grid function data)
+    # pointer to mesh group (with the actual chart function data)
     grp_mesh = grp_base[meshesPath]
 
     grp_mesh, time
@@ -156,25 +173,7 @@ function read_dataset(grp::HDF5Group, var::String)
         gridtypes     = read(dset_attrs["gridType"])[end:-1:1]
     end
 
-    grid = Grid(gridtypes, names, mins, maxs, nodes)
+    chart = Chart(gridtypes, names, mins, maxs, nodes)
 
-    func, grid
-end
-
-function Grid(coord_types::Vector, names::Vector, mins::Vector, maxs::Vector,
-              nodess::Vector)
-    dim_ = length(names)
-    @assert(length(mins) == length(maxs) == length(nodess) == length(coord_types) == dim_)
-    coords = [Coord(coord_types[i], i, names[i], mins[i], maxs[i], nodess[i]) for i in 1:dim_]
-    Grid{typeof(coords)}(dim_, coords)
-end
-
-function Coord(coord_type::String, N::Int, name::String, min::T, max::T, nodes::Int) where {T<:Real}
-    if coord_type == "Cartesian"
-        return CartesianCoord{T,N}(name, min, max, nodes)
-    elseif coord_type == "GaussLobatto"
-        return GaussLobattoCoord{T,N}(name, min, max, nodes)
-    else
-        error("Unknown coord type")
-    end
+    func, chart
 end
