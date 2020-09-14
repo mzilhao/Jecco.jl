@@ -17,7 +17,8 @@ grid = SpecCartGrid3D(
     u_outer_domains  =  5,
     u_outer_nodes    =  32,
     # u_outer_nodes    =  48,
-    u_inner_nodes    =  12,
+    # u_inner_nodes    =  12,
+    u_inner_nodes    =  24,
 )
 
 id = BlackBranePert(
@@ -27,7 +28,7 @@ id = BlackBranePert(
     B1_nx  = 1,
     B1_ny  = 1,
     a4_amp = 0.00001,
-    # a4_amp = 0.01,
+    # a4_amp = 0.0,
     a4_k   = 1,
     xmax   = grid.x_max,
     xmin   = grid.x_min,
@@ -43,7 +44,8 @@ evoleq = AffineNull(
     gaugecondition = ConstantAH(u_AH = id.AH_pos),
 )
 
-ahf = AHF(itmax=8)
+ahf = AHF(itmax=10)
+# ahf = AHF(itmax=0)
 # ahf = AHF()
 
 # atlas of grid configuration and respective SystemPartition
@@ -70,11 +72,12 @@ init_data!(bulkconstrains, bulkevols, boundary, gauge, systems, evoleq, id)
 # guess
 # uAH = id.AH_pos
 uAH = 0.9
+# uAH = 1.0
 # uAH = 1.9
 # uAH = 2.0
 
 sigma = similar(gauge.xi)
-fill!(sigma, 1/uAH)
+fill!(sigma, uAH)
 
 res = 0 * sigma
 
@@ -93,13 +96,13 @@ sigma_x  = Dx * sigma
 sigma_xx = Dxx * sigma
 S        = horizoncache.bulkhorizon.S_uAH
 Sd       = horizoncache.bulkhorizon.Sd_uAH
-Sp       = -1 ./ sigma.^2 .* horizoncache.bulkhorizon.Du_S_uAH
-Sdp      = -1 ./ sigma.^2 .* horizoncache.bulkhorizon.Du_Sd_uAH
-Spp      =  2 ./ sigma.^3 .* horizoncache.bulkhorizon.Du_S_uAH +
-    1 ./ sigma.^4 .* horizoncache.bulkhorizon.Duu_S_uAH
+Sp       = -sigma.^2 .* horizoncache.bulkhorizon.Du_S_uAH
+Sdp      = -sigma.^2 .* horizoncache.bulkhorizon.Du_Sd_uAH
+Spp      =  2 .* sigma.^3 .* horizoncache.bulkhorizon.Du_S_uAH +
+    sigma.^4 .* horizoncache.bulkhorizon.Duu_S_uAH
 
 # should be zero, but let's check
-S_x     = Dx * horizoncache.bulkhorizon.S_uAH - Sp .* sigma_x
+S_x     = Dx * horizoncache.bulkhorizon.S_uAH - horizoncache.bulkhorizon.Du_S_uAH .* sigma_x
 
 tmp = Sp .* sigma_x .- S_x
 bxx = tmp[1,:,:]
