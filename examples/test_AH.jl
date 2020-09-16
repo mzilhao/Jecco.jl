@@ -27,7 +27,7 @@ id = BlackBranePert(
     # B1_amp = 0.0001,
     B1_nx  = 1,
     B1_ny  = 1,
-    a4_amp = 0.00001,
+    a4_amp = 0.000001,
     # a4_amp = 0.0,
     a4_k   = 1,
     xmax   = grid.x_max,
@@ -103,19 +103,33 @@ Spp      =  2 .* sigma.^3 .* horizoncache.bulkhorizon.Du_S_uAH +
 
 # should be zero, but let's check
 S_x     = Dx * horizoncache.bulkhorizon.S_uAH - horizoncache.bulkhorizon.Du_S_uAH .* sigma_x
+Sp_x    = -sigma.^2 .*(Dx * horizoncache.bulkhorizon.Du_S_uAH .-sigma_x.*horizoncache.bulkhorizon.Duu_S_uAH)
+Sd_x    = Dx * horizoncache.bulkhorizon.Sd_uAH - horizoncache.bulkhorizon.Du_Sd_uAH .* sigma_x
 
-tmp = Sp .* sigma_x .- S_x
+tmp = S_x./sigma.^2 .+ (Sp.-4 .*S.*sigma).*sigma_x./sigma.^4
 bxx = tmp[1,:,:]
 
-axx = -S[1,:,:]
+tmp = S ./ sigma.^2
+axx = tmp[1,:,:]
 
-tmp = 6 * S .* Sd .* Sp .+ 3 * S.^2 .* Sdp + 0.5 * Spp .* sigma_x.^2 .- Sp .* sigma_xx
+tmp = -(12 .*Sd.*Sp.*S.*sigma.^4 .+6 .*Sdp.*S.^2 .*sigma.^4 .+2 .*Sp_x.*sigma.^2 .*sigma_x.+4 .*S_x.*sigma.^3 .*sigma_x.+Spp.*sigma_x.^2 .-12 .*S.*sigma.^2 .*sigma_x.^2 .+2 .*Sp.*sigma.^2 .*sigma_xx.+4 .*S.*sigma.^3 .*sigma_xx)./(2 .*sigma.^6)
 cc  = tmp[1,:,:]
+
+tmp = 3 .*Sd.*S.^2 .+ (2 .*S_x.*sigma.^2 .*sigma_x .+Sp.*sigma_x.^2 .+2 .*S.*sigma.*(-2 .*sigma_x.^2 .+sigma.*sigma_xx))./(2 .*sigma.^4)
+res = tmp[1,:,:]
 
 axx_ = reshape(horizoncache.axx, (grid.x_nodes,grid.y_nodes))
 bxx_ = reshape(horizoncache.bx,  (grid.x_nodes,grid.y_nodes))
 cc_  = reshape(horizoncache.cc,  (grid.x_nodes,grid.y_nodes))
+res_ = reshape(horizoncache.b_vec,  (grid.x_nodes,grid.y_nodes))
 
 diffa = abs.(axx-axx_)
 diffb = abs.(bxx-bxx_)
 diffc = abs.(cc - cc_)
+diffres = abs.(res - res_)
+
+println("max diffa   = ", maximum(diffa))
+println("max diffb   = ", maximum(diffb))
+println("max diffc   = ", maximum(diffc))
+println("max diffres = ", maximum(diffres))
+
