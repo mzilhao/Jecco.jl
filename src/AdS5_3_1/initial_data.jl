@@ -20,9 +20,12 @@ Base.@kwdef struct BlackBranePert{T,TP<:Potential} <: InitialData
     G_amp         :: T   = 0.0
     G_nx          :: Int = 1
     G_ny          :: Int = 2
-    phi_amp       :: T   = 0.0
-    a4_amp        :: T   = 0.0
-    a4_k          :: Int = 1
+    # phi_amp       :: T   = 0.0
+    phi2          :: T   = 0.0
+    a4_ampx       :: T   = 0.0
+    a4_ampy       :: T   = 0.0
+    a4_kx         :: Int = 1
+    a4_ky         :: Int = 1
     xmax          :: T
     xmin          :: T
     ymax          :: T
@@ -223,7 +226,8 @@ end
 analytic_B1(u, x, y, id::BlackBrane)  = 0
 analytic_B2(u, x, y, id::BlackBrane)  = 0
 analytic_G(u, x, y, id::BlackBrane)   = 0
-analytic_phi(u, x, y, id::BlackBrane) = 0
+
+analytic_phi(u, x, y, id::BlackBrane) = id.phi2 / id.phi0^3
 
 function init_data!(ff::Boundary, sys::System, id::BlackBrane)
     a40 = -id.energy_dens/0.75
@@ -304,14 +308,17 @@ end
 function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBranePert)
     a40  = -id.energy_dens/0.75
     # a4 perturbation amplitude
-    amp  = id.a4_amp
+    ampx  = id.a4_ampx
+    ampy  = id.a4_ampy
     # number of maxima
-    kx   = id.a4_k
+    kx   = id.a4_kx
+    ky   = id.a4_ky
     xmax = id.xmax
     xmin = id.xmin
     xmid = (xmax + xmin) / 2
-    # ymax = id.ymax
-    # ymin = id.ymin
+    ymax = id.ymax
+    ymin = id.ymin
+    ymid = (ymax + ymin) / 2
 
     _, Nx, Ny = size(sys)
     xx = sys.xcoord
@@ -328,7 +335,9 @@ function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBranePert)
     for j in 1:Ny
         for i in 1:Nx
             x = xx[i]
-            a4[1,i,j]  += -a40 * amp * cos(2 * π * kx * (x-xmid)/(xmax-xmin) )
+            y = yy[j]
+            a4[1,i,j]  += -a40 * ( ampx * cos(2 * π * kx * (x-xmid)/(xmax-xmin)) +
+                                   ampy * cos(2 * π * ky * (y-ymid)/(ymax-ymin)) )
         end
     end
 
