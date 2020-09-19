@@ -20,7 +20,6 @@ Base.@kwdef struct BlackBranePert{T,TP<:Potential} <: InitialData
     G_amp         :: T   = 0.0
     G_nx          :: Int = 1
     G_ny          :: Int = 2
-    # phi_amp       :: T   = 0.0
     phi2          :: T   = 0.0
     a4_ampx       :: T   = 0.0
     a4_ampy       :: T   = 0.0
@@ -226,8 +225,7 @@ end
 analytic_B1(u, x, y, id::BlackBrane)  = 0
 analytic_B2(u, x, y, id::BlackBrane)  = 0
 analytic_G(u, x, y, id::BlackBrane)   = 0
-
-analytic_phi(u, x, y, id::BlackBrane) = id.phi2 / id.phi0^3
+analytic_phi(u, x, y, id::BlackBrane) = 0
 
 function init_data!(ff::Boundary, sys::System, id::BlackBrane)
     a40 = -id.energy_dens/0.75
@@ -258,7 +256,7 @@ end
 
 # BlackBranePert initial data
 
-analytic_phi(u, x, y, id::BlackBranePert) = 0
+analytic_phi(u, x, y, id::BlackBranePert) = id.phi2 / id.phi0^3
 
 function analytic_B1(u, x, y, id::BlackBranePert)
     # add the perturbation on B1
@@ -306,7 +304,11 @@ function analytic_G(u, x, y, id::BlackBranePert)
 end
 
 function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBranePert)
-    a40  = -id.energy_dens/0.75
+    epsilon = id.energy_dens
+    phi0    = id.phi0
+    phi2    = id.phi2
+    oophiM2 = id.potential.oophiM2
+
     # a4 perturbation amplitude
     ampx  = id.a4_ampx
     ampy  = id.a4_ampy
@@ -323,6 +325,9 @@ function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBranePert)
     _, Nx, Ny = size(sys)
     xx = sys.xcoord
     yy = sys.ycoord
+
+    phi04 = phi0 * phi0 * phi0 * phi0
+    a40   = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
 
     a4  = geta4(ff)
     fx2 = getfx2(ff)
@@ -347,6 +352,9 @@ end
 function init_data!(ff::Gauge, sys::System, id::BlackBranePert)
     a40     = -id.energy_dens/0.75
     AH_pos  = id.AH_pos
+
+    # FIXME: this is only valid for the conformal case! this routine needs to be
+    # fixed once we can search for the AH
     xi0     = (-a40)^0.25 - 1/AH_pos
 
     xi  = getxi(ff)
@@ -389,7 +397,6 @@ function init_data!(ff::Boundary, sys::System, id::PhiGaussian_u)
     oophiM2 = id.potential.oophiM2
     phi04   = phi0 * phi0 * phi0 * phi0
 
-    # TODO: does this change with nonzero phiQ ?
     a40 = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
 
     fill!(a4, a40)
@@ -407,7 +414,6 @@ function init_data!(ff::Gauge, sys::System, id::PhiGaussian_u)
     oophiM2 = id.potential.oophiM2
     phi04   = phi0 * phi0 * phi0 * phi0
 
-    # TODO: does this change with nonzero phiQ ?
     a40 = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
 
     # FIXME: this is only valid for the conformal case! this routine needs to be
