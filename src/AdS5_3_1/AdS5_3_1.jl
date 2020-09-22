@@ -38,6 +38,9 @@ include("IO.jl")
 # run the model
 include("run.jl")
 
+# random utilities
+include("utils.jl")
+
 # always set the number of BLAS threads to 1 upon loading the module. by default
 # it uses a bunch of them and we don't want that since they trample over each
 # other when solving the nested systems equations. it's much better to thread
@@ -63,5 +66,6 @@ export System, SystemPartition
 export BulkEvolvedPartition, BulkConstrainedPartition, BulkDerivPartition
 export Nested
 export Integration, InOut, run_model
+export get_energy
 
 end
