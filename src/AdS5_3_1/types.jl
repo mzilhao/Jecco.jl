@@ -43,6 +43,7 @@ Base.@kwdef struct Integration{S}
     dt              :: Float64
     tmax            :: Float64
     ODE_method      :: S    = AB3()
+    adaptive        :: Bool = false
     filter_poststep :: Bool = true
 end
 

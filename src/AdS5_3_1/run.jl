@@ -62,7 +62,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
     prob  = ODEProblem(rhs!, evolvars, tspan, evoleq)
     # https://diffeq.sciml.ai/stable/basics/integrator/
-    integrator = init(prob, alg, save_everystep=false, dt=dt0, adaptive=false)
+    integrator = init(prob, alg, save_everystep=false, dt=dt0, adaptive=integration.adaptive)
 
     tinfo  = Jecco.TimeInfo(it0, t0, 0.0, 0.0)
 
