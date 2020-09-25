@@ -1,16 +1,15 @@
 
-Base.@kwdef struct BlackBrane{T,TP<:Potential} <: InitialData
+Base.@kwdef struct BlackBrane{T} <: InitialData
     energy_dens   :: T   = 1.0
     AH_pos        :: T   = 1.0
     phi0          :: T   = 0.0
-    potential     :: TP  = ZeroPotential()
 end
 
-Base.@kwdef struct BlackBranePert{T,TP<:Potential} <: InitialData
+Base.@kwdef struct BlackBranePert{T} <: InitialData
     energy_dens   :: T   = 1.0
     AH_pos        :: T   = 1.0
     phi0          :: T   = 0.0
-    potential     :: TP  = ZeroPotential()
+    oophiM2       :: T   = 0.0
     B1_amp        :: T   = 0.0
     B1_nx         :: Int = 1
     B1_ny         :: Int = 2
@@ -31,15 +30,15 @@ Base.@kwdef struct BlackBranePert{T,TP<:Potential} <: InitialData
     ymin          :: T
 end
 
-Base.@kwdef struct PhiGaussian_u{T,TP<:Potential} <: InitialData
+Base.@kwdef struct PhiGaussian_u{T} <: InitialData
     energy_dens   :: T   = 1.0
     AH_pos        :: T   = 1.0
     phi0          :: T   = 0.0
     phi2          :: T   = 0.0
+    oophiM2       :: T   = 0.0
     amp           :: T   = 0.0
     u0            :: T   = 0.0
     sigma         :: T   = 0.1
-    potential     :: TP
 end
 
 
@@ -307,7 +306,7 @@ function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBranePert)
     epsilon = id.energy_dens
     phi0    = id.phi0
     phi2    = id.phi2
-    oophiM2 = id.potential.oophiM2
+    oophiM2 = id.oophiM2
 
     # a4 perturbation amplitude
     ampx  = id.a4_ampx
@@ -394,7 +393,7 @@ function init_data!(ff::Boundary, sys::System, id::PhiGaussian_u)
     epsilon = id.energy_dens
     phi0    = id.phi0
     phi2    = id.phi2
-    oophiM2 = id.potential.oophiM2
+    oophiM2 = id.oophiM2
     phi04   = phi0 * phi0 * phi0 * phi0
 
     a40 = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
@@ -411,7 +410,7 @@ function init_data!(ff::Gauge, sys::System, id::PhiGaussian_u)
     phi0    = id.phi0
     phi2    = id.phi2
     AH_pos  = id.AH_pos
-    oophiM2 = id.potential.oophiM2
+    oophiM2 = id.oophiM2
     phi04   = phi0 * phi0 * phi0 * phi0
 
     a40 = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75

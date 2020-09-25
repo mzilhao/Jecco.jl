@@ -30,8 +30,7 @@ id = PhiGaussian_u(
     amp           = 0.005,
     u0            = 0.5,
     sigma         = 0.15,
-
-    potential     = potential,
+    oophiM2       = potential.oophiM2,
 )
 
 evoleq = AffineNull(
