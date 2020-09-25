@@ -41,6 +41,9 @@ include("run.jl")
 # expressions for the Vacuum Expectation Values
 include("VEVs.jl")
 
+# random utilities
+include("utils.jl")
+
 # always set the number of BLAS threads to 1 upon loading the module. by default
 # it uses a bunch of them and we don't want that since they trample over each
 # other when solving the nested systems equations. it's much better to thread
@@ -67,5 +70,6 @@ export BulkEvolvedPartition, BulkConstrainedPartition, BulkDerivPartition
 export Nested
 export Integration, InOut, run_model
 export get_energy, get_Jx, get_Jy, get_px, get_py, get_pz, get_pxy, get_Ophi
+export convert_to_mathematica
 
 end
