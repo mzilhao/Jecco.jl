@@ -4,6 +4,8 @@ struct ZeroPotential <: Potential end
 UU(phi,  ::ZeroPotential) = 0
 UUp(phi, ::ZeroPotential) = 0
 
+parameters(potential::ZeroPotential) = ()
+
 """
 * `oophiM2` : 1/ϕM^2
 * `oophiQ`  : 1/ϕQ
@@ -12,6 +14,8 @@ Base.@kwdef struct Phi8Potential{T} <: Potential
     oophiM2 :: T = 0.0
     oophiQ  :: T = 0.0
 end
+
+parameters(potential::Phi8Potential) = (oophiM2=potential.oophiM2, oophiQ=potential.oophiQ)
 
 @doc raw"""
 ```math

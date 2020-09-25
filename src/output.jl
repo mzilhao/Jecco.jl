@@ -76,7 +76,7 @@ end
 
 # make Output a callable struct
 
-function (out::Output)(fields::Union{Vector, Tuple})
+function (out::Output)(fields::Union{Vector, Tuple}; params::Union{NamedTuple, Dict}=())
     it = out.tinfo.it
 
     filename = "$(out.prefix)$(lpad(string(it), 8, string(0))).h5"
@@ -100,6 +100,15 @@ function (out::Output)(fields::Union{Vector, Tuple})
     end
     grp = create_group(out, fid)
 
+    # write given parameters as attributes
+    if firsttime
+        for key in keys(params)
+            name = String(key)
+            val  = params[key]
+            attrs(grp)[name] = val
+        end
+    end
+
     for field in fields
         write_hdf5(out, grp, field)
     end
@@ -110,7 +119,8 @@ function (out::Output)(fields::Union{Vector, Tuple})
     nothing
 end
 
-(out::Output)(fields::Vararg{Field,N}) where {N} = (out::Output)((fields...,))
+(out::Output)(fields::Vararg{Field,N}; params::Union{NamedTuple, Dict}=()) where {N} =
+    (out::Output)((fields...,); params=params)
 
 
 
