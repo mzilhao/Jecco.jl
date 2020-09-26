@@ -76,7 +76,7 @@ end
 
 # make Output a callable struct
 
-function (out::Output)(fields::Union{Vector, Tuple}; params::Union{NamedTuple, Dict}=())
+function (out::Output)(fields::Union{Vector, Tuple}; params::Union{Tuple, NamedTuple, Dict}=())
     it = out.tinfo.it
 
     filename = "$(out.prefix)$(lpad(string(it), 8, string(0))).h5"
@@ -119,9 +119,8 @@ function (out::Output)(fields::Union{Vector, Tuple}; params::Union{NamedTuple, D
     nothing
 end
 
-(out::Output)(fields::Vararg{Field,N}; params::Union{NamedTuple, Dict}=()) where {N} =
-    (out::Output)((fields...,); params=params)
-
+(out::Output)(fields::Vararg{Field,N}; params=()) where {N} =
+    (out::Output)((fields...,), params=params)
 
 
 write_hdf5(out::Output, grp::HDF5Group, field::Field) =
