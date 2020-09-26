@@ -59,7 +59,20 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
 
         it = tinfo.it
 
+        do_output_boundary = false
+        do_output_gauge    = false
+        do_output_bulk     = false
         if it % io.out_boundary_every == 0
+            do_output_boundary = true
+        end
+        if it % io.out_gauge_every == 0
+            do_output_gauge = true
+        end
+        if it % io.out_bulk_every == 0
+            do_output_bulk = true
+        end
+
+        if do_output_boundary
             boundary_fields[1].data = boundary.a4
             boundary_fields[2].data = boundary.fx2
             boundary_fields[3].data = boundary.fy2
@@ -77,13 +90,13 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
             out_bdry(boundary_fields, params=params)
         end
 
-        if it % io.out_gauge_every == 0
+        if do_output_gauge
             gauge_fields.data = gauge.xi
             # write data
             out_gauge(gauge_fields, params=params)
         end
 
-        if it % io.out_bulk_every == 0
+        if do_output_bulk
             @inbounds for i in 1:Nsys
                 bulkevols_fields[i][1].data = bulkevols[i].B1
                 bulkevols_fields[i][2].data = bulkevols[i].B2
