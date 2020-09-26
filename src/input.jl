@@ -122,7 +122,7 @@ function get_field(ts::OpenPMDTimeSeries; it::Int, field::String, verbose::Bool=
     fid = h5open(filename, "r")
 
     # read in openPMD structure
-    grp, ts.current_t = read_openpmd_file(fid, ts.current_iteration, field)
+    grp, ts.current_t = read_openpmd_file(fid, ts.current_iteration)
 
     # read actual data
     data, chart = read_dataset(grp, field)
@@ -133,7 +133,7 @@ function get_field(ts::OpenPMDTimeSeries; it::Int, field::String, verbose::Bool=
     data, chart
 end
 
-function read_openpmd_file(fid::HDF5File, it::Integer, var::String)
+function read_openpmd_file(fid::HDF5File, it::Integer)
     basePath   = read(attrs(fid)["basePath"])
     basePath   = replace(basePath, "%T" => it)
     meshesPath = read(attrs(fid)["meshesPath"])
