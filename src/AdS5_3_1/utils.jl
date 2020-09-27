@@ -1,8 +1,6 @@
 using HDF5
 
-# TODO: make phi0 and oophiM2 part of the hdf5 attributes?
-function convert_to_mathematica(dirname::String; outfile::String="data_mathematica.h5",
-                                phi0, oophiM2)
+function convert_to_mathematica(dirname::String; outfile::String="data_mathematica.h5")
     ts = OpenPMDTimeSeries(dirname, prefix="boundary_")
 
     iterations = ts.iterations
@@ -11,7 +9,7 @@ function convert_to_mathematica(dirname::String; outfile::String="data_mathemati
     t  = zeros(Nt)
 
     it = 0
-    en0, chart = get_energy(ts, it=it, phi0=phi0, oophiM2=oophiM2)
+    en0, chart = get_energy(ts, it=it)
 
     _, x, y = chart[:]
     Nx = length(x)
@@ -27,14 +25,14 @@ function convert_to_mathematica(dirname::String; outfile::String="data_mathemati
     Ophi = zeros(Nt,Nx,Ny)
 
     for (idx,it) in enumerate(iterations)
-        en[idx,:,:]   .= get_energy(ts, it=it, phi0=phi0, oophiM2=oophiM2)[1][1,:,:]
-        Jx[idx,:,:]   .= get_Jx(ts, it=it, phi0=phi0, oophiM2=oophiM2)[1][1,:,:]
-        Jy[idx,:,:]   .= get_Jy(ts, it=it, phi0=phi0, oophiM2=oophiM2)[1][1,:,:]
-        px[idx,:,:]   .= get_px(ts, it=it, phi0=phi0, oophiM2=oophiM2)[1][1,:,:]
-        py[idx,:,:]   .= get_py(ts, it=it, phi0=phi0, oophiM2=oophiM2)[1][1,:,:]
-        pz[idx,:,:]   .= get_pz(ts, it=it, phi0=phi0, oophiM2=oophiM2)[1][1,:,:]
-        pxy[idx,:,:]  .= get_pxy(ts, it=it, phi0=phi0, oophiM2=oophiM2)[1][1,:,:]
-        Ophi[idx,:,:] .= get_Ophi(ts, it=it, phi0=phi0, oophiM2=oophiM2)[1][1,:,:]
+        en[idx,:,:]   .= get_energy(ts, it=it)[1][1,:,:]
+        Jx[idx,:,:]   .= get_Jx(ts, it=it)[1][1,:,:]
+        Jy[idx,:,:]   .= get_Jy(ts, it=it)[1][1,:,:]
+        px[idx,:,:]   .= get_px(ts, it=it)[1][1,:,:]
+        py[idx,:,:]   .= get_py(ts, it=it)[1][1,:,:]
+        pz[idx,:,:]   .= get_pz(ts, it=it)[1][1,:,:]
+        pxy[idx,:,:]  .= get_pxy(ts, it=it)[1][1,:,:]
+        Ophi[idx,:,:] .= get_Ophi(ts, it=it)[1][1,:,:]
 
         t[idx] = ts.current_t
     end

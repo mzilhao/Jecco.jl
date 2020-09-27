@@ -94,73 +94,203 @@ function compute_Ophi(phi2, phi0, oophiM2)
 end
 
 
-function get_energy(ts::OpenPMDTimeSeries; it::Int, phi0, oophiM2, verbose::Bool=false)
+function get_energy(ts::OpenPMDTimeSeries; it::Int, verbose::Bool=false)
     a4,   chart = get_field(ts, it=it, field="a4", verbose=verbose)
     phi2, chart = get_field(ts, it=it, field="phi2", verbose=verbose)
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
+    end
+
+    oophiM2 = try
+        ts.params["oophiM2"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "oophiM2" is not found in the params Dict, set oophiM2 = 0
+        else
+            throw(e)
+        end
+    end
 
     en = compute_energy(a4, phi2, phi0, oophiM2)
 
     en, chart
 end
 
-function get_Jx(ts::OpenPMDTimeSeries; it::Int, phi0, oophiM2, verbose::Bool=false)
+function get_Jx(ts::OpenPMDTimeSeries; it::Int, verbose::Bool=false)
     fx2, chart = get_field(ts, it=it, field="fx2", verbose=verbose)
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
+    end
 
     Jx = compute_flux(fx2, phi0)
 
     Jx, chart
 end
 
-function get_Jy(ts::OpenPMDTimeSeries; it::Int, phi0, oophiM2, verbose::Bool=false)
+function get_Jy(ts::OpenPMDTimeSeries; it::Int, verbose::Bool=false)
     fy2, chart = get_field(ts, it=it, field="fy2", verbose=verbose)
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
+    end
 
     Jy = compute_flux(fy2, phi0)
 
     Jy, chart
 end
 
-function get_px(ts::OpenPMDTimeSeries; it::Int, phi0, oophiM2, verbose::Bool=false)
+function get_px(ts::OpenPMDTimeSeries; it::Int, verbose::Bool=false)
     a4,   chart = get_field(ts, it=it, field="a4", verbose=verbose)
     b14,  chart = get_field(ts, it=it, field="b14", verbose=verbose)
     b24,  chart = get_field(ts, it=it, field="b24", verbose=verbose)
     phi2, chart = get_field(ts, it=it, field="phi2", verbose=verbose)
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
+    end
+
+    oophiM2 = try
+        ts.params["oophiM2"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "oophiM2" is not found in the params Dict, set oophiM2 = 0
+        else
+            throw(e)
+        end
+    end
 
     px = compute_pressure_x(a4, b14, b24, phi2, phi0, oophiM2)
 
     px, chart
 end
 
-function get_py(ts::OpenPMDTimeSeries; it::Int, phi0, oophiM2, verbose::Bool=false)
+function get_py(ts::OpenPMDTimeSeries; it::Int, verbose::Bool=false)
     a4,   chart = get_field(ts, it=it, field="a4", verbose=verbose)
     b14,  chart = get_field(ts, it=it, field="b14", verbose=verbose)
     b24,  chart = get_field(ts, it=it, field="b24", verbose=verbose)
     phi2, chart = get_field(ts, it=it, field="phi2", verbose=verbose)
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
+    end
+
+    oophiM2 = try
+        ts.params["oophiM2"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "oophiM2" is not found in the params Dict, set oophiM2 = 0
+        else
+            throw(e)
+        end
+    end
 
     py = compute_pressure_y(a4, b14, b24, phi2, phi0, oophiM2)
 
     py, chart
 end
 
-function get_pz(ts::OpenPMDTimeSeries; it::Int, phi0, oophiM2, verbose::Bool=false)
+function get_pz(ts::OpenPMDTimeSeries; it::Int, verbose::Bool=false)
     a4,   chart = get_field(ts, it=it, field="a4", verbose=verbose)
     b24,  chart = get_field(ts, it=it, field="b24", verbose=verbose)
     phi2, chart = get_field(ts, it=it, field="phi2", verbose=verbose)
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
+    end
+
+    oophiM2 = try
+        ts.params["oophiM2"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "oophiM2" is not found in the params Dict, set oophiM2 = 0
+        else
+            throw(e)
+        end
+    end
 
     pz = compute_pressure_z(a4, b24, phi2, phi0, oophiM2)
 
     pz, chart
 end
 
-function get_pxy(ts::OpenPMDTimeSeries; it::Int, phi0, oophiM2, verbose::Bool=false)
+function get_pxy(ts::OpenPMDTimeSeries; it::Int, verbose::Bool=false)
     g4,   chart = get_field(ts, it=it, field="g4", verbose=verbose)
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
+    end
 
     pxy = compute_pressure_xy(g4, phi0)
 
     pxy, chart
 end
 
-function get_Ophi(ts::OpenPMDTimeSeries; it::Int, phi0, oophiM2, verbose::Bool=false)
+function get_Ophi(ts::OpenPMDTimeSeries; it::Int, verbose::Bool=false)
     phi2,  chart = get_field(ts, it=it, field="phi2", verbose=verbose)
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
+    end
+
+    oophiM2 = try
+        ts.params["oophiM2"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "oophiM2" is not found in the params Dict, set oophiM2 = 0
+        else
+            throw(e)
+        end
+    end
 
     Ophi = compute_Ophi(phi2, phi0, oophiM2)
 
