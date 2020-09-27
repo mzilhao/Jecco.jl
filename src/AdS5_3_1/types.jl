@@ -51,12 +51,17 @@ end
 Parameters for Input/Output
 """
 Base.@kwdef struct InOut
-    out_boundary_every :: Int
-    out_bulk_every     :: Int
-    out_gauge_every    :: Int
-
     # negative values suppress output
-    out_bulkconstrained_every       :: Int     = -1
+    out_boundary_every          :: Int  = -1
+    out_bulk_every              :: Int  = -1
+    out_gauge_every             :: Int  = -1
+    out_bulkconstrained_every   :: Int  = -1
+
+    out_boundary_every_t        :: Float64  = -1.0
+    out_bulk_every_t            :: Float64  = -1.0
+    out_gauge_every_t           :: Float64  = -1.0
+    out_bulkconstrained_every_t :: Float64  = -1.0
+
     checkpoint_every_walltime_hours :: Float64 = -1.0
 
     # stop and checkpoint upon reaching this walltime

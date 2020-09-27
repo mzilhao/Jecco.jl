@@ -74,7 +74,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     output_evol = output_writer(evolvars, chart2D, atlas.charts, tinfo, io,
                                 evoleq.potential, evoleq.phi0)
 
-    if io.out_bulkconstrained_every > 0
+    if io.out_bulkconstrained_every > 0 || io.out_bulkconstrained_every_t > 0
         output_constrained = output_writer(bulkconstrains, atlas.charts, tinfo, io,
                                            evoleq.potential, evoleq.phi0)
     else

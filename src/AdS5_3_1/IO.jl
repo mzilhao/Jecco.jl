@@ -52,24 +52,46 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
         Jecco.Field("phi c=$i", bulkevols[i].phi, charts[i])
     ), Nsys)
 
+    last_output_boundary_t = -io.out_boundary_every_t
+    last_output_gauge_t    = -io.out_gauge_every_t
+    last_output_bulk_t     = -io.out_bulk_every_t
+
     function (u::EvolVars)
         boundary  = getboundary(u)
         gauge     = getgauge(u)
         bulkevols = getbulkevolvedpartition(u)
 
         it = tinfo.it
+        tt = tinfo.t
 
         do_output_boundary = false
         do_output_gauge    = false
         do_output_bulk     = false
-        if it % io.out_boundary_every == 0
+
+        if (io.out_boundary_every > 0 && it % io.out_boundary_every == 0)
             do_output_boundary = true
         end
-        if it % io.out_gauge_every == 0
+        if (io.out_gauge_every > 0 && it % io.out_gauge_every == 0)
             do_output_gauge = true
         end
-        if it % io.out_bulk_every == 0
+        if (io.out_bulk_every > 0 && it % io.out_bulk_every == 0)
             do_output_bulk = true
+        end
+
+        if (io.out_boundary_every_t > 0 &&
+            tt >= last_output_boundary_t + io.out_boundary_every_t - 1e-12)
+            do_output_boundary     = true
+            last_output_boundary_t = tt
+        end
+        if (io.out_gauge_every_t > 0 &&
+            tt >= last_output_gauge_t + io.out_gauge_every_t - 1e-12)
+            do_output_gauge     = true
+            last_output_gauge_t = tt
+        end
+        if (io.out_bulk_every_t > 0 &&
+            tt >= last_output_bulk_t + io.out_bulk_every_t - 1e-12)
+            do_output_bulk     = true
+            last_output_bulk_t = tt
         end
 
         if do_output_boundary
@@ -138,10 +160,25 @@ function output_writer(bulkconstrains::BulkPartition{Nsys,BulkConstrained{T}}, c
         Jecco.Field("A c=$i",    bulkconstrains[i].A,    charts[i])
     ), Nsys)
 
+    last_output_t = -io.out_bulkconstrained_every_t
+
     function (bulkconstrains)
         it = tinfo.it
+        tt = tinfo.t
 
-        if it % io.out_bulkconstrained_every == 0
+        do_output = false
+
+        if (io.out_bulkconstrained_every > 0 && it % io.out_bulkconstrained_every == 0)
+            do_output = true
+        end
+
+        if (io.out_bulkconstrained_every_t > 0 &&
+            tt >= last_output_t + io.out_bulkconstrained_every_t - 1e-12)
+            do_output = true
+            last_output_t = tt
+        end
+
+        if do_output
             @inbounds for i in 1:Nsys
                 fields[i][1].data = bulkconstrains[i].S
                 fields[i][2].data = bulkconstrains[i].Fx
