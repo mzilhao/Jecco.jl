@@ -3,12 +3,13 @@ using HDF5
 
 # slightly adapted from openPMD-viewer
 
-mutable struct OpenPMDTimeSeries
+mutable struct OpenPMDTimeSeries{S}
     iterations        :: Array{Int64}
     files             :: Array{String}
     current_i         :: Int64
     current_iteration :: Int64
     current_t         :: Float64
+    params            :: S
 end
 
 function OpenPMDTimeSeries(foldername::String, prefix::String)
@@ -26,7 +27,15 @@ function OpenPMDTimeSeries(foldername::String, prefix::String)
         throw(ErrorException("No files found."))
     end
 
-    OpenPMDTimeSeries(iterations, files, 0, 0, 0.0)
+    # open first file to extract parameters
+    fid    = h5open(files[1], "r")
+    it     = iterations[1]
+    grp, t = read_openpmd_file(fid, it)
+
+    # read group attributes
+    params = read_group_attributes(grp)
+
+    OpenPMDTimeSeries{typeof(params)}(iterations, files, 1, it, t, params)
 end
 
 
@@ -148,6 +157,13 @@ function read_openpmd_file(fid::HDF5File, it::Integer)
     grp_mesh = grp_base[meshesPath]
 
     grp_mesh, time
+end
+
+function read_group_attributes(grp::HDF5Group)
+    grp_attrs = attrs(grp)
+    keys      = names(grp_attrs)
+    vals      = read.(Ref(grp_attrs), keys)
+    Dict(keys[i] => vals[i] for i in 1:length(keys))
 end
 
 function read_dataset(grp::HDF5Group, var::String)
