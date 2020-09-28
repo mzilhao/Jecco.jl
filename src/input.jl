@@ -72,6 +72,40 @@ from the corresponding hdf5 file when requested.
 # Example
 ```
 julia> xi_ts = FieldTimeSeries("./", prefix="gauge_", field="xi")
+
+julia> t, u, x, y, f = xi_ts[1:10,1,2:5,3];
+
+julia> t
+10-element Array{Float64,1}:
+ 0.0
+ 0.10214880285375176
+ 0.20335591061120073
+ 0.3067371226943541
+ 0.407619993961341
+ 0.5076663147186694
+ 0.6080986733498868
+ 0.7082129863765882
+ 0.8090105798274131
+ 0.9107637615180763
+
+julia> x
+-4.6875:0.3125:-3.75
+
+julia> y
+-4.375
+
+julia> f
+10-element Array{Array{Float64,1},1}:
+ [0.04663513939210562, 0.04663513939210562, 0.04663513939210562, 0.04663513939210562]
+ [0.0738047660292443, 0.07381483291947188, 0.07383118274934003, 0.073853185991241]
+ [0.09493418509656279, 0.09495111927450112, 0.09497610372818434, 0.09501143436391894]
+ [0.1129696195552898, 0.1129910033512794, 0.11302336138086429, 0.1130678587197485]
+ [0.12832018821922334, 0.1283437436742015, 0.1283811912746364, 0.12843141603257954]
+ [0.14201877997728887, 0.14204321355278415, 0.14208326648658892, 0.14213708753435986]
+ [0.15464965506927433, 0.15467448880172735, 0.15471506673150748, 0.15476934680246948]
+ [0.1663709825463522, 0.16639547376814823, 0.16643526827472344, 0.16648834879115376]
+ [0.17743722035633847, 0.17746047084534322, 0.17749864275547295, 0.17754974978203747]
+ [0.1879280912932202, 0.1879499553609615, 0.18798540019108692, 0.18803265851898557]
 ```
 """
 function FieldTimeSeries(foldername::String; prefix::String, field::String)
@@ -85,7 +119,25 @@ function Base.getindex(ff::FieldTimeSeries, a::Int, idx::Vararg)
     it = ff.ts.iterations[a]
     f, chart = get_field(ff.ts, it=it, field=ff.field)
     t = ff.ts.current_t
-    t, chart[idx], f[idx]
+    t, chart[idx...]..., f[idx...]
+end
+
+function Base.getindex(ff::FieldTimeSeries, aa::UnitRange, idx::Vararg)
+    it = ff.ts.iterations[aa[1]]
+    f0, chart = get_field(ff.ts, it=it, field=ff.field)
+    t0 = ff.ts.current_t
+
+    Na = length(aa)
+    t  = Vector{typeof(t0)}(undef, Na)
+    f  = Vector{typeof(f0[idx...])}(undef, Na)
+    for a in aa
+        it = ff.ts.iterations[a]
+        f0, chart0 = get_field(ff.ts, it=it, field=ff.field)
+        t0 = ff.ts.current_t
+        t[a] = t0
+        f[a] = f0[idx...]
+    end
+    t, chart[idx...]..., f
 end
 
 
