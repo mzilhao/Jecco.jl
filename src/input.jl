@@ -1,8 +1,13 @@
-
 using HDF5
 
-# slightly adapted from openPMD-viewer
+abstract type AbstractTimeSeries{N,T} end
 
+struct FieldTimeSeries{N,T} <: AbstractTimeSeries{N,T}
+    ts     :: T
+    field  :: String
+end
+
+# slightly adapted from openPMD-viewer
 mutable struct OpenPMDTimeSeries{S}
     iterations        :: Array{Int64}
     files             :: Array{String}
@@ -38,7 +43,6 @@ function OpenPMDTimeSeries(foldername::String, prefix::String)
     OpenPMDTimeSeries{typeof(params)}(iterations, files, 1, it, t, params)
 end
 
-
 """
     OpenPMDTimeSeries(foldername::String; prefix::String="")
 
@@ -52,6 +56,38 @@ julia> ts = OpenPMDTimeSeries("./data"; prefix="wave_")
 """
 OpenPMDTimeSeries(foldername::String; prefix::String="") =
     OpenPMDTimeSeries(foldername, prefix)
+
+
+FieldTimeSeries{N}(ts::OpenPMDTimeSeries, field::String) where{N} =
+    FieldTimeSeries{N,typeof(ts)}(ts, field)
+
+"""
+    FieldTimeSeries(foldername::String; prefix::String, field::String)
+
+Initialize a (openPMD) time series for the given `N`-dimensional `field`, ie,
+scan the directory and extract the openPMD files starting with the given
+`prefix`. The data corresponding to the given `field` will then be extracted
+from the corresponding hdf5 file when requested.
+
+# Example
+```
+julia> xi_ts = FieldTimeSeries("./", prefix="gauge_", field="xi")
+```
+"""
+function FieldTimeSeries(foldername::String; prefix::String, field::String)
+    ts = OpenPMDTimeSeries(foldername, prefix)
+    f, chart = get_field(ts, it=1, field=field)
+    N = ndims(chart)
+    FieldTimeSeries{N}(ts, field)
+end
+
+function Base.getindex(ff::FieldTimeSeries, a::Int, idx::Vararg)
+    it = ff.ts.iterations[a]
+    f, chart = get_field(ff.ts, it=it, field=ff.field)
+    t = ff.ts.current_t
+    t, chart[idx], f[idx]
+end
+
 
 function list_h5_files(foldername::String; prefix::String="")
     path     = abspath(foldername)
