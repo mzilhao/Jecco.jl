@@ -62,17 +62,17 @@ end
 # return "missing", not define the method, or just have it return NaN, as now.
 @inline delta(coord::GaussLobattoCoord) = NaN
 
-@inline function Base.getindex(coord::CartesianCoord, i::Int)
+@inline function Base.getindex(coord::CartesianCoord, i::Union{Int, UnitRange})
     h = delta(coord)
-    coord.min + (i - 1) * h
+    coord.min .+ (i .- 1) * h
 end
 
-@inline function Base.getindex(coord::GaussLobattoCoord, j::Int)
+@inline function Base.getindex(coord::GaussLobattoCoord, j::Union{Int, UnitRange})
     xmin  = coord.min
     xmax  = coord.max
     M     = coord.nodes - 1.0
-    xj    = -cos( (j - 1.0) * pi / M)
-    0.5 * (xmax + xmin + (xmax - xmin) * xj)
+    xj    = -cos.( (j .- 1.0) * (pi / M))
+    0.5 * (xmax .+ xmin .+ (xmax - xmin) * xj)
 end
 
 @inline Base.firstindex(coord::AbstractCoord) = 1
@@ -113,7 +113,7 @@ end
 
 @inline Base.ndims(chart::Chart{N}) where {N} = N
 
-@inline function Base.getindex(chart::Chart{N}, idx::Vararg{Int,N}) where {N}
+@inline function Base.getindex(chart::Chart{N}, idx::Vararg) where {N}
     [chart.coords[a][idx[a]] for a in 1:N]
 end
 
