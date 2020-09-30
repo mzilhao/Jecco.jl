@@ -12,7 +12,7 @@ export ChebInterpolator
 export KO_Filter, Exp_Filter
 
 export OpenPMDTimeSeries, get_field
-export FieldTimeSeries
+export FieldTimeSeries, get_coords
 
 include("deriv_operators.jl")
 include("grid.jl")
