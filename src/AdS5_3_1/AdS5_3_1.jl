@@ -41,8 +41,10 @@ include("run.jl")
 # expressions for the Vacuum Expectation Values
 include("VEVs.jl")
 
-# random utilities
+# random utilities useful for post-processing
 include("utils.jl")
+include("recipes.jl")
+
 
 # always set the number of BLAS threads to 1 upon loading the module. by default
 # it uses a bunch of them and we don't want that since they trample over each
