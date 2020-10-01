@@ -5,43 +5,43 @@ Need to have method `get_data`
 """
 abstract type TimeSeries{N,T} end
 
-struct BoundaryTimeSeries{N,T} <: TimeSeries{N,T}
+struct BoundaryTimeSeries{T} <: TimeSeries{2,T}
     ts    :: T
     field :: Symbol
 
     function BoundaryTimeSeries(foldername::String, field::Symbol)
         ts = OpenPMDTimeSeries(foldername, "boundary_")
-        new{2,typeof(ts)}(ts, field)
+        new{typeof(ts)}(ts, field)
     end
 end
 
-struct XiTimeSeries{N,T} <: TimeSeries{N,T}
+struct XiTimeSeries{T} <: TimeSeries{2,T}
     ts :: T
 
     function XiTimeSeries(foldername::String)
         ts = OpenPMDTimeSeries(foldername, "gauge_")
-        new{2,typeof(ts)}(ts)
+        new{typeof(ts)}(ts)
     end
 end
 
-struct BulkTimeSeries{N,T} <: TimeSeries{N,T}
+struct BulkTimeSeries{T} <: TimeSeries{3,T}
     ts        :: T
     field     :: Symbol
     component :: Int
 
     function BulkTimeSeries(foldername::String, field::Symbol, c::Int)
         ts = OpenPMDTimeSeries(foldername, "bulk_")
-        new{3,typeof(ts)}(ts, field, c)
+        new{typeof(ts)}(ts, field, c)
     end
 end
 
-struct VEVTimeSeries{N,T} <: TimeSeries{N,T}
+struct VEVTimeSeries{T} <: TimeSeries{2,T}
     ts  :: T
     vev :: Symbol
 
     function VEVTimeSeries(foldername::String, vev::Symbol)
         ts = OpenPMDTimeSeries(foldername, "boundary_")
-        new{2,typeof(ts)}(ts, vev)
+        new{typeof(ts)}(ts, vev)
     end
 end
 
