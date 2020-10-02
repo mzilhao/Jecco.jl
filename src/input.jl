@@ -86,13 +86,24 @@ function FieldTimeSeries(foldername::String; prefix::String, field::String)
     FieldTimeSeries{N}(ts, field)
 end
 
+function Base.size(ff::FieldTimeSeries)
+    Nt  = length(ff.ts.iterations)
+    it0 = ff.ts.iterations[1]
+    f0, = get_field(ff.ts, it=it0, field=ff.field)
+    size_ = size(f0)
+    Nt, size_...
+end
+
+@inline Base.firstindex(ff::FieldTimeSeries, d::Int) = 1
+@inline Base.lastindex(ff::FieldTimeSeries, d::Int) = size(ff)[d]
+
 function Base.getindex(ff::FieldTimeSeries, a::Int, idx::Vararg)
     it = ff.ts.iterations[a]
     f, = get_field(ff.ts, it=it, field=ff.field)
     f[idx...]
 end
 
-function Base.getindex(ff::FieldTimeSeries, aa::UnitRange, idx::Vararg)
+function Base.getindex(ff::FieldTimeSeries, aa, idx::Vararg)
     it  = ff.ts.iterations[aa[1]]
     f0, = get_field(ff.ts, it=it, field=ff.field)
 
@@ -101,30 +112,19 @@ function Base.getindex(ff::FieldTimeSeries, aa::UnitRange, idx::Vararg)
     f     = zeros(Na, size_...)
 
     slicer = [Colon() for _ in 1:ndims(f0)]
-    for a in aa
+    for (i,a) in enumerate(aa)
         it  = ff.ts.iterations[a]
         f0, = get_field(ff.ts, it=it, field=ff.field)
-        f[a,slicer...] .= f0[idx...]
+        f[i,slicer...] .= f0[idx...]
     end
     f
 end
 
 function Base.getindex(ff::FieldTimeSeries, ::Colon, idx::Vararg)
-    it  = ff.ts.iterations[1]
-    f0, = get_field(ff.ts, it=it, field=ff.field)
-
-    Na    = length(ff.ts.iterations)
-    size_ = size(f0[idx...])
-    f     = zeros(Na, size_...)
-
-    slicer = [Colon() for _ in 1:ndims(f0)]
-    for a in 1:Na
-        it  = ff.ts.iterations[a]
-        f0, = get_field(ff.ts, it=it, field=ff.field)
-        f[a,slicer...] .= f0[idx...]
-    end
-    f
+    Na  = length(ff.ts.iterations)
+    getindex(ff, 1:Na, idx...)
 end
+
 
 """
     get_coords(ff::FieldTimeSeries, a::Int, idx::Vararg)
@@ -143,7 +143,7 @@ function get_coords(ff::FieldTimeSeries, a::Int, idx::Vararg)
 end
 
 """
-    get_coords(ff::FieldTimeSeries, aa::UnitRange, idx::Vararg)
+    get_coords(ff::FieldTimeSeries, aa, idx::Vararg)
 
 # Example
 ```
@@ -151,36 +151,25 @@ julia> t, u, x, y = Jecco.get_coords(xi_ts,1,1,2,4)
 (0.0, NaN, -4.6875, -4.0625)
 ```
 """
-function get_coords(ff::FieldTimeSeries, aa::UnitRange, idx::Vararg)
+function get_coords(ff::FieldTimeSeries, aa, idx::Vararg)
     it = ff.ts.iterations[aa[1]]
     f0, chart = get_field(ff.ts, it=it, field=ff.field)
     t0 = ff.ts.current_t
 
     Na = length(aa)
     t  = Vector{typeof(t0)}(undef, Na)
-    for a in aa
+    for (i,a) in enumerate(aa)
         it   = ff.ts.iterations[a]
         get_field(ff.ts, it=it, field=ff.field)
         t0   = ff.ts.current_t
-        t[a] = t0
+        t[i] = t0
     end
     t, chart[idx...]...
 end
 
-function get_coords(ff::FieldTimeSeries, ::Colon, idx::Vararg)
-    it = ff.ts.iterations[1]
-    f0, chart = get_field(ff.ts, it=it, field=ff.field)
-    t0 = ff.ts.current_t
-
+function Jecco.get_coords(ff::FieldTimeSeries, ::Colon, idx::Vararg)
     Na = length(ff.ts.iterations)
-    t  = Vector{typeof(t0)}(undef, Na)
-    for a in 1:Na
-        it = ff.ts.iterations[a]
-        get_field(ff.ts, it=it, field=ff.field)
-        t0 = ff.ts.current_t
-        t[a] = t0
-    end
-    t, chart[idx...]...
+    get_coords(ff, 1:Na, idx...)
 end
 
 
