@@ -46,26 +46,26 @@ struct VEVTimeSeries{T} <: TimeSeries{2,T}
 end
 
 
-function get_data(ff::BoundaryTimeSeries; it=Int, verbose::Bool=false)
+function get_data(ff::BoundaryTimeSeries; it::Int, verbose::Bool=false)
     f, chart = get_field(ff.ts, it=it, verbose=verbose, field=String(ff.field))
     _, x, y  = chart[:]
     f[1,:,:], [x, y]
 end
 
-function get_data(xi::XiTimeSeries; it=Int, verbose::Bool=false)
+function get_data(xi::XiTimeSeries; it::Int, verbose::Bool=false)
     f, chart = get_field(xi.ts, it=it, verbose=verbose, field="xi")
     _, x, y  = chart[:]
     f[1,:,:], [x, y]
 end
 
-function get_data(ff::BulkTimeSeries; it=Int, verbose::Bool=false)
+function get_data(ff::BulkTimeSeries; it::Int, verbose::Bool=false)
     field = "$(ff.field) c=$(ff.component)"
     f, chart = get_field(ff.ts, it=it, verbose=verbose, field=field)
     u, x, y = chart[:]
     f, [u, x, y]
 end
 
-function get_data(ff::VEVTimeSeries; it=Int, verbose::Bool=false)
+function get_data(ff::VEVTimeSeries; it::Int, verbose::Bool=false)
     if ff.vev == :energy
         f, chart = get_energy(ff.ts, it=it, verbose=verbose)
     elseif ff.vev == :Jx
@@ -92,13 +92,24 @@ function get_data(ff::VEVTimeSeries; it=Int, verbose::Bool=false)
 end
 
 
+function Base.size(ff::TimeSeries)
+    Nt  = length(ff.ts.iterations)
+    it0 = ff.ts.iterations[1]
+    f0, = get_data(ff, it=it0)
+    size_ = size(f0)
+    Nt, size_...
+end
+
+@inline Base.firstindex(ff::TimeSeries, d::Int) = 1
+@inline Base.lastindex(ff::TimeSeries, d::Int) = size(ff)[d]
+
 function Base.getindex(ff::TimeSeries, a::Int, idx::Vararg)
     it = ff.ts.iterations[a]
     f, = get_data(ff, it=it)
     f[idx...]
 end
 
-function Base.getindex(ff::TimeSeries, aa::UnitRange, idx::Vararg)
+function Base.getindex(ff::TimeSeries, aa, idx::Vararg)
     it  = ff.ts.iterations[aa[1]]
     f0, = get_data(ff, it=it)
 
@@ -129,7 +140,7 @@ function Jecco.get_coords(ff::TimeSeries{N}, a::Int, idx::Vararg) where{N}
     t, coord...
 end
 
-function Jecco.get_coords(ff::TimeSeries{N}, aa::UnitRange, idx::Vararg) where{N}
+function Jecco.get_coords(ff::TimeSeries{N}, aa, idx::Vararg) where{N}
     it = ff.ts.iterations[aa[1]]
     f0, coords = get_data(ff, it=it)
     t0 = ff.ts.current_t
