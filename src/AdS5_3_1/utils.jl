@@ -46,44 +46,44 @@ struct VEVTimeSeries{T} <: TimeSeries{2,T}
 end
 
 
-function get_data(ff::BoundaryTimeSeries; it=Int, verbose::Bool=false)
-    f, chart = get_field(ff.ts, it=it, verbose=verbose, field=String(ff.field))
+function get_data(ff::BoundaryTimeSeries, it::Int)
+    f, chart = get_field(ff.ts, it=it, field=String(ff.field))
     _, x, y  = chart[:]
     f[1,:,:], [x, y]
 end
 
-function get_data(xi::XiTimeSeries; it=Int, verbose::Bool=false)
-    f, chart = get_field(xi.ts, it=it, verbose=verbose, field="xi")
+function get_data(xi::XiTimeSeries, it::Int)
+    f, chart = get_field(xi.ts, it=it, field="xi")
     _, x, y  = chart[:]
     f[1,:,:], [x, y]
 end
 
-function get_data(ff::BulkTimeSeries; it=Int, verbose::Bool=false)
+function get_data(ff::BulkTimeSeries, it::Int)
     field = "$(ff.field) c=$(ff.component)"
-    f, chart = get_field(ff.ts, it=it, verbose=verbose, field=field)
+    f, chart = get_field(ff.ts, it=it, field=field)
     u, x, y = chart[:]
     f, [u, x, y]
 end
 
-function get_data(ff::VEVTimeSeries; it=Int, verbose::Bool=false)
+function get_data(ff::VEVTimeSeries, it::Int)
     if ff.vev == :energy
-        f, chart = get_energy(ff.ts, it=it, verbose=verbose)
+        f, chart = get_energy(ff.ts, it=it)
     elseif ff.vev == :Jx
-        f, chart = get_Jx(ff.ts, it=it, verbose=verbose)
+        f, chart = get_Jx(ff.ts, it=it)
     elseif ff.vev == :Jy
-        f, chart = get_Jy(ff.ts, it=it, verbose=verbose)
+        f, chart = get_Jy(ff.ts, it=it)
     elseif ff.vev == :px
-        f, chart = get_px(ff.ts, it=it, verbose=verbose)
+        f, chart = get_px(ff.ts, it=it)
     elseif ff.vev == :py
-        f, chart = get_py(ff.ts, it=it, verbose=verbose)
+        f, chart = get_py(ff.ts, it=it)
     elseif ff.vev == :pz
-        f, chart = get_pz(ff.ts, it=it, verbose=verbose)
+        f, chart = get_pz(ff.ts, it=it)
     elseif ff.vev == :Jx
-        f, chart = get_Jx(ff.ts, it=it, verbose=verbose)
+        f, chart = get_Jx(ff.ts, it=it)
     elseif ff.vev == :pxy
-        f, chart = get_pxy(ff.ts, it=it, verbose=verbose)
+        f, chart = get_pxy(ff.ts, it=it)
     elseif ff.vev == :Ophi
-        f, chart = get_Ophi(ff.ts, it=it, verbose=verbose)
+        f, chart = get_Ophi(ff.ts, it=it)
     else
         error("Unknown VEV")
     end
@@ -92,15 +92,26 @@ function get_data(ff::VEVTimeSeries; it=Int, verbose::Bool=false)
 end
 
 
+function Base.size(ff::TimeSeries)
+    Nt  = length(ff.ts.iterations)
+    it0 = ff.ts.iterations[1]
+    f0, = get_data(ff, it0)
+    size_ = size(f0)
+    Nt, size_...
+end
+
+@inline Base.firstindex(ff::TimeSeries, d::Int) = 1
+@inline Base.lastindex(ff::TimeSeries, d::Int) = size(ff)[d]
+
 function Base.getindex(ff::TimeSeries, a::Int, idx::Vararg)
     it = ff.ts.iterations[a]
-    f, = get_data(ff, it=it)
+    f, = get_data(ff, it)
     f[idx...]
 end
 
-function Base.getindex(ff::TimeSeries, aa::UnitRange, idx::Vararg)
+function Base.getindex(ff::TimeSeries, aa, idx::Vararg)
     it  = ff.ts.iterations[aa[1]]
-    f0, = get_data(ff, it=it)
+    f0, = get_data(ff, it)
 
     Na    = length(aa)
     size_ = size(f0[idx...])
@@ -109,7 +120,7 @@ function Base.getindex(ff::TimeSeries, aa::UnitRange, idx::Vararg)
     slicer = [Colon() for _ in 1:ndims(f0)]
     for (i,a) in enumerate(aa)
         it  = ff.ts.iterations[a]
-        f0, = get_data(ff, it=it)
+        f0, = get_data(ff, it)
         f[i,slicer...] .= f0[idx...]
     end
     f
@@ -123,15 +134,15 @@ end
 
 function Jecco.get_coords(ff::TimeSeries{N}, a::Int, idx::Vararg) where{N}
     it = ff.ts.iterations[a]
-    f, coords = get_data(ff, it=it)
+    f, coords = get_data(ff, it)
     t = ff.ts.current_t
     coord = [coords[a][idx[a]] for a in 1:N]
     t, coord...
 end
 
-function Jecco.get_coords(ff::TimeSeries{N}, aa::UnitRange, idx::Vararg) where{N}
+function Jecco.get_coords(ff::TimeSeries{N}, aa, idx::Vararg) where{N}
     it = ff.ts.iterations[aa[1]]
-    f0, coords = get_data(ff, it=it)
+    f0, coords = get_data(ff, it)
     t0 = ff.ts.current_t
     coord = [coords[a][idx[a]] for a in 1:N]
 
@@ -139,7 +150,7 @@ function Jecco.get_coords(ff::TimeSeries{N}, aa::UnitRange, idx::Vararg) where{N
     t  = Vector{typeof(t0)}(undef, Na)
     for (i,a) in enumerate(aa)
         it   = ff.ts.iterations[a]
-        get_data(ff, it=it)
+        get_data(ff, it)
         t0   = ff.ts.current_t
         t[i] = t0
     end
