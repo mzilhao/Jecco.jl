@@ -1,30 +1,19 @@
 using RecipesBase
 
-@recipe function plot(f_ts::TimeSeries{2}, i0::Union{Colon, UnitRange}, i1::Int, i2::Int)
-    xguide := "t"
-    tt, xx, yy = get_coords(f_ts,i0,i1,i2)
-    f = f_ts[i0,i1,i2]
-    tt, f
-end
+@recipe function plot(f_ts::TimeSeries, ii::Vararg)
+    tmp = get_coords(f_ts,ii...)
+    f   = f_ts[ii...]
 
-@recipe function plot(f_ts::TimeSeries{2}, i0::Int, i1::Union{Colon, UnitRange}, i2::Int)
-    xguide := "x"
-    tt, xx, yy = get_coords(f_ts,i0,i1,i2)
-    f = f_ts[i0,i1,i2]
-    xx, f
-end
+    # we want to select only those that are *not* Numbers (ie, Arrays or Ranges)
+    idx = .!isa.(tmp, Number)
+    idx = [idx...]
+    coord = [tmp...]
 
-@recipe function plot(f_ts::TimeSeries{2}, i0::Int, i1::Int, i2::Union{Colon, UnitRange})
-    xguide := "y"
-    tt, xx, yy = get_coords(f_ts,i0,i1,i2)
-    f = f_ts[i0,i1,i2]
-    yy, f
-end
+    xx = coord[idx]
 
-@recipe function plot(f_ts::TimeSeries{2}, i0::Int, i1::Union{Colon, UnitRange}, i2::Union{Colon, UnitRange})
-    xguide := "y"
-    yguide := "x"
-    tt, xx, yy = get_coords(f_ts,i0,i1,i2)
-    f = f_ts[i0,i1,i2]
-    yy, xx, f
+    xx_f = [xx..., f]
+
+    match_dimensions := true
+
+    (xx_f...,)
 end
