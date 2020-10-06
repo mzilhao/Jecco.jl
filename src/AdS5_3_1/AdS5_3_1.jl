@@ -72,7 +72,7 @@ export BulkEvolvedPartition, BulkConstrainedPartition, BulkDerivPartition
 export Nested
 export Integration, InOut, run_model
 export get_energy, get_Jx, get_Jy, get_px, get_py, get_pz, get_pxy, get_Ophi
-export BoundaryTimeSeries, XiTimeSeries, BulkTimeSeries, VEVTimeSeries
+export BoundaryTimeSeries, XiTimeSeries, BulkTimeSeries, VEVTimeSeries, ConstrainedTimeSeries
 export convert_to_mathematica
 
 end

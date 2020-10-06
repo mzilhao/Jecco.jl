@@ -35,6 +35,17 @@ struct BulkTimeSeries{T} <: TimeSeries{3,T}
     end
 end
 
+struct ConstrainedTimeSeries{T} <: TimeSeries{3,T}
+    ts        :: T
+    field     :: Symbol
+    component :: Int
+
+    function ConstrainedTimeSeries(foldername::String, field::Symbol, c::Int)
+        ts = OpenPMDTimeSeries(foldername, "constrained_")
+        new{typeof(ts)}(ts, field, c)
+    end
+end
+
 struct VEVTimeSeries{T} <: TimeSeries{2,T}
     ts  :: T
     vev :: Symbol
@@ -59,6 +70,13 @@ function get_data(xi::XiTimeSeries, it::Int)
 end
 
 function get_data(ff::BulkTimeSeries, it::Int)
+    field = "$(ff.field) c=$(ff.component)"
+    f, chart = get_field(ff.ts, it=it, field=field)
+    u, x, y = chart[:]
+    f, [u, x, y]
+end
+
+function get_data(ff::ConstrainedTimeSeries, it::Int)
     field = "$(ff.field) c=$(ff.component)"
     f, chart = get_field(ff.ts, it=it, field=field)
     u, x, y = chart[:]
