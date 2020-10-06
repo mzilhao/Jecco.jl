@@ -598,9 +598,6 @@ function xi_t_eq_coeff(vars::Tuple, ::Outer)
     @cross_outer("Fx")
     @cross_outer("Fy")
 
-   #κ = kappa
-
-
     x0 = exp(B1 + B2)
     x1 = cosh(G)
     x2 = S*x1
