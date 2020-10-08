@@ -300,6 +300,6 @@ function HorizonCache(sys::System, ord::Int)
     _Dxy_2D = copy(Dxy_2D)
 
     HorizonCache{T,typeof(Dx_2D)}(bulkhorizon, axx, ayy, axy, bx, by, cc, b_vec,
-                                  Dx_2D,  Dxx_2D,  Dy_2D,  Dyy_2D,  Dxy_2D,
-                                  _Dx_2D, _Dxx_2D, _Dy_2D, _Dyy_2D, _Dxy_2D)
+                                  Dx_2D,  Dy_2D, Dxx_2D,  Dyy_2D,  Dxy_2D,
+                                  _Dx_2D, _Dy_2D, _Dxx_2D, _Dyy_2D, _Dxy_2D)
 end
