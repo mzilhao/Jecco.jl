@@ -1,7 +1,6 @@
 module AdS5_3_1
 
 using Jecco
-using Jecco: mul_col!
 using SparseArrays: SparseMatrixCSC
 using OrdinaryDiffEq
 
