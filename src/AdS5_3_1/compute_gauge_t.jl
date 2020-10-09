@@ -286,38 +286,24 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
         end
     end
 
-    # each time this routine is called, the operators Dx_2D, Dxx_2D, etc, are
-    # overwritten. so restore them here from _Dx_2D, _Dxx_2D, etc. these are
-    # never overwritten.
-    copyto!(Dx_2D,  _Dx_2D)
-    copyto!(Dxx_2D, _Dxx_2D)
-    copyto!(Dy_2D,  _Dy_2D)
-    copyto!(Dyy_2D, _Dyy_2D)
-    copyto!(Dxy_2D, _Dxy_2D)
+    axxId = Diagonal(axx)
+    ayyId = Diagonal(ayy)
+    axyId = Diagonal(axy)
+    bxId  = Diagonal(bx)
+    byId  = Diagonal(by)
+    ccId  = Diagonal(cc)
 
     # overwrite the operators with the coefficients computed in the loop above
-    mul_col!(axx, Dxx_2D)
-    mul_col!(ayy, Dyy_2D)
-    mul_col!(axy, Dxy_2D)
-    mul_col!(bx,  Dx_2D)
-    mul_col!(by,  Dy_2D)
-    ccId = Diagonal(cc)
+    # (note that _Dxx_2D, _Dyy_2D, etc, are never overwritten)
+    mul!(Dxx_2D, axxId, _Dxx_2D)
+    mul!(Dyy_2D, ayyId, _Dyy_2D)
+    mul!(Dxy_2D, axyId, _Dxy_2D)
+    mul!(Dx_2D,  bxId,  _Dx_2D)
+    mul!(Dy_2D,  byId,  _Dy_2D)
 
     # build actual operator to be inverted
     A_mat = Dxx_2D + Dyy_2D + Dxy_2D + Dx_2D + Dy_2D + ccId
 
-    # since we're using periodic boundary conditions, the operator A_mat (just
-    # like the Dx and Dxx operators) is strictly speaking not invertible (it has
-    # zero determinant) since the solution is not unique. indeed, its LU
-    # decomposition shouldn't even be defined. for some reason, however, the
-    # call to "lu" does in fact factorize the matrix. in any case, to be safer,
-    # let's instead use the left division operator. this calls "factorize",
-    # which uses fancy algorithms to determine which is the best way to
-    # factorize (and which performs a QR decomposition if the LU fails). the
-    # inverse that is performed probably returns the minimum norm least squares
-    # solution, or something similar. in any case, for our purposes here we
-    # mostly care about getting a solution (not necessarily the minimum norm
-    # least squares one).
     sol = A_mat \ b_vec
 
     copyto!(xi_t, sol)

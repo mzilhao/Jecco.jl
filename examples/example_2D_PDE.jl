@@ -10,16 +10,21 @@ source(x,y) = exp(-x^2 - y^2) * (-4 + 3 * (x^2 + y^2) + 4 * x^2 * y^2)
 # function overwrites the input matrices to save memory
 function build_operator(Dxx::SparseMatrixCSC, Dyy::SparseMatrixCSC, Dxy::SparseMatrixCSC,
                         Dx::SparseMatrixCSC, Dy::SparseMatrixCSC,
-                        axx::Vector, ayy::Vector, axy::Vector,
-                        bx::Vector, by::Vector, cc::Vector)
-    Jecco.mul_col!(axx, Dxx)
-    Jecco.mul_col!(ayy, Dyy)
-    Jecco.mul_col!(axy, Dxy)
-    Jecco.mul_col!(bx,  Dx)
-    Jecco.mul_col!(by,  Dy)
-    ccId = Diagonal(cc)
+                        axx::Diagonal, ayy::Diagonal, axy::Diagonal,
+                        bx::Diagonal, by::Diagonal, cc::Diagonal)
+    Dxx_ = similar(Dxx)
+    Dyy_ = similar(Dyy)
+    Dxy_ = similar(Dxy)
+    Dx_  = similar(Dx)
+    Dy_  = similar(Dy)
 
-    Dxx + Dyy + Dxy + Dx + Dy + ccId
+    mul!(Dxx_, axx, Dxx)
+    mul!(Dyy_, ayy, Dyy)
+    mul!(Dxy_, axy, Dxy)
+    mul!(Dx_, bx, Dx)
+    mul!(Dy_, by, Dy)
+
+    Dxx_ + Dyy_ + Dxy_ + Dx_ + Dy_ + cc
 end
 
 #=
@@ -98,18 +103,9 @@ for j in 1:Ny, i in 1:Nx
 end
 
 # build operator A = Dxx + Dyy + x y Dxy + x Dx + y Dy + (x^2 + y^2)
-A_mat = build_operator(Dxx, Dyy, Dxy, Dx, Dy, axx, ayy, axy, bx, by, cc)
+A_mat = build_operator(Dxx, Dyy, Dxy, Dx, Dy, Diagonal(axx), Diagonal(ayy),
+                       Diagonal(axy), Diagonal(bx), Diagonal(by), Diagonal(cc))
 
-# since we're using periodic boundary conditions, the operator A_mat (just like
-# the Dx and Dxx operators) is strictly speaking not invertible (it has zero
-# determinant) since the solution is not unique. indeed, its LU decomposition
-# shouldn't even be defined. for some reason, however, the call to "lu" does in
-# fact factorize the matrix. in any case, to be safer, let's instead call
-# "factorize", which uses fancy algorithms to determine which is the best way to
-# factorize (and which performs a QR decomposition if the LU fails). the inverse
-# that is performed probably returns the minimum norm least squares solution, or
-# something similar. in any case, for our purposes here we mostly care about
-# getting a solution (not necessarily the minimum norm least squares one).
 A_fact = factorize(A_mat)
 sol    = A_fact \ b_vec
 
