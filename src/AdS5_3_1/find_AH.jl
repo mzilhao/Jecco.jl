@@ -438,18 +438,20 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
         byId  = Diagonal(by)
         ccId  = Diagonal(cc)
 
-        # overwrite the operators with the coefficients computed in the loop above
-        # (note that _Dxx_2D, _Dyy_2D, etc, are never overwritten)
-        mul!(Dxx_2D, axxId, _Dxx_2D)
-        mul!(Dyy_2D, ayyId, _Dyy_2D)
-        mul!(Dxy_2D, axyId, _Dxy_2D)
-        mul!(Dx_2D,  bxId,  _Dx_2D)
-        mul!(Dy_2D,  byId,  _Dy_2D)
+        # build the differential operators by multiplying with the coefficients
+        # computed in the loop above (note that Dxx_2D, Dyy_2D, etc, are never
+        # overwritten)
+        mul!(_Dxx_2D, axxId, Dxx_2D)
+        mul!(_Dyy_2D, ayyId, Dyy_2D)
+        mul!(_Dxy_2D, axyId, Dxy_2D)
+        mul!(_Dx_2D,  bxId,  Dx_2D)
+        mul!(_Dy_2D,  byId,  Dy_2D)
 
         # build actual operator to be inverted
-        A_mat = Dxx_2D + Dyy_2D + Dxy_2D + Dx_2D + Dy_2D + ccId
+        A_mat = _Dxx_2D + _Dyy_2D + _Dxy_2D + _Dx_2D + _Dy_2D + ccId
 
-        A_fact = factorize(A_mat)
+        # solve system
+        A_fact = lu(A_mat)
         ldiv!(f0, A_fact, b_vec)
 
         # update solution
