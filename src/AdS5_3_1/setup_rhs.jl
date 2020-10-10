@@ -1,4 +1,7 @@
 
+import Base.Threads.@threads
+import Base.Threads.@spawn
+
 function (filters::Filters)(boundary::Boundary)
     filters.ko_filter2D_x(boundary.a4)
     filters.ko_filter2D_x(boundary.fx2)
@@ -15,6 +18,8 @@ function (filters::Filters)(gauge::Gauge)
     nothing
 end
 
+# note that these calls are *not* thread-safe! it's due to their internal cache.
+# TODO: see if worthwhile to make these thread-safe to use @spawn here
 function (filters::Filters)(bulkevol::BulkEvolved)
     filters.ko_filter_x(bulkevol.B1)
     filters.ko_filter_x(bulkevol.B2)
@@ -49,9 +54,8 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
         gauge       = getgauge(ff)
 
         # filter after each integration (sub)step
-        # TODO: see if worthwhile to @spawn here
         if t > 0 && integration.filter_poststep
-            @inbounds for aa in 1:Nsys
+            @inbounds @threads for aa in 1:Nsys
                 sys = systems[aa]
                 sys.filters(bulkevols[aa])
             end
