@@ -67,7 +67,7 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
         compute_xi_t!(gauge_t, bulkconstrains[Nsys], bulkevols[Nsys], bulkderivs[Nsys],
                       gauge, cache, systems[Nsys], evoleq.gaugecondition)
 
-        @inbounds for aa in 1:Nsys
+        @inbounds @threads for aa in 1:Nsys
             sys           = systems[aa]
             bulkevol_t    = bulkevols_t[aa]
             bulkevol      = bulkevols[aa]
@@ -76,7 +76,6 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
             compute_bulkevolved_t!(bulkevol_t, bulkconstrain, gauge_t, bulkevol,
                                    boundary, gauge, sys, evoleq)
         end
-
         sync_bulkevolved!(bulkevols_t, bulkconstrains, gauge_t, systems, evoleq)
 
         nothing
