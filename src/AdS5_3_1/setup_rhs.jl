@@ -18,23 +18,25 @@ function (filters::Filters)(gauge::Gauge)
     nothing
 end
 
-# note that these calls are *not* thread-safe! it's due to their internal cache.
-# TODO: see if worthwhile to make these thread-safe to use @spawn here
 function (filters::Filters)(bulkevol::BulkEvolved)
-    filters.ko_filter_x(bulkevol.B1)
-    filters.ko_filter_x(bulkevol.B2)
-    filters.ko_filter_x(bulkevol.G)
-    filters.ko_filter_x(bulkevol.phi)
-
-    filters.ko_filter_y(bulkevol.B1)
-    filters.ko_filter_y(bulkevol.B2)
-    filters.ko_filter_y(bulkevol.G)
-    filters.ko_filter_y(bulkevol.phi)
-
-    filters.exp_filter(bulkevol.B1)
-    filters.exp_filter(bulkevol.B2)
-    filters.exp_filter(bulkevol.G)
-    filters.exp_filter(bulkevol.phi)
+    @sync begin
+        @spawn filters.ko_filter_x(bulkevol.B1)
+        @spawn filters.ko_filter_x(bulkevol.B2)
+        @spawn filters.ko_filter_x(bulkevol.G)
+        @spawn filters.ko_filter_x(bulkevol.phi)
+    end
+    @sync begin
+        @spawn filters.ko_filter_y(bulkevol.B1)
+        @spawn filters.ko_filter_y(bulkevol.B2)
+        @spawn filters.ko_filter_y(bulkevol.G)
+        @spawn filters.ko_filter_y(bulkevol.phi)
+    end
+    @sync begin
+        @spawn filters.exp_filter(bulkevol.B1)
+        @spawn filters.exp_filter(bulkevol.B2)
+        @spawn filters.exp_filter(bulkevol.G)
+        @spawn filters.exp_filter(bulkevol.phi)
+    end
     nothing
 end
 
