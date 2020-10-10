@@ -1454,8 +1454,6 @@ function solve_nesteds!(bulkconstrains, bulkevols, boundary::Boundary, gauge::Ga
 
     # take all u-derivatives of the bulkevols functions
     @sync begin
-        # TODO: check if it's worth to keep the @spawn, or if its overhead is
-        # actually making things slower
         @inbounds for i in 1:Nsys
             @spawn mul!(derivs[i].Du_B1,  systems[i].Du,  bulkevols[i].B1)
             @spawn mul!(derivs[i].Du_B2,  systems[i].Du,  bulkevols[i].B2)
