@@ -170,7 +170,7 @@ function LinearAlgebra.mul!(df::AbstractArray{T}, A::SpectralDeriv{T,N,S},
     Rpre  = CartesianIndices(axes(f)[1:N-1])
     Rpost = CartesianIndices(axes(f)[N+1:end])
 
-    _mul_loop!(df, A, f, Rpre, Rpost)
+    _mul_loop!(df, A, f, Rpre, size(f,N), Rpost)
 end
 
 # this works as follows. suppose we are taking the derivative of a 4-dimensional
@@ -197,10 +197,16 @@ end
 #
 # adapted from http://julialang.org/blog/2016/02/iteration
 #
-@noinline function _mul_loop!(df, A, f, Rpre, Rpost)
+@noinline function _mul_loop!(df::AbstractArray{T}, A, f, Rpre, n, Rpost) where {T}
     @fastmath @inbounds for Ipost in Rpost
-        @inbounds for Ipre in Rpre
-            @views mul!(df[Ipre,:,Ipost], A, f[Ipre,:,Ipost])
+        @inbounds for i in 1:n
+            @inbounds for Ipre in Rpre
+                sum_i = zero(T)
+                @inbounds @simd for j in 1:n
+                    sum_i += A.D[i,j] * f[Ipre,j,Ipost]
+                end
+                df[Ipre,i,Ipost] = sum_i
+            end
         end
     end
     nothing
