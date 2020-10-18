@@ -1,3 +1,7 @@
+# TG: if I do not add the line below it seems that the Fornberg
+# func. is not loaded with Jecco for me locally in the FD_new branch
+
+include("../src/fornberg.jl")
 
 @testset "Fornberg FD weights tests:" begin
 
@@ -121,7 +125,7 @@ end
     @test 12*Dx[7,:]  ≈ [0.0, 0.0, 0.0, 0.0, 1.0, -8.0, 0.0, 8.0, -1.0, 0.0] atol=1e-15
     @test 12*Dx[8,:]  ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, -8.0, 0.0, 8.0, -1.0] atol=1e-15
     @test 12*Dx[9,:]  ≈ [0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 6.0, -18.0, 10.0, 3.0] atol=1e-15
-    @test 12*Dx[10,:] ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 3.0, 16.0, 36.0, -48.0, 25.0] atol=1e-15
+    @test 12*Dx[10,:] ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 3.0, -16.0, 36.0, -48.0, 25.0] atol=1e-15
 
 end
 
