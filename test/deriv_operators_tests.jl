@@ -486,3 +486,65 @@ end
     @test Dz(Dx, g, 300,16,600)  ≈ dxzg[300,16,600]
     @test Dz(Dx, g, 10,8,150)    ≈ dxzg[10,8,150]
 end
+
+# the following test fails; it seems that pointwise it cannot find the
+# deriv if one operator is periodic and the other is not.
+# TG: Below is the error I get locally:
+
+"""
+ERROR: MethodError: no method matching _D_intA_lowB(::Jecco.PeriodicFD{Float64,1,Array{Float64,1}}, ::Jecco.FiniteDiffDeriv{Float64,3,Array{Float64,1},Array{Array{Float64,1},1},Array{Array{Float64,1},1}}, ::Array{Float64,3}, ::Tuple{Int64,Int64,Int64})
+Closest candidates are:
+  _D_intA_lowB(::Jecco.PeriodicFD{T,N1,S} where S, ::Jecco.PeriodicFD{T,N2,S} where S, ::AbstractArray, ::Any) where {T<:Real, N1, N2} at /home/thanasis/repos/Jecco.jl/src/deriv_operators.jl:469
+  _D_intA_lowB(::Jecco.FiniteDiffDeriv{T,N1,S1,S2,S3} where S3 where S2 where S1, ::Jecco.FiniteDiffDeriv{T,N2,S1,S2,S3} where S3 where S2 where S1, ::AbstractArray, ::Any) where {T<:Real, N1, N2} at /home/thanasis/repos/Jecco.jl/src/deriv_operators.jl:709
+Stacktrace:
+ [1] (::Jecco.PeriodicFD{Float64,1,Array{Float64,1}})(::Jecco.FiniteDiffDeriv{Float64,3,Array{Float64,1},Array{Array{Float64,1},1},Array{Array{Float64,1},1}}, ::Array{Float64,3}, ::Int64, ::Int64, ::Int64) at /home/thanasis/repos/Jecco.jl/src/deriv_operators.jl:409
+ [2] top-level scope at REPL[51]:1
+"""
+
+@testset "PeriodicFD and EqualSizeStencilFD cross derivative for general arrays tests:" begin
+    xmin   = -2.0*pi
+    xmax   =  2.0*pi
+    xnodes =  600
+    ord    =  6
+
+    ymin   = -1.0
+    ymax   =  1.0
+    ynodes =  16
+
+    zmin   = -1.0*pi
+    zmax   =  1.0*pi
+    znodes =  300
+
+
+    hx     = (xmax - xmin) / xnodes
+    hz     = (zmax - zmin) / znodes
+
+    x      = collect(xmin:hx:xmax-hx)
+    y,     = Jecco.cheb(ymin, ymax, ynodes)
+    z      = collect(zmin:hz:zmax-hz)
+
+    f   = [0.5 * sin.(x1) .* x2.^2 .* sin.(x3)  for x1 in x, x2 in y, x3 in z]
+
+    Dx  = EqualSizeStencilFD{1}(1, ord, hx, length(x))
+    Dz  = CenteredDiff{3}(1, ord, hz, length(z))
+
+    dxzf  = Dx * (Dz * f)
+
+    @test Dx(Dz, f, 2,16,1)     ≈ dxzf[2,16,1]
+    @test Dx(Dz, f, 1,12,2)     ≈ dxzf[1,12,2]
+    @test Dx(Dz, f, 100,12,300) ≈ dxzf[100,12,300]
+    @test Dx(Dz, f, 600,8,100)  ≈ dxzf[600,8,100]
+
+
+    g   = [sin.(x3) .* 0.5 * sin.(x2) .* x1.^2 for x3 in z, x1 in y, x2 in x]
+
+    Dz  = CenteredDiff{1}(1, ord, hz, length(z))
+    Dx  = EqualSizeStencilFD{3}(1, ord, hx, length(x))
+
+    dxzg  = Dx * (Dz * g)
+
+    @test Dz(Dx, g, 100,2,1)     ≈ dxzg[100,2,1]
+    @test Dz(Dx, g, 1,1,1)       ≈ dxzg[1,1,1]
+    @test Dz(Dx, g, 300,16,600)  ≈ dxzg[300,16,600]
+    @test Dz(Dx, g, 10,8,150)    ≈ dxzg[10,8,150]
+end
