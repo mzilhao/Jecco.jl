@@ -45,14 +45,14 @@ Return a (periodic) Fourier grid, together with its first and second derivative 
 
 # Arguments
 * `xmin::Real`: rightmost grid point
-* `xmax::Real`: leftmost grid point
+* `xsize::Real`: size of (periodic) domain
 * `N::Integer`: total number of grid points
 """
-function fourier(xmin::T, xmax::T, N::Integer) where {T<:Real}
+function fourier(xmin::T, xsize::T, N::Integer) where {T<:Real}
     x, D, D2 = fourier(N)
-    x = (xmin .+ (xmax - xmin) * x) / (2*pi)
-    D  ./= 0.5 * (xmax - xmin) / pi
-    D2 ./= 0.25 * (xmax - xmin)^2 / pi^2
+    x = (xmin .+ xsize * x) / (2*pi)
+    D  ./= 0.5 * xsize / pi
+    D2 ./= 0.25 * xsize^2 / pi^2
     x, D, D2
 end
 

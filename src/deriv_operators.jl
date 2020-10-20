@@ -87,6 +87,28 @@ end
 ChebDeriv(args...) = ChebDeriv{1}(args...)
 
 
+# TODO: add tests for this...
+struct FourierDeriv{N} end
+
+# note that the third argument is different from the previous case, since these
+# operators are always periodic
+function FourierDeriv{N}(derivative_order::Int, xmin::T, xsize::T, len::Int) where {T<:Real,N}
+    x, Dx, Dxx = fourier(xmin, xsize, len)
+
+    if derivative_order == 1
+        D = Dx
+    elseif derivative_order == 2
+        D = Dxx
+    else
+        error("derivative_order not implemented")
+    end
+
+    SpectralDeriv{T,N,typeof(D)}(derivative_order, len, D)
+end
+
+FourierDeriv(args...) = FourierDeriv{1}(args...)
+
+
 @inline function Base.getindex(A::FiniteDiffDeriv, i::Int, j::Int)
     N      = A.len
     coeffs = A.stencil_coefs
