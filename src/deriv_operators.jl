@@ -87,13 +87,10 @@ end
 ChebDeriv(args...) = ChebDeriv{1}(args...)
 
 
-# TODO: add tests for this...
 struct FourierDeriv{N} end
 
-# note that the third argument is different from the previous case, since these
-# operators are always periodic
-function FourierDeriv{N}(derivative_order::Int, xmin::T, xsize::T, len::Int) where {T<:Real,N}
-    x, Dx, Dxx = fourier(xmin, xsize, len)
+function FourierDeriv{N}(derivative_order::Int, xsize::T, len::Int) where {T<:Real,N}
+    Dx, Dxx = fourier(xsize, len)
 
     if derivative_order == 1
         D = Dx
