@@ -14,13 +14,24 @@ Extend this type for different `GaugeCondition`s
 """
 abstract type GaugeCondition end
 
-struct ConstantGauge <: GaugeCondition end
+Base.@kwdef struct ConstantGauge <: GaugeCondition
+    # order of the FD operator for solving the AH equation
+    fd_order :: Int = 2
+end
 
 Base.@kwdef struct ConstantAH{T} <: GaugeCondition
     u_AH     :: T   = 1.0
     kappa    :: T   = 1.0
-    # order of the FD operator for solving the xi_t equation
+    # order of the FD operator for solving the xi_t and AH equations
     fd_order :: Int = 2
+end
+
+"""
+Parameters for the Apparent Horizon Finder
+"""
+Base.@kwdef struct AHF
+    itmax     :: Int      = 20
+    epsilon   :: Float64  = 1e-12
 end
 
 """
@@ -34,6 +45,7 @@ Base.@kwdef struct AffineNull{T,TP<:Potential,TG<:GaugeCondition} <: EvolutionEq
     phi0           :: T   = 0.0
     potential      :: TP  = ZeroPotential()
     gaugecondition :: TG  = ConstantAH()
+    ahf            :: AHF = AHF()
 end
 
 """
@@ -85,14 +97,6 @@ Base.@kwdef struct InOut
     # be very careful with this option! it will remove the whole folder contents
     # if set to true! use only for fast debugging runs
     remove_existing    :: Bool  = false
-end
-
-"""
-Parameters for the Apparent Horizon Finder
-"""
-Base.@kwdef struct AHF
-    itmax   :: Int      = 20
-    epsilon :: Float64  = 1e-12
 end
 
 

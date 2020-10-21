@@ -9,7 +9,7 @@
         y_max            =  5.0,
         y_nodes          =  6,
         u_outer_min      =  0.1,
-        u_outer_max      =  1.0,
+        u_outer_max      =  1.003,
         u_outer_domains  =  4,
         u_outer_nodes    =  32,
         u_inner_nodes    =  12,
@@ -35,9 +35,11 @@
     bulkevols      = BulkEvolvedPartition(grid)
     bulkconstrains = BulkConstrainedPartition(grid)
     bulkderivs     = BulkDerivPartition(grid)
+    horizoncache   = AdS5_3_1.HorizonCache(systems[end], evoleq.gaugecondition.fd_order)
 
     # initial conditions
-    init_data!(bulkconstrains, bulkevols, boundary, gauge, systems, evoleq, id)
+    init_data!(bulkconstrains, bulkevols, bulkderivs, boundary, gauge,
+               horizoncache, systems, evoleq, id)
 
     # function to solve the nested system, given the initial data
     nested = Nested(systems, bulkconstrains, bulkderivs)

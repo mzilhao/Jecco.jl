@@ -59,7 +59,8 @@ AH_fd_order  = 2
 horizoncache   = AdS5_3_1.HorizonCache(systems[end], AH_fd_order)
 
 # initial conditions
-init_data!(bulkconstrains, bulkevols, boundary, gauge, systems, evoleq, id)
+init_data!(bulkconstrains, bulkevols, bulkderivs, boundary, gauge,
+           horizoncache, systems, evoleq, id)
 
 # guess
 # uAH = id.AH_pos

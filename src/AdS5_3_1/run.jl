@@ -43,7 +43,8 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
     # if we are not recovering from a checkpoint, run initial conditions
     if do_id
-        init_data!(bulkconstrains, bulkevols, boundary, gauge, systems, evoleq, id)
+        init_data!(bulkconstrains, bulkevols, bulkderivs, boundary, gauge,
+                   horizoncache, systems, evoleq, id)
     end
 
     # full state vector
