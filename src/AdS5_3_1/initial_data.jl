@@ -45,9 +45,9 @@ Base.@kwdef struct PhiGaussian_u{T} <: InitialData
 end
 
 
-function init_data!(bulkconstrains, bulkevols, bulkderivs, boundary::Boundary,
-                    gauge::Gauge, horizoncache::HorizonCache, systems::SystemPartition,
-                    evoleq::EvolutionEquations, id::InitialData)
+function (id::InitialData)(bulkconstrains, bulkevols, bulkderivs, boundary::Boundary,
+                           gauge::Gauge, horizoncache::HorizonCache, systems::SystemPartition,
+                           evoleq::EvolutionEquations)
     _, Nx, Ny = size(systems[end])
     AH_pos    = id.AH_pos
     xi        = getxi(gauge)

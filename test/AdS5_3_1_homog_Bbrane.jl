@@ -38,8 +38,8 @@
     horizoncache   = AdS5_3_1.HorizonCache(systems[end], evoleq.gaugecondition.fd_order)
 
     # initial conditions
-    init_data!(bulkconstrains, bulkevols, bulkderivs, boundary, gauge,
-               horizoncache, systems, evoleq, id)
+    id(bulkconstrains, bulkevols, bulkderivs, boundary, gauge,
+       horizoncache, systems, evoleq)
 
     # function to solve the nested system, given the initial data
     nested = Nested(systems, bulkconstrains, bulkderivs)
