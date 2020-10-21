@@ -10,6 +10,11 @@ Extend this type for different `InitialData` choices
 abstract type InitialData end
 
 """
+Extend this type for different `Diagnostics` operations
+"""
+abstract type Diagnostics end
+
+"""
 Extend this type for different `GaugeCondition`s
 """
 abstract type GaugeCondition end
@@ -35,11 +40,15 @@ Base.@kwdef struct AHF
 end
 
 """
-Extend this type for different `EvolutionEquations`
+Extend this type for different `EvolutionEquations`. Needs members `ahf` and
+`gaugecondition`.
 """
 abstract type EvolutionEquations end
 
-struct EvolTest0 <: EvolutionEquations end
+Base.@kwdef struct EvolTest0{TG<:GaugeCondition} <: EvolutionEquations
+    gaugecondition :: TG  = ConstantGauge()
+    ahf            :: AHF = AHF()
+end
 
 Base.@kwdef struct AffineNull{T,TP<:Potential,TG<:GaugeCondition} <: EvolutionEquations
     phi0           :: T   = 0.0

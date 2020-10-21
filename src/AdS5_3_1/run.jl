@@ -1,6 +1,6 @@
 
 function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquations,
-                   integration::Integration, io::InOut)
+                   diagnostics::Diagnostics, integration::Integration, io::InOut)
     Jecco.startup()
 
     # atlas of grid configuration and respective SystemPartition
@@ -90,6 +90,11 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     end
     last_checkpoint_walltime = 0.0
 
+    # prepare diagnostics function
+    diag = diagnostics(bulkevols, bulkconstrains, bulkderivs, boundary, gauge,
+                       horizoncache, systems, tinfo, evoleq, io)
+
+
     # remove termination trigger file, if it exists
     if io.termination_from_file
         finish_him = abspath(io.out_dir, io.termination_file)
@@ -99,6 +104,9 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     # write initial data
     output_evol(evolvars)
     output_constrained(bulkconstrains)
+
+    # diagnostics at t=0
+    diag()
 
     # for stdout info
     Jecco.out_info(tinfo.it, tinfo.t, 0.0, gauge.xi, "ξ", 1, 1)
@@ -121,13 +129,14 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
         output_evol(u)
         output_constrained(bulkconstrains)
 
+        # diagnostics
+        diag()
+
         # checkpoint
         if telapsed >= last_checkpoint_walltime + io.checkpoint_every_walltime_hours
             last_checkpoint_walltime = telapsed
             checkpoint(u)
         end
-
-        # TODO: find AH
 
         # terminate run?
         if t >= tmax || telapsed >= io.max_walltime
@@ -147,4 +156,9 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
     println("-------------------------------------------------------------")
     println("Done.")
+end
+
+function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquations,
+                   integration::Integration, io::InOut)
+    run_model(grid, id, evoleq, NoDiag(), integration, io)
 end

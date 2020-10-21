@@ -34,6 +34,8 @@ include("find_AH.jl")
 # input/output
 include("IO.jl")
 
+include("diagnostics.jl")
+
 # run the model
 include("run.jl")
 
@@ -65,6 +67,7 @@ export PhiGaussian_u
 export init_data!, init_data, restore!
 export ConstantAH, AHF
 export AffineNull, EvolTest0
+export NoDiag, DiagAH
 export BulkEvolved, BulkConstrained, Boundary, Gauge, Bulk
 export System, SystemPartition
 export BulkEvolvedPartition, BulkConstrainedPartition, BulkDerivPartition

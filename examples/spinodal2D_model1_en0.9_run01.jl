@@ -44,6 +44,10 @@ evoleq = AffineNull(
     gaugecondition = ConstantAH(u_AH = 1.0),
 )
 
+diag = DiagAH(
+    find_AH_every_t    = 1.0,
+)
+
 io = InOut(
     out_boundary_every_t        = 0.1,
     out_bulk_every_t            = 0.5,
@@ -60,4 +64,4 @@ integration = Integration(
     filter_poststep = true,
 )
 
-run_model(grid, id, evoleq, integration, io)
+run_model(grid, id, evoleq, diag, integration, io)
