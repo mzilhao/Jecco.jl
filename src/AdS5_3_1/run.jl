@@ -1,4 +1,17 @@
 
+function estimate_dtmax(chart::Chart)
+    ucoord, xcoord, ycoord = chart.coords
+    dx = Jecco.delta(xcoord)
+    dy = Jecco.delta(ycoord)
+    # spacing in u is not uniform, so let's compute the average spacing
+    du_avg = (ucoord[end] - ucoord[1]) / (ucoord.nodes - 1)
+    0.8 * min(dx, dy, du_avg)
+end
+function estimate_dtmax(atlas::Atlas)
+    dtmaxs = estimate_dtmax.(atlas.charts)
+    minimum(dtmaxs)
+end
+
 function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquations,
                    diagnostics::Diagnostics, integration::Integration, io::InOut)
     Jecco.startup()
@@ -53,8 +66,22 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     # function that updates the state vector
     rhs! = setup_rhs(bulkconstrains, bulkderivs, horizoncache, systems, integration)
 
-    dt0  = integration.dt
-    tmax = integration.tmax
+    #=
+    limit the default integrator dtmax and qmax values. see:
+      https://diffeq.sciml.ai/latest/extras/timestepping/
+      https://diffeq.sciml.ai/latest/basics/common_solver_opts/
+    =#
+    dtmax = estimate_dtmax(atlas)
+    qmax  = 1.2
+
+    if isa(integration.dt, Number)
+        dt0   = integration.dt
+    elseif integration.dt == :auto
+        dt0   = 0.5 * dtmax
+    else
+        error("Unknown dt value")
+    end
+    tmax  = integration.tmax
 
     # decide in the evolution loop when to terminate the run, so set here an
     # impossibly large value for tstop
@@ -63,7 +90,9 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
     prob  = ODEProblem(rhs!, evolvars, tspan, evoleq)
     # https://diffeq.sciml.ai/stable/basics/integrator/
-    integrator = init(prob, alg, save_everystep=false, dt=dt0, adaptive=integration.adaptive)
+    integrator = init(prob, alg, save_everystep=false, dt=dt0, dtmax=dtmax, qmax=qmax,
+                      adaptive=integration.adaptive, reltol=integration.reltol,
+                      calck=false)
 
     tinfo  = Jecco.TimeInfo(it0, t0, 0.0, 0.0)
 

@@ -60,11 +60,13 @@ end
 """
 Parameters for the time evolution
 """
-Base.@kwdef struct Integration{S}
-    dt              :: Float64
-    tmax            :: Float64
+Base.@kwdef struct Integration{T,Tdt,S}
+    dt              :: Tdt  = :auto
+    tmax            :: T
     ODE_method      :: S    = AB3()
     adaptive        :: Bool = false
+    # relative tolerance for adaptive integrators
+    reltol          :: T    = 1e-6
     filter_poststep :: Bool = true
 end
 
