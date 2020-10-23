@@ -44,17 +44,14 @@ struct Output{T}
     tinfo            :: TimeInfo{T}
 
     function Output{T}(dir::String, prefix::String,
-                       software::String, software_version::String, tinfo::TimeInfo{T};
-                       remove_existing::Bool=false) where {T}
+                       software::String, software_version::String,
+                       tinfo::TimeInfo{T}) where {T}
         # if no name specified error out
         if dir == ""
             error("Output folder cannot be empty string.")
         end
 
         # create folder if it doesn't exist already
-        if isdir(dir) && remove_existing
-            rm(dir, recursive=true)
-        end
         if !isdir(dir)
             mkdir(dir)
         end
@@ -66,12 +63,10 @@ struct Output{T}
         new(dir, prefix, software, software_version, tinfo)
     end
 end
-function Output(dir::String, prefix::String, tinfo::TimeInfo{T};
-                remove_existing::Bool=false) where {T<:Real}
+function Output(dir::String, prefix::String, tinfo::TimeInfo{T}) where {T<:Real}
     software         = "Jecco"
     software_version = "0.7.0"
-    Output{T}(dir, prefix, software, software_version, tinfo;
-              remove_existing=remove_existing)
+    Output{T}(dir, prefix, software, software_version, tinfo)
 end
 
 # make Output a callable struct

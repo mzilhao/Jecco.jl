@@ -14,7 +14,7 @@ end
 
 function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquations,
                    diagnostics::Diagnostics, integration::Integration, io::InOut)
-    Jecco.startup()
+    Jecco.startup(io.out_dir; remove_existing=io.remove_existing)
 
     # atlas of grid configuration and respective SystemPartition
     atlas     = Atlas(grid)

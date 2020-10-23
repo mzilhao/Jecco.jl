@@ -1,7 +1,19 @@
 
 using Dates
 
-function startup()
+function startup(outdir::String; remove_existing::Bool=false)
+    # if no outdir specified, error out
+    if outdir == ""
+        error("Output folder cannot be empty string.")
+    end
+
+    # create output folder if it doesn't exist already
+    if isdir(outdir) && remove_existing
+        rm(outdir, recursive=true)
+    end
+    if !isdir(outdir)
+        mkdir(outdir)
+    end
 
     timenow = now()
     datef   = Dates.format(timenow, "e, dd u yyyy (HH:MM:SS)")

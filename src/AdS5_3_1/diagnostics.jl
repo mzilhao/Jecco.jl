@@ -42,8 +42,7 @@ function (diagnostics::DiagAH)(
     empty   = Cartesian{1}("u", 0.0, 0.0, 1)
     chart2D = Chart(empty, systems[end].xcoord, systems[end].ycoord)
 
-    out_diag  = Jecco.Output(io.out_dir, "diagnostics_", tinfo;
-                             remove_existing=io.remove_existing)
+    out_diag  = Jecco.Output(io.out_dir, "diagnostics_", tinfo)
 
     fields = Jecco.Field("sigma", sigma, chart2D)
 
