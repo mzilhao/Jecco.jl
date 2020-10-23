@@ -65,7 +65,7 @@ struct Output{T}
 end
 function Output(dir::String, prefix::String, tinfo::TimeInfo{T}) where {T<:Real}
     software         = "Jecco"
-    software_version = "0.7.0"
+    software_version = "0.8.0"
     Output{T}(dir, prefix, software, software_version, tinfo)
 end
 
