@@ -108,7 +108,6 @@
 
 end
 
-# TODO
 @testset "EqualSizeStencilFD tests:" begin
 
     Dx = EqualSizeStencilFD{1}(1, 4, 1.0, 10)
@@ -124,8 +123,6 @@ end
     @test 12*Dx[10,:] ≈ [0.0, 0.0, 0.0, 0.0, 0.0, 3.0, -16.0, 36.0, -48.0, 25.0] atol=1e-15
 
 end
-
-
 
 @testset "Periodic Derivative tests:" begin
 
@@ -159,13 +156,15 @@ end
     df  = D1 * f
     d2f = D2 * f
 
-    @test df  ≈ cos.(x) atol=hx^ord
-    @test d2f ≈ -f atol=hx^ord
+    @test df  ≈ cos.(x) rtol=1e-8
+    @test d2f ≈ -f rtol=1e-8
 
     # now for the callable, point-wise, methods
+    df0 = similar(df)
     for i in eachindex(f)
-        @test D1(f,i) == df[i]
+        df0[i] = D1(f,i)
     end
+    @test df0 == df
 
     # 3D case
 
@@ -240,9 +239,11 @@ end
     @test d2f ≈ -f
 
     # now for the callable, point-wise, methods
+    df0 = similar(df)
     for i in eachindex(f)
-        @test D1(f,i) == df[i]
+        df0[i] = D1(f,i)
     end
+    @test df0 == df
 
     # 3D case
 
@@ -312,10 +313,11 @@ end
     @test dxxf ≈ fill(1.0, size(dxxf))
 
     # now for the callable, point-wise, methods
+    dxf0 = similar(dxf)
     for i in eachindex(f)
-        @test Dx(f,i) ≈ dxf[i]
+        dxf0[i] = Dx(f,i)
     end
-
+    @test dxf0 ≈ dxf
 
     # 3D case
 
@@ -382,8 +384,13 @@ end
 
     dxyf   = Dx * (Dy * f)
 
-    @test Dx(Dy, f,  2,120) ≈ dxyf[2,120]
-    @test Dx(Dy, f, 42,300) ≈ dxyf[42,300]
+    dxyf0  = similar(dxyf)
+    for j in 1:ynodes
+        for i in 1:xnodes
+            dxyf0[i,j] = Dx(Dy, f,i, j)
+        end
+    end
+    @test dxyf0 ≈ dxyf rtol=1e-12 atol=1e-12
 end
 
 @testset "PeriodicFD cross derivative for general arrays tests:" begin
@@ -415,10 +422,15 @@ end
 
     dxzf  = Dx * (Dz * f)
 
-    @test Dx(Dz, f, 2,16,1)     ≈ dxzf[2,16,1]
-    @test Dx(Dz, f, 1,12,2)     ≈ dxzf[1,12,2]
-    @test Dx(Dz, f, 100,12,300) ≈ dxzf[100,12,300]
-    @test Dx(Dz, f, 600,8,100)  ≈ dxzf[600,8,100]
+    dxzf0  = similar(dxzf)
+    for k in 1:znodes
+        for j in 1:ynodes
+            for i in 1:xnodes
+                dxzf0[i,j,k] = Dx(Dz, f, i, j, k)
+            end
+        end
+    end
+    @test dxzf0 ≈ dxzf rtol=1e-12 atol=1e-12
 
 
     g   = [sin.(x3) .* 0.5 * sin.(x2) .* x1.^2 for x3 in z, x1 in y, x2 in x]
@@ -464,11 +476,15 @@ end
 
     dxzf  = Dx * (Dz * f)
 
-    @test Dx(Dz, f, 2,16,1)     ≈ dxzf[2,16,1]
-    @test Dx(Dz, f, 1,12,2)     ≈ dxzf[1,12,2]
-    @test Dx(Dz, f, 100,12,300) ≈ dxzf[100,12,300]
-    @test Dx(Dz, f, 600,8,100)  ≈ dxzf[600,8,100]
-
+    dxzf0  = similar(dxzf)
+    for k in 1:znodes
+        for j in 1:ynodes
+            for i in 1:xnodes
+                dxzf0[i,j,k] = Dx(Dz, f, i, j, k)
+            end
+        end
+    end
+    @test dxzf0 ≈ dxzf rtol=1e-12 atol=1e-12
 
     g   = [sin.(x3) .* 0.5 * sin.(x2) .* x1.^2 for x3 in z, x1 in y, x2 in x]
 
@@ -482,20 +498,6 @@ end
     @test Dz(Dx, g, 300,16,600)  ≈ dxzg[300,16,600]
     @test Dz(Dx, g, 10,8,150)    ≈ dxzg[10,8,150]
 end
-
-# the following test fails; it seems that pointwise it cannot find the
-# deriv if one operator is periodic and the other is not.
-# TG: Below is the error I get locally:
-
-"""
-ERROR: MethodError: no method matching _D_intA_lowB(::Jecco.PeriodicFD{Float64,1,Array{Float64,1}}, ::Jecco.FiniteDiffDeriv{Float64,3,Array{Float64,1},Array{Array{Float64,1},1},Array{Array{Float64,1},1}}, ::Array{Float64,3}, ::Tuple{Int64,Int64,Int64})
-Closest candidates are:
-  _D_intA_lowB(::Jecco.PeriodicFD{T,N1,S} where S, ::Jecco.PeriodicFD{T,N2,S} where S, ::AbstractArray, ::Any) where {T<:Real, N1, N2} at /home/thanasis/repos/Jecco.jl/src/deriv_operators.jl:469
-  _D_intA_lowB(::Jecco.FiniteDiffDeriv{T,N1,S1,S2,S3} where S3 where S2 where S1, ::Jecco.FiniteDiffDeriv{T,N2,S1,S2,S3} where S3 where S2 where S1, ::AbstractArray, ::Any) where {T<:Real, N1, N2} at /home/thanasis/repos/Jecco.jl/src/deriv_operators.jl:709
-Stacktrace:
- [1] (::Jecco.PeriodicFD{Float64,1,Array{Float64,1}})(::Jecco.FiniteDiffDeriv{Float64,3,Array{Float64,1},Array{Array{Float64,1},1},Array{Array{Float64,1},1}}, ::Array{Float64,3}, ::Int64, ::Int64, ::Int64) at /home/thanasis/repos/Jecco.jl/src/deriv_operators.jl:409
- [2] top-level scope at REPL[51]:1
-"""
 
 @testset "PeriodicFD and EqualSizeStencilFD cross derivative for general arrays tests:" begin
     xmin   = -2.0*pi
@@ -526,11 +528,15 @@ Stacktrace:
 
     dxzf  = Dx * (Dz * f)
 
-    @test Dx(Dz, f, 2,16,1)     ≈ dxzf[2,16,1]
-    @test Dx(Dz, f, 1,12,2)     ≈ dxzf[1,12,2]
-    @test Dx(Dz, f, 100,12,300) ≈ dxzf[100,12,300]
-    @test Dx(Dz, f, 600,8,100)  ≈ dxzf[600,8,100]
-
+    dxzf0  = similar(dxzf)
+    for k in 1:znodes
+        for j in 1:ynodes
+            for i in 1:xnodes
+                dxzf0[i,j,k] = Dx(Dz, f, i, j, k)
+            end
+        end
+    end
+    @test dxzf0 ≈ dxzf rtol=1e-12 atol=1e-12
 
     g   = [sin.(x3) .* 0.5 * sin.(x2) .* x1.^2 for x3 in z, x1 in y, x2 in x]
 
