@@ -1,16 +1,22 @@
 
 abstract type Filter{T,N} end
 
+#= Kreiss-Oliger dissipation
+
+These are operators of the form
+
+  σ (-1)^(ord+3)/2 / 2^(ord+1) ∂^(ord+1) / ∂x^(ord+1)
+
+cf: https://einsteintoolkit.org/thornguide/CactusNumerical/Dissipation/documentation.html
+=#
 function KO_kernel(order::Int, sigma_diss::T) where {T<:Real}
-    if order == 3
-        kernel = -T[1, -4, 6, -4, 1]
-        fac = sigma_diss / 16
-    elseif order == 5
-        kernel = T[1, -6, 15, -20, 15, -6, 1]
-        fac = sigma_diss / 64
-    else
-        error("order = $order Kreiss-Oliger filter not yet implemented.")
-    end
+    @assert (order + 1) % 2 == 0 "Only implemented for odd order."
+
+    kernel = calculate_weights(order + 1, order + 1, 0)
+
+    a   = div(order + 3, 2)
+    s   = (-1)^a
+    fac = s * sigma_diss / 2^(order + 1)
 
     rmul!(kernel, fac)
 
