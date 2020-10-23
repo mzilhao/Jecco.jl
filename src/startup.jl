@@ -8,7 +8,15 @@ function startup()
 
     date    = string(datef)
     host    = gethostname()
-    user    = ENV["USER"]
+    user    = try
+        ENV["USER"]
+    catch e
+        if isa(e, KeyError) # probably on windows
+            splitdir(homedir())[end]
+        else
+            throw(e)
+        end
+    end
 
     num_threads = try
         ENV["JULIA_NUM_THREADS"]
@@ -18,7 +26,7 @@ function startup()
             1
         else
             # unknown error
-            error(e)
+            throw(e)
         end
     end
 
