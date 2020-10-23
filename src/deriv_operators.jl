@@ -466,7 +466,7 @@ function _D_interior(A::AbstractFiniteDiff{T,N1}, B::AbstractFiniteDiff{T,N2},
 end
 
 # boundary points
-function _D_intA_lowB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
+function _D_intA_lowB(A::AbstractFiniteDiff{T,N1}, B::PeriodicFD{T,N2},
                       f::AbstractArray, idx) where {T<:Real,N1,N2}
     NA   = A.len
     NB   = B.len
@@ -495,7 +495,7 @@ function _D_intA_lowB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
 
     sum_ij
 end
-function _D_intA_highB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
+function _D_intA_highB(A::AbstractFiniteDiff{T,N1}, B::PeriodicFD{T,N2},
                        f::AbstractArray, idx) where {T<:Real,N1,N2}
     NA   = A.len
     NB   = B.len
@@ -524,7 +524,7 @@ function _D_intA_highB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
 
     sum_ij
 end
-function _D_lowA_intB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
+function _D_lowA_intB(A::PeriodicFD{T,N1}, B::AbstractFiniteDiff{T,N2},
                       f::AbstractArray, idx) where {T<:Real,N1,N2}
     NA   = A.len
     NB   = B.len
@@ -553,7 +553,7 @@ function _D_lowA_intB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
 
     sum_ij
 end
-function _D_highA_intB(A::PeriodicFD{T,N1}, B::PeriodicFD{T,N2},
+function _D_highA_intB(A::PeriodicFD{T,N1}, B::AbstractFiniteDiff{T,N2},
                        f::AbstractArray, idx) where {T<:Real,N1,N2}
     NA   = A.len
     NB   = B.len
@@ -706,7 +706,7 @@ end
 
 # now for FiniteDiffDeriv structs
 
-function _D_intA_lowB(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
+function _D_intA_lowB(A::AbstractFiniteDiff{T,N1}, B::FiniteDiffDeriv{T,N2},
                       f::AbstractArray, idx) where {T<:Real,N1,N2}
     NA   = A.len
     NB   = B.len
@@ -735,7 +735,7 @@ function _D_intA_lowB(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
     sum_ij
 end
 
-function _D_intA_highB(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
+function _D_intA_highB(A::AbstractFiniteDiff{T,N1}, B::FiniteDiffDeriv{T,N2},
                        f::AbstractArray, idx) where {T<:Real,N1,N2}
     NB   = B.len
     qA   = A.stencil_coefs
@@ -763,7 +763,7 @@ function _D_intA_highB(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
     sum_ij
 end
 
-function _D_lowA_intB(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
+function _D_lowA_intB(A::FiniteDiffDeriv{T,N1}, B::AbstractFiniteDiff{T,N2},
                       f::AbstractArray, idx) where {T<:Real,N1,N2}
     qB   = B.stencil_coefs
     sB   = B.stencil_offset + 1
@@ -789,7 +789,7 @@ function _D_lowA_intB(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
     sum_ij
 end
 
-function _D_highA_intB(A::FiniteDiffDeriv{T,N1}, B::FiniteDiffDeriv{T,N2},
+function _D_highA_intB(A::FiniteDiffDeriv{T,N1}, B::AbstractFiniteDiff{T,N2},
                        f::AbstractArray, idx) where {T<:Real,N1,N2}
     NA   = A.len
     qB   = B.stencil_coefs
