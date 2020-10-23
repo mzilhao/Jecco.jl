@@ -143,7 +143,15 @@ function setup_openpmd_file(out::Output, fid::HDF5File)
     attrs(fid)["softwareVersion"] = out.software_version
     attrs(fid)["openPMD"] = "1.1.0"
     attrs(fid)["openPMDextension"] = 0
-    attrs(fid)["author"] = ENV["USER"]
+    attrs(fid)["author"] = try
+        ENV["USER"]
+    catch e
+        if isa(e, KeyError) # probably on windows
+            splitdir(homedir())[end]
+        else
+            throw(e)
+        end
+    end
     attrs(fid)["date"] = string(date)
     attrs(fid)["iterationEncoding"] = "fileBased"
     attrs(fid)["iterationFormat"] = "$(out.prefix)%T.h5"
