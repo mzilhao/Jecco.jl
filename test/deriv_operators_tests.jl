@@ -468,10 +468,14 @@ end
     @test d2f ≈ -f
 
     # now for the callable, point-wise, methods
+    df0  = similar(df)
+    d2f0 = similar(d2f)
     for i in eachindex(f)
-        @test D1(f,i) ≈ df[i]  atol=1e-13
-        @test D2(f,i) ≈ d2f[i] atol=1e-11
+        df0[i]  = D1(f,i)
+        d2f0[i] = D2(f,i)
     end
+    @test df0  ≈ df  atol=1e-12
+    @test d2f0 ≈ d2f atol=1e-10
 
 
     # 3D case
