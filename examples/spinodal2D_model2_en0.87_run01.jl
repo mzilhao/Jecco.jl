@@ -2,12 +2,12 @@
 using Jecco.AdS5_3_1
 
 grid = SpecCartGrid3D(
-    x_min            = -5.0,
-    x_max            =  5.0,
-    x_nodes          =  32,
-    y_min            = -5.0,
-    y_max            =  5.0,
-    y_nodes          =  32,
+    x_min            = -20.0,
+    x_max            =  20.0,
+    x_nodes          =  48,
+    y_min            = -20.0,
+    y_max            =  20.0,
+    y_nodes          =  48,
     u_outer_min      =  0.1,
     u_outer_max      =  1.005,
     u_outer_domains  =  3,
@@ -23,13 +23,12 @@ potential = Phi8Potential(
 )
 
 id = BlackBranePert(
-    energy_dens = 1.4,
+    energy_dens = 0.817,
     phi0        = 1.0,
-    # TODO: use phi2 equilibrium value?
     phi2        = 0.29819,
-    oophiM2     = potential.oophiM2,
-    a4_ampx     = -1.e-2,
-    a4_ampy     = -1.e-2,
+    oophiM2     = -1.0,
+    a4_ampx     = -5.e-2,
+    a4_ampy     = -5.e-2,
     a4_kx       = 1,
     a4_ky       = 1,
     AH_pos      = 1.0,
@@ -50,15 +49,15 @@ diag = DiagAH(
 )
 
 io = InOut(
-    out_boundary_every_t        = 0.1,
-    out_bulk_every_t            = 0.5,
-    out_gauge_every_t           = 0.1,
-    out_bulkconstrained_every_t = 0.5,
+    out_boundary_every_t        = 0.2,
+    out_bulk_every_t            = 5.0,
+    out_gauge_every_t           = 0.2,
+    out_bulkconstrained_every_t = 5.0,
     checkpoint_every_walltime_hours = 1,
 )
 
 integration = Integration(
-    tmax            = 200.0,
+    tmax            = 500.0,
     ODE_method      = AdS5_3_1.VCABM3(),
     adaptive        = true,
     filter_poststep = true,

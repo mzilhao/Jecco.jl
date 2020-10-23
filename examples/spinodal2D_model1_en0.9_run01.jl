@@ -57,7 +57,6 @@ io = InOut(
 )
 
 integration = Integration(
-    dt              = 0.002,
     tmax            = 200.0,
     ODE_method      = AdS5_3_1.VCABM3(),
     adaptive        = true,
