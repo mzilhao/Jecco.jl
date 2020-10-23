@@ -15,6 +15,19 @@ function startup(outdir::String; remove_existing::Bool=false)
         mkdir(outdir)
     end
 
+    # copy execution script to outdir folder
+    scriptname = basename(Base.source_path())
+    dst = joinpath(outdir, scriptname)
+    try
+        cp(Base.source_path(), dst)
+    catch e
+        if isa(e, ArgumentError) # file already exist
+            nothing
+        else
+            throw(e)
+        end
+    end
+
     timenow = now()
     datef   = Dates.format(timenow, "e, dd u yyyy (HH:MM:SS)")
 
