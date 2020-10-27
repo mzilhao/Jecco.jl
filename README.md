@@ -1,6 +1,7 @@
 # Jecco
 
 [![Build Status](https://travis-ci.com/mzilhao/Jecco.jl.svg?branch=master)](https://travis-ci.com/mzilhao/Jecco.jl)
+[![DOI](https://zenodo.org/badge/213456967.svg)](https://zenodo.org/badge/latestdoi/213456967)
 
 The **Julia Einstein Characteristic Code** (**Jecco**; [['ʒɛku](https://www.infopedia.pt/dicionarios/lingua-portuguesa/Jeco)]) provides tools to solve Einstein's equations in the characteristic formulation in [Julia](http://julialang.org/).
 
