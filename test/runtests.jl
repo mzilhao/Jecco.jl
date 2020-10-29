@@ -1,6 +1,7 @@
+using Test
 
 using Jecco
-using Test
+using Jecco.AdS5_3_1
 
 @testset "All tests:" begin
 
@@ -10,12 +11,18 @@ using Test
 
     @time @testset "output tests:" begin include("output_tests.jl") end
 
+    @time @testset "filtering tests:" begin include("filtering_tests.jl") end
+
     @time @testset "AdS5_3_1 inner grid coefficients tests:" begin
         include("AdS5_3_1_equation_inner_coeff.jl")
     end
 
     @time @testset "AdS5_3_1 outer grid coefficients tests:" begin
         include("AdS5_3_1_equation_outer_coeff.jl")
+    end
+
+    @time @testset "AdS5_3_1 homogeneous black brane tests:" begin
+        include("AdS5_3_1_homog_Bbrane.jl")
     end
 
 end
