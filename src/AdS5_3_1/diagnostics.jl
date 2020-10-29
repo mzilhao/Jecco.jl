@@ -13,7 +13,7 @@ end
 
 function (::NoDiag)(bulkevols, bulkconstrains, bulkderivs, boundary::Boundary,
                     gauge::Gauge, horizoncache::HorizonCache, systems::SystemPartition,
-                    tinfo::Jecco.TimeInfo, evoleq::EvolutionEquations, io::InOut, ::NoDiag)
+                    tinfo::Jecco.TimeInfo, evoleq::EvolutionEquations, io::InOut)
     # no-op
     () -> nothing
 end
