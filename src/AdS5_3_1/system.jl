@@ -262,18 +262,26 @@ function HorizonCache(sys::System, ord::Int)
     _, Nx, Ny = size(sys)
     hx = Jecco.delta(sys.xcoord)
     hy = Jecco.delta(sys.ycoord)
-    T  = Jecco.coord_eltype(sys.ucoord)
+    T1 = Jecco.coord_eltype(sys.ucoord)
     M  = Nx * Ny
 
-    bulkhorizon = BulkHorizon{T}(Nx, Ny)
+    # there is no method for lu when acting on SparseMatrixCSC{BigFloat,Int64}, so
+    # let's use instead type Float64 for such cases
+    if T1 == BigFloat
+        T2 = Float64
+    else
+        T2 = T1
+    end
 
-    axx    = Vector{T}(undef, M)
-    ayy    = Vector{T}(undef, M)
-    axy    = Vector{T}(undef, M)
-    bx     = Vector{T}(undef, M)
-    by     = Vector{T}(undef, M)
-    cc     = Vector{T}(undef, M)
-    b_vec  = Vector{T}(undef, M)
+    bulkhorizon = BulkHorizon{T1}(Nx, Ny)
+
+    axx    = Vector{T2}(undef, M)
+    ayy    = Vector{T2}(undef, M)
+    axy    = Vector{T2}(undef, M)
+    bx     = Vector{T2}(undef, M)
+    by     = Vector{T2}(undef, M)
+    cc     = Vector{T2}(undef, M)
+    b_vec  = Vector{T2}(undef, M)
 
     Dx_    = CenteredDiff{1}(1, ord, hx, Nx)
     Dxx_   = CenteredDiff{1}(2, ord, hx, Nx)
@@ -287,11 +295,11 @@ function HorizonCache(sys::System, ord::Int)
     https://en.wikipedia.org/wiki/Kronecker_product
     https://arxiv.org/pdf/1801.01483.pdf (section 5)
     =#
-    Dx_2D  = kron(I(Ny), SparseMatrixCSC(Dx_))
-    Dxx_2D = kron(I(Ny), SparseMatrixCSC(Dxx_))
-    Dy_2D  = kron(SparseMatrixCSC(Dy_), I(Nx))
-    Dyy_2D = kron(SparseMatrixCSC(Dyy_), I(Nx))
-    Dxy_2D = Dx_2D * Dy_2D
+    Dx_2D  = T2.(kron(I(Ny), SparseMatrixCSC(Dx_)))
+    Dxx_2D = T2.(kron(I(Ny), SparseMatrixCSC(Dxx_)))
+    Dy_2D  = T2.(kron(SparseMatrixCSC(Dy_), I(Nx)))
+    Dyy_2D = T2.(kron(SparseMatrixCSC(Dyy_), I(Nx)))
+    Dxy_2D = T2.(Dx_2D * Dy_2D)
 
     _Dx_2D  = copy(Dx_2D)
     _Dxx_2D = copy(Dxx_2D)
@@ -299,7 +307,7 @@ function HorizonCache(sys::System, ord::Int)
     _Dyy_2D = copy(Dyy_2D)
     _Dxy_2D = copy(Dxy_2D)
 
-    HorizonCache{T,typeof(Dx_2D)}(bulkhorizon, axx, ayy, axy, bx, by, cc, b_vec,
+    HorizonCache{T1,T2,typeof(Dx_2D)}(bulkhorizon, axx, ayy, axy, bx, by, cc, b_vec,
                                   Dx_2D,  Dy_2D, Dxx_2D,  Dyy_2D,  Dxy_2D,
                                   _Dx_2D, _Dy_2D, _Dxx_2D, _Dyy_2D, _Dxy_2D)
 end
