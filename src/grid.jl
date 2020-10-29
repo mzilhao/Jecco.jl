@@ -54,7 +54,7 @@ function Coord{N}(coord_type::String, name::String, min::T, max::T, nodes::Int) 
 end
 
 
-@inline function delta(coord::CartesianCoord) where {T<:Real,N}
+@inline function delta(coord::CartesianCoord)
     (coord.max - coord.min) / (coord.nodes - 1)
 end
 
@@ -67,11 +67,12 @@ end
     coord.min .+ (i .- 1) * h
 end
 
-@inline function Base.getindex(coord::GaussLobattoCoord, j::Union{Int, UnitRange})
+@inline function Base.getindex(coord::GaussLobattoCoord{N,T},
+                               j::Union{Int, UnitRange}) where {N,T}
     xmin  = coord.min
     xmax  = coord.max
-    M     = coord.nodes - 1.0
-    xj    = -cos.( (j .- 1.0) * (pi / M))
+    M     = coord.nodes - 1
+    xj    = -cos.( (j .- 1) * (T(pi) / M))
     0.5 * (xmax .+ xmin .+ (xmax - xmin) * xj)
 end
 

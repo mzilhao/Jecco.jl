@@ -66,7 +66,7 @@ struct Exp_Filter{N} end
 
 # α = -log(ϵ) where ϵ is the machine epsilon.
 # for the standard choice of ϵ = 2^-52, α = 36.0437
-function Exp_Filter{N}(γ::T, Nxx...; α::T=36.0437) where {T<:Real,N}
+function Exp_Filter{N}(γ::T, Nxx...; α::T=36.0437) where {T<:AbstractFloat,N}
     kernel = exp_kernel(Nxx[N], γ, α)
     nt = Threads.nthreads()
     _cache = [Array{T}(undef, Nxx...) for _ in 1:nt]
