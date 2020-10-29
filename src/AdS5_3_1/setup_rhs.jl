@@ -1,7 +1,4 @@
 
-import Base.Threads.@threads
-import Base.Threads.@spawn
-
 function (filters::Filters)(boundary::Boundary)
     filters.ko_filter2D_x(boundary.a4)
     filters.ko_filter2D_x(boundary.fx2)
