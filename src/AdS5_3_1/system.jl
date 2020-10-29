@@ -30,8 +30,8 @@ Base.@kwdef struct SpecCartGrid3D{T<:Real}
     sigma_diss       :: T       = 0.2
 end
 
-function Jecco.Atlas(grid::SpecCartGrid3D)
-    u_inner_coord = GaussLobatto{1}("u", 0.0, grid.u_outer_min, grid.u_inner_nodes)
+function Jecco.Atlas(grid::SpecCartGrid3D{T}) where {T}
+    u_inner_coord = GaussLobatto{1}("u", zero(T), grid.u_outer_min, grid.u_inner_nodes)
 
     N_outer_sys = grid.u_outer_domains
     delta_udom  = (grid.u_outer_max - grid.u_outer_min) / N_outer_sys
@@ -140,8 +140,8 @@ end
 Create a `SystemPartition`, which is a `Tuple` of `System` where each element
 corresponds to a different u-domain
 """
-function SystemPartition(grid::SpecCartGrid3D)
-    u_inner_coord = GaussLobatto{1}("u", 0.0, grid.u_outer_min, grid.u_inner_nodes)
+function SystemPartition(grid::SpecCartGrid3D{T}) where {T}
+    u_inner_coord = GaussLobatto{1}("u", zero(T), grid.u_outer_min, grid.u_inner_nodes)
 
     N_outer_sys = grid.u_outer_domains
     delta_udom  = (grid.u_outer_max - grid.u_outer_min) / N_outer_sys
