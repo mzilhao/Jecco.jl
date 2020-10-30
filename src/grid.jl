@@ -83,14 +83,15 @@ end
 @inline Base.getindex(coord::AbstractCoord, ::Colon) = [coord[i] for i in 1:coord.nodes]
 
 
-struct Chart{N,A}
+struct Chart{N,T,A}
     coords :: A
     function Chart{A}(coords) where {A}
         N = length(coords)
+        T = coord_eltype(coords[1])
         for a in 1:N
             @assert(coord_axis(coords[a]) == a, "wrong order in grid array")
         end
-        new{N,A}(coords)
+        new{N,T,A}(coords)
     end
 end
 """
