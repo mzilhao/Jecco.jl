@@ -177,6 +177,12 @@ function write_dataset(grp::HDF5Group, fieldname::String, data::AbstractArray)
     write(dset, data)
     dset
 end
+# there is no method to write an Array{BigFloat} in HDF5, so convert it to Float64
+function write_dataset(grp::HDF5Group, fieldname::String, data::AbstractArray{BigFloat})
+    dset, = d_create(grp, fieldname, Float64.(data))
+    write(dset, Float64.(data))
+    dset
+end
 
 openpmd_geometry(coord::CartesianCoord) = "cartesian"
 openpmd_geometry(coord::GaussLobattoCoord) = "other"
@@ -200,6 +206,17 @@ function setup_openpmd_mesh(dset::HDF5Dataset, coord::AbstractCoord)
     attrs(dset)["axisLabels"]       = coord.name
     nothing
 end
+# there is no method to write BigFloat attributes in HDF5, so convert them to Float64
+function setup_openpmd_mesh(dset::HDF5Dataset, coord::AbstractCoord{N,BigFloat}) where {N}
+    T = Float64
+    attrs(dset)["geometry"]         = openpmd_geometry(coord)
+    attrs(dset)["gridGlobalOffset"] = T(coord.min)
+    attrs(dset)["gridSpacing"]      = T(Jecco.delta(coord))
+    attrs(dset)["gridMax"]          = T(coord.max)
+    attrs(dset)["gridType"]         = T(Jecco.coord_type(coord))
+    attrs(dset)["axisLabels"]       = coord.name
+    nothing
+end
 
 function setup_openpmd_mesh(dset::HDF5Dataset, chart::Chart)
     mins      = Jecco.min(chart)
@@ -217,6 +234,22 @@ function setup_openpmd_mesh(dset::HDF5Dataset, chart::Chart)
     # then, we here flip the order of the grid arrays (and remember to flip back
     # when reading data in). The advantage is that no data rearrangement takes
     # place when reading or writing the data itself, which is more intensive.
+    attrs(dset)["gridGlobalOffset"] = mins[end:-1:1]
+    attrs(dset)["gridSpacing"]      = deltas[end:-1:1]
+    attrs(dset)["gridMax"]          = maxs[end:-1:1]
+    attrs(dset)["gridType"]         = gridtypes[end:-1:1]
+    attrs(dset)["axisLabels"]       = names[end:-1:1]
+    nothing
+end
+function setup_openpmd_mesh(dset::HDF5Dataset, chart::Chart{N,BigFloat}) where{N}
+    T = Float64
+    mins      = T.(Jecco.min(chart))
+    deltas    = T.(Jecco.delta(chart))
+    maxs      = T.(Jecco.max(chart))
+    gridtypes = Jecco.coord_type(chart)
+    names     = Jecco.name(chart)
+
+    attrs(dset)["geometry"]         = openpmd_geometry(chart)
     attrs(dset)["gridGlobalOffset"] = mins[end:-1:1]
     attrs(dset)["gridSpacing"]      = deltas[end:-1:1]
     attrs(dset)["gridMax"]          = maxs[end:-1:1]
