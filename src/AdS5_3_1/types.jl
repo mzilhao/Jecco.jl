@@ -66,7 +66,7 @@ Base.@kwdef struct Integration{T,Tdt,S}
     ODE_method      :: S    = AB3()
     adaptive        :: Bool = false
     # relative tolerance for adaptive integrators
-    reltol          :: T    = 1e-6
+    reltol          :: Float64 = 1e-6
     filter_poststep :: Bool = true
 end
 
