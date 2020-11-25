@@ -56,6 +56,18 @@ struct VEVTimeSeries{T} <: TimeSeries{2,T}
     end
 end
 
+struct AHTimeSeries{T} <: TimeSeries{2,T}
+    ts            :: T
+    ts_diag       :: T
+    property :: Symbol
+
+    function AHTimeSeries(foldername::String, property::Symbol)
+        ts       = OpenPMDTimeSeries(foldername, "constrained_")
+        ts_diag  = OpenPMDTimeSeries(foldername, "diagnostics_")
+        new{OpenPMDTimeSeries}(ts, ts_diag, property)
+    end
+end
+
 
 function get_data(ff::BoundaryTimeSeries, it::Int)
     f, chart = get_field(ff.ts, it=it, field=String(ff.field))
@@ -109,6 +121,17 @@ function get_data(ff::VEVTimeSeries, it::Int)
     f[1,:,:], [x, y]
 end
 
+function get_data(ff::AHTimeSeries, it::Int)
+    if ff.property == :temperature
+        f, chart = get_temperature(ff.ts, ff.ts_diag, it=it)
+    elseif ff.property == :entropy
+        f, chart = get_entropy(ff.ts, ff.ts_diag, it=it)
+    else
+        error("Unknown property")
+    end
+    _, x, y = chart[:]
+    f[1,:,:], [x,y]
+end
 
 function Base.size(ff::TimeSeries)
     Nt  = length(ff.ts.iterations)
@@ -238,8 +261,8 @@ function convert_to_mathematica(dirname::String; outfile::String="data_mathemati
     close(fid)
 end
 
-function convert_to_mathematica_local(dirname::String; outfile::String="local_data_mathematica.h5",
-                                phi0, oophiM2)
+function convert_to_mathematica_local(dirname::String; outfile::String="local_data_mathematica.h5")#,
+                                #phi0, oophiM2)
 
     ts = OpenPMDTimeSeries(dirname, prefix="boundary_")
 
