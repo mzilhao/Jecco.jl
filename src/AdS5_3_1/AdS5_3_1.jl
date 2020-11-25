@@ -1,8 +1,12 @@
 module AdS5_3_1
 
 using Jecco
+using LinearAlgebra
 using SparseArrays: SparseMatrixCSC
 using OrdinaryDiffEq
+
+import Base.Threads.@threads
+import Base.Threads.@spawn
 
 # abstract types and structs used throughout
 include("types.jl")

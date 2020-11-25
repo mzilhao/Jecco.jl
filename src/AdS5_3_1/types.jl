@@ -66,7 +66,7 @@ Base.@kwdef struct Integration{T,Tdt,S}
     ODE_method      :: S    = AB3()
     adaptive        :: Bool = false
     # relative tolerance for adaptive integrators
-    reltol          :: T    = 1e-6
+    reltol          :: Float64 = 1e-6
     filter_poststep :: Bool = true
 end
 
@@ -620,15 +620,15 @@ function BulkHorizon{T}(Nx::Int, Ny::Int) where {T<:Real}
                    Duu_Fx_uAH, Duu_Fy_uAH, Duu_A_uAH)
 end
 
-struct HorizonCache{T,D}
-    bulkhorizon :: BulkHorizon{T}
-    axx         :: Vector{T}
-    ayy         :: Vector{T}
-    axy         :: Vector{T}
-    bx          :: Vector{T}
-    by          :: Vector{T}
-    cc          :: Vector{T}
-    b_vec       :: Vector{T}
+struct HorizonCache{T1,T2,D}
+    bulkhorizon :: BulkHorizon{T1}
+    axx         :: Vector{T2}
+    ayy         :: Vector{T2}
+    axy         :: Vector{T2}
+    bx          :: Vector{T2}
+    by          :: Vector{T2}
+    cc          :: Vector{T2}
+    b_vec       :: Vector{T2}
     Dx_2D       :: D
     Dy_2D       :: D
     Dxx_2D      :: D

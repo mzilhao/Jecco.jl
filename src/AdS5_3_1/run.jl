@@ -97,7 +97,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     tinfo  = Jecco.TimeInfo(it0, t0, 0.0, 0.0)
 
     # for the boundary/xi grid
-    empty   = Cartesian{1}("u", 0.0, 0.0, 1)
+    empty   = Cartesian{1}("u", systems[1].ucoord[1], systems[1].ucoord[1], 1)
     chart2D = Chart(empty, systems[1].xcoord, systems[1].ycoord)
 
     # prepare functions to write data
