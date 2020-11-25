@@ -93,6 +93,21 @@ function compute_Ophi(phi2, phi0, oophiM2)
     end
 end
 
+function compute_temperature(Du_A_uAH, uAH, phi0)
+    if phi0 < 1.e-9
+        return (-0.5 * uAH .^ 2 .* Du_A_uAH)/(2*pi)
+    else
+        return (-0.5 * uAH .^ 2 .* Du_A_uAH)/(2*pi*phi0)
+    end
+end
+
+function compute_entropy(S_uAH, uAH, phi0)
+    if phi0 < 1.e-9
+        return pi*S_uAH.^3
+    else
+        return pi*(S_uAH/phi0).^3
+    end
+end
 
 function get_energy(ts::OpenPMDTimeSeries; it::Int, verbose::Bool=false)
     a4,   chart = get_field(ts, it=it, field="a4", verbose=verbose)
@@ -297,12 +312,102 @@ function get_Ophi(ts::OpenPMDTimeSeries; it::Int, verbose::Bool=false)
     Ophi, chart
 end
 
+#Remember that when doing get_field with a given it we always take the file whose it is the closest to the specified one.
+function get_temperature(ts_const::OpenPMDTimeSeries, ts_diag::OpenPMDTimeSeries; it::Int, verbose::Bool=false)
+    cmax = 0
+    i    = 0
+
+    sigma, _ = get_field(ts_diag, it=it, field="sigma", verbose=verbose)
+    uAH      = 1 ./sigma
+
+    phi0 = try
+        ts_const.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
+    end
+
+    while cmax == 0
+        i += 1
+        try #We find what is the deepest grid.
+            get_field(ts_const, it=it, field="A c=$i", verbose=verbose)
+        catch
+            cmax = i-1
+            @warn "maximum value for c is $(i-1)"
+        end
+    end
+    A, chart = get_field(ts_const, it=it, field="A c=$cmax", verbose=verbose)
+    u, x, y  = chart[:]
+    Nx       = length(x)
+    Ny       = length(y)
+    Nu       = length(u)
+    der      = ChebDeriv(1,u[1],u[end],length(u))
+    Du       = der.D
+    uinterp  = ChebInterpolator(u[1],u[end],length(u))
+    Du_A_uAH = similar(sigma)
+    for j in 1:Ny
+        for i in 1:Nx
+            Du_A = Du*A[:,i,j]
+            Du_A_uAH[1,i,j] = uinterp(view(Du_A,:))(uAH[1,i,j])
+        end
+    end
+
+    T = compute_temperature(Du_A_uAH, uAH, phi0)
+
+    T, chart
+end
+
+function get_entropy(ts_const::OpenPMDTimeSeries, ts_diag::OpenPMDTimeSeries; it::Int, verbose::Bool=false)
+    cmax = 0
+    i    = 0
+
+    sigma, _ = get_field(ts_diag, it=it, field="sigma", verbose=verbose)
+    uAH      = 1 ./sigma
+
+    phi0 = try
+        ts_const.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
+    end
+
+    while cmax == 0
+        i += 1
+        try #We find what is the deepest grid.
+            get_field(ts_const, it=it, field="S c=$i", verbose=verbose)
+        catch
+            cmax = i-1
+            @warn "maximum value for c is $(i-1)"
+        end
+    end
+    S, chart = get_field(ts_const, it=it, field="S c=$cmax", verbose=verbose)
+    u, x, y = chart[:]
+    Nx      = length(x)
+    Ny      = length(y)
+    Nu      = length(u)
+    uinterp = ChebInterpolator(u[1],u[end],length(u))
+    S_uAH   = similar(sigma)
+    for j in 1:Ny
+        for i in 1:Nx
+            S_uAH[1,i,j] = uinterp(view(S, :,i,j))(uAH[1,i,j])
+        end
+    end
+    entr = compute_entropy(S_uAH, uAH, phi0)
+
+    entr, chart
+end
+
 #=
 Computes the fluid velocity and the local frame (diagonal) stress tensor. p3 is just pz. I think that
 ut will always be 1, if not we can always hand ux/ut and uy/ut, which diretly are the speeds measured
 in the LAB frame, i.e. dx/dt and dy/dt.
 =#
-
 function compute_local_VEVs(e, Jx, Jy, px, py, pxy)
     T = [e -Jx -Jy; -Jx px pxy; -Jy pxy py]
     values, vectors = eigen(T)
