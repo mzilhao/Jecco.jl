@@ -322,10 +322,10 @@ function create_new_data(grid::SpecCartGrid3D, io::InOut, new_parameters::NewPar
                         gauge.xi[1,k,l] = xi_inter(xmin,y_new[l])[1]
                     end
                 else
-                    bulkevols[i].B1[:,k,l]  = B1[end,j,1,1]
-                    bulkevols[i].B2[:,k,l]  = B2[end,j,1,1]
-                    bulkevols[i].G[:,k,l]   = G[end,j,1,1]
-                    bulkevols[i].phi[:,k,l] = phi[end,j,1,1]
+                    bulkevols[i].B1[:,k,l]  = B1[end,:,1,1]
+                    bulkevols[i].B2[:,k,l]  = B2[end,:,1,1]
+                    bulkevols[i].G[:,k,l]   = G[end,:,1,1]
+                    bulkevols[i].phi[:,k,l] = phi[end,:,1,1]
                     if i == 1
                         a4_new[k,l]   = a4[end,1,1]
                         fx2_new[k,l]  = fx2[end,1,1]
@@ -424,7 +424,7 @@ function create_new_data(grid::SpecCartGrid3D, io::InOut, new_parameters::NewPar
 =#
     evolvars = AdS5_3_1.EvolVars(boundary, gauge, bulkevols)
     create_outputs(io.out_dir, evolvars, chart2D, atlas.charts, io, potential, phi0)
-    #return sigma, bulkevols, bulkconstrains, gauge
+    #return bulkevols, boundary, gauge
 end
 
 
@@ -605,9 +605,15 @@ function design_collision(grid::SpecCartGrid3D, io::InOut, new_parameters_coll::
         end
     end
 
+    #These lines for the test and comment the change gauge
+    boundary.fx2 .= fx2
+    boundary.fy2 .= fy2
+    ############################
+
+
 #TODO: Change gauge using an independent function and sigma as argument to create the new initial data
 #with uAH = 1.0. Think on extending this to small boosts up to a final big one in an automatic way.
-
+#=
 if f2max != 0
     u_AH = new_parameters_coll.u_AH
     evoleq = AffineNull(phi0=phi0, potential=potential, gaugecondition = ConstantAH(u_AH = 1.0),)
@@ -639,6 +645,7 @@ if f2max != 0
         println("max fx2 = $(maximum(boundary.fx2))")
     end
 end
+=#
 #=
 u_AH      = 0.9
 sigma     = zeros(1,Nx_new,Ny_new)
@@ -658,9 +665,10 @@ while epsilon >= 0
     change_gauge!(sigma, grid, boundary, gauge, bulkevols, evoleq, systems, u_AH)
     epsilon -= 0.02
 end
+
+change_gauge!(sigma, grid, boundary, gauge, bulkevols, evoleq, systems, 1.0)
 =#
 #We finally write the output files
-change_gauge!(sigma, grid, boundary, gauge, bulkevols, evoleq, systems, 1.0)
 evolvars = AdS5_3_1.EvolVars(boundary, gauge, bulkevols)
 create_outputs(io.out_dir, evolvars, chart2D, atlas.charts, io, potential, phi0)
 #return sigma
