@@ -400,25 +400,17 @@ function unpack(ff::AbstractVars)
 end
 
 
-struct BulkPartition{N,A}
-    _x :: NTuple{N,A}
-end
 """
-    BulkPartition(x...)
+    BulkPartition{N,A} <: AbstractPartition{N,A}
 
 Container to store (bulk) quantities that may be spread across different grid
 partitions. This is to be thought as a `Tuple` (or an `Array`) of `Bulk` objects.
 """
+struct BulkPartition{N,A} <: AbstractPartition{N,A}
+    x :: NTuple{N,A}
+end
 BulkPartition(x...) = BulkPartition(tuple(x...))
 
-@inline Base.iterate(ff::BulkPartition)         = iterate(ff._x)
-@inline Base.iterate(ff::BulkPartition, i::Int) = iterate(ff._x, i)
-
-@inline Base.length(ff::BulkPartition{N}) where{N} = N
-@inline Base.firstindex(ff::BulkPartition) = 1
-@inline Base.lastindex(ff::BulkPartition)  = length(ff)
-
-@inline Base.getindex(ff::BulkPartition, i::Int) = ff._x[i]
 
 function BulkEvolved(bulks::BulkPartition{N}) where{N}
     f = ntuple(i -> BulkEvolved(bulks[i]), N)
@@ -431,13 +423,11 @@ function BulkConstrained(bulks::BulkPartition{N}) where{N}
 end
 
 
-
-struct EvolVars{T,N,A} <: AbstractVector{T}
+struct EvolVars{T,N,A} <: FlattenedVector{T,N,A}
     x :: NTuple{N,A}
 end
 EvolVars(x::NTuple{N,A}) where {N,A} = EvolVars{eltype(A),N,A}(x)
 EvolVars(x...) = EvolVars(tuple(x...))
-
 
 function EvolVars(ff::AbstractVector{A}) where{A<:AbstractArray}
     x = Tuple(ff)
@@ -449,8 +439,7 @@ end
 
 Build a container to store all the evolved quantities as elements of an
 `NTuple`. The idea is to treat them as a single column vector for the point of
-view of the time evolution routine. Inspired in `ArrayPartition` from
-`RecursiveArrayTools`
+view of the time evolution routine.
 """
 function EvolVars(boundary::Boundary, gauge::Gauge,
                   bulkevols::BulkPartition{Nsys}) where {Nsys}
@@ -465,35 +454,6 @@ end
 
 Base.similar(ff::EvolVars{T,N,S}) where {T,N,S} = EvolVars{T,N,S}(similar.(ff.x))
 
-@inline Base.length(ff::EvolVars) = sum((length(x) for x in ff.x))
-@inline Base.size(ff::EvolVars)   = (length(ff),)
-
-# indexing. this is just a linear indexing through all the arrays. adapted from
-# RecursiveArrayTools
-@inline Base.firstindex(ff::EvolVars) = 1
-@inline Base.lastindex(ff::EvolVars)  = length(ff)
-
-@inline function Base.getindex(ff::EvolVars, i::Int)
-    @inbounds for j in 1:length(ff.x)
-        f  = ff.x[j]
-        i -= length(f)
-        if i <= 0
-            return f[length(f)+i]
-        end
-    end
-end
-@inline function Base.setindex!(ff::EvolVars, v, i::Int)
-    @inbounds for j in 1:length(ff.x)
-        f  = ff.x[j]
-        i -= length(f)
-        if i <= 0
-            f[length(f)+i] = v
-            break
-        end
-    end
-end
-
-@inline npartitions(::EvolVars{T,N}) where {T,N} = N
 @inline getudomains(::EvolVars{T,N}) where {T,N} = div(N-4, 4)
 
 @inline geta4(ff::EvolVars)   = ff.x[1]
