@@ -1,8 +1,4 @@
 
-import Base.Threads.@threads
-import Base.Threads.@spawn
-using LinearAlgebra
-
 function solve_lin_system!(sol, A_mat, b_vec)
     A_fact = lu!(A_mat)
     ldiv!(A_fact, b_vec)
