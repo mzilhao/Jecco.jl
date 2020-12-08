@@ -13,7 +13,7 @@ include("system.jl")
 
 include("potential.jl")
 
-# include("initial_data.jl")
+include("initial_data.jl")
 
 
 # include("param.jl")
@@ -48,5 +48,7 @@ end
 export SpecCartGrid3D
 export Potential, ConstPotential, SquarePotential
 export System, SystemPartition
+export BulkEvolvedPartition, BulkConstrainedPartition, Boundary
+export Uniform2D, Sine2D
 
 end

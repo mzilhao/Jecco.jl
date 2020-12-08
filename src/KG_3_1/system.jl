@@ -78,3 +78,48 @@ function SystemPartition(grid::SpecCartGrid3D{T}) where {T}
 
     SystemPartition(systems)
 end
+
+"""
+    Boundary(grid::SpecCartGrid3D)
+
+Create a `Boundary` struct with arrays of `size = (1,grid.x_nodes,grid.y_nodes)`
+"""
+function Boundary(grid::SpecCartGrid3D{T}) where {T}
+    Nx = grid.x_nodes
+    Ny = grid.y_nodes
+    Boundary{T}(undef, Nx, Ny)
+end
+
+"""
+    BulkEvolvedPartition(grid::SpecCartGrid3D)
+
+Returns `BulkPartition`, of `length = grid.u_domains`, with
+elements of type `BulkEvolved`.
+"""
+function BulkEvolvedPartition(grid::SpecCartGrid3D{T}) where {T}
+    Nx   = grid.x_nodes
+    Ny   = grid.y_nodes
+    Nu   = grid.u_nodes
+    Nsys = grid.u_domains
+
+    bulk  = [BulkEvolved{T}(undef, Nu, Nx, Ny) for i in 1:Nsys]
+
+    BulkPartition(bulk...)
+end
+
+"""
+    BulkConstrainedPartition(grid::SpecCartGrid3D)
+
+Returns `BulkPartition`, of `length = grid.u_domains`, with
+elements of type `BulkConstrained`.
+"""
+function BulkConstrainedPartition(grid::SpecCartGrid3D{T}) where {T}
+    Nx   = grid.x_nodes
+    Ny   = grid.y_nodes
+    Nu   = grid.u_nodes
+    Nsys = grid.u_domains
+
+    bulk  = [BulkConstrained{T}(undef, Nu, Nx, Ny) for i in 1:Nsys]
+
+    BulkPartition(bulk...)
+end
