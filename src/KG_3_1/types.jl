@@ -1,4 +1,10 @@
 
+"""
+Extend this type for different `Potential` choices
+"""
+abstract type Potential end
+
+
 struct BulkEvolved{T}
     phi :: Array{T,3}
 end
