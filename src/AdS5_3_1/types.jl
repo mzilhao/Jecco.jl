@@ -318,6 +318,7 @@ end
 @inline getB2d(ff::BulkConstrained)  = ff.B2d
 @inline getGd(ff::BulkConstrained)   = ff.Gd
 @inline getphid(ff::BulkConstrained) = ff.phid
+@inline getSd(ff::BulkConstrained)   = ff.Sd
 @inline getA(ff::BulkConstrained)    = ff.A
 
 @inline getB1(ff::Bulk)              = ff.B1
@@ -331,6 +332,7 @@ end
 @inline getB2d(ff::Bulk)             = ff.B2d
 @inline getGd(ff::Bulk)              = ff.Gd
 @inline getphid(ff::Bulk)            = ff.phid
+@inline getSd(ff::Bulk)              = ff.Sd
 @inline getA(ff::Bulk)               = ff.A
 
 @inline geta4(ff::Boundary)          = ff.a4
