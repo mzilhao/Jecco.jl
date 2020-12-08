@@ -2,8 +2,9 @@
 function compute_boundary_t!(boundary_t::Boundary, bulkevol::BulkEvolved,
                              boundary::Boundary, gauge::Gauge, sys::System, ::EvolTest0)
 
-    a4_t, fx2_t, fy2_t = unpack(boundary_t)
-    # a4  , fx2  , fy2   = unpack(boundary)
+    a4_t  = geta4(boundary_t)
+    fx2_t = getfx2(boundary_t)
+    fy2_t = getfy2(boundary_t)
 
     fill!(a4_t,  0)
     fill!(fx2_t, 0)
@@ -15,6 +16,15 @@ end
 function compute_boundary_t!(boundary_t::Boundary, bulk::BulkEvolved,
                              boundary::Boundary, gauge::Gauge, sys::System{Inner},
                              evoleq::AffineNull)
+    B1GF    = getB1(bulk)
+    B2GF    = getB2(bulk)
+    GGF     = getG(bulk)
+    phiGF   = getphi(bulk)
+    a4GF    = geta4(boundary)
+    fx2GF   = getfx2(boundary)
+    fy2GF   = getfy2(boundary)
+    xiGF    = getxi(gauge)
+
     Du  = sys.Du
     Dx  = sys.Dx
     Dy  = sys.Dy
@@ -24,36 +34,38 @@ function compute_boundary_t!(boundary_t::Boundary, bulk::BulkEvolved,
 
     _, Nx, Ny = size(sys)
 
-    a4_t, fx2_t, fy2_t = unpack(boundary_t)
+    a4_t  = geta4(boundary_t)
+    fx2_t = getfx2(boundary_t)
+    fy2_t = getfy2(boundary_t)
 
     @fastmath @inbounds for j in 1:Ny
         @inbounds for i in 1:Nx
-            xi      = gauge.xi[1,i,j]
+            xi      = xiGF[1,i,j]
             xi3     = xi*xi*xi
 
-            phi     = bulk.phi[1,i,j]
+            phi     = phiGF[1,i,j]
 
-            xi_x    = Dx(gauge.xi, 1,i,j)
-            xi_y    = Dy(gauge.xi, 1,i,j)
+            xi_x    = Dx(xiGF, 1,i,j)
+            xi_y    = Dy(xiGF, 1,i,j)
 
-            phi_u   = Du(bulk.phi, 1,i,j)
-            phi_x   = Dx(bulk.phi, 1,i,j)
-            phi_y   = Dy(bulk.phi, 1,i,j)
+            phi_u   = Du(phiGF, 1,i,j)
+            phi_x   = Dx(phiGF, 1,i,j)
+            phi_y   = Dy(phiGF, 1,i,j)
 
-            b14_x   = Dx(bulk.B1, 1,i,j)
-            b14_y   = Dy(bulk.B1, 1,i,j)
+            b14_x   = Dx(B1GF, 1,i,j)
+            b14_y   = Dy(B1GF, 1,i,j)
 
-            b24_x   = Dx(bulk.B2, 1,i,j)
-            b24_y   = Dy(bulk.B2, 1,i,j)
+            b24_x   = Dx(B2GF, 1,i,j)
+            b24_y   = Dy(B2GF, 1,i,j)
 
-            g4_x    = Dx(bulk.G, 1,i,j)
-            g4_y    = Dy(bulk.G, 1,i,j)
+            g4_x    = Dx(GGF, 1,i,j)
+            g4_y    = Dy(GGF, 1,i,j)
 
-            a4_x    = Dx(boundary.a4, 1,i,j)
-            a4_y    = Dy(boundary.a4, 1,i,j)
+            a4_x    = Dx(a4GF, 1,i,j)
+            a4_y    = Dy(a4GF, 1,i,j)
 
-            fx2_x   = Dx(boundary.fx2, 1,i,j)
-            fy2_y   = Dy(boundary.fy2, 1,i,j)
+            fx2_x   = Dx(fx2GF, 1,i,j)
+            fy2_y   = Dy(fy2GF, 1,i,j)
 
             # phi2 = phi0^3 phi(u=0) - phi0 xi^2
             phi2    = phi03 * phi - phi0 * xi * xi

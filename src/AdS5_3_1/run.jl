@@ -138,7 +138,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     end
 
     # for stdout info
-    Jecco.out_info(tinfo.it, tinfo.t, 0.0, gauge.xi, "ξ", 1, 1)
+    Jecco.out_info(tinfo.it, tinfo.t, 0.0, getxi(gauge), "ξ", 1, 1)
 
     tstart = time()
     # start integration
@@ -152,7 +152,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
         # write info to stdout
         gauge  = getgauge(u)
         deltat = t
-        Jecco.out_info(tinfo.it, tinfo.t, deltat/telapsed, gauge.xi, "ξ", 1, 200)
+        Jecco.out_info(tinfo.it, tinfo.t, deltat/telapsed, getxi(gauge), "ξ", 1, 200)
 
         # write data
         output_evol(u)

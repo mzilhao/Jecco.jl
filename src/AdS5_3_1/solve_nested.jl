@@ -128,6 +128,13 @@ function solve_S!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                   sys::System, evoleq::AffineNull)
     Nu, Nx, Ny = size(sys)
 
+    B1GF    = getB1(bulk)
+    B2GF    = getB2(bulk)
+    GGF     = getG(bulk)
+    phiGF   = getphi(bulk)
+    SGF     = getS(bulk)
+    xiGF    = getxi(gauge)
+
     Du_B1   = deriv.Du_B1
     Du_B2   = deriv.Du_B2
     Du_G    = deriv.Du_G
@@ -150,15 +157,15 @@ function solve_S!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
             id  = Threads.threadid()
             aux = aux_acc[id]
 
-            xi  = gauge.xi[1,i,j]
+            xi  = xiGF[1,i,j]
 
             @inbounds @simd for a in 1:Nu
                 u     = sys.ucoord[a]
 
-                B1    = bulk.B1[a,i,j]
-                B2    = bulk.B2[a,i,j]
-                G     = bulk.G[a,i,j]
-                phi   = bulk.phi[a,i,j]
+                B1    = B1GF[a,i,j]
+                B2    = B2GF[a,i,j]
+                G     = GGF[a,i,j]
+                phi   = phiGF[a,i,j]
 
                 B1p   = -u*u * Du_B1[a,i,j]
                 B2p   = -u*u * Du_B2[a,i,j]
@@ -190,7 +197,7 @@ function solve_S!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
             solve_lin_system!(aux.A_mat, aux.b_vec)
 
             @inbounds @simd for aa in 1:Nu
-                bulk.S[aa,i,j] = aux.b_vec[aa]
+                SGF[aa,i,j] = aux.b_vec[aa]
             end
 
         end
@@ -202,6 +209,15 @@ end
 function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                     sys::System, evoleq::AffineNull)
     Nu, Nx, Ny = size(sys)
+
+    B1GF    = getB1(bulk)
+    B2GF    = getB2(bulk)
+    GGF     = getG(bulk)
+    phiGF   = getphi(bulk)
+    SGF     = getS(bulk)
+    FxGF    = getFx(bulk)
+    FyGF    = getFy(bulk)
+    xiGF    = getxi(gauge)
 
     Du_B1   = deriv.Du_B1
     Du_B2   = deriv.Du_B2
@@ -228,9 +244,9 @@ function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
             id  = Threads.threadid()
             aux = aux_acc[id]
 
-            xi    = gauge.xi[1,i,j]
-            xi_x  = Dx(gauge.xi, 1,i,j)
-            xi_y  = Dy(gauge.xi, 1,i,j)
+            xi    = xiGF[1,i,j]
+            xi_x  = Dx(xiGF, 1,i,j)
+            xi_y  = Dy(xiGF, 1,i,j)
 
             @inbounds @simd for a in 1:Nu
                 u     = sys.ucoord[a]
@@ -238,42 +254,42 @@ function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                 u3    = u * u2
                 u4    = u2 * u2
 
-                B1    = bulk.B1[a,i,j]
+                B1    = B1GF[a,i,j]
                 B1p   = -u2 * Du_B1[a,i,j]
-                B1_x  = Dx(bulk.B1, a,i,j)
-                B1_y  = Dy(bulk.B1, a,i,j)
+                B1_x  = Dx(B1GF, a,i,j)
+                B1_y  = Dy(B1GF, a,i,j)
                 B1pp  = 2*u3 * Du_B1[a,i,j] + u4 * Duu_B1[a,i,j]
                 B1p_x = -u2 * Dx(Du_B1, a,i,j)
                 B1p_y = -u2 * Dy(Du_B1, a,i,j)
 
-                B2    = bulk.B2[a,i,j]
+                B2    = B2GF[a,i,j]
                 B2p   = -u2 * Du_B2[a,i,j]
-                B2_x  = Dx(bulk.B2, a,i,j)
-                B2_y  = Dy(bulk.B2, a,i,j)
+                B2_x  = Dx(B2GF, a,i,j)
+                B2_y  = Dy(B2GF, a,i,j)
                 B2pp  = 2*u3 * Du_B2[a,i,j] + u4 * Duu_B2[a,i,j]
                 B2p_x = -u2 * Dx(Du_B2, a,i,j)
                 B2p_y = -u2 * Dy(Du_B2, a,i,j)
 
-                G     = bulk.G[a,i,j]
+                G     = GGF[a,i,j]
                 Gp    = -u2 * Du_G[a,i,j]
-                G_x   = Dx(bulk.G, a,i,j)
-                G_y   = Dy(bulk.G, a,i,j)
+                G_x   = Dx(GGF, a,i,j)
+                G_y   = Dy(GGF, a,i,j)
                 Gpp   = 2*u3 * Du_G[a,i,j] + u4 * Duu_G[a,i,j]
                 Gp_x  = -u2 * Dx(Du_G, a,i,j)
                 Gp_y  = -u2 * Dy(Du_G, a,i,j)
 
-                phi   = bulk.phi[a,i,j]
+                phi   = phiGF[a,i,j]
                 phip  = -u2 * Du_phi[a,i,j]
-                phi_x = Dx(bulk.phi, a,i,j)
-                phi_y = Dy(bulk.phi, a,i,j)
+                phi_x = Dx(phiGF, a,i,j)
+                phi_y = Dy(phiGF, a,i,j)
                 # phipp   = 2*u3 * Du_phi[a,i,j] + u4 * Duu_phi[a,i,j]
                 # phip_x  = -u2 * Dx(Du_phi, a,i,j)
                 # phip_y  = -u2 * Dy(Du_phi, a,i,j)
 
-                S     = bulk.S[a,i,j]
+                S     = SGF[a,i,j]
                 Sp    = -u2 * Du_S[a,i,j]
-                S_x   = Dx(bulk.S, a,i,j)
-                S_y   = Dy(bulk.S, a,i,j)
+                S_x   = Dx(SGF, a,i,j)
+                S_y   = Dy(SGF, a,i,j)
                 Spp   = 2*u3 * Du_S[a,i,j] + u4 * Duu_S[a,i,j]
                 Sp_x  = -u2 * Dx(Du_S, a,i,j)
                 Sp_y  = -u2 * Dy(Du_S, a,i,j)
@@ -328,8 +344,8 @@ function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
             solve_lin_system!(aux.A_mat2, aux.b_vec2)
 
             @inbounds @simd for aa in 1:Nu
-                bulk.Fx[aa,i,j] = aux.b_vec2[aa]
-                bulk.Fy[aa,i,j] = aux.b_vec2[aa+Nu]
+                FxGF[aa,i,j] = aux.b_vec2[aa]
+                FyGF[aa,i,j] = aux.b_vec2[aa+Nu]
             end
 
         end
@@ -341,6 +357,16 @@ end
 function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                    sys::System, evoleq::AffineNull)
     Nu, Nx, Ny = size(sys)
+
+    B1GF    = getB1(bulk)
+    B2GF    = getB2(bulk)
+    GGF     = getG(bulk)
+    phiGF   = getphi(bulk)
+    SGF     = getS(bulk)
+    FxGF    = getFx(bulk)
+    FyGF    = getFy(bulk)
+    SdGF    = getSd(bulk)
+    xiGF    = getxi(gauge)
 
     Du_B1   = deriv.Du_B1
     Du_B2   = deriv.Du_B2
@@ -372,12 +398,12 @@ function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
             id   = Threads.threadid()
             aux  = aux_acc[id]
 
-            xi    = gauge.xi[1,i,j]
-            xi_x  = Dx(gauge.xi, 1,i,j)
-            xi_y  = Dy(gauge.xi, 1,i,j)
-            xi_xx = Dxx(gauge.xi, 1,i,j)
-            xi_yy = Dyy(gauge.xi, 1,i,j)
-            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+            xi    = xiGF[1,i,j]
+            xi_x  = Dx(xiGF, 1,i,j)
+            xi_y  = Dy(xiGF, 1,i,j)
+            xi_xx = Dxx(xiGF, 1,i,j)
+            xi_yy = Dyy(xiGF, 1,i,j)
+            xi_xy = Dx(Dy, xiGF, 1,i,j)
 
             @inbounds @simd for a in 1:Nu
                 u     = sys.ucoord[a]
@@ -385,13 +411,13 @@ function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                 u3    = u * u2
                 u4    = u2 * u2
 
-                B1    = bulk.B1[a,i,j]
-                B2    = bulk.B2[a,i,j]
-                G     = bulk.G[a,i,j]
-                phi   = bulk.phi[a,i,j]
-                S     = bulk.S[a,i,j]
-                Fx    = bulk.Fx[a,i,j]
-                Fy    = bulk.Fy[a,i,j]
+                B1    = B1GF[a,i,j]
+                B2    = B2GF[a,i,j]
+                G     = GGF[a,i,j]
+                phi   = phiGF[a,i,j]
+                S     = SGF[a,i,j]
+                Fx    = FxGF[a,i,j]
+                Fy    = FyGF[a,i,j]
 
                 # r derivatives
 
@@ -413,21 +439,21 @@ function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
 
                 # x and y derivatives
 
-                B1_x       = Dx(bulk.B1, a,i,j)
-                B2_x       = Dx(bulk.B2, a,i,j)
-                G_x        = Dx(bulk.G,  a,i,j)
-                phi_x      = Dx(bulk.phi,a,i,j)
-                S_x        = Dx(bulk.S,  a,i,j)
-                Fx_x       = Dx(bulk.Fx, a,i,j)
-                Fy_x       = Dx(bulk.Fy, a,i,j)
+                B1_x       = Dx(B1GF, a,i,j)
+                B2_x       = Dx(B2GF, a,i,j)
+                G_x        = Dx(GGF,  a,i,j)
+                phi_x      = Dx(phiGF,a,i,j)
+                S_x        = Dx(SGF,  a,i,j)
+                Fx_x       = Dx(FxGF, a,i,j)
+                Fy_x       = Dx(FyGF, a,i,j)
 
-                B1_y       = Dy(bulk.B1, a,i,j)
-                B2_y       = Dy(bulk.B2, a,i,j)
-                G_y        = Dy(bulk.G,  a,i,j)
-                phi_y      = Dy(bulk.phi,a,i,j)
-                S_y        = Dy(bulk.S,  a,i,j)
-                Fx_y       = Dy(bulk.Fx, a,i,j)
-                Fy_y       = Dy(bulk.Fy, a,i,j)
+                B1_y       = Dy(B1GF, a,i,j)
+                B2_y       = Dy(B2GF, a,i,j)
+                G_y        = Dy(GGF,  a,i,j)
+                phi_y      = Dy(phiGF,a,i,j)
+                S_y        = Dy(SGF,  a,i,j)
+                Fx_y       = Dy(FxGF, a,i,j)
+                Fy_y       = Dy(FyGF, a,i,j)
 
                 B1p_x      = -u2 * Dx(Du_B1, a,i,j)
                 B2p_x      = -u2 * Dx(Du_B2, a,i,j)
@@ -445,21 +471,21 @@ function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                 Fxp_y      = -u2 * Dy(Du_Fx, a,i,j)
                 Fyp_y      = -u2 * Dy(Du_Fy, a,i,j)
 
-                B1_xx      = Dxx(bulk.B1, a,i,j)
-                B2_xx      = Dxx(bulk.B2, a,i,j)
-                G_xx       = Dxx(bulk.G,  a,i,j)
-                phi_xx     = Dxx(bulk.phi,a,i,j)
-                S_xx       = Dxx(bulk.S,  a,i,j)
+                B1_xx      = Dxx(B1GF, a,i,j)
+                B2_xx      = Dxx(B2GF, a,i,j)
+                G_xx       = Dxx(GGF,  a,i,j)
+                phi_xx     = Dxx(phiGF,a,i,j)
+                S_xx       = Dxx(SGF,  a,i,j)
 
-                B1_yy      = Dyy(bulk.B1, a,i,j)
-                B2_yy      = Dyy(bulk.B2, a,i,j)
-                G_yy       = Dyy(bulk.G,  a,i,j)
-                phi_yy     = Dyy(bulk.phi,a,i,j)
-                S_yy       = Dyy(bulk.S,  a,i,j)
+                B1_yy      = Dyy(B1GF, a,i,j)
+                B2_yy      = Dyy(B2GF, a,i,j)
+                G_yy       = Dyy(GGF,  a,i,j)
+                phi_yy     = Dyy(phiGF,a,i,j)
+                S_yy       = Dyy(SGF,  a,i,j)
 
-                B2_xy      = Dx(Dy, bulk.B2, a,i,j)
-                G_xy       = Dx(Dy, bulk.G,  a,i,j)
-                S_xy       = Dx(Dy, bulk.S,  a,i,j)
+                B2_xy      = Dx(Dy, B2GF, a,i,j)
+                G_xy       = Dx(Dy, GGF,  a,i,j)
+                S_xy       = Dx(Dy, SGF,  a,i,j)
 
                 vars = (
                     potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
@@ -493,7 +519,7 @@ function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
             solve_lin_system!(aux.A_mat, aux.b_vec)
 
             @inbounds @simd for aa in 1:Nu
-                bulk.Sd[aa,i,j] = aux.b_vec[aa]
+                SdGF[aa,i,j] = aux.b_vec[aa]
             end
 
         end
@@ -505,6 +531,18 @@ end
 function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                     sys::System, evoleq::AffineNull)
     Nu, Nx, Ny = size(sys)
+
+    B1GF    = getB1(bulk)
+    B2GF    = getB2(bulk)
+    GGF     = getG(bulk)
+    phiGF   = getphi(bulk)
+    SGF     = getS(bulk)
+    FxGF    = getFx(bulk)
+    FyGF    = getFy(bulk)
+    SdGF    = getSd(bulk)
+    B2dGF   = getB2d(bulk)
+    phidGF  = getphid(bulk)
+    xiGF    = getxi(gauge)
 
     Du_B1   = deriv.Du_B1
     Du_B2   = deriv.Du_B2
@@ -535,12 +573,12 @@ function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
             id  = Threads.threadid()
             aux = aux_acc[id]
 
-            xi    = gauge.xi[1,i,j]
-            xi_x  = Dx(gauge.xi, 1,i,j)
-            xi_y  = Dy(gauge.xi, 1,i,j)
-            xi_xx = Dxx(gauge.xi, 1,i,j)
-            xi_yy = Dyy(gauge.xi, 1,i,j)
-            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+            xi    = xiGF[1,i,j]
+            xi_x  = Dx(xiGF, 1,i,j)
+            xi_y  = Dy(xiGF, 1,i,j)
+            xi_xx = Dxx(xiGF, 1,i,j)
+            xi_yy = Dyy(xiGF, 1,i,j)
+            xi_xy = Dx(Dy, xiGF, 1,i,j)
 
             @inbounds @simd for a in 1:Nu
                 u     = sys.ucoord[a]
@@ -548,14 +586,14 @@ function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                 u3    = u * u2
                 u4    = u2 * u2
 
-                B1    = bulk.B1[a,i,j]
-                B2    = bulk.B2[a,i,j]
-                G     = bulk.G[a,i,j]
-                phi   = bulk.phi[a,i,j]
-                S     = bulk.S[a,i,j]
-                Fx    = bulk.Fx[a,i,j]
-                Fy    = bulk.Fy[a,i,j]
-                Sd    = bulk.Sd[a,i,j]
+                B1    = B1GF[a,i,j]
+                B2    = B2GF[a,i,j]
+                G     = GGF[a,i,j]
+                phi   = phiGF[a,i,j]
+                S     = SGF[a,i,j]
+                Fx    = FxGF[a,i,j]
+                Fy    = FyGF[a,i,j]
+                Sd    = SdGF[a,i,j]
 
                 # r derivatives
 
@@ -577,21 +615,21 @@ function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
 
                 # x and y derivatives
 
-                B1_x       = Dx(bulk.B1, a,i,j)
-                B2_x       = Dx(bulk.B2, a,i,j)
-                G_x        = Dx(bulk.G,  a,i,j)
-                phi_x      = Dx(bulk.phi,a,i,j)
-                S_x        = Dx(bulk.S,  a,i,j)
-                Fx_x       = Dx(bulk.Fx, a,i,j)
-                Fy_x       = Dx(bulk.Fy, a,i,j)
+                B1_x       = Dx(B1GF, a,i,j)
+                B2_x       = Dx(B2GF, a,i,j)
+                G_x        = Dx(GGF,  a,i,j)
+                phi_x      = Dx(phiGF,a,i,j)
+                S_x        = Dx(SGF,  a,i,j)
+                Fx_x       = Dx(FxGF, a,i,j)
+                Fy_x       = Dx(FyGF, a,i,j)
 
-                B1_y       = Dy(bulk.B1, a,i,j)
-                B2_y       = Dy(bulk.B2, a,i,j)
-                G_y        = Dy(bulk.G,  a,i,j)
-                phi_y      = Dy(bulk.phi,a,i,j)
-                S_y        = Dy(bulk.S,  a,i,j)
-                Fx_y       = Dy(bulk.Fx, a,i,j)
-                Fy_y       = Dy(bulk.Fy, a,i,j)
+                B1_y       = Dy(B1GF, a,i,j)
+                B2_y       = Dy(B2GF, a,i,j)
+                G_y        = Dy(GGF,  a,i,j)
+                phi_y      = Dy(phiGF,a,i,j)
+                S_y        = Dy(SGF,  a,i,j)
+                Fx_y       = Dy(FxGF, a,i,j)
+                Fy_y       = Dy(FyGF, a,i,j)
 
                 B1p_x      = -u2 * Dx(Du_B1, a,i,j)
                 B2p_x      = -u2 * Dx(Du_B2, a,i,j)
@@ -609,21 +647,21 @@ function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                 Fxp_y      = -u2 * Dy(Du_Fx, a,i,j)
                 Fyp_y      = -u2 * Dy(Du_Fy, a,i,j)
 
-                B1_xx      = Dxx(bulk.B1, a,i,j)
-                B2_xx      = Dxx(bulk.B2, a,i,j)
-                G_xx       = Dxx(bulk.G,  a,i,j)
-                phi_xx     = Dxx(bulk.phi,a,i,j)
-                S_xx       = Dxx(bulk.S,  a,i,j)
+                B1_xx      = Dxx(B1GF, a,i,j)
+                B2_xx      = Dxx(B2GF, a,i,j)
+                G_xx       = Dxx(GGF,  a,i,j)
+                phi_xx     = Dxx(phiGF,a,i,j)
+                S_xx       = Dxx(SGF,  a,i,j)
 
-                B1_yy      = Dyy(bulk.B1, a,i,j)
-                B2_yy      = Dyy(bulk.B2, a,i,j)
-                G_yy       = Dyy(bulk.G,  a,i,j)
-                phi_yy     = Dyy(bulk.phi,a,i,j)
-                S_yy       = Dyy(bulk.S,  a,i,j)
+                B1_yy      = Dyy(B1GF, a,i,j)
+                B2_yy      = Dyy(B2GF, a,i,j)
+                G_yy       = Dyy(GGF,  a,i,j)
+                phi_yy     = Dyy(phiGF,a,i,j)
+                S_yy       = Dyy(SGF,  a,i,j)
 
-                B2_xy      = Dx(Dy, bulk.B2, a,i,j)
-                G_xy       = Dx(Dy, bulk.G,  a,i,j)
-                S_xy       = Dx(Dy, bulk.S,  a,i,j)
+                B2_xy      = Dx(Dy, B2GF, a,i,j)
+                G_xy       = Dx(Dy, GGF,  a,i,j)
+                S_xy       = Dx(Dy, SGF,  a,i,j)
 
                 vars = (
                     phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
@@ -657,7 +695,7 @@ function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
             solve_lin_system!(aux.A_mat, aux.b_vec)
 
             @inbounds @simd for aa in 1:Nu
-                bulk.B2d[aa,i,j] = aux.b_vec[aa]
+                B2dGF[aa,i,j] = aux.b_vec[aa]
             end
 
         end
@@ -669,6 +707,18 @@ end
 function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                       sys::System, evoleq::AffineNull)
     Nu, Nx, Ny = size(sys)
+
+    B1GF    = getB1(bulk)
+    B2GF    = getB2(bulk)
+    GGF     = getG(bulk)
+    phiGF   = getphi(bulk)
+    SGF     = getS(bulk)
+    FxGF    = getFx(bulk)
+    FyGF    = getFy(bulk)
+    SdGF    = getSd(bulk)
+    B1dGF   = getB1d(bulk)
+    GdGF    = getGd(bulk)
+    xiGF    = getxi(gauge)
 
     Du_B1   = deriv.Du_B1
     Du_B2   = deriv.Du_B2
@@ -699,12 +749,12 @@ function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_ac
             id  = Threads.threadid()
             aux = aux_acc[id]
 
-            xi    = gauge.xi[1,i,j]
-            xi_x  = Dx(gauge.xi, 1,i,j)
-            xi_y  = Dy(gauge.xi, 1,i,j)
-            xi_xx = Dxx(gauge.xi, 1,i,j)
-            xi_yy = Dyy(gauge.xi, 1,i,j)
-            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+            xi    = xiGF[1,i,j]
+            xi_x  = Dx(xiGF, 1,i,j)
+            xi_y  = Dy(xiGF, 1,i,j)
+            xi_xx = Dxx(xiGF, 1,i,j)
+            xi_yy = Dyy(xiGF, 1,i,j)
+            xi_xy = Dx(Dy, xiGF, 1,i,j)
 
             @inbounds @simd for a in 1:Nu
                 u     = sys.ucoord[a]
@@ -712,14 +762,14 @@ function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_ac
                 u3    = u * u2
                 u4    = u2 * u2
 
-                B1    = bulk.B1[a,i,j]
-                B2    = bulk.B2[a,i,j]
-                G     = bulk.G[a,i,j]
-                phi   = bulk.phi[a,i,j]
-                S     = bulk.S[a,i,j]
-                Fx    = bulk.Fx[a,i,j]
-                Fy    = bulk.Fy[a,i,j]
-                Sd    = bulk.Sd[a,i,j]
+                B1    = B1GF[a,i,j]
+                B2    = B2GF[a,i,j]
+                G     = GGF[a,i,j]
+                phi   = phiGF[a,i,j]
+                S     = SGF[a,i,j]
+                Fx    = FxGF[a,i,j]
+                Fy    = FyGF[a,i,j]
+                Sd    = SdGF[a,i,j]
 
                 # r derivatives
 
@@ -741,21 +791,21 @@ function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_ac
 
                 # x and y derivatives
 
-                B1_x       = Dx(bulk.B1, a,i,j)
-                B2_x       = Dx(bulk.B2, a,i,j)
-                G_x        = Dx(bulk.G,  a,i,j)
-                phi_x      = Dx(bulk.phi,a,i,j)
-                S_x        = Dx(bulk.S,  a,i,j)
-                Fx_x       = Dx(bulk.Fx, a,i,j)
-                Fy_x       = Dx(bulk.Fy, a,i,j)
+                B1_x       = Dx(B1GF, a,i,j)
+                B2_x       = Dx(B2GF, a,i,j)
+                G_x        = Dx(GGF,  a,i,j)
+                phi_x      = Dx(phiGF,a,i,j)
+                S_x        = Dx(SGF,  a,i,j)
+                Fx_x       = Dx(FxGF, a,i,j)
+                Fy_x       = Dx(FyGF, a,i,j)
 
-                B1_y       = Dy(bulk.B1, a,i,j)
-                B2_y       = Dy(bulk.B2, a,i,j)
-                G_y        = Dy(bulk.G,  a,i,j)
-                phi_y      = Dy(bulk.phi,a,i,j)
-                S_y        = Dy(bulk.S,  a,i,j)
-                Fx_y       = Dy(bulk.Fx, a,i,j)
-                Fy_y       = Dy(bulk.Fy, a,i,j)
+                B1_y       = Dy(B1GF, a,i,j)
+                B2_y       = Dy(B2GF, a,i,j)
+                G_y        = Dy(GGF,  a,i,j)
+                phi_y      = Dy(phiGF,a,i,j)
+                S_y        = Dy(SGF,  a,i,j)
+                Fx_y       = Dy(FxGF, a,i,j)
+                Fy_y       = Dy(FyGF, a,i,j)
 
                 B1p_x      = -u2 * Dx(Du_B1, a,i,j)
                 B2p_x      = -u2 * Dx(Du_B2, a,i,j)
@@ -773,21 +823,21 @@ function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_ac
                 Fxp_y      = -u2 * Dy(Du_Fx, a,i,j)
                 Fyp_y      = -u2 * Dy(Du_Fy, a,i,j)
 
-                B1_xx      = Dxx(bulk.B1, a,i,j)
-                B2_xx      = Dxx(bulk.B2, a,i,j)
-                G_xx       = Dxx(bulk.G,  a,i,j)
-                phi_xx     = Dxx(bulk.phi,a,i,j)
-                S_xx       = Dxx(bulk.S,  a,i,j)
+                B1_xx      = Dxx(B1GF, a,i,j)
+                B2_xx      = Dxx(B2GF, a,i,j)
+                G_xx       = Dxx(GGF,  a,i,j)
+                phi_xx     = Dxx(phiGF,a,i,j)
+                S_xx       = Dxx(SGF,  a,i,j)
 
-                B1_yy      = Dyy(bulk.B1, a,i,j)
-                B2_yy      = Dyy(bulk.B2, a,i,j)
-                G_yy       = Dyy(bulk.G,  a,i,j)
-                phi_yy     = Dyy(bulk.phi,a,i,j)
-                S_yy       = Dyy(bulk.S,  a,i,j)
+                B1_yy      = Dyy(B1GF, a,i,j)
+                B2_yy      = Dyy(B2GF, a,i,j)
+                G_yy       = Dyy(GGF,  a,i,j)
+                phi_yy     = Dyy(phiGF,a,i,j)
+                S_yy       = Dyy(SGF,  a,i,j)
 
-                B2_xy      = Dx(Dy, bulk.B2, a,i,j)
-                G_xy       = Dx(Dy, bulk.G,  a,i,j)
-                S_xy       = Dx(Dy, bulk.S,  a,i,j)
+                B2_xy      = Dx(Dy, B2GF, a,i,j)
+                G_xy       = Dx(Dy, GGF,  a,i,j)
+                S_xy       = Dx(Dy, SGF,  a,i,j)
 
                 vars = (
                     phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
@@ -832,8 +882,8 @@ function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_ac
             solve_lin_system!(aux.A_mat2, aux.b_vec2)
 
             @inbounds @simd for aa in 1:Nu
-                bulk.B1d[aa,i,j] = aux.b_vec2[aa]
-                bulk.Gd[aa,i,j]  = aux.b_vec2[aa+Nu]
+                B1dGF[aa,i,j] = aux.b_vec2[aa]
+                GdGF[aa,i,j]  = aux.b_vec2[aa+Nu]
             end
 
         end
@@ -845,6 +895,17 @@ end
 function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                      sys::System, evoleq::AffineNull)
     Nu, Nx, Ny = size(sys)
+
+    B1GF    = getB1(bulk)
+    B2GF    = getB2(bulk)
+    GGF     = getG(bulk)
+    phiGF   = getphi(bulk)
+    SGF     = getS(bulk)
+    FxGF    = getFx(bulk)
+    FyGF    = getFy(bulk)
+    SdGF    = getSd(bulk)
+    phidGF  = getphid(bulk)
+    xiGF    = getxi(gauge)
 
     Du_B1   = deriv.Du_B1
     Du_B2   = deriv.Du_B2
@@ -873,7 +934,7 @@ function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc
 
     # if phi0 = 0 set phid to zero and return
     if abs(phi0) < 1e-9
-        fill!(bulk.phid, 0)
+        fill!(phidGF, 0)
         return
     end
 
@@ -882,12 +943,12 @@ function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc
             id  = Threads.threadid()
             aux = aux_acc[id]
 
-            xi    = gauge.xi[1,i,j]
-            xi_x  = Dx(gauge.xi, 1,i,j)
-            xi_y  = Dy(gauge.xi, 1,i,j)
-            xi_xx = Dxx(gauge.xi, 1,i,j)
-            xi_yy = Dyy(gauge.xi, 1,i,j)
-            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+            xi    = xiGF[1,i,j]
+            xi_x  = Dx(xiGF, 1,i,j)
+            xi_y  = Dy(xiGF, 1,i,j)
+            xi_xx = Dxx(xiGF, 1,i,j)
+            xi_yy = Dyy(xiGF, 1,i,j)
+            xi_xy = Dx(Dy, xiGF, 1,i,j)
 
             @inbounds @simd for a in 1:Nu
                 u     = sys.ucoord[a]
@@ -895,14 +956,14 @@ function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc
                 u3    = u * u2
                 u4    = u2 * u2
 
-                B1    = bulk.B1[a,i,j]
-                B2    = bulk.B2[a,i,j]
-                G     = bulk.G[a,i,j]
-                phi   = bulk.phi[a,i,j]
-                S     = bulk.S[a,i,j]
-                Fx    = bulk.Fx[a,i,j]
-                Fy    = bulk.Fy[a,i,j]
-                Sd    = bulk.Sd[a,i,j]
+                B1    = B1GF[a,i,j]
+                B2    = B2GF[a,i,j]
+                G     = GGF[a,i,j]
+                phi   = phiGF[a,i,j]
+                S     = SGF[a,i,j]
+                Fx    = FxGF[a,i,j]
+                Fy    = FyGF[a,i,j]
+                Sd    = SdGF[a,i,j]
 
                 # r derivatives
 
@@ -924,21 +985,21 @@ function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc
 
                 # x and y derivatives
 
-                B1_x       = Dx(bulk.B1, a,i,j)
-                B2_x       = Dx(bulk.B2, a,i,j)
-                G_x        = Dx(bulk.G,  a,i,j)
-                phi_x      = Dx(bulk.phi,a,i,j)
-                S_x        = Dx(bulk.S,  a,i,j)
-                Fx_x       = Dx(bulk.Fx, a,i,j)
-                Fy_x       = Dx(bulk.Fy, a,i,j)
+                B1_x       = Dx(B1GF, a,i,j)
+                B2_x       = Dx(B2GF, a,i,j)
+                G_x        = Dx(GGF,  a,i,j)
+                phi_x      = Dx(phiGF,a,i,j)
+                S_x        = Dx(SGF,  a,i,j)
+                Fx_x       = Dx(FxGF, a,i,j)
+                Fy_x       = Dx(FyGF, a,i,j)
 
-                B1_y       = Dy(bulk.B1, a,i,j)
-                B2_y       = Dy(bulk.B2, a,i,j)
-                G_y        = Dy(bulk.G,  a,i,j)
-                phi_y      = Dy(bulk.phi,a,i,j)
-                S_y        = Dy(bulk.S,  a,i,j)
-                Fx_y       = Dy(bulk.Fx, a,i,j)
-                Fy_y       = Dy(bulk.Fy, a,i,j)
+                B1_y       = Dy(B1GF, a,i,j)
+                B2_y       = Dy(B2GF, a,i,j)
+                G_y        = Dy(GGF,  a,i,j)
+                phi_y      = Dy(phiGF,a,i,j)
+                S_y        = Dy(SGF,  a,i,j)
+                Fx_y       = Dy(FxGF, a,i,j)
+                Fy_y       = Dy(FyGF, a,i,j)
 
                 B1p_x      = -u2 * Dx(Du_B1, a,i,j)
                 B2p_x      = -u2 * Dx(Du_B2, a,i,j)
@@ -956,22 +1017,22 @@ function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc
                 Fxp_y      = -u2 * Dy(Du_Fx, a,i,j)
                 Fyp_y      = -u2 * Dy(Du_Fy, a,i,j)
 
-                B1_xx      = Dxx(bulk.B1, a,i,j)
-                B2_xx      = Dxx(bulk.B2, a,i,j)
-                G_xx       = Dxx(bulk.G,  a,i,j)
-                phi_xx     = Dxx(bulk.phi,a,i,j)
-                S_xx       = Dxx(bulk.S,  a,i,j)
+                B1_xx      = Dxx(B1GF, a,i,j)
+                B2_xx      = Dxx(B2GF, a,i,j)
+                G_xx       = Dxx(GGF,  a,i,j)
+                phi_xx     = Dxx(phiGF,a,i,j)
+                S_xx       = Dxx(SGF,  a,i,j)
 
-                B1_yy      = Dyy(bulk.B1, a,i,j)
-                B2_yy      = Dyy(bulk.B2, a,i,j)
-                G_yy       = Dyy(bulk.G,  a,i,j)
-                phi_yy     = Dyy(bulk.phi,a,i,j)
-                S_yy       = Dyy(bulk.S,  a,i,j)
+                B1_yy      = Dyy(B1GF, a,i,j)
+                B2_yy      = Dyy(B2GF, a,i,j)
+                G_yy       = Dyy(GGF,  a,i,j)
+                phi_yy     = Dyy(phiGF,a,i,j)
+                S_yy       = Dyy(SGF,  a,i,j)
 
-                B2_xy      = Dx(Dy, bulk.B2, a,i,j)
-                G_xy       = Dx(Dy, bulk.G,  a,i,j)
-                phi_xy     = Dx(Dy, bulk.phi,a,i,j)
-                S_xy       = Dx(Dy, bulk.S,  a,i,j)
+                B2_xy      = Dx(Dy, B2GF, a,i,j)
+                G_xy       = Dx(Dy, GGF,  a,i,j)
+                phi_xy     = Dx(Dy, phiGF,a,i,j)
+                S_xy       = Dx(Dy, SGF,  a,i,j)
 
                 vars = (
                     potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
@@ -1005,7 +1066,7 @@ function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc
             solve_lin_system!(aux.A_mat, aux.b_vec)
 
             @inbounds @simd for aa in 1:Nu
-                bulk.phid[aa,i,j] = aux.b_vec[aa]
+                phidGF[aa,i,j] = aux.b_vec[aa]
             end
 
         end
@@ -1017,6 +1078,21 @@ end
 function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                   sys::System, evoleq::AffineNull)
     Nu, Nx, Ny = size(sys)
+
+    B1GF    = getB1(bulk)
+    B2GF    = getB2(bulk)
+    GGF     = getG(bulk)
+    phiGF   = getphi(bulk)
+    SGF     = getS(bulk)
+    FxGF    = getFx(bulk)
+    FyGF    = getFy(bulk)
+    SdGF    = getSd(bulk)
+    B1dGF   = getB1d(bulk)
+    B2dGF   = getB2d(bulk)
+    GdGF    = getGd(bulk)
+    phidGF  = getphid(bulk)
+    AGF     = getA(bulk)
+    xiGF    = getxi(gauge)
 
     Du_B1   = deriv.Du_B1
     Du_B2   = deriv.Du_B2
@@ -1048,12 +1124,12 @@ function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
             id  = Threads.threadid()
             aux = aux_acc[id]
 
-            xi    = gauge.xi[1,i,j]
-            xi_x  = Dx(gauge.xi, 1,i,j)
-            xi_y  = Dy(gauge.xi, 1,i,j)
-            xi_xx = Dxx(gauge.xi, 1,i,j)
-            xi_yy = Dyy(gauge.xi, 1,i,j)
-            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+            xi    = xiGF[1,i,j]
+            xi_x  = Dx(xiGF, 1,i,j)
+            xi_y  = Dy(xiGF, 1,i,j)
+            xi_xx = Dxx(xiGF, 1,i,j)
+            xi_yy = Dyy(xiGF, 1,i,j)
+            xi_xy = Dx(Dy, xiGF, 1,i,j)
 
             @inbounds @simd for a in 1:Nu
                 u     = sys.ucoord[a]
@@ -1061,18 +1137,18 @@ function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                 u3    = u * u2
                 u4    = u2 * u2
 
-                B1    = bulk.B1[a,i,j]
-                B2    = bulk.B2[a,i,j]
-                G     = bulk.G[a,i,j]
-                phi   = bulk.phi[a,i,j]
-                S     = bulk.S[a,i,j]
-                Fx    = bulk.Fx[a,i,j]
-                Fy    = bulk.Fy[a,i,j]
-                Sd    = bulk.Sd[a,i,j]
-                B1d   = bulk.B1d[a,i,j]
-                B2d   = bulk.B2d[a,i,j]
-                Gd    = bulk.Gd[a,i,j]
-                phid  = bulk.phid[a,i,j]
+                B1    = B1GF[a,i,j]
+                B2    = B2GF[a,i,j]
+                G     = GGF[a,i,j]
+                phi   = phiGF[a,i,j]
+                S     = SGF[a,i,j]
+                Fx    = FxGF[a,i,j]
+                Fy    = FyGF[a,i,j]
+                Sd    = SdGF[a,i,j]
+                B1d   = B1dGF[a,i,j]
+                B2d   = B2dGF[a,i,j]
+                Gd    = GdGF[a,i,j]
+                phid  = phidGF[a,i,j]
 
                 # r derivatives
 
@@ -1094,21 +1170,21 @@ function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
 
                 # x and y derivatives
 
-                B1_x       = Dx(bulk.B1, a,i,j)
-                B2_x       = Dx(bulk.B2, a,i,j)
-                G_x        = Dx(bulk.G,  a,i,j)
-                phi_x      = Dx(bulk.phi,a,i,j)
-                S_x        = Dx(bulk.S,  a,i,j)
-                Fx_x       = Dx(bulk.Fx, a,i,j)
-                Fy_x       = Dx(bulk.Fy, a,i,j)
+                B1_x       = Dx(B1GF, a,i,j)
+                B2_x       = Dx(B2GF, a,i,j)
+                G_x        = Dx(GGF,  a,i,j)
+                phi_x      = Dx(phiGF,a,i,j)
+                S_x        = Dx(SGF,  a,i,j)
+                Fx_x       = Dx(FxGF, a,i,j)
+                Fy_x       = Dx(FyGF, a,i,j)
 
-                B1_y       = Dy(bulk.B1, a,i,j)
-                B2_y       = Dy(bulk.B2, a,i,j)
-                G_y        = Dy(bulk.G,  a,i,j)
-                phi_y      = Dy(bulk.phi,a,i,j)
-                S_y        = Dy(bulk.S,  a,i,j)
-                Fx_y       = Dy(bulk.Fx, a,i,j)
-                Fy_y       = Dy(bulk.Fy, a,i,j)
+                B1_y       = Dy(B1GF, a,i,j)
+                B2_y       = Dy(B2GF, a,i,j)
+                G_y        = Dy(GGF,  a,i,j)
+                phi_y      = Dy(phiGF,a,i,j)
+                S_y        = Dy(SGF,  a,i,j)
+                Fx_y       = Dy(FxGF, a,i,j)
+                Fy_y       = Dy(FyGF, a,i,j)
 
                 B1p_x      = -u2 * Dx(Du_B1, a,i,j)
                 B2p_x      = -u2 * Dx(Du_B2, a,i,j)
@@ -1126,22 +1202,22 @@ function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                 Fxp_y      = -u2 * Dy(Du_Fx, a,i,j)
                 Fyp_y      = -u2 * Dy(Du_Fy, a,i,j)
 
-                B1_xx      = Dxx(bulk.B1, a,i,j)
-                B2_xx      = Dxx(bulk.B2, a,i,j)
-                G_xx       = Dxx(bulk.G,  a,i,j)
-                phi_xx     = Dxx(bulk.phi,a,i,j)
-                S_xx       = Dxx(bulk.S,  a,i,j)
+                B1_xx      = Dxx(B1GF, a,i,j)
+                B2_xx      = Dxx(B2GF, a,i,j)
+                G_xx       = Dxx(GGF,  a,i,j)
+                phi_xx     = Dxx(phiGF,a,i,j)
+                S_xx       = Dxx(SGF,  a,i,j)
 
-                B1_yy      = Dyy(bulk.B1, a,i,j)
-                B2_yy      = Dyy(bulk.B2, a,i,j)
-                G_yy       = Dyy(bulk.G,  a,i,j)
-                phi_yy     = Dyy(bulk.phi,a,i,j)
-                S_yy       = Dyy(bulk.S,  a,i,j)
+                B1_yy      = Dyy(B1GF, a,i,j)
+                B2_yy      = Dyy(B2GF, a,i,j)
+                G_yy       = Dyy(GGF,  a,i,j)
+                phi_yy     = Dyy(phiGF,a,i,j)
+                S_yy       = Dyy(SGF,  a,i,j)
 
-                B2_xy      = Dx(Dy, bulk.B2, a,i,j)
-                G_xy       = Dx(Dy, bulk.G,  a,i,j)
-                phi_xy     = Dx(Dy, bulk.phi,a,i,j)
-                S_xy       = Dx(Dy, bulk.S,  a,i,j)
+                B2_xy      = Dx(Dy, B2GF, a,i,j)
+                G_xy       = Dx(Dy, GGF,  a,i,j)
+                phi_xy     = Dx(Dy, phiGF,a,i,j)
+                S_xy       = Dx(Dy, SGF,  a,i,j)
 
                 vars = (
                     potential, phi0, u, xi, xi_x, xi_y, xi_xx, xi_yy, xi_xy,
@@ -1180,7 +1256,7 @@ function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
             solve_lin_system!(aux.A_mat, aux.b_vec)
 
             @inbounds @simd for aa in 1:Nu
-                bulk.A[aa,i,j] = aux.b_vec[aa]
+                AGF[aa,i,j] = aux.b_vec[aa]
             end
 
         end
@@ -1218,13 +1294,18 @@ function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc
 
     bulk = Bulk(bulkevol, bulkconstrain)
 
+    SGF     = getS(bulk)
+    FxGF    = getFx(bulk)
+    FyGF    = getFy(bulk)
+    AGF     = getA(bulk)
+
     # solve for S
     solve_S!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
 
     # take u-derivatives of S
     @sync begin
-        @spawn mul!(Du_S,   Du,  bulk.S)
-        @spawn mul!(Duu_S,  Duu, bulk.S)
+        @spawn mul!(Du_S,   Du,  SGF)
+        @spawn mul!(Duu_S,  Duu, SGF)
     end
 
     # solve for Fx and Fy
@@ -1232,10 +1313,10 @@ function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc
 
     # take u-derivatives of Fx and Fy
     @sync begin
-        @spawn mul!(Du_Fx,   Du,  bulk.Fx)
-        @spawn mul!(Du_Fy,   Du,  bulk.Fy)
-        @spawn mul!(Duu_Fx,  Duu, bulk.Fx)
-        @spawn mul!(Duu_Fy,  Duu, bulk.Fy)
+        @spawn mul!(Du_Fx,   Du,  FxGF)
+        @spawn mul!(Du_Fy,   Du,  FyGF)
+        @spawn mul!(Duu_Fx,  Duu, FxGF)
+        @spawn mul!(Duu_Fy,  Duu, FyGF)
     end
 
     # solve for Sd
@@ -1254,27 +1335,37 @@ function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc
 
     # take u-derivatives of A. they will be needed for syncing the domains and
     # also for the xi_t function
-    mul!(Du_A,   Du,  bulk.A)
-    mul!(Duu_A,  Duu, bulk.A)
+    mul!(Du_A,   Du,  AGF)
+    mul!(Duu_A,  Duu, AGF)
 
     nothing
 end
 
 
 function syncBCs!(bc::BC, bulk::BulkConstrained, deriv::BulkDeriv)
-    Nu, Nx, Ny = size(bulk.S)
+    SGF     = getS(bulk)
+    FxGF    = getFx(bulk)
+    FyGF    = getFy(bulk)
+    SdGF    = getSd(bulk)
+    B1dGF   = getB1d(bulk)
+    B2dGF   = getB2d(bulk)
+    GdGF    = getGd(bulk)
+    phidGF  = getphid(bulk)
+    AGF     = getA(bulk)
+
+    Nu, Nx, Ny = size(SGF)
 
     @fastmath @inbounds @threads for j in 1:Ny
         @inbounds @simd for i in 1:Nx
-            bc.S[i,j]    = bulk.S[end,i,j]
-            bc.Fx[i,j]   = bulk.Fx[end,i,j]
-            bc.Fy[i,j]   = bulk.Fy[end,i,j]
-            bc.Sd[i,j]   = bulk.Sd[end,i,j]
-            bc.B1d[i,j]  = bulk.B1d[end,i,j]
-            bc.B2d[i,j]  = bulk.B2d[end,i,j]
-            bc.Gd[i,j]   = bulk.Gd[end,i,j]
-            bc.phid[i,j] = bulk.phid[end,i,j]
-            bc.A[i,j]    = bulk.A[end,i,j]
+            bc.S[i,j]    = SGF[end,i,j]
+            bc.Fx[i,j]   = FxGF[end,i,j]
+            bc.Fy[i,j]   = FyGF[end,i,j]
+            bc.Sd[i,j]   = SdGF[end,i,j]
+            bc.B1d[i,j]  = B1dGF[end,i,j]
+            bc.B2d[i,j]  = B2dGF[end,i,j]
+            bc.Gd[i,j]   = GdGF[end,i,j]
+            bc.phid[i,j] = phidGF[end,i,j]
+            bc.A[i,j]    = AGF[end,i,j]
 
             bc.S_u[i,j]   = deriv.Du_S[end,i,j]
             bc.Fx_u[i,j]  = deriv.Du_Fx[end,i,j]
@@ -1291,6 +1382,15 @@ function set_innerBCs!(bc::BC, bulk::BulkEvolved, boundary::Boundary,
                        evoleq::AffineNull)
     _, Nx, Ny = size(sys)
 
+    B1GF    = getB1(bulk)
+    B2GF    = getB2(bulk)
+    GGF     = getG(bulk)
+    phiGF   = getphi(bulk)
+    a4GF    = geta4(boundary)
+    fx2GF   = getfx2(boundary)
+    fy2GF   = getfy2(boundary)
+    xiGF    = getxi(gauge)
+
     Dx  = sys.Dx
     Dy  = sys.Dy
 
@@ -1301,39 +1401,39 @@ function set_innerBCs!(bc::BC, bulk::BulkEvolved, boundary::Boundary,
 
     @fastmath @inbounds @threads for j in 1:Ny
         @inbounds @simd for i in 1:Nx
-            xi      = gauge.xi[1,i,j]
+            xi      = xiGF[1,i,j]
             xi3     = xi*xi*xi
 
-            phi     = bulk.phi[1,i,j]
+            phi     = phiGF[1,i,j]
             phi_u   = deriv.Du_phi[1,i,j]
 
-            phi_x   = Dx(bulk.phi, 1,i,j)
-            phi_y   = Dy(bulk.phi, 1,i,j)
+            phi_x   = Dx(phiGF, 1,i,j)
+            phi_y   = Dy(phiGF, 1,i,j)
 
-            xi_x    = Dx(gauge.xi, 1,i,j)
-            xi_y    = Dy(gauge.xi, 1,i,j)
+            xi_x    = Dx(xiGF, 1,i,j)
+            xi_y    = Dy(xiGF, 1,i,j)
 
-            b14     = bulk.B1[1,i,j]
-            b24     = bulk.B2[1,i,j]
-            g4      = bulk.G[1,i,j]
+            b14     = B1GF[1,i,j]
+            b24     = B2GF[1,i,j]
+            g4      = GGF[1,i,j]
 
-            a4      = boundary.a4[1,i,j]
+            a4      = a4GF[1,i,j]
 
-            fx2     = boundary.fx2[1,i,j]
-            fy2     = boundary.fy2[1,i,j]
+            fx2     = fx2GF[1,i,j]
+            fy2     = fy2GF[1,i,j]
 
-            fx2_x   = Dx(boundary.fx2, 1,i,j)
-            fy2_y   = Dy(boundary.fy2, 1,i,j)
+            fx2_x   = Dx(fx2GF, 1,i,j)
+            fy2_y   = Dy(fy2GF, 1,i,j)
 
-            b14_x   = Dx(bulk.B1,1,i,j)
-            b24_x   = Dx(bulk.B2,1,i,j)
-            phi_x   = Dx(bulk.phi,1,i,j)
-            g4_x    = Dx(bulk.G,1,i,j)
+            b14_x   = Dx(B1GF,1,i,j)
+            b24_x   = Dx(B2GF,1,i,j)
+            phi_x   = Dx(phiGF,1,i,j)
+            g4_x    = Dx(GGF,1,i,j)
 
-            b14_y   = Dy(bulk.B1,1,i,j)
-            b24_y   = Dy(bulk.B2,1,i,j)
-            phi_y   = Dy(bulk.phi,1,i,j)
-            g4_y    = Dy(bulk.G,1,i,j)
+            b14_y   = Dy(B1GF,1,i,j)
+            b24_y   = Dy(B2GF,1,i,j)
+            phi_y   = Dy(phiGF,1,i,j)
+            g4_y    = Dy(GGF,1,i,j)
 
             phi2    = phi03 * phi - phi0 * xi * xi
             phi2_x  = phi03 * phi_x - 2 * phi0 * xi * xi_x
@@ -1374,8 +1474,8 @@ function set_innerBCs!(bc::BC, bulk::BulkEvolved, boundary::Boundary,
 
     @fastmath @inbounds for j in 1:Ny
         @inbounds @simd for i in 1:Nx
-            xi      = gauge.xi[1,i,j]
-            phi     = bulk.phi[1,i,j]
+            xi      = xiGF[1,i,j]
+            phi     = phiGF[1,i,j]
             phi2    = phi03 * phi - phi0 * xi * xi
 
             bc.phid[i,j] = 1/3 - 3/2 * phi2 / phi03
@@ -1389,6 +1489,17 @@ function set_outerBCs!(bc::BC, bulk::BulkConstrained, gauge::Gauge,
                        deriv::BulkDeriv, sys::System, evoleq::AffineNull)
     _, Nx, Ny = size(sys)
 
+    SGF     = getS(bulk)
+    FxGF    = getFx(bulk)
+    FyGF    = getFy(bulk)
+    SdGF    = getSd(bulk)
+    B1dGF   = getB1d(bulk)
+    B2dGF   = getB2d(bulk)
+    GdGF    = getGd(bulk)
+    phidGF  = getphid(bulk)
+    AGF     = getA(bulk)
+    xiGF    = getxi(gauge)
+
     phi0 = evoleq.phi0
 
     # we are here assuming that the inner and outer grids merely touch at the
@@ -1397,17 +1508,17 @@ function set_outerBCs!(bc::BC, bulk::BulkConstrained, gauge::Gauge,
 
     @fastmath @inbounds @threads for j in 1:Ny
         @inbounds @simd for i in 1:Nx
-            xi     = gauge.xi[1,i,j]
+            xi     = xiGF[1,i,j]
 
-            S      = bulk.S[end,i,j]
-            Fx     = bulk.Fx[end,i,j]
-            Fy     = bulk.Fy[end,i,j]
-            Sd     = bulk.Sd[end,i,j]
-            B1d    = bulk.B1d[end,i,j]
-            B2d    = bulk.B2d[end,i,j]
-            Gd     = bulk.Gd[end,i,j]
-            phid   = bulk.phid[end,i,j]
-            A      = bulk.A[end,i,j]
+            S      = SGF[end,i,j]
+            Fx     = FxGF[end,i,j]
+            Fy     = FyGF[end,i,j]
+            Sd     = SdGF[end,i,j]
+            B1d    = B1dGF[end,i,j]
+            B2d    = B2dGF[end,i,j]
+            Gd     = GdGF[end,i,j]
+            phid   = phidGF[end,i,j]
+            A      = AGF[end,i,j]
 
             S_u    = deriv.Du_S[end,i,j]
             Fx_u   = deriv.Du_Fx[end,i,j]
@@ -1451,14 +1562,22 @@ function solve_nesteds!(bulkconstrains, bulkevols, boundary::Boundary, gauge::Ga
     # take all u-derivatives of the bulkevols functions
     @sync begin
         @inbounds for i in 1:Nsys
-            @spawn mul!(derivs[i].Du_B1,  systems[i].Du,  bulkevols[i].B1)
-            @spawn mul!(derivs[i].Du_B2,  systems[i].Du,  bulkevols[i].B2)
-            @spawn mul!(derivs[i].Du_G,   systems[i].Du,  bulkevols[i].G)
-            @spawn mul!(derivs[i].Du_phi, systems[i].Du,  bulkevols[i].phi)
-            @spawn mul!(derivs[i].Duu_B1, systems[i].Duu, bulkevols[i].B1)
-            @spawn mul!(derivs[i].Duu_B2, systems[i].Duu, bulkevols[i].B2)
-            @spawn mul!(derivs[i].Duu_G,  systems[i].Duu, bulkevols[i].G)
-            @spawn mul!(derivs[i].Duu_phi,systems[i].Duu, bulkevols[i].phi)
+            deriv  = derivs[i]
+            sys    = systems[i]
+            bulk   = bulkevols[i]
+            B1GF   = getB1(bulk)
+            B2GF   = getB2(bulk)
+            GGF    = getG(bulk)
+            phiGF  = getphi(bulk)
+
+            @spawn mul!(deriv.Du_B1,  sys.Du,  B1GF)
+            @spawn mul!(deriv.Du_B2,  sys.Du,  B2GF)
+            @spawn mul!(deriv.Du_G,   sys.Du,  GGF)
+            @spawn mul!(deriv.Du_phi, sys.Du,  phiGF)
+            @spawn mul!(deriv.Duu_B1, sys.Duu, B1GF)
+            @spawn mul!(deriv.Duu_B2, sys.Duu, B2GF)
+            @spawn mul!(deriv.Duu_G,  sys.Duu, GGF)
+            @spawn mul!(deriv.Duu_phi,sys.Duu, phiGF)
         end
     end
 
