@@ -95,8 +95,6 @@ function BulkDeriv{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:R
 end
 
 
-
-
 """
     BulkPartition{N,A} <: AbstractPartition{N,A}
 
@@ -117,4 +115,23 @@ end
 function BulkConstrained(bulks::BulkPartition{N}) where{N}
     f = ntuple(i -> BulkConstrained(bulks[i]), N)
     BulkPartition(f)
+end
+
+
+struct EvolVars{T,N,A} <: FlattenedVector{T,N,A}
+    x :: NTuple{N,A}
+end
+EvolVars(x::NTuple{N,A}) where {N,A} = EvolVars{eltype(A),N,A}(x)
+
+Base.similar(ff::EvolVars{T,N,S}) where {T,N,S} = EvolVars{T,N,S}(similar.(ff.x))
+
+"""
+    EvolVars(boundary::Boundary, gauge::Gauge, bulkevols::NTuple)
+
+Build a container to store all the evolved quantities as elements of an
+`NTuple`. The idea is to treat them as a single column vector for the point of
+view of the time evolution routine.
+"""
+function EvolVars(bulkevols::BulkPartition{Nsys}) where {Nsys}
+    EvolVars(bulkevols.x)
 end
