@@ -75,23 +75,13 @@ geta4(ff::Boundary) = ff.x.a4
 
 struct BulkDeriv{T}
     Du_phi  :: Array{T,3}
-    Du_S    :: Array{T,3}
-    Du_Sd   :: Array{T,3}
-    Du_A    :: Array{T,3}
-    Duu_phi :: Array{T,3}
-    Duu_S   :: Array{T,3}
-    Duu_A   :: Array{T,3}
+    Du_phid :: Array{T,3}
 end
 
 function BulkDeriv{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Real}
     Du_phi   = Array{T}(undef, Nu, Nx, Ny)
-    Du_S     = Array{T}(undef, Nu, Nx, Ny)
-    Du_Sd    = Array{T}(undef, Nu, Nx, Ny)
-    Du_A     = Array{T}(undef, Nu, Nx, Ny)
-    Duu_phi  = Array{T}(undef, Nu, Nx, Ny)
-    Duu_S    = Array{T}(undef, Nu, Nx, Ny)
-    Duu_A    = Array{T}(undef, Nu, Nx, Ny)
-    BulkDeriv{T}(Du_phi, Du_S, Du_Sd, Du_A, Duu_phi, Duu_S, Duu_A)
+    Du_phid  = Array{T}(undef, Nu, Nx, Ny)
+    BulkDeriv{T}(Du_phi, Du_phid)
 end
 
 
@@ -135,3 +125,5 @@ view of the time evolution routine.
 function EvolVars(bulkevols::BulkPartition{Nsys}) where {Nsys}
     EvolVars(bulkevols.x)
 end
+
+@inline getbulkevolvedpartition(ff::EvolVars) = BulkPartition(ff.x)
