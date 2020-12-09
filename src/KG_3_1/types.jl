@@ -9,6 +9,20 @@ Extend this type for different `InitialData` choices
 """
 abstract type InitialData end
 
+"""
+Parameters for the time evolution
+"""
+Base.@kwdef struct Integration{T,Tdt,S}
+    dt              :: Tdt  = :auto
+    tmax            :: T
+    ODE_method      :: S    = AB3()
+    adaptive        :: Bool = false
+    # relative tolerance for adaptive integrators
+    reltol          :: Float64 = 1e-6
+    # filter_poststep :: Bool = true
+end
+
+
 
 struct BulkEvolved{T,A,S} <: FlattenedVector{T,3,A}
     x :: S
