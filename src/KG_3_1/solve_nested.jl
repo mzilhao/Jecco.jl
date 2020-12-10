@@ -55,7 +55,6 @@ function solve_phid!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc::
     AGF    = getA(bulkconstrain)
 
     Du_phi  = deriv.Du_phi
-    Du_phid = deriv.Du_phid
 
     Nu, Nx, Ny = size(sys)
 
@@ -136,8 +135,8 @@ function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc
     @fastmath @inbounds for j in 1:Ny
         @inbounds for i in 1:Nx
             @inbounds @simd for a in 1:Nu
-                SdGF[a,i,j] = BC.Sd[i,j]
-                AGF[a,i,j]  = BC.A[i,j]
+                SdGF[a,i,j] = bc.Sd[i,j]
+                AGF[a,i,j]  = bc.A[i,j]
             end
         end
     end

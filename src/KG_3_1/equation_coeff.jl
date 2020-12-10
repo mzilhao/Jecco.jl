@@ -2,7 +2,7 @@
 # assuming
 # (A d_uu + B d_u + C Id) f = -Source
 
-function phig1_eq_coeff!(ABCS::Vector, vars)
+function phid_eq_coeff!(ABCS::Vector, vars)
     (potential, u, Sd, phi, phi_u, phi_xx, phi_yy) = vars
 
     u2 = u * u
