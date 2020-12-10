@@ -19,9 +19,8 @@ include("initial_data.jl")
 include("equation_coeff.jl")
 include("solve_nested.jl")
 
-
 # evolution equations
-# include("compute_bulkevolved_t.jl")
+include("compute_bulkevolved_t.jl")
 
 
 # time marching orders
@@ -62,5 +61,6 @@ export Potential, ConstPotential, SquarePotential
 export System, SystemPartition
 export BulkEvolvedPartition, BulkConstrainedPartition, Boundary
 export Uniform2D, Sine2D
+export AffineNull
 
 end
