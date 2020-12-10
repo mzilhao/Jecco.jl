@@ -15,6 +15,15 @@ include("potential.jl")
 
 include("initial_data.jl")
 
+# nested system
+include("equation_coeff.jl")
+include("solve_nested.jl")
+
+
+# evolution equations
+# include("compute_bulkevolved_t.jl")
+
+
 # time marching orders
 # include("setup_rhs.jl")
 
