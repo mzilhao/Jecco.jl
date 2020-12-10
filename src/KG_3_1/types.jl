@@ -37,10 +37,8 @@ Parameters for Input/Output
 """
 Base.@kwdef struct InOut
     # negative values suppress output
-    out_boundary_every          :: Int  = -1
     out_bulk_every              :: Int  = -1
 
-    out_boundary_every_t        :: Float64  = -1.0
     out_bulk_every_t            :: Float64  = -1.0
 
     checkpoint_every_walltime_hours :: Float64 = -1.0
