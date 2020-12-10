@@ -18,6 +18,21 @@ Base.@kwdef struct SpecCartGrid3D{T<:Real}
     fd_order         :: Int     = 4
 end
 
+function Jecco.Atlas(grid::SpecCartGrid3D{T}) where {T}
+    Nsys = grid.u_domains
+    delta_udom = (grid.u_max - grid.u_min) / Nsys
+
+    ucoords = [GaussLobatto{1}("u", grid.u_min + (i-1)*delta_udom, grid.u_min +
+                               i*delta_udom, grid.u_nodes) for i in 1:Nsys]
+
+    xcoord  = Cartesian{2}("x", grid.x_min, grid.x_max, grid.x_nodes, endpoint=false)
+    ycoord  = Cartesian{3}("y", grid.y_min, grid.y_max, grid.y_nodes, endpoint=false)
+
+    charts  = [Chart(ucoords[i], xcoord, ycoord) for i in 1:Nsys]
+
+    Atlas(charts)
+end
+
 struct System{Cu,Cx,Cy,Du,Dx,Dy}
     ucoord :: Cu
     xcoord :: Cx

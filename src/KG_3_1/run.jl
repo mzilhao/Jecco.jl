@@ -8,7 +8,7 @@ function estimate_dtmax(chart::Chart)
     0.8 * min(dx, dy, du_avg)
 end
 function estimate_dtmax(atlas::Atlas)
-    dtmaxs = estimate_dtmax.(atlas.charts)
+    dtmaxs = estimate_dtmax.(atlas)
     minimum(dtmaxs)
 end
 
