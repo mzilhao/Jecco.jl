@@ -1,7 +1,7 @@
 
-function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInfo,
+function output_writer(u::EvolVars, chart2D::Chart, atlas, tinfo::Jecco.TimeInfo,
                        io::InOut, potential::Potential)
-    Nsys = length(charts)
+    Nsys = length(atlas)
 
     # output structures
     out_bdry  = Jecco.Output(io.out_dir, "boundary_", tinfo)
@@ -25,7 +25,7 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
         Jecco.Field("phi2", phi2,         chart2D),
     )
     bulkevols_fields = ntuple(i -> (
-        Jecco.Field("phi c=$i", bulkevols[i].phi, charts[i])
+        Jecco.Field("phi c=$i", bulkevols[i].phi, atlas[i])
     ), Nsys)
 
     last_output_boundary_t = -io.out_boundary_every_t
@@ -81,9 +81,9 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
 end
 
 
-function checkpoint_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInfo,
+function checkpoint_writer(u::EvolVars, chart2D::Chart, atlas, tinfo::Jecco.TimeInfo,
                            io::InOut)
-    Nsys = length(charts)
+    Nsys = length(atlas)
 
     # output structure
     out  = Jecco.Output(io.checkpoint_dir, "checkpoint_it", tinfo)
@@ -96,7 +96,7 @@ function checkpoint_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.Tim
         Jecco.Field("a4",   boundary.a4,  chart2D),
     )
     bulkevols_fields = ntuple(i -> (
-        Jecco.Field("phi c=$i", getphi(bulkevols[i]), charts[i])
+        Jecco.Field("phi c=$i", getphi(bulkevols[i]), atlas[i])
     ), Nsys)
 
     function (u::EvolVars)
