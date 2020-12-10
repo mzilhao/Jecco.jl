@@ -84,10 +84,13 @@ function BulkEvolved{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<
     BulkEvolved{T,eltype(x),typeof(x)}(x)
 end
 
-Base.similar(ff::BulkEvolved{T}) where{T} =
-    BulkEvolved{T,eltype(ff.x),typeof(ff.x)}(ff.x)
-
 getphi(ff::BulkEvolved) = ff.x.phi
+
+function Base.similar(ff::BulkEvolved{T}) where {T}
+    phi = similar(getphi(ff))
+    x   = (phi=phi,)
+    BulkEvolved{T,eltype(x),typeof(x)}(x)
+end
 
 
 struct BulkConstrained{T,A,S} <: FlattenedVector{T,3,A}
