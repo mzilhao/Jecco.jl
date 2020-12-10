@@ -33,11 +33,11 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
     # are we recovering from a previous checkpoint?
     if io.recover == :yes
-        it0, t0 = recover(bulkevols, boundary, io.recover_dir)
+        it0, t0 = recover(bulkevols, boundary, systems, id, io.recover_dir)
         do_id   = false
     elseif io.recover == :auto
         try
-            it0, t0 = recover(bulkevols, boundary, io.recover_dir)
+            it0, t0 = recover(bulkevols, boundary, systems, id, io.recover_dir)
             do_id   = false
         catch e
             if isa(e, ErrorException) && e.msg == "No files found."
@@ -101,13 +101,6 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     output_evol = output_writer(evolvars, chart2D, atlas, tinfo, io,
                                 evoleq.potential)
 
-    if io.out_bulkconstrained_every > 0 || io.out_bulkconstrained_every_t > 0
-        output_constrained = output_writer(bulkconstrains, atlas, tinfo, io,
-                                           evoleq.potential)
-    else
-        output_constrained = x -> nothing
-    end
-
     # prepare checkpointing function
     if io.checkpoint_every_walltime_hours > 0
         checkpoint = checkpoint_writer(evolvars, chart2D, atlas, tinfo, io)
@@ -125,7 +118,6 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     # write initial data
     if do_id
         output_evol(evolvars)
-        output_constrained(bulkconstrains)
     end
 
     # for stdout info
@@ -146,7 +138,6 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
         # write data
         output_evol(u)
-        output_constrained(bulkconstrains)
 
         # checkpoint
         if telapsed >= last_checkpoint_walltime + io.checkpoint_every_walltime_hours
