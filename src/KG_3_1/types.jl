@@ -52,15 +52,13 @@ Construct a container of uninitialized Arrays to hold all the bulk variables
 that are constrained (not evolved in time): S, phid, Sd, A
 """
 function BulkConstrained{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Real}
-    S    = Array{T}(undef, Nu, Nx, Ny)
     phid = Array{T}(undef, Nu, Nx, Ny)
     Sd   = Array{T}(undef, Nu, Nx, Ny)
     A    = Array{T}(undef, Nu, Nx, Ny)
-    x    = (S=S, phid=phid, Sd=Sd, A=A)
+    x    = (phid=phid, Sd=Sd, A=A)
     BulkConstrained{T,eltype(x),typeof(x)}(x)
 end
 
-getS(ff::BulkConstrained)    = ff.x.S
 getphid(ff::BulkConstrained) = ff.x.phid
 getSd(ff::BulkConstrained)   = ff.x.Sd
 getA(ff::BulkConstrained)    = ff.x.A
