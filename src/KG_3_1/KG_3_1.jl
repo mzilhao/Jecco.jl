@@ -27,16 +27,8 @@ include("compute_bulkevolved_t.jl")
 include("setup_rhs.jl")
 
 
-# include("param.jl")
-
 # include("run.jl")
 # include("ibvp.jl")
-
-# export ParamBase, ParamGrid, ParamID, ParamEvol, ParamIO
-# export Potential
-# export VV # this will contain the potential
-# export System
-# export BulkVars, BoundaryVars, AllVars
 
 
 # always set the number of BLAS threads to 1 upon loading the module. by default
