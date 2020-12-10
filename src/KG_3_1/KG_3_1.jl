@@ -26,10 +26,11 @@ include("compute_bulkevolved_t.jl")
 # time marching orders
 include("setup_rhs.jl")
 
+# input/output
+include("IO.jl")
 
-# include("run.jl")
-# include("ibvp.jl")
-
+# run the model
+include("run.jl")
 
 # always set the number of BLAS threads to 1 upon loading the module. by default
 # it uses a bunch of them and we don't want that since they trample over each
@@ -50,6 +51,6 @@ export System, SystemPartition
 export BulkEvolvedPartition, BulkConstrainedPartition, Boundary
 export Uniform2D, Sine2D
 export AffineNull
-export Integration
+export Integration, InOut, run_model
 
 end
