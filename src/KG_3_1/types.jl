@@ -48,6 +48,9 @@ function BulkEvolved{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<
     BulkEvolved{T,eltype(x),typeof(x)}(x)
 end
 
+Base.similar(ff::BulkEvolved{T}) where{T} =
+    BulkEvolved{T,eltype(ff.x),typeof(ff.x)}(ff.x)
+
 getphi(ff::BulkEvolved) = ff.x.phi
 
 
