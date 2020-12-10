@@ -10,6 +10,15 @@ Extend this type for different `InitialData` choices
 abstract type InitialData end
 
 """
+Extend this type for different `EvolutionEquations`.
+"""
+abstract type EvolutionEquations end
+
+Base.@kwdef struct AffineNull{TP<:Potential} <: EvolutionEquations
+    potential      :: TP  = ConstPotential()
+end
+
+"""
 Parameters for the time evolution
 """
 Base.@kwdef struct Integration{T,Tdt,S}
