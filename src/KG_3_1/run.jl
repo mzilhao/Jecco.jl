@@ -133,7 +133,8 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
         telapsed      = tinfo.runtime / 3600
 
         # write info to stdout
-        deltat = t
+        bulkevols = getbulkevolvedpartition(u)
+        deltat    = t
         Jecco.out_info(tinfo.it, tinfo.t, deltat/telapsed, getphi(bulkevols[1]), "ϕ c=1", 1, 200)
 
         # write data
