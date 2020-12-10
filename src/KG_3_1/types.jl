@@ -32,6 +32,42 @@ Base.@kwdef struct Integration{T,Tdt,S}
 end
 
 
+"""
+Parameters for Input/Output
+"""
+Base.@kwdef struct InOut
+    # negative values suppress output
+    out_boundary_every          :: Int  = -1
+    out_bulk_every              :: Int  = -1
+
+    out_boundary_every_t        :: Float64  = -1.0
+    out_bulk_every_t            :: Float64  = -1.0
+
+    checkpoint_every_walltime_hours :: Float64 = -1.0
+
+    # stop and checkpoint upon reaching this walltime
+    max_walltime       :: Float64 = 1.e20
+
+    # trigger termination
+    termination_from_file :: Bool    = true
+    check_file_every      :: Int     = 10
+    termination_file      :: String  = "TERMINATE"
+
+    # name of script
+    _parfile           :: String  = splitext(basename(Base.source_path()))[1]
+
+    # use name of script by default
+    out_dir            :: String  = _parfile
+    checkpoint_dir     :: String  = _parfile
+
+    recover            :: Symbol  = :auto
+    recover_dir        :: String  = _parfile
+
+    # be very careful with this option! it will remove the whole folder contents
+    # if set to true! use only for fast debugging runs
+    remove_existing    :: Bool  = false
+end
+
 
 struct BulkEvolved{T,A,S} <: FlattenedVector{T,3,A}
     x :: S
