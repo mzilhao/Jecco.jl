@@ -2,6 +2,7 @@ module KG_3_1
 
 using Jecco
 using LinearAlgebra
+using OrdinaryDiffEq
 
 import Base.Threads.@threads
 import Base.Threads.@spawn
@@ -22,17 +23,12 @@ include("solve_nested.jl")
 # evolution equations
 include("compute_bulkevolved_t.jl")
 
-
 # time marching orders
-# include("setup_rhs.jl")
+include("setup_rhs.jl")
 
 
 # include("param.jl")
 
-# include("dphidt.jl")
-# include("equation_coeff.jl")
-# include("solve_nested.jl")
-# include("rhs.jl")
 # include("run.jl")
 # include("ibvp.jl")
 
@@ -62,5 +58,6 @@ export System, SystemPartition
 export BulkEvolvedPartition, BulkConstrainedPartition, Boundary
 export Uniform2D, Sine2D
 export AffineNull
+export Integration
 
 end

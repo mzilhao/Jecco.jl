@@ -1,46 +1,28 @@
 
-function setup_rhs(phi::Array{<:Number,N}, sys::System) where {N}
+function setup_rhs(bulkconstrains::BulkPartition{Nsys}, boundary::Boundary,
+                   bulkderivs::BulkPartition{Nsys},
+                   systems::SystemPartition, integration::Integration) where {Nsys}
+    # function to solve the nested system
+    nested = Nested(systems, bulkconstrains, bulkderivs)
 
-    a4 = -ones2D(sys)
-    boundary = BoundaryVars(a4)
+    function (ff_t::EvolVars, ff::EvolVars, evoleq::EvolutionEquations, t)
+        bulkevols_t = getbulkevolvedpartition(ff_t)
+        bulkevols   = getbulkevolvedpartition(ff)
 
-    bulk = BulkVars(phi)
-    BC = bulk[1,:,:]
+        # solve nested system for the constrained variables
+        nested(bulkevols, boundary, evoleq)
 
-    nested = Nested(sys)
+        @inbounds @threads for aa in 1:Nsys
+            sys           = systems[aa]
+            bulkevol_t    = bulkevols_t[aa]
+            bulkevol      = bulkevols[aa]
+            bulkconstrain = bulkconstrains[aa]
+            deriv         = bulkderivs[aa]
 
-    function (df, f, sys, t)
-        bulk.phi .= f
-
-        solve_nested_g1!(bulk, BC, boundary, nested)
-
-        df .= bulk.dphidt
-        nothing
-    end
-end
-
-function setup_rhs(phis::Vector, systems::Vector, unpack::Function)
-
-    a4 = -ones2D(systems[1])
-    boundary = BoundaryVars(a4)
-
-    bulks = BulkVars(phis)
-    phis_slice  = [phi[1,:,:] for phi in phis]
-    BCs  = BulkVars(phis_slice)
-
-    Nsys    = length(systems)
-    nesteds = Nested(systems)
-
-    function (df, f, systems, t)
-        phis = unpack(f)
-        for i in 1:Nsys
-            bulks[i].phi .= phis[i]
+            compute_bulkevolved_t!(bulkevol_t, bulkconstrain, bulkevol, deriv,
+                                   sys, evoleq)
         end
-
-        solve_nested_g1!(bulks, BCs, boundary, nesteds)
-
-        tmp  = [bulks[i].dphidt for i in 1:Nsys]
-        df  .= vcat(tmp...)
+        sync_bulkevolved!(bulkevols_t, bulkconstrains, systems, evoleq)
 
         nothing
     end
