@@ -1407,9 +1407,6 @@ function set_innerBCs!(bc::BC, bulk::BulkEvolved, boundary::Boundary,
             phi     = phiGF[1,i,j]
             phi_u   = deriv.Du_phi[1,i,j]
 
-            phi_x   = Dx(phiGF, 1,i,j)
-            phi_y   = Dy(phiGF, 1,i,j)
-
             xi_x    = Dx(xiGF, 1,i,j)
             xi_y    = Dy(xiGF, 1,i,j)
 
