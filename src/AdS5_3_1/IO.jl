@@ -145,9 +145,9 @@ function output_writer(u::EvolVars, chart2D::Chart, atlas, tinfo::Jecco.TimeInfo
 end
 
 
-function output_writer(bulkconstrains::BulkPartition{Nsys,BulkConstrained{T}}, atlas,
+function output_writer(bulkconstrains::BulkPartition{Nsys,BulkConstrained{T,A,S}}, atlas,
                        tinfo::Jecco.TimeInfo, io::InOut, potential::Potential,
-                       phi0) where {Nsys,T}
+                       phi0) where {Nsys,T,A,S}
     @assert Nsys == length(atlas)
 
     # NamedTuple with potential parameters
