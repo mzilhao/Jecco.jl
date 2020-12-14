@@ -110,16 +110,42 @@ Base.@kwdef struct InOut
     remove_existing    :: Bool  = false
 end
 
-struct BulkEvolved{T,A,S} <: FlattenedVector{T,3,A}
-    x :: S
+
+abstract type AbstractVars{T} <: AbstractVector{T} end
+
+struct BulkEvolved{T} <: AbstractVars{T}
+    B1  :: Array{T,3}
+    B2  :: Array{T,3}
+    G   :: Array{T,3}
+    phi :: Array{T,3}
 end
 
-struct BulkConstrained{T,A,S} <: FlattenedVector{T,3,A}
-    x :: S
+struct BulkConstrained{T} <: AbstractVars{T}
+    S    :: Array{T,3}
+    Fx   :: Array{T,3}
+    Fy   :: Array{T,3}
+    B1d  :: Array{T,3}
+    B2d  :: Array{T,3}
+    Gd   :: Array{T,3}
+    phid :: Array{T,3}
+    Sd   :: Array{T,3}
+    A    :: Array{T,3}
 end
 
-struct Bulk{T,A,S} <: FlattenedVector{T,3,A}
-    x :: S
+struct Bulk{T} <: AbstractVars{T}
+    B1   :: Array{T,3}
+    B2   :: Array{T,3}
+    G    :: Array{T,3}
+    phi  :: Array{T,3}
+    S    :: Array{T,3}
+    Fx   :: Array{T,3}
+    Fy   :: Array{T,3}
+    B1d  :: Array{T,3}
+    B2d  :: Array{T,3}
+    Gd   :: Array{T,3}
+    phid :: Array{T,3}
+    Sd   :: Array{T,3}
+    A    :: Array{T,3}
 end
 
 struct BulkDeriv{T}
@@ -145,13 +171,22 @@ struct BulkDeriv{T}
     Duu_A   :: Array{T,3}
 end
 
-struct Boundary{T,A,S} <: FlattenedVector{T,3,A}
-    x :: S
+struct Boundary{T} <: AbstractVars{T}
+    a4  :: Array{T,3}
+    fx2 :: Array{T,3}
+    fy2 :: Array{T,3}
 end
 
-struct Gauge{T,A,S} <: FlattenedVector{T,3,A}
-    x :: S
+struct Gauge{T} <: AbstractVars{T}
+    xi  :: Array{T,3}
 end
+
+@inline varlist(::BulkEvolved)     = (:B1, :B2, :G, :phi)
+@inline varlist(::BulkConstrained) = (:S, :Fx, :Fy, :B1d, :B2d, :Gd, :phid, :Sd, :A)
+@inline varlist(::Bulk)            = (:B1, :B2, :G, :phi, :S, :Fx, :Fy, :B1d, :B2d,
+                                      :Gd, :phid, :Sd, :A)
+@inline varlist(::Boundary)        = (:a4, :fx2, :fy2)
+@inline varlist(::Gauge)           = (:xi,)
 
 
 """
@@ -165,8 +200,7 @@ function BulkEvolved{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<
     B2  = Array{T}(undef, Nu, Nx, Ny)
     G   = Array{T}(undef, Nu, Nx, Ny)
     phi = Array{T}(undef, Nu, Nx, Ny)
-    x = (B1=B1, B2=B2, G=G, phi=phi)
-    BulkEvolved{T,eltype(x),typeof(x)}(x)
+    BulkEvolved{T}(B1, B2, G, phi)
 end
 
 """
@@ -185,8 +219,7 @@ function BulkConstrained{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where
     phid = Array{T}(undef, Nu, Nx, Ny)
     Sd   = Array{T}(undef, Nu, Nx, Ny)
     A    = Array{T}(undef, Nu, Nx, Ny)
-    x    = (S=S, Fx=Fx, Fy=Fy, B1d=B1d, B2d=B2d, Gd=Gd, phid=phid, Sd=Sd, A=A)
-    BulkConstrained{T,eltype(x),typeof(x)}(x)
+    BulkConstrained{T}(S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
 
 """
@@ -196,22 +229,20 @@ Construct a container to hold all the bulk variables where the evolved variables
 point to the given bulkevol struct and the constrained ones point to the bulkconstrain struct
 """
 function Bulk(bulkevol::BulkEvolved{T}, bulkconstrain::BulkConstrained{T}) where {T}
-    B1    = bulkevol.x.B1
-    B2    = bulkevol.x.B2
-    G     = bulkevol.x.G
-    phi   = bulkevol.x.phi
-    S     = bulkconstrain.x.S
-    Fx    = bulkconstrain.x.Fx
-    Fy    = bulkconstrain.x.Fy
-    B1d   = bulkconstrain.x.B1d
-    B2d   = bulkconstrain.x.B2d
-    Gd    = bulkconstrain.x.Gd
-    phid  = bulkconstrain.x.phid
-    Sd    = bulkconstrain.x.Sd
-    A     = bulkconstrain.x.A
-    x     = (B1=B1, B2=B2, G=G, phi=phi,
-             S=S, Fx=Fx, Fy=Fy, B1d=B1d, B2d=B2d, Gd=Gd, phid=phid, Sd=Sd, A=A)
-    Bulk{T,eltype(x),typeof(x)}(x)
+    B1    = bulkevol.B1
+    B2    = bulkevol.B2
+    G     = bulkevol.G
+    phi   = bulkevol.phi
+    S     = bulkconstrain.S
+    Fx    = bulkconstrain.Fx
+    Fy    = bulkconstrain.Fy
+    B1d   = bulkconstrain.B1d
+    B2d   = bulkconstrain.B2d
+    Gd    = bulkconstrain.Gd
+    phid  = bulkconstrain.phid
+    Sd    = bulkconstrain.Sd
+    A     = bulkconstrain.A
+    Bulk{T}(B1, B2, G, phi, S, Fx, Fy, B1d, B2d, Gd, phid, Sd, A)
 end
 
 function BulkDeriv{T}(::UndefInitializer, Nu::Int, Nx::Int, Ny::Int) where {T<:Real}
@@ -257,8 +288,7 @@ function Boundary{T}(::UndefInitializer, Nx::Int, Ny::Int) where {T<:Real}
     a4  = Array{T}(undef, 1, Nx, Ny)
     fx2 = Array{T}(undef, 1, Nx, Ny)
     fy2 = Array{T}(undef, 1, Nx, Ny)
-    x   = (a4=a4, fx2=fx2, fy2=fy2)
-    Boundary{T,eltype(x),typeof(x)}(x)
+    Boundary{T}(a4, fx2, fy2)
 end
 
 """
@@ -272,68 +302,101 @@ defined for the bulk quantities can also straightforwardly apply on it.
 """
 function Gauge{T}(::UndefInitializer, Nx::Int, Ny::Int) where {T<:Real}
     xi  = Array{T}(undef, 1, Nx, Ny)
-    x   = (xi=xi,)
-    Gauge{T,eltype(x),typeof(x)}(x)
+    Gauge{T}(xi)
 end
 
 
-@inline getB1(ff::BulkEvolved)       = ff.x.B1
-@inline getB2(ff::BulkEvolved)       = ff.x.B2
-@inline getG(ff::BulkEvolved)        = ff.x.G
-@inline getphi(ff::BulkEvolved)      = ff.x.phi
+@inline getB1(ff::BulkEvolved)       = ff.B1
+@inline getB2(ff::BulkEvolved)       = ff.B2
+@inline getG(ff::BulkEvolved)        = ff.G
+@inline getphi(ff::BulkEvolved)      = ff.phi
 
-@inline getS(ff::BulkConstrained)    = ff.x.S
-@inline getFx(ff::BulkConstrained)   = ff.x.Fx
-@inline getFy(ff::BulkConstrained)   = ff.x.Fy
-@inline getB1d(ff::BulkConstrained)  = ff.x.B1d
-@inline getB2d(ff::BulkConstrained)  = ff.x.B2d
-@inline getGd(ff::BulkConstrained)   = ff.x.Gd
-@inline getphid(ff::BulkConstrained) = ff.x.phid
-@inline getSd(ff::BulkConstrained)   = ff.x.Sd
-@inline getA(ff::BulkConstrained)    = ff.x.A
+@inline getS(ff::BulkConstrained)    = ff.S
+@inline getFx(ff::BulkConstrained)   = ff.Fx
+@inline getFy(ff::BulkConstrained)   = ff.Fy
+@inline getB1d(ff::BulkConstrained)  = ff.B1d
+@inline getB2d(ff::BulkConstrained)  = ff.B2d
+@inline getGd(ff::BulkConstrained)   = ff.Gd
+@inline getphid(ff::BulkConstrained) = ff.phid
+@inline getSd(ff::BulkConstrained)   = ff.Sd
+@inline getA(ff::BulkConstrained)    = ff.A
 
-@inline getB1(ff::Bulk)              = ff.x.B1
-@inline getB2(ff::Bulk)              = ff.x.B2
-@inline getG(ff::Bulk)               = ff.x.G
-@inline getphi(ff::Bulk)             = ff.x.phi
-@inline getS(ff::Bulk)               = ff.x.S
-@inline getFx(ff::Bulk)              = ff.x.Fx
-@inline getFy(ff::Bulk)              = ff.x.Fy
-@inline getB1d(ff::Bulk)             = ff.x.B1d
-@inline getB2d(ff::Bulk)             = ff.x.B2d
-@inline getGd(ff::Bulk)              = ff.x.Gd
-@inline getphid(ff::Bulk)            = ff.x.phid
-@inline getSd(ff::Bulk)              = ff.x.Sd
-@inline getA(ff::Bulk)               = ff.x.A
+@inline getB1(ff::Bulk)              = ff.B1
+@inline getB2(ff::Bulk)              = ff.B2
+@inline getG(ff::Bulk)               = ff.G
+@inline getphi(ff::Bulk)             = ff.phi
+@inline getS(ff::Bulk)               = ff.S
+@inline getFx(ff::Bulk)              = ff.Fx
+@inline getFy(ff::Bulk)              = ff.Fy
+@inline getB1d(ff::Bulk)             = ff.B1d
+@inline getB2d(ff::Bulk)             = ff.B2d
+@inline getGd(ff::Bulk)              = ff.Gd
+@inline getphid(ff::Bulk)            = ff.phid
+@inline getSd(ff::Bulk)              = ff.Sd
+@inline getA(ff::Bulk)               = ff.A
 
-@inline geta4(ff::Boundary)          = ff.x.a4
-@inline getfx2(ff::Boundary)         = ff.x.fx2
-@inline getfy2(ff::Boundary)         = ff.x.fy2
+@inline geta4(ff::Boundary)          = ff.a4
+@inline getfx2(ff::Boundary)         = ff.fx2
+@inline getfy2(ff::Boundary)         = ff.fy2
 
-@inline getxi(ff::Gauge)             = ff.x.xi
+@inline getxi(ff::Gauge)             = ff.xi
 
 
-function Base.similar(ff::BulkEvolved{T}) where {T}
-    B1  = similar(getB1(ff))
-    B2  = similar(getB2(ff))
-    G   = similar(getG(ff))
-    phi = similar(getphi(ff))
-    x   = (B1=B1, B2=B2, G=G, phi=phi)
-    BulkEvolved{T,eltype(x),typeof(x)}(x)
+@inline function Base.length(ff::AbstractVars)
+    vars = varlist(ff)
+    sum_l = 0
+    for x in vars
+        f = getproperty(ff,x)   # f will point to each variable in the ff struct
+        sum_l += length(f)
+    end
+    sum_l
+end
+@inline Base.size(ff::AbstractVars) = (length(ff),)
+
+# indexing. this is just a linear indexing through all the arrays. adapted from
+# RecursiveArrayTools
+@inline Base.firstindex(ff::AbstractVars) = 1
+@inline Base.lastindex(ff::AbstractVars) = length(ff)
+
+@inline function Base.getindex(ff::AbstractVars, i::Int)
+    vars = varlist(ff)
+    @inbounds for x in vars
+        f  = getproperty(ff,x)
+        i -= length(f)
+        if i <= 0
+            return f[length(f)+i]
+        end
+    end
+end
+@inline function Base.setindex!(ff::AbstractVars, v, i::Int)
+    vars = varlist(ff)
+    @inbounds for x in vars
+        f  = getproperty(ff,x)
+        i -= length(f)
+        if i <= 0
+            f[length(f)+i] = v
+            break
+        end
+    end
 end
 
-function Base.similar(ff::Boundary{T}) where {T}
-    a4  = similar(geta4(ff))
-    fx2 = similar(getfx2(ff))
-    fy2 = similar(getfy2(ff))
-    x   = (a4=a4, fx2=fx2, fy2=fy2)
-    Boundary{T,eltype(x),typeof(x)}(x)
-end
+Base.similar(ff::BulkEvolved{T}) where{T} =
+    BulkEvolved{T}(similar(ff.B1), similar(ff.B2), similar(ff.G), similar(ff.phi))
 
-function Base.similar(ff::Gauge{T}) where {T}
-    xi  = similar(getxi(ff))
-    x   = (xi=xi,)
-    Gauge{T,eltype(x),typeof(x)}(x)
+Base.similar(ff::Boundary{T}) where{T} =
+    Boundary{T}(similar(ff.a4), similar(ff.fx2), similar(ff.fy2))
+
+Base.similar(ff::Gauge{T}) where{T} = Gauge{T}(similar(ff.xi))
+
+
+"""
+    unpack(ff::AbstractVars)
+
+Return `Array` with all the different fields in the structure
+"""
+function unpack(ff::AbstractVars)
+    vars = varlist(ff)
+    [getproperty(ff,x) for x in vars]
 end
 
 
@@ -380,15 +443,13 @@ view of the time evolution routine.
 """
 function EvolVars(boundary::Boundary, gauge::Gauge,
                   bulkevols::BulkPartition{Nsys}) where {Nsys}
-    f1 = collect(boundary.x)
-    f2 = collect(gauge.x)
-
-    f_ = ntuple( i-> tuple(bulkevols[i].x...), Nsys)
-    f3 = collect( Iterators.flatten(f_) )
+    f1 = unpack(boundary)
+    f2 = unpack(gauge)
 
     # this technique allocates a bit of memory and is not fully type-stable, but
     # i think it's not a problem since we only call this function once
-    EvolVars([f1..., f2..., f3...])
+    f3 = [unpack(bulkevol) for bulkevol in bulkevols]
+    EvolVars([f1; f2; f3...])
 end
 
 Base.similar(ff::EvolVars{T,N,S}) where {T,N,S} = EvolVars{T,N,S}(similar.(ff.x))
@@ -428,20 +489,11 @@ function getphi(ff::EvolVars, i::Int)
     ff.x[8 + (i-1)*4]
 end
 
-@inline function getboundary(ff::EvolVars{T}) where{T}
-    x = (a4=geta4(ff), fx2=getfx2(ff), fy2=getfy2(ff))
-    Boundary{T,eltype(x),typeof(x)}(x)
-end
+@inline getboundary(ff::EvolVars) = Boundary(geta4(ff), getfx2(ff), getfy2(ff))
+@inline getgauge(ff::EvolVars)    = Gauge(getxi(ff))
 
-@inline function getgauge(ff::EvolVars{T}) where{T}
-    x = (xi=getxi(ff),)
-    Gauge{T,eltype(x),typeof(x)}(x)
-end
-
-@inline function getbulkevolved(ff::EvolVars{T}, i::Int) where {T}
-    x = (B1=getB1(ff,i), B2=getB2(ff,i), G=getG(ff,i), phi=getphi(ff,i))
-    BulkEvolved{T,eltype(x),typeof(x)}(x)
-end
+@inline getbulkevolved(ff::EvolVars, i::Int) =
+    BulkEvolved(getB1(ff,i), getB2(ff,i), getG(ff,i), getphi(ff,i))
 
 function getbulkevolvedpartition(ff::EvolVars)
     Nsys = getudomains(ff)
