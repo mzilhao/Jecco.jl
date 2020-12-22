@@ -12,7 +12,16 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, boundary::Boundary,
         # solve nested system for the constrained variables
         nested(bulkevols, boundary, evoleq)
 
-        @inbounds @threads for aa in 1:Nsys
+        # first u-domain
+        sys           = systems[1]
+        bulkevol_t    = bulkevols_t[1]
+        bulkevol      = bulkevols[1]
+        bulkconstrain = bulkconstrains[1]
+        deriv         = bulkderivs[1]
+        compute_bulkevolved_t_1st!(bulkevol_t, bulkconstrain, bulkevol, deriv,
+                                   sys, evoleq)
+        # remaining u-domains
+        @inbounds @threads for aa in 2:Nsys
             sys           = systems[aa]
             bulkevol_t    = bulkevols_t[aa]
             bulkevol      = bulkevols[aa]
