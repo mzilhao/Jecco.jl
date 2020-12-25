@@ -123,7 +123,6 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     diag = diagnostics(bulkevols, bulkconstrains, bulkderivs, boundary, gauge,
                        horizoncache, systems, tinfo, evoleq, io)
 
-
     # remove termination trigger file, if it exists
     if io.termination_from_file
         finish_him = abspath(io.out_dir, io.termination_file)
@@ -131,11 +130,12 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     end
 
     # write initial data
-    output_evol(evolvars)
-    output_constrained(bulkconstrains)
-
-    # diagnostics at t=0
-    diag()
+    if do_id
+        output_evol(evolvars)
+        output_constrained(bulkconstrains)
+        # diagnostics at t=0
+        diag()
+    end
 
     # for stdout info
     Jecco.out_info(tinfo.it, tinfo.t, 0.0, gauge.xi, "ξ", 1, 1)
