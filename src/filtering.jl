@@ -66,7 +66,7 @@ struct Exp_Filter{N} end
 
 # α = -log(ϵ) where ϵ is the machine epsilon.
 # for the standard choice of ϵ = 2^-52, α = 36.0437
-function Exp_Filter{N}(γ::T, Nxx...; α::T=36.0437) where {T<:Real,N}
+function Exp_Filter{N}(γ::T, α::T, Nxx...) where {T<:AbstractFloat,N}
     kernel = exp_kernel(Nxx[N], γ, α)
     nt = Threads.nthreads()
     _cache = [Array{T}(undef, Nxx...) for _ in 1:nt]
@@ -81,6 +81,10 @@ function Exp_Filter{N}(γ::T, Nxx...; α::T=36.0437) where {T<:Real,N}
     fft_plan = FFTW.plan_r2r(_cache[1], FFTW.REDFT00, N)
 
     FftFilter{T,N,typeof(_cache),typeof(fft_plan)}(kernel, fft_plan, _cache)
+end
+function Exp_Filter{N}(γ::T, Nxx...) where {T<:AbstractFloat,N}
+    α = T(36.0437)
+    Exp_Filter{N}(γ, α, Nxx...)
 end
 
 Exp_Filter(args...) = Exp_Filter{1}(args...)

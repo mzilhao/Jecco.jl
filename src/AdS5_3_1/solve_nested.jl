@@ -1,8 +1,4 @@
 
-import Base.Threads.@threads
-import Base.Threads.@spawn
-using LinearAlgebra
-
 function solve_lin_system!(A_mat, b_vec)
     # passing Val(false) to the second argument turns off pivoting. it seems to
     # improve speed for the small matrices that we typically consider. we can

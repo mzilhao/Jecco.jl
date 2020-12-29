@@ -97,7 +97,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     tinfo  = Jecco.TimeInfo(it0, t0, 0.0, 0.0)
 
     # for the boundary/xi grid
-    empty   = Cartesian{1}("u", 0.0, 0.0, 1)
+    empty   = Cartesian{1}("u", systems[1].ucoord[1], systems[1].ucoord[1], 1)
     chart2D = Chart(empty, systems[1].xcoord, systems[1].ycoord)
 
     # prepare functions to write data
@@ -123,7 +123,6 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     diag = diagnostics(bulkevols, bulkconstrains, bulkderivs, boundary, gauge,
                        horizoncache, systems, tinfo, evoleq, io)
 
-
     # remove termination trigger file, if it exists
     if io.termination_from_file
         finish_him = abspath(io.out_dir, io.termination_file)
@@ -131,11 +130,12 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     end
 
     # write initial data
-    output_evol(evolvars)
-    output_constrained(bulkconstrains)
-
-    # diagnostics at t=0
-    diag()
+    if do_id
+        output_evol(evolvars)
+        output_constrained(bulkconstrains)
+        # diagnostics at t=0
+        diag()
+    end
 
     # for stdout info
     Jecco.out_info(tinfo.it, tinfo.t, 0.0, gauge.xi, "ξ", 1, 1)

@@ -66,7 +66,7 @@ Base.@kwdef struct Integration{T,Tdt,S}
     ODE_method      :: S    = AB3()
     adaptive        :: Bool = false
     # relative tolerance for adaptive integrators
-    reltol          :: T    = 1e-6
+    reltol          :: Float64 = 1e-6
     filter_poststep :: Bool = true
 end
 
@@ -306,38 +306,40 @@ function Gauge{T}(::UndefInitializer, Nx::Int, Ny::Int) where {T<:Real}
 end
 
 
-getB1(ff::BulkEvolved)       = ff.B1
-getB2(ff::BulkEvolved)       = ff.B2
-getG(ff::BulkEvolved)        = ff.G
-getphi(ff::BulkEvolved)      = ff.phi
+@inline getB1(ff::BulkEvolved)       = ff.B1
+@inline getB2(ff::BulkEvolved)       = ff.B2
+@inline getG(ff::BulkEvolved)        = ff.G
+@inline getphi(ff::BulkEvolved)      = ff.phi
 
-getS(ff::BulkConstrained)    = ff.S
-getFx(ff::BulkConstrained)   = ff.Fx
-getFy(ff::BulkConstrained)   = ff.Fy
-getB1d(ff::BulkConstrained)  = ff.B1d
-getB2d(ff::BulkConstrained)  = ff.B2d
-getGd(ff::BulkConstrained)   = ff.Gd
-getphid(ff::BulkConstrained) = ff.phid
-getA(ff::BulkConstrained)    = ff.A
+@inline getS(ff::BulkConstrained)    = ff.S
+@inline getFx(ff::BulkConstrained)   = ff.Fx
+@inline getFy(ff::BulkConstrained)   = ff.Fy
+@inline getB1d(ff::BulkConstrained)  = ff.B1d
+@inline getB2d(ff::BulkConstrained)  = ff.B2d
+@inline getGd(ff::BulkConstrained)   = ff.Gd
+@inline getphid(ff::BulkConstrained) = ff.phid
+@inline getSd(ff::BulkConstrained)   = ff.Sd
+@inline getA(ff::BulkConstrained)    = ff.A
 
-getB1(ff::Bulk)              = ff.B1
-getB2(ff::Bulk)              = ff.B2
-getG(ff::Bulk)               = ff.G
-getphi(ff::Bulk)             = ff.phi
-getS(ff::Bulk)               = ff.S
-getFx(ff::Bulk)              = ff.Fx
-getFy(ff::Bulk)              = ff.Fy
-getB1d(ff::Bulk)             = ff.B1d
-getB2d(ff::Bulk)             = ff.B2d
-getGd(ff::Bulk)              = ff.Gd
-getphid(ff::Bulk)            = ff.phid
-getA(ff::Bulk)               = ff.A
+@inline getB1(ff::Bulk)              = ff.B1
+@inline getB2(ff::Bulk)              = ff.B2
+@inline getG(ff::Bulk)               = ff.G
+@inline getphi(ff::Bulk)             = ff.phi
+@inline getS(ff::Bulk)               = ff.S
+@inline getFx(ff::Bulk)              = ff.Fx
+@inline getFy(ff::Bulk)              = ff.Fy
+@inline getB1d(ff::Bulk)             = ff.B1d
+@inline getB2d(ff::Bulk)             = ff.B2d
+@inline getGd(ff::Bulk)              = ff.Gd
+@inline getphid(ff::Bulk)            = ff.phid
+@inline getSd(ff::Bulk)              = ff.Sd
+@inline getA(ff::Bulk)               = ff.A
 
-geta4(ff::Boundary)          = ff.a4
-getfx2(ff::Boundary)         = ff.fx2
-getfy2(ff::Boundary)         = ff.fy2
+@inline geta4(ff::Boundary)          = ff.a4
+@inline getfx2(ff::Boundary)         = ff.fx2
+@inline getfy2(ff::Boundary)         = ff.fy2
 
-getxi(ff::Gauge)             = ff.xi
+@inline getxi(ff::Gauge)             = ff.xi
 
 
 @inline function Base.length(ff::AbstractVars)
@@ -494,10 +496,10 @@ end
 @inline npartitions(::EvolVars{T,N}) where {T,N} = N
 @inline getudomains(::EvolVars{T,N}) where {T,N} = div(N-4, 4)
 
-geta4(ff::EvolVars)   = ff.x[1]
-getfx2(ff::EvolVars)  = ff.x[2]
-getfy2(ff::EvolVars)  = ff.x[3]
-getxi(ff::EvolVars)   = ff.x[4]
+@inline geta4(ff::EvolVars)   = ff.x[1]
+@inline getfx2(ff::EvolVars)  = ff.x[2]
+@inline getfy2(ff::EvolVars)  = ff.x[3]
+@inline getxi(ff::EvolVars)   = ff.x[4]
 
 function getB1(ff::EvolVars, i::Int)
     Nsys = getudomains(ff)
@@ -620,15 +622,15 @@ function BulkHorizon{T}(Nx::Int, Ny::Int) where {T<:Real}
                    Duu_Fx_uAH, Duu_Fy_uAH, Duu_A_uAH)
 end
 
-struct HorizonCache{T,D}
-    bulkhorizon :: BulkHorizon{T}
-    axx         :: Vector{T}
-    ayy         :: Vector{T}
-    axy         :: Vector{T}
-    bx          :: Vector{T}
-    by          :: Vector{T}
-    cc          :: Vector{T}
-    b_vec       :: Vector{T}
+struct HorizonCache{T1,T2,D}
+    bulkhorizon :: BulkHorizon{T1}
+    axx         :: Vector{T2}
+    ayy         :: Vector{T2}
+    axy         :: Vector{T2}
+    bx          :: Vector{T2}
+    by          :: Vector{T2}
+    cc          :: Vector{T2}
+    b_vec       :: Vector{T2}
     Dx_2D       :: D
     Dy_2D       :: D
     Dxx_2D      :: D

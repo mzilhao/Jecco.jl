@@ -50,18 +50,17 @@ using HDF5
 
     grp = fid["data/1"]
 
-    @test read(attrs(grp), "time") == 10.0
-    @test read(attrs(grp), "dt")   == 0.1
+    @test read_attribute(grp, "time") == 10.0
+    @test read_attribute(grp, "dt")   == 0.1
 
     dset1 = grp["fields/f"]
     data1 = read(dset1)
 
     @test all(data1 .== f)
-    @test all(read(attrs(dset1), "gridGlobalOffset") .== mins[end:-1:1])
-    # @test all(read(attrs(dset1), "gridSpacing")      .== deltas[end:-1:1])
-    @test all(read(attrs(dset1), "gridMax")          .== maxs[end:-1:1])
-    @test all(read(attrs(dset1), "gridType")         .== gridtypes[end:-1:1])
-    @test all(read(attrs(dset1), "axisLabels")       .== names[end:-1:1])
+    @test all(read_attribute(dset1, "gridGlobalOffset") .== mins[end:-1:1])
+    @test all(read_attribute(dset1, "gridMax")          .== maxs[end:-1:1])
+    @test all(read_attribute(dset1, "gridType")         .== gridtypes[end:-1:1])
+    @test all(read_attribute(dset1, "axisLabels")       .== names[end:-1:1])
 
     dset2 = grp["fields/g"]
     data2 = read(dset2)
