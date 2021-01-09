@@ -24,6 +24,13 @@ Base.@kwdef struct ConstantGauge <: GaugeCondition
     fd_order :: Int = 2
 end
 
+Base.@kwdef struct Advect_xi{T} <: GaugeCondition
+    xi_vx    :: T   = 0.0
+    xi_vy    :: T   = 0.0
+    # order of the FD operator for solving the AH equation
+    fd_order :: Int = 2
+end
+
 Base.@kwdef struct ConstantAH{T} <: GaugeCondition
     u_AH     :: T   = 1.0
     kappa    :: T   = 1.0

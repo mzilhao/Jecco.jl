@@ -8,6 +8,33 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
 end
 
 
+function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
+                       bulkevol::BulkEvolved, deriv::BulkDeriv, gauge::Gauge,
+                       cache::HorizonCache, sys::System{Outer}, gaugecondition::Advect_xi)
+    _, Nx, Ny = size(sys)
+
+    Dx  = sys.Dx
+    Dy  = sys.Dy
+
+    xiGF = getxi(gauge)
+    xi_t = getxi(gauge_t)
+
+    vx   = gaugecondition.xi_vx
+    vy   = gaugecondition.xi_vy
+
+    @fastmath @inbounds Threads.@threads for j in 1:Ny
+        @inbounds for i in 1:Nx
+            xi_x  = Dx(xiGF, 1,i,j)
+            xi_y  = Dy(xiGF, 1,i,j)
+
+            xi_t[1,i,j] = -vx * xi_x - vy * xi_y
+        end
+    end
+
+    nothing
+end
+
+
 #= Solving for xi_t
 
 this is a 2D PDE of the type
