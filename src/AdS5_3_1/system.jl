@@ -73,19 +73,21 @@ function Filters(filter_gamma::T, KO_order::Int, sigma_diss::T,
                                    ko_filter2D_x, ko_filter2D_y)
 end
 
-struct System{GT,Cu,Cx,Cy,Du,Dx,Dy,TI,TF}
+struct System{GT,Cu,Cx,Cy,TDu,TDx,TDy,TI,TF,TDKOx,TDKOy}
     gridtype    :: GT
     ucoord      :: Cu
     xcoord      :: Cx
     ycoord      :: Cy
-    Du          :: Du
-    Duu         :: Du
-    Dx          :: Dx
-    Dxx         :: Dx
-    Dy          :: Dy
-    Dyy         :: Dy
+    Du          :: TDu
+    Duu         :: TDu
+    Dx          :: TDx
+    Dxx         :: TDx
+    Dy          :: TDy
+    Dyy         :: TDy
     uinterp     :: TI
     filters     :: TF
+    DKOx        :: TDKOx
+    DKOy        :: TDKOy
 end
 
 function System(gridtype::GT, ucoord::GaussLobattoCoord,
@@ -106,10 +108,15 @@ function System(gridtype::GT, ucoord::GaussLobattoCoord,
     filters  = Filters(filter_gamma, KO_order, sigma_diss, ucoord.nodes,
                        xcoord.nodes, ycoord.nodes)
 
+    DKOx  = KO_Centered{2}(KO_order, sigma_diss, Jecco.delta(xcoord), xcoord.nodes)
+    DKOy  = KO_Centered{3}(KO_order, sigma_diss, Jecco.delta(ycoord), ycoord.nodes)
+
     System{GT, typeof(ucoord), typeof(xcoord), typeof(ycoord), typeof(Du),
            typeof(Dx), typeof(Dy), typeof(uinterp),
-           typeof(filters)}(gridtype, ucoord, xcoord, ycoord,
-                            Du, Duu, Dx, Dxx, Dy, Dyy, uinterp, filters)
+           typeof(filters),
+           typeof(DKOx), typeof(DKOy)}(gridtype, ucoord, xcoord, ycoord,
+                                       Du, Duu, Dx, Dxx, Dy, Dyy, uinterp, filters,
+                                       DKOx, DKOy)
 end
 
 Base.size(sys::System) = (sys.ucoord.nodes, sys.xcoord.nodes, sys.ycoord.nodes)
