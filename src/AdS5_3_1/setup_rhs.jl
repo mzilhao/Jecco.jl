@@ -1,26 +1,4 @@
 
-function (filters::Filters)(boundary::Boundary)
-    a4  = geta4(boundary)
-    fx2 = getfx2(boundary)
-    fy2 = getfy2(boundary)
-
-    filters.ko_filter2D_x(a4)
-    filters.ko_filter2D_x(fx2)
-    filters.ko_filter2D_x(fy2)
-    filters.ko_filter2D_y(a4)
-    filters.ko_filter2D_y(fx2)
-    filters.ko_filter2D_y(fy2)
-    nothing
-end
-
-function (filters::Filters)(gauge::Gauge)
-    xi  = getxi(gauge)
-
-    filters.ko_filter2D_x(xi)
-    filters.ko_filter2D_y(xi)
-    nothing
-end
-
 
 function (filters::Filters)(bulkevol::BulkEvolved)
     B1  = getB1(bulkevol)
@@ -28,18 +6,6 @@ function (filters::Filters)(bulkevol::BulkEvolved)
     G   = getG(bulkevol)
     phi = getphi(bulkevol)
 
-    @sync begin
-        @spawn filters.ko_filter_x(B1)
-        @spawn filters.ko_filter_x(B2)
-        @spawn filters.ko_filter_x(G)
-        @spawn filters.ko_filter_x(phi)
-    end
-    @sync begin
-        @spawn filters.ko_filter_y(B1)
-        @spawn filters.ko_filter_y(B2)
-        @spawn filters.ko_filter_y(G)
-        @spawn filters.ko_filter_y(phi)
-    end
     @sync begin
         @spawn filters.exp_filter(B1)
         @spawn filters.exp_filter(B2)
@@ -64,23 +30,15 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
         boundary    = getboundary(ff)
         gauge       = getgauge(ff)
 
-        # filter after each integration (sub)step
-        if t > 0 && integration.filter_poststep
-            @inbounds @threads for aa in 1:Nsys
-                sys = systems[aa]
-                sys.filters(bulkevols[aa])
-            end
-            systems[1].filters(boundary)
-            systems[Nsys].filters(gauge)
-        end
-
         compute_boundary_t!(boundary_t, bulkevols[1], boundary, gauge, systems[1], evoleq)
+        apply_dissipation!(boundary_t, boundary,  systems[1])
 
         # solve nested system for the constrained variables
         nested(bulkevols, boundary, gauge, evoleq)
 
         compute_xi_t!(gauge_t, bulkconstrains[Nsys], bulkevols[Nsys], bulkderivs[Nsys],
                       gauge, cache, systems[Nsys], evoleq.gaugecondition)
+        apply_dissipation!(gauge_t, gauge,  systems[Nsys])
 
         @inbounds @threads for aa in 1:Nsys
             sys           = systems[aa]
@@ -90,6 +48,9 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
 
             compute_bulkevolved_t!(bulkevol_t, bulkconstrain, gauge_t, bulkevol,
                                    boundary, gauge, sys, evoleq)
+            apply_dissipation!(bulkevol_t, bulkevol, sys)
+            # exponential filter
+            sys.filters(bulkevol_t)
         end
         sync_bulkevolved!(bulkevols_t, bulkconstrains, gauge_t, systems, evoleq)
 
