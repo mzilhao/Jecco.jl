@@ -1,11 +1,48 @@
 
+struct KO_Centered{N} end
+
+#= Kreiss-Oliger dissipation
+
+These are operators of the form
+
+  σ (-1)^(ord+3)/2 / 2^(ord+1) h^(ord+1) ∂^(ord+1) / ∂x^(ord+1)
+
+note that, unlike the reference below, we add these directly to the state vector
+(and *not* to its time-derivative)
+
+cf: https://einsteintoolkit.org/thornguide/CactusNumerical/Dissipation/documentation.html
+=#
+function KO_Centered{N}(order::Int, sigma_diss::T, dx::T,
+                        len::Int) where {T<:AbstractFloat,N}
+    @assert (order + 1) % 2 == 0 "Only implemented for odd order."
+
+    derivative_order    = order + 1
+    approximation_order = 2
+    stencil_length      = order + 2
+    stencil_offset      = div(stencil_length-1,2)
+
+    weights = calculate_weights(order + 1, order + 1, 0)
+
+    a   = div(order + 3, 2)
+    s   = (-1)^a
+
+    stencil_coefs = s * sigma_diss / 2^(order + 1) .* weights
+
+    PeriodicFD{T,N,typeof(stencil_coefs)}(derivative_order, approximation_order,
+                                          dx, len, stencil_length,
+                                          stencil_offset, stencil_coefs)
+end
+
 abstract type Filter{T,N} end
 
 #= Kreiss-Oliger dissipation
 
 These are operators of the form
 
-  σ (-1)^(ord+3)/2 / 2^(ord+1) ∂^(ord+1) / ∂x^(ord+1)
+  σ (-1)^(ord+3)/2 / 2^(ord+1) h^(ord+1) ∂^(ord+1) / ∂x^(ord+1)
+
+note that, unlike the reference below, we add these directly to the state vector
+(and *not* to its time-derivative)
 
 cf: https://einsteintoolkit.org/thornguide/CactusNumerical/Dissipation/documentation.html
 =#
