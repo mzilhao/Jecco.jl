@@ -1,4 +1,61 @@
 
+@testset "KO Dissipation tests:" begin
+
+    # N=3
+    DKO = Jecco.KO_Centered{1}(3, 16.0, 0.1, 20)
+    @test DKO.stencil_coefs ≈ [-10.0, 40.0, -60.0, 40.0, -10.0]
+
+    delta_    = zeros(20)
+    delta_[3] = 1.0
+    bla = DKO * delta_
+    @test bla[1:5] ≈ DKO.stencil_coefs
+
+
+    # N=5
+    DKO = Jecco.KO_Centered{1}(5, 64.0, 0.1, 20)
+    @test DKO.stencil_coefs ≈ [10.0, -60.0, 150.0, -200.0, 150.0, -60.0, 10.0]
+
+    delta_    = zeros(20)
+    delta_[4] = 1.0
+    bla = DKO * delta_
+    @test bla[1:7] ≈ DKO.stencil_coefs
+
+
+    # N=7
+    DKO = Jecco.KO_Centered{1}(7, 256.0, 0.1, 20)
+    @test DKO.stencil_coefs ≈ [-10.0, 80.0, -280.0, 560.0, -700.0, 560.0, -280.0, 80.0, -10.0]
+
+    delta_    = zeros(20)
+    delta_[5] = 1.0
+    bla = DKO * delta_
+    @test bla[1:9] ≈ DKO.stencil_coefs
+
+
+    # 3D case
+
+    dimx = 12
+    dimy = 16
+    dimz = 10
+    delta_         = zeros(dimx, dimy, dimz)
+    delta_[:,4,:] .= 1
+
+    order = 5
+    sigma = 64.0
+    DKO = Jecco.KO_Centered{2}(order, sigma, 1.0, dimy)
+
+    bla = DKO * delta_
+
+    myarr = []
+    for k in 1:dimz
+        for i in 1:dimx
+            push!(myarr, bla[i,1:7,k] ≈ DKO.stencil_coefs)
+        end
+    end
+    @test all(myarr)
+
+end
+
+
 @testset "KO Filtering tests:" begin
 
     # 1D case
