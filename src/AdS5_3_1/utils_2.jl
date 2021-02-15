@@ -1,5 +1,5 @@
-using FFTW
 #using Interpolations
+using FFTW
 using HDF5
 import Base.Threads.@spawn
 #Functions that manipulate the output to generate an new initial state from which to run Jecco.
@@ -215,6 +215,173 @@ function change_gauge!(sigma::Array{T,3}, grid::SpecCartGrid3D, boundary::Bounda
     #nested(bulkevols,boundary,gauge,evoleq)
     #find_AH!(sigma,bulkconstrains[end],bulkevols[end],bulkderivs[end],gauge,horizoncache,sys[end],ahf)
     #return sigma, bulkevols, bulkconstrains, gauge
+end
+
+function new_box(grid::SpecCartGrid3D, boundary::Boundary , bulkevols::BulkPartition ,gauge::Gauge,
+                              x::Array{T,1}, y::Array{T,1}) where {T<:Real}
+
+    systems = SystemPartition(grid)
+    Nsys    = length(systems)
+    x_new   = systems[1].xcoord
+    y_new   = systems[1].ycoord
+    Nx_new  = length(x_new)
+    Ny_new  = length(y_new)
+
+    if x_new[1] == x[1] && x_new[end] == x[end] && Nx_new == length(x)
+        if y_new[1] == y[1] && y_new[end] == y[end] && Ny_new == length(y)
+            return boundary, bulkevols, gauge
+        end
+    end
+
+    interp = xy_interpolator(x,y)
+    a4     = interp(boundary.a4)
+    fx2    = interp(boundary.fx2)
+    fy2    = interp(boundary.fy2)
+    xi     = interp(gauge.xi)
+
+    boundary_new  = Boundary(grid)
+    gauge_new     = Gauge(grid)
+    bulkevols_new = BulkEvolvedPartition(grid)
+
+    a4_new  = boundary_new.a4
+    fx2_new = boundary_new.fx2
+    fy2_new = boundary_new.fy2
+    xi_new  = gauge_new.xi
+
+    for i in 1:Nsys
+        B1  = interp(bulkevols[i].B1)
+        B2  = interp(bulkevols[i].B2)
+        G   = interp(bulkevols[i].G)
+        phi = interp(bulkevols[i].phi)
+
+        B1_new  = bulkevols_new[i].B1
+        B2_new  = bulkevols_new[i].B2
+        G_new   = bulkevols_new[i].G
+        phi_new = bulkevols_new[i].phi
+
+        for k in 1:Ny_new
+            for j in 1:Nx_new
+                if x[1] <= x_new[j] <= x[end] && y[1] <= y_new[k] <= y[end]
+                    B1_new[:,j,k]  = B1(x_new[j],y_new[k])
+                    B2_new[:,j,k]  = B2(x_new[j],y_new[k])
+                    G_new[:,j,k]   = G(x_new[j],y_new[k])
+                    phi_new[:,j,k] = phi(x_new[j],y_new[k])
+                    if i==1
+                        a4_new[:,j,k]  = a4(x_new[j],y_new[k])
+                        fx2_new[:,j,k] = fx2(x_new[j],y_new[k])
+                        fy2_new[:,j,k] = fy2(x_new[j],y_new[k])
+                        xi_new[:,j,k]  = xi(x_new[j],y_new[k])
+                    end
+                elseif x[1] <= x_new[j] <= x[end]
+                    B1_new[:,j,k]  = B1(x_new[j],y[1])
+                    B2_new[:,j,k]  = B2(x_new[j],y[1])
+                    G_new[:,j,k]   = G(x_new[j],y[1])
+                    phi_new[:,j,k] = phi(x_new[j],y[1])
+                    if i==1
+                        a4_new[:,j,k]  = a4(x_new[j],y[1])
+                        fx2_new[:,j,k] = fx2(x_new[j],y[1])
+                        fy2_new[:,j,k] = fy2(x_new[j],y[1])
+                        xi_new[:,j,k]  = xi(x_new[j],y[1])
+                    end
+                elseif y[1] <= y_new[k] <= y[end]
+                    B1_new[:,j,k]  = B1(x[1],y_new[k])
+                    B2_new[:,j,k]  = B2(x[1],y_new[k])
+                    G_new[:,j,k]   = G(x[1],y_new[k])
+                    phi_new[:,j,k] = phi(x[1],y_new[k])
+                    if i==1
+                        a4_new[:,j,k]  = a4(x[1],y_new[k])
+                        fx2_new[:,j,k] = fx2(x[1],y_new[k])
+                        fy2_new[:,j,k] = fy2(x[1],y_new[k])
+                        xi_new[:,j,k]  = xi(x[1],y_new[k])
+                    end
+                else
+                    B1_new[:,j,k]  = B1(x[1],y[1])
+                    B2_new[:,j,k]  = B2(x[1],y[1])
+                    G_new[:,j,k]   = G(x[1],y[1])
+                    phi_new[:,j,k] = phi(x[1],y[1])
+                    if i==1
+                        a4_new[:,j,k]  = a4(x[1],y[1])
+                        fx2_new[:,j,k] = fx2(x[1],y[1])
+                        fy2_new[:,j,k] = fy2(x[1],y[1])
+                        xi_new[:,j,k]  = xi(x[1],y[1])
+                    end
+                end
+            end
+        end
+    end
+
+    return boundary_new, bulkevols_new, gauge_new
+end
+
+#For the moment we use the same grid as in the phase separation file and we will use create_new_data to change anything at the end.
+#We use the B's and G of the PS state, and we modify the scalar fields and boundary data. f2 to 0 for the moment. Center the low energy
+#phase in the middle of the box, so that the metaestable state will lie outside
+function bubble_expansion(grid::SpecCartGrid3D, io::InOut, A_dir::String, B_dir::String, PS_dir::String)
+    atlas   = Atlas(grid)
+    systems = SystemPartition(grid)
+    Nsys    = length(systems)
+
+    a4_A  = BoundaryTimeSeries(A_dir,:a4)[end,1,1]
+    a4_B  = BoundaryTimeSeries(B_dir,:a4)[end,1,1]
+    a4_PS = BoundaryTimeSeries(PS_dir,:a4)
+    xi_A  = XiTimeSeries(A_dir)[end,1,1]
+    xi_B  = XiTimeSeries(B_dir)[end,1,1]
+    xi_PS = XiTimeSeries(PS_dir)
+    _,x,y = get_coords(a4_PS,1,:,:)
+    Nx    = length(x)
+    Ny    = length(y)
+    hot   = CartesianIndex(1,1)
+    cold  = CartesianIndex(Int(floor(Nx/2)),Int(floor(Ny/2)))
+    k_a4  = (a4_A-a4_B)/(a4_PS[end,hot]-a4_PS[end,cold])
+    k_xi  = (xi_A-xi_B)/(xi_PS[end,hot]-xi_PS[end,cold])
+
+    a4  = zeros(1,Nx,Ny)
+    xi  = zeros(1,Nx,Ny)
+    fx2 = zeros(1,Nx,Ny)
+    fy2 = zeros(1,Nx,Ny)
+
+    println("We are going to start changing the boundary")
+    a4[1,:,:] = k_a4.*(a4_PS[end,:,:].-a4_PS[end,cold]).+a4_B
+    xi[1,:,:] = k_xi.*(xi_PS[end,:,:].-xi_PS[end,cold]).+xi_B
+    println("The boundary is done")
+
+    boundary  = Boundary{typeof(a4[1,1,1])}(a4,fx2,fy2)
+    gauge     = Gauge{typeof(xi[1,1,1])}(xi)
+    bulk      = Array{BulkEvolved,1}(undef, Nsys)
+
+    for n in 1:Nsys
+        phi_A  = BulkTimeSeries(A_dir, :phi, n)[end,:,1,1]
+        phi_B  = BulkTimeSeries(B_dir, :phi, n)[end,:,1,1]
+        phi_PS = BulkTimeSeries(PS_dir, :phi, n)
+        B1     = BulkTimeSeries(PS_dir, :B2, n)[end,:,:,:]
+        B2     = BulkTimeSeries(PS_dir, :B2, n)[end,:,:,:]
+        G      = BulkTimeSeries(PS_dir, :G, n)[end,:,:,:]
+        phi    = similar(phi_PS[end,:,:,:])
+        k      = (phi_A-phi_B)./(phi_PS[end,:,hot]-phi_PS[end,:,cold])
+        Nu = length(phi[:,1,1])
+        for i in 1:Nu
+            phi[i,:,:] = k[i].*(phi_PS[end,i,:,:].-phi_PS[end,i,cold]).+phi_B[i]
+        end
+        println("Bulk is done")
+        bulk[n] = BulkEvolved{typeof(B1[1,1,1])}(B1, B2, G, phi)
+    end
+
+    bulkevols = AdS5_3_1.BulkPartition((bulk...))
+    boundary_new, bulkevols_new, gauge_new = new_box(grid, boundary, bulkevols, gauge, x, y)
+
+
+    phi0 = 1.0
+    potential = Phi8Potential(oophiM2=-1.0, oophiQ=0.1,)
+    try
+        phi0  = a4_PS.ts.params["phi0"]
+        potential = Phi8Potential(oophiM2=a4_PS.ts.params["oophiM2"], oophiQ=a4_PS.ts.params["oophiQ"],)
+    catch
+        @warn "No ts.params field, setting phi0=1.0, oophiM2=-1,0 and oophiQ=0.1"
+    end
+    empty = Cartesian{1}("u", 0.0, 0.0, 1)
+    chart2D = Chart(empty, systems[1].xcoord, systems[1].ycoord)
+    evolvars = AdS5_3_1.EvolVars(boundary_new, gauge_new, bulkevols_new)
+    create_outputs(io.out_dir, evolvars, chart2D, atlas.charts, io, potential, phi0)
 end
 
 #For the moment we change a4 and fx2, fy2 by multiplying the energy by some factor. We can change this so that we decide what
