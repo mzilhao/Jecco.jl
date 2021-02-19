@@ -168,8 +168,10 @@ function (filter::ConvFilter{T,M})(f::AbstractArray{T}) where {T,M}
 end
 
 
-# see, eg, "Idempotent filtering in spectral and spectral element methods",
-# Journal of Computational Physics 220 (2006) 41-58
+# see, eg, D. Gottlieb, J.S. Hesthaven, "Spectral methods for hyperbolic
+# problems", Journal of Computational and Applied Mathematics 128 (2001) 83–131,
+# or "Idempotent filtering in spectral and spectral element methods", Journal of
+# Computational Physics 220 (2006) 41-58
 function (filter::FftFilter)(f::AbstractVector)
     M  = length(f) - 1
     id = Threads.threadid()
@@ -180,7 +182,7 @@ function (filter::FftFilter)(f::AbstractVector)
     # compute the DCT-I of f
     mul!(f, filter.fft_plan, cache)
 
-    # in momentum space, act with the filter kernel [eq (2.5) of the paper above]
+    # in momentum space, act with the filter kernel [eq (2.5) of "Idempotent filtering..."]
     # filter.kernel .* f
     @inbounds @simd for i in eachindex(f)
         # the division by 2*(N-1) is to invert the FFT, see below
