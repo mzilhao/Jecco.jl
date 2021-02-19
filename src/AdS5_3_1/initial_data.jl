@@ -367,8 +367,7 @@ function init_data!(ff::Gauge, sys::System, id::BlackBranePert)
     a40     = -id.energy_dens/0.75
     AH_pos  = id.AH_pos
 
-    # FIXME: this is only valid for the conformal case! this routine needs to be
-    # fixed once we can search for the AH
+    # TODO: this guess works best for the conformal case. is there a better one?
     xi0     = (-a40)^0.25 - 1/AH_pos
 
     xi  = getxi(ff)
@@ -430,8 +429,7 @@ function init_data!(ff::Gauge, sys::System, id::PhiGaussian_u)
 
     a40 = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
 
-    # FIXME: this is only valid for the conformal case! this routine needs to be
-    # fixed once we can search for the AH
+    # TODO: this guess works best for the conformal case. is there a better one?
     xi0 = (-a40)^0.25 - 1/AH_pos
 
     xi  = getxi(ff)
@@ -478,8 +476,6 @@ function init_data!(ff::Gauge, sys::System, id::QNM_1D)
 
     a40 = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
 
-    # FIXME: this is only valid for the conformal case! this routine needs to be
-    # fixed once we can search for the AH
     xi0 = 0
 
     xi  = getxi(ff)
