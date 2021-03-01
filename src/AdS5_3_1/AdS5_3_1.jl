@@ -1,8 +1,12 @@
 module AdS5_3_1
 
 using Jecco
+using LinearAlgebra
 using SparseArrays: SparseMatrixCSC
 using OrdinaryDiffEq
+
+import Base.Threads.@threads
+import Base.Threads.@spawn
 
 # abstract types and structs used throughout
 include("types.jl")
@@ -34,6 +38,8 @@ include("find_AH.jl")
 # input/output
 include("IO.jl")
 
+include("diagnostics.jl")
+
 # run the model
 include("run.jl")
 
@@ -60,15 +66,13 @@ end
 
 export SpecCartGrid3D
 export Potential, ZeroPotential, Phi8Potential
-export BlackBrane, BlackBranePert
-export PhiGaussian_u
-export init_data!, init_data, restore!
+export BlackBrane, BlackBranePert, PhiGaussian_u
 export ConstantAH, AHF
 export AffineNull, EvolTest0
+export NoDiag, DiagAH
 export BulkEvolved, BulkConstrained, Boundary, Gauge, Bulk
 export System, SystemPartition
 export BulkEvolvedPartition, BulkConstrainedPartition, BulkDerivPartition
-export Nested
 export Integration, InOut, run_model
 export get_energy, get_Jx, get_Jy, get_px, get_py, get_pz, get_pxy, get_Ophi
 export BoundaryTimeSeries, XiTimeSeries, BulkTimeSeries, VEVTimeSeries, ConstrainedTimeSeries

@@ -1,14 +1,47 @@
 
 using Dates
 
-function startup()
+function startup(outdir::String; remove_existing::Bool=false)
+    # if no outdir specified, error out
+    if outdir == ""
+        error("Output folder cannot be empty string.")
+    end
+
+    # create output folder if it doesn't exist already
+    if isdir(outdir) && remove_existing
+        rm(outdir, recursive=true)
+    end
+    if !isdir(outdir)
+        mkdir(outdir)
+    end
+
+    # copy execution script to outdir folder
+    scriptname = basename(Base.source_path())
+    dst = joinpath(outdir, scriptname)
+    try
+        cp(Base.source_path(), dst)
+    catch e
+        if isa(e, ArgumentError) # file already exist
+            nothing
+        else
+            throw(e)
+        end
+    end
 
     timenow = now()
     datef   = Dates.format(timenow, "e, dd u yyyy (HH:MM:SS)")
 
     date    = string(datef)
     host    = gethostname()
-    user    = ENV["USER"]
+    user    = try
+        ENV["USER"]
+    catch e
+        if isa(e, KeyError) # probably on windows
+            splitdir(homedir())[end]
+        else
+            throw(e)
+        end
+    end
 
     num_threads = try
         ENV["JULIA_NUM_THREADS"]
@@ -18,7 +51,7 @@ function startup()
             1
         else
             # unknown error
-            error(e)
+            throw(e)
         end
     end
 

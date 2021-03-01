@@ -16,20 +16,24 @@ function (filters::Filters)(gauge::Gauge)
 end
 
 function (filters::Filters)(bulkevol::BulkEvolved)
-    filters.ko_filter_x(bulkevol.B1)
-    filters.ko_filter_x(bulkevol.B2)
-    filters.ko_filter_x(bulkevol.G)
-    filters.ko_filter_x(bulkevol.phi)
-
-    filters.ko_filter_y(bulkevol.B1)
-    filters.ko_filter_y(bulkevol.B2)
-    filters.ko_filter_y(bulkevol.G)
-    filters.ko_filter_y(bulkevol.phi)
-
-    filters.exp_filter(bulkevol.B1)
-    filters.exp_filter(bulkevol.B2)
-    filters.exp_filter(bulkevol.G)
-    filters.exp_filter(bulkevol.phi)
+    @sync begin
+        @spawn filters.ko_filter_x(bulkevol.B1)
+        @spawn filters.ko_filter_x(bulkevol.B2)
+        @spawn filters.ko_filter_x(bulkevol.G)
+        @spawn filters.ko_filter_x(bulkevol.phi)
+    end
+    @sync begin
+        @spawn filters.ko_filter_y(bulkevol.B1)
+        @spawn filters.ko_filter_y(bulkevol.B2)
+        @spawn filters.ko_filter_y(bulkevol.G)
+        @spawn filters.ko_filter_y(bulkevol.phi)
+    end
+    @sync begin
+        @spawn filters.exp_filter(bulkevol.B1)
+        @spawn filters.exp_filter(bulkevol.B2)
+        @spawn filters.exp_filter(bulkevol.G)
+        @spawn filters.exp_filter(bulkevol.phi)
+    end
     nothing
 end
 
@@ -49,9 +53,8 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
         gauge       = getgauge(ff)
 
         # filter after each integration (sub)step
-        # TODO: see if worthwhile to @spawn here
         if t > 0 && integration.filter_poststep
-            @inbounds for aa in 1:Nsys
+            @inbounds @threads for aa in 1:Nsys
                 sys = systems[aa]
                 sys.filters(bulkevols[aa])
             end
@@ -67,7 +70,7 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
         compute_xi_t!(gauge_t, bulkconstrains[Nsys], bulkevols[Nsys], bulkderivs[Nsys],
                       gauge, cache, systems[Nsys], evoleq.gaugecondition)
 
-        @inbounds for aa in 1:Nsys
+        @inbounds @threads for aa in 1:Nsys
             sys           = systems[aa]
             bulkevol_t    = bulkevols_t[aa]
             bulkevol      = bulkevols[aa]
@@ -76,7 +79,6 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
             compute_bulkevolved_t!(bulkevol_t, bulkconstrain, gauge_t, bulkevol,
                                    boundary, gauge, sys, evoleq)
         end
-
         sync_bulkevolved!(bulkevols_t, bulkconstrains, gauge_t, systems, evoleq)
 
         nothing

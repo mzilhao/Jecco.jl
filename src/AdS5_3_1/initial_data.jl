@@ -3,6 +3,7 @@ Base.@kwdef struct BlackBrane{T} <: InitialData
     energy_dens   :: T   = 1.0
     AH_pos        :: T   = 1.0
     phi0          :: T   = 0.0
+    ahf           :: AHF = AHF()
 end
 
 Base.@kwdef struct BlackBranePert{T} <: InitialData
@@ -28,6 +29,7 @@ Base.@kwdef struct BlackBranePert{T} <: InitialData
     xmin          :: T
     ymax          :: T
     ymin          :: T
+    ahf           :: AHF = AHF()
 end
 
 Base.@kwdef struct PhiGaussian_u{T} <: InitialData
@@ -39,12 +41,13 @@ Base.@kwdef struct PhiGaussian_u{T} <: InitialData
     amp           :: T   = 0.0
     u0            :: T   = 0.0
     sigma         :: T   = 0.1
+    ahf           :: AHF = AHF()
 end
 
 
-function init_data!(bulkconstrains, bulkevols, boundary::Boundary, gauge::Gauge,
-                    systems::SystemPartition, evoleq::EvolutionEquations,
-                    id::InitialData)
+function (id::InitialData)(bulkconstrains, bulkevols, bulkderivs, boundary::Boundary,
+                           gauge::Gauge, horizoncache::HorizonCache, systems::SystemPartition,
+                           evoleq::EvolutionEquations)
     _, Nx, Ny = size(systems[end])
     AH_pos    = id.AH_pos
     xi        = getxi(gauge)
@@ -60,13 +63,16 @@ function init_data!(bulkconstrains, bulkevols, boundary::Boundary, gauge::Gauge,
     # solve nested system for the constrained variables
     nested(bulkevols, boundary, gauge, evoleq)
 
-    # TODO: find AH here
+    # find the Apparent Horizon
+    sigma = similar(gauge.xi)
+    fill!(sigma, 1/AH_pos)  # initial guess
+    find_AH!(sigma, bulkconstrains[end], bulkevols[end], bulkderivs[end], gauge,
+             horizoncache, systems[end], id.ahf)
 
     # assuming that the AH has been found, we now update xi and the bulk variables
-    uAH = AH_pos # FIXME
     for j in 1:Ny
         for i in 1:Nx
-            xi[1,i,j] += -1 / AH_pos + 1 / uAH # FIXME
+            xi[1,i,j] += -1 / AH_pos + sigma[1,i,j]
         end
     end
 
@@ -75,7 +81,7 @@ function init_data!(bulkconstrains, bulkevols, boundary::Boundary, gauge::Gauge,
     # solve nested system for the constrained variables
     nested(bulkevols, boundary, gauge, evoleq)
 
-    # TODO: find AH here
+    # AH should now be at u = AH_pos
 
     nothing
 end

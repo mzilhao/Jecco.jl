@@ -296,3 +296,24 @@ function get_Ophi(ts::OpenPMDTimeSeries; it::Int, verbose::Bool=false)
 
     Ophi, chart
 end
+
+#=
+Computes the fluid velocity and the local frame (diagonal) stress tensor. p3 is just pz. I think that
+ut will always be 1, if not we can always hand ux/ut and uy/ut, which diretly are the speeds measured
+in the LAB frame, i.e. dx/dt and dy/dt.
+=#
+
+function compute_local_VEVs(e, Jx, Jy, px, py, pxy)
+    T = [e -Jx -Jy; -Jx px pxy; -Jy pxy py]
+    values, vectors = eigen(T)
+    norms = -vectors[1,:].^2 + vectors[2,:].^2 + vectors[3,:].^2
+    index = findfirst(==(1), norms.<0)
+    ut = sign(vectors[1,index])*vectors[1,index]/(-norms[index])^0.5
+    ux = sign(vectors[1,index])*vectors[2,index]/(-norms[index])^0.5
+    uy = sign(vectors[1,index])*vectors[3,index]/(-norms[index])^0.5
+    e_local = values[index]
+    p1_local = values[1:end .!=index][1]
+    p2_local = values[1:end .!=index][2]
+
+    return ut, ux, uy, e_local, p1_local, p2_local
+end

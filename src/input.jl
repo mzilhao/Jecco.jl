@@ -1,4 +1,3 @@
-using HDF5
 
 abstract type AbstractTimeSeries{N,T} end
 
@@ -262,7 +261,7 @@ function get_field(ts::OpenPMDTimeSeries; it::Int, field::String, verbose::Bool=
     data, chart
 end
 
-function read_openpmd_file(fid::HDF5File, it::Integer)
+function read_openpmd_file(fid::HDF5.File, it::Integer)
     basePath   = read(attrs(fid)["basePath"])
     basePath   = replace(basePath, "%T" => it)
     meshesPath = read(attrs(fid)["meshesPath"])
@@ -279,14 +278,14 @@ function read_openpmd_file(fid::HDF5File, it::Integer)
     grp_mesh, time
 end
 
-function read_group_attributes(grp::HDF5Group)
+function read_group_attributes(grp::HDF5.Group)
     grp_attrs = attrs(grp)
     keys      = names(grp_attrs)
     vals      = read.(Ref(grp_attrs), keys)
     Dict(keys[i] => vals[i] for i in 1:length(keys))
 end
 
-function read_dataset(grp::HDF5Group, var::String)
+function read_dataset(grp::HDF5.Group, var::String)
     dset       = grp[var]
     dset_attrs = attrs(dset)
 

@@ -39,30 +39,28 @@ end
 
 
 """
-    fourier(xmin, xmax, N)
+    fourier(xsize, N)
 
-Return a (periodic) Fourier grid, together with its first and second derivative matrices
+Return the first and second derivative matrices on a Fourier grid
 
 # Arguments
-* `xmin::Real`: rightmost grid point
-* `xmax::Real`: leftmost grid point
+* `xsize::Real`: size of (periodic) domain
 * `N::Integer`: total number of grid points
 """
-function fourier(xmin::T, xmax::T, N::Integer) where {T<:Real}
-    x, D, D2 = fourier(N)
-    x = (xmin .+ (xmax - xmin) * x) / (2*pi)
-    D  ./= 0.5 * (xmax - xmin) / pi
-    D2 ./= 0.25 * (xmax - xmin)^2 / pi^2
-    x, D, D2
+function fourier(xsize::T, N::Integer) where {T<:Real}
+    D, D2 = fourier(N)
+    pi_ = T(pi)
+    D  ./= xsize / (2*pi_)
+    D2 ./= xsize^2 / (4*pi_^2)
+    D, D2
 end
 
 # taken from Trefethen (2000), "Spectral Methods in MatLab"
 
-"When omitting grid limits, default to ]0, 2pi] interval"
+"When omitting `xsize`, default to 2π"
 function fourier(N::Integer)
     @assert(mod(N,2)==0, "number of points needs to be even")
     h = 2*pi/N
-    x = h*(1:N)
 
     column = [0; 0.5*(-1).^(1:N-1) .* cot.((1:N-1)*h/2)]
     tmp = [circshift(column, i) for i in 0:N-1]
@@ -72,7 +70,7 @@ function fourier(N::Integer)
     tmp = [circshift(column2, i) for i in 0:N-1]
     D2  = hcat(tmp...)
 
-    x, D, D2
+    D, D2
 end
 
 

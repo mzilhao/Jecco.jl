@@ -13,7 +13,7 @@ grid = SpecCartGrid3D(
     u_outer_domains  =  3,
     u_outer_nodes    =  32,
     u_inner_nodes    =  12,
-    fd_order         =  4,
+    fd_order         =  6,
     sigma_diss       =  0.2,
 )
 
@@ -44,6 +44,10 @@ evoleq = AffineNull(
     gaugecondition = ConstantAH(u_AH = 1.0),
 )
 
+diag = DiagAH(
+    find_AH_every_t    = 1.0,
+)
+
 io = InOut(
     out_boundary_every_t        = 0.1,
     out_bulk_every_t            = 0.5,
@@ -53,11 +57,10 @@ io = InOut(
 )
 
 integration = Integration(
-    dt              = 0.002,
     tmax            = 200.0,
     ODE_method      = AdS5_3_1.VCABM3(),
     adaptive        = true,
     filter_poststep = true,
 )
 
-run_model(grid, id, evoleq, integration, io)
+run_model(grid, id, evoleq, diag, integration, io)

@@ -237,3 +237,66 @@ function convert_to_mathematica(dirname::String; outfile::String="data_mathemati
     Jecco.write_dataset(group_st, "VEVs", T_m)
     close(fid)
 end
+
+function convert_to_mathematica_local(dirname::String; outfile::String="local_data_mathematica.h5",
+                                phi0, oophiM2)
+
+    ts = OpenPMDTimeSeries(dirname, prefix="boundary_")
+
+    iterations = ts.iterations
+
+    Nt = length(iterations)
+    t  = zeros(Nt)
+
+    it = 0
+    en0, chart = get_energy(ts, it=it)
+
+    _, x, y = chart[:]
+    Nx = length(x)
+    Ny = length(y)
+
+    ut        = zeros(Nt,Nx,Ny)
+    ux        = zeros(Nt,Nx,Ny)
+    uy        = zeros(Nt,Nx,Ny)
+    en_local  = zeros(Nt,Nx,Ny)
+    p1_local  = zeros(Nt,Nx,Ny)
+    p2_local  = zeros(Nt,Nx,Ny)
+
+    for (idx,it) in enumerate(iterations)
+        en   = get_energy(ts, it=it)[1][1,:,:]
+        Jx   = get_Jx(ts, it=it)[1][1,:,:]
+        Jy   = get_Jy(ts, it=it)[1][1,:,:]
+        px   = get_px(ts, it=it)[1][1,:,:]
+        py   = get_py(ts, it=it)[1][1,:,:]
+        pxy  = get_pxy(ts, it=it)[1][1,:,:]
+
+        t[idx] = ts.current_t
+
+        for j in 1:Ny
+            for i in 1:Nx
+                ut[idx,i,j],ux[idx,i,j],uy[idx,i,j],en_local[idx,i,j],p1_local[idx,i,j],p2_local[idx,i,j] = AdS5_3_1.compute_local_VEVs(en[i,j],Jx[i,j],Jy[i,j],px[i,j],py[i,j],pxy[i,j])
+            end
+        end
+    end
+
+    # store in an array suitable for Mathematica
+    T_m = zeros(9, Nt*Nx*Ny)
+
+    n = 1
+    for i in 1:Nt
+        for j in 1:Nx
+            for k in 1:Ny
+                T_m[:,n] = [t[i] x[j] y[k] ut[i,j,k] ux[i,j,k] uy[i,j,k] en_local[i,j,k] p1_local[i,j,k] p2_local[i,j,k]]
+                n += 1
+            end
+        end
+    end
+
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "Local VEVs", T_m)
+    close(fid)
+
+
+end

@@ -1,7 +1,20 @@
 
+function estimate_dtmax(chart::Chart)
+    ucoord, xcoord, ycoord = chart.coords
+    dx = Jecco.delta(xcoord)
+    dy = Jecco.delta(ycoord)
+    # spacing in u is not uniform, so let's compute the average spacing
+    du_avg = (ucoord[end] - ucoord[1]) / (ucoord.nodes - 1)
+    0.8 * min(dx, dy, du_avg)
+end
+function estimate_dtmax(atlas::Atlas)
+    dtmaxs = estimate_dtmax.(atlas.charts)
+    minimum(dtmaxs)
+end
+
 function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquations,
-                   integration::Integration, io::InOut)
-    Jecco.startup()
+                   diagnostics::Diagnostics, integration::Integration, io::InOut)
+    Jecco.startup(io.out_dir; remove_existing=io.remove_existing)
 
     # atlas of grid configuration and respective SystemPartition
     atlas     = Atlas(grid)
@@ -43,7 +56,8 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
     # if we are not recovering from a checkpoint, run initial conditions
     if do_id
-        init_data!(bulkconstrains, bulkevols, boundary, gauge, systems, evoleq, id)
+        id(bulkconstrains, bulkevols, bulkderivs, boundary, gauge,
+           horizoncache, systems, evoleq)
     end
 
     # full state vector
@@ -52,8 +66,22 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     # function that updates the state vector
     rhs! = setup_rhs(bulkconstrains, bulkderivs, horizoncache, systems, integration)
 
-    dt0  = integration.dt
-    tmax = integration.tmax
+    #=
+    limit the default integrator dtmax and qmax values. see:
+      https://diffeq.sciml.ai/latest/extras/timestepping/
+      https://diffeq.sciml.ai/latest/basics/common_solver_opts/
+    =#
+    dtmax = estimate_dtmax(atlas)
+    qmax  = 1.2
+
+    if isa(integration.dt, Number)
+        dt0   = integration.dt
+    elseif integration.dt == :auto
+        dt0   = 0.5 * dtmax
+    else
+        error("Unknown dt value")
+    end
+    tmax  = integration.tmax
 
     # decide in the evolution loop when to terminate the run, so set here an
     # impossibly large value for tstop
@@ -62,12 +90,14 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
     prob  = ODEProblem(rhs!, evolvars, tspan, evoleq)
     # https://diffeq.sciml.ai/stable/basics/integrator/
-    integrator = init(prob, alg, save_everystep=false, dt=dt0, adaptive=integration.adaptive)
+    integrator = init(prob, alg, save_everystep=false, dt=dt0, dtmax=dtmax, qmax=qmax,
+                      adaptive=integration.adaptive, reltol=integration.reltol,
+                      calck=false)
 
     tinfo  = Jecco.TimeInfo(it0, t0, 0.0, 0.0)
 
     # for the boundary/xi grid
-    empty   = Cartesian{1}("u", 0.0, 0.0, 1)
+    empty   = Cartesian{1}("u", systems[1].ucoord[1], systems[1].ucoord[1], 1)
     chart2D = Chart(empty, systems[1].xcoord, systems[1].ycoord)
 
     # prepare functions to write data
@@ -89,6 +119,10 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     end
     last_checkpoint_walltime = 0.0
 
+    # prepare diagnostics function
+    diag = diagnostics(bulkevols, bulkconstrains, bulkderivs, boundary, gauge,
+                       horizoncache, systems, tinfo, evoleq, io)
+
     # remove termination trigger file, if it exists
     if io.termination_from_file
         finish_him = abspath(io.out_dir, io.termination_file)
@@ -96,8 +130,12 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     end
 
     # write initial data
-    output_evol(evolvars)
-    output_constrained(bulkconstrains)
+    if do_id
+        output_evol(evolvars)
+        output_constrained(bulkconstrains)
+        # diagnostics at t=0
+        diag()
+    end
 
     # for stdout info
     Jecco.out_info(tinfo.it, tinfo.t, 0.0, gauge.xi, "ξ", 1, 1)
@@ -120,13 +158,14 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
         output_evol(u)
         output_constrained(bulkconstrains)
 
+        # diagnostics
+        diag()
+
         # checkpoint
         if telapsed >= last_checkpoint_walltime + io.checkpoint_every_walltime_hours
             last_checkpoint_walltime = telapsed
             checkpoint(u)
         end
-
-        # TODO: find AH
 
         # terminate run?
         if t >= tmax || telapsed >= io.max_walltime
@@ -146,4 +185,9 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
     println("-------------------------------------------------------------")
     println("Done.")
+end
+
+function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquations,
+                   integration::Integration, io::InOut)
+    run_model(grid, id, evoleq, NoDiag(), integration, io)
 end

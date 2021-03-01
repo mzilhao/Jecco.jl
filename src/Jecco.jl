@@ -7,13 +7,15 @@ using FFTW
 export AbstractCoord, CartesianCoord, GaussLobattoCoord
 export Chart, Atlas
 export Cartesian, GaussLobatto
-export CenteredDiff, ChebDeriv
+
+export CenteredDiff, EqualSizeStencilFD, ChebDeriv, FourierDeriv
 export ChebInterpolator
 export KO_Filter, Exp_Filter
 
 export OpenPMDTimeSeries, get_field
 export FieldTimeSeries, get_coords
 
+include("fornberg.jl")
 include("deriv_operators.jl")
 include("grid.jl")
 include("input.jl")
