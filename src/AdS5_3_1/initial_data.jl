@@ -44,6 +44,15 @@ Base.@kwdef struct PhiGaussian_u{T} <: InitialData
     ahf           :: AHF = AHF()
 end
 
+Base.@kwdef struct QNM_1D{T} <: InitialData
+    energy_dens :: T   = 1.0
+    phi0        :: T   = 0.0
+    phi2        :: T   = 0.0
+    oophiM2     :: T   = 0.0
+    AH_pos      :: T   = 1.0
+    ahf         :: AHF = AHF()
+end
+
 
 function (id::InitialData)(bulkconstrains, bulkevols, bulkderivs, boundary::Boundary,
                            gauge::Gauge, horizoncache::HorizonCache, systems::SystemPartition,
@@ -358,8 +367,7 @@ function init_data!(ff::Gauge, sys::System, id::BlackBranePert)
     a40     = -id.energy_dens/0.75
     AH_pos  = id.AH_pos
 
-    # FIXME: this is only valid for the conformal case! this routine needs to be
-    # fixed once we can search for the AH
+    # TODO: this guess works best for the conformal case. is there a better one?
     xi0     = (-a40)^0.25 - 1/AH_pos
 
     xi  = getxi(ff)
@@ -421,9 +429,54 @@ function init_data!(ff::Gauge, sys::System, id::PhiGaussian_u)
 
     a40 = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
 
-    # FIXME: this is only valid for the conformal case! this routine needs to be
-    # fixed once we can search for the AH
+    # TODO: this guess works best for the conformal case. is there a better one?
     xi0 = (-a40)^0.25 - 1/AH_pos
+
+    xi  = getxi(ff)
+
+    fill!(xi, xi0)
+
+    ff
+end
+
+
+#QNM in 1D initial data
+analytic_B1(u, x, y, id::QNM_1D)  = 3/2*0.1*u^8
+analytic_B2(u, x, y, id::QNM_1D)  = 1/2*0.1*u^8
+analytic_G(u, x, y, id::QNM_1D)   = 0
+analytic_phi(u, x, y, id::QNM_1D) = id.phi2/id.phi0^3
+
+function init_data!(ff::Boundary, sys::System, id::QNM_1D)
+    a4  = geta4(ff)
+    fx2 = getfx2(ff)
+    fy2 = getfy2(ff)
+
+    epsilon = id.energy_dens
+    phi0    = id.phi0
+    phi2    = id.phi2
+    oophiM2 = id.oophiM2
+    phi04   = phi0 * phi0 * phi0 * phi0
+
+    a40 = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
+
+    fill!(a4, a40)
+    fill!(fx2, 0)
+    fill!(fy2, 0)
+
+    ff
+end
+
+function init_data!(ff::Gauge, sys::System, id::QNM_1D)
+    epsilon = id.energy_dens
+    phi0    = id.phi0
+    phi2    = id.phi2
+    AH_pos  = id.AH_pos
+    oophiM2 = id.oophiM2
+    phi04   = phi0 * phi0 * phi0 * phi0
+
+    a40 = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
+
+    xi0 = 0
 
     xi  = getxi(ff)
 
