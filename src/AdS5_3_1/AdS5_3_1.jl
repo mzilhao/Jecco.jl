@@ -48,6 +48,7 @@ include("VEVs.jl")
 
 # random utilities useful for post-processing
 include("utils.jl")
+include("design_new_data.jl")
 include("recipes.jl")
 
 
@@ -66,8 +67,8 @@ end
 
 export SpecCartGrid3D
 export Potential, ZeroPotential, Phi8Potential
-export BlackBrane, BlackBranePert, PhiGaussian_u
-export ConstantAH, AHF
+export BlackBrane, BlackBranePert, BlackBrane_xi1, PhiGaussian_u
+export Advect_xi, ConstantAH, AHF
 export AffineNull, EvolTest0
 export NoDiag, DiagAH
 export BulkEvolved, BulkConstrained, Boundary, Gauge, Bulk
