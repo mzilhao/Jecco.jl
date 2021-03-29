@@ -4,6 +4,8 @@ function compute_residual_AH!(res::Array, sigma::Array,
                               sys::System{Outer})
     _, Nx, Ny = size(sys)
 
+    xiGF = getxi(gauge)
+
     Dx  = sys.Dx
     Dxx = sys.Dxx
     Dy  = sys.Dy
@@ -43,12 +45,12 @@ function compute_residual_AH!(res::Array, sigma::Array,
             u3  = uAH * uAH * uAH
             u4  = uAH * uAH * uAH * uAH
 
-            xi    = gauge.xi[1,i,j]
-            xi_x  = Dx(gauge.xi, 1,i,j)
-            xi_y  = Dy(gauge.xi, 1,i,j)
-            xi_xx = Dxx(gauge.xi, 1,i,j)
-            xi_yy = Dyy(gauge.xi, 1,i,j)
-            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+            xi    = xiGF[1,i,j]
+            xi_x  = Dx(xiGF, 1,i,j)
+            xi_y  = Dy(xiGF, 1,i,j)
+            xi_xx = Dxx(xiGF, 1,i,j)
+            xi_yy = Dyy(xiGF, 1,i,j)
+            xi_xy = Dx(Dy, xiGF, 1,i,j)
 
             sigma0    = sigma[1,i,j]
             sigma0_x  = Dx(sigma, 1,i,j)
@@ -136,6 +138,8 @@ function compute_coeffs_AH!(sigma::Array, gauge::Gauge, cache::HorizonCache,
                             sys::System{Outer})
     _, Nx, Ny = size(sys)
 
+    xiGF = getxi(gauge)
+
     Dx  = sys.Dx
     Dxx = sys.Dxx
     Dy  = sys.Dy
@@ -184,12 +188,12 @@ function compute_coeffs_AH!(sigma::Array, gauge::Gauge, cache::HorizonCache,
             u3    = uAH * uAH * uAH
             u4    = uAH * uAH * uAH * uAH
 
-            xi    = gauge.xi[1,i,j]
-            xi_x  = Dx(gauge.xi, 1,i,j)
-            xi_y  = Dy(gauge.xi, 1,i,j)
-            xi_xx = Dxx(gauge.xi, 1,i,j)
-            xi_yy = Dyy(gauge.xi, 1,i,j)
-            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+            xi    = xiGF[1,i,j]
+            xi_x  = Dx(xiGF, 1,i,j)
+            xi_y  = Dy(xiGF, 1,i,j)
+            xi_xx = Dxx(xiGF, 1,i,j)
+            xi_yy = Dyy(xiGF, 1,i,j)
+            xi_xy = Dx(Dy, xiGF, 1,i,j)
 
             sigma0    = sigma[1,i,j]
             sigma0_x  = Dx(sigma, 1,i,j)
@@ -300,6 +304,21 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
     _, Nx, Ny = size(sys)
     bulk = Bulk(bulkevol, bulkconstrain)
 
+    B1GF    = getB1(bulk)
+    B2GF    = getB2(bulk)
+    GGF     = getG(bulk)
+    phiGF   = getphi(bulk)
+    SGF     = getS(bulk)
+    FxGF    = getFx(bulk)
+    FyGF    = getFy(bulk)
+    SdGF    = getSd(bulk)
+    B1dGF   = getB1d(bulk)
+    B2dGF   = getB2d(bulk)
+    GdGF    = getGd(bulk)
+    phidGF  = getphid(bulk)
+    AGF     = getA(bulk)
+    xiGF    = getxi(gauge)
+
     Du  = sys.Du
     Duu = sys.Duu
     Dx  = sys.Dx
@@ -353,21 +372,21 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
 
     # take all u-derivatives. we assume that they've not been computed beforehand
     @sync begin
-        @spawn mul!(deriv.Du_B1,  Du,  bulk.B1)
-        @spawn mul!(deriv.Du_B2,  Du,  bulk.B2)
-        @spawn mul!(deriv.Du_G,   Du,  bulk.G)
-        @spawn mul!(deriv.Du_S,   Du,  bulk.S)
-        @spawn mul!(deriv.Du_Fx,  Du,  bulk.Fx)
-        @spawn mul!(deriv.Du_Fy,  Du,  bulk.Fy)
-        @spawn mul!(deriv.Du_Sd,  Du,  bulk.Sd)
+        @spawn mul!(deriv.Du_B1,  Du,  B1GF)
+        @spawn mul!(deriv.Du_B2,  Du,  B2GF)
+        @spawn mul!(deriv.Du_G,   Du,  GGF)
+        @spawn mul!(deriv.Du_S,   Du,  SGF)
+        @spawn mul!(deriv.Du_Fx,  Du,  FxGF)
+        @spawn mul!(deriv.Du_Fy,  Du,  FyGF)
+        @spawn mul!(deriv.Du_Sd,  Du,  SdGF)
 
-        @spawn mul!(deriv.Duu_B1, Duu, bulk.B1)
-        @spawn mul!(deriv.Duu_B2, Duu, bulk.B2)
-        @spawn mul!(deriv.Duu_G,  Duu, bulk.G)
-        @spawn mul!(deriv.Duu_S,  Duu, bulk.S)
-        @spawn mul!(deriv.Duu_Fx, Duu, bulk.Fx)
-        @spawn mul!(deriv.Duu_Fy, Duu, bulk.Fy)
-        # @spawn mul!(deriv.Duu_Sd, Duu, bulk.Sd)
+        @spawn mul!(deriv.Duu_B1, Duu, B1GF)
+        @spawn mul!(deriv.Duu_B2, Duu, B2GF)
+        @spawn mul!(deriv.Duu_G,  Duu, GGF)
+        @spawn mul!(deriv.Duu_S,  Duu, SGF)
+        @spawn mul!(deriv.Duu_Fx, Duu, FxGF)
+        @spawn mul!(deriv.Duu_Fy, Duu, FyGF)
+        # @spawn mul!(deriv.Duu_Sd, Duu, SdGF)
     end
 
     res = similar(sigma)
@@ -387,13 +406,13 @@ function find_AH!(sigma::Array, bulkconstrain::BulkConstrained,
                 u3  = uAH * uAH * uAH
                 u4  = uAH * uAH * uAH * uAH
 
-                B1_uAH[1,i,j]       = interp(view(bulk.B1,  :,i,j))(uAH)
-                B2_uAH[1,i,j]       = interp(view(bulk.B2,  :,i,j))(uAH)
-                G_uAH[1,i,j]        = interp(view(bulk.G,   :,i,j))(uAH)
-                S_uAH[1,i,j]        = interp(view(bulk.S,   :,i,j))(uAH)
-                Fx_uAH[1,i,j]       = interp(view(bulk.Fx,  :,i,j))(uAH)
-                Fy_uAH[1,i,j]       = interp(view(bulk.Fy,  :,i,j))(uAH)
-                Sd_uAH[1,i,j]       = interp(view(bulk.Sd,  :,i,j))(uAH)
+                B1_uAH[1,i,j]       = interp(view(B1GF,  :,i,j))(uAH)
+                B2_uAH[1,i,j]       = interp(view(B2GF,  :,i,j))(uAH)
+                G_uAH[1,i,j]        = interp(view(GGF,   :,i,j))(uAH)
+                S_uAH[1,i,j]        = interp(view(SGF,   :,i,j))(uAH)
+                Fx_uAH[1,i,j]       = interp(view(FxGF,  :,i,j))(uAH)
+                Fy_uAH[1,i,j]       = interp(view(FyGF,  :,i,j))(uAH)
+                Sd_uAH[1,i,j]       = interp(view(SdGF,  :,i,j))(uAH)
 
                 Du_B1_uAH[1,i,j]    = interp(view(deriv.Du_B1,  :,i,j))(uAH)
                 Du_B2_uAH[1,i,j]    = interp(view(deriv.Du_B2,  :,i,j))(uAH)

@@ -115,24 +115,15 @@ end
 Base.size(sys::System) = (sys.ucoord.nodes, sys.xcoord.nodes, sys.ycoord.nodes)
 
 
-struct SystemPartition{N,S<:Tuple}
-    _x :: S
+struct SystemPartition{N,A} <: AbstractPartition{N,A}
+    x :: NTuple{N,A}
 end
 
-function SystemPartition(x::AbstractVector{S}) where {S<:System}
-    _x = Tuple(x)
-    N = length(_x)
-    SystemPartition{N,typeof(_x)}(_x)
+function SystemPartition(x_::AbstractVector{S}) where {S<:System}
+    x = Tuple(x_)
+    N = length(x)
+    SystemPartition{N,eltype(x)}(x)
 end
-
-@inline Base.iterate(ff::SystemPartition)         = iterate(ff._x)
-@inline Base.iterate(ff::SystemPartition, i::Int) = iterate(ff._x, i)
-
-@inline Base.length(ff::SystemPartition{N}) where{N} = N
-@inline Base.firstindex(ff::SystemPartition) = 1
-@inline Base.lastindex(ff::SystemPartition)  = length(ff)
-
-@inline Base.getindex(ff::SystemPartition, i::Int) = ff._x[i]
 
 """
     SystemPartition(grid::SpecCartGrid3D)
