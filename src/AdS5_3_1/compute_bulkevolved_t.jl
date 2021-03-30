@@ -3,9 +3,10 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
                                 bulkconstrain::BulkConstrained, gauge_t::Gauge,
                                 bulkevol::BulkEvolved, boundary::Boundary,
                                 gauge::Gauge, sys::System, ::EvolTest0)
-
-    B1_t, B2_t, G_t, phi_t = unpack(bulkevol_t)
-    # B1  , B2  , G  , phi   = unpack(bulkevol)
+    B1_t    = getB1(bulkevol_t)
+    B2_t    = getB2(bulkevol_t)
+    G_t     = getG(bulkevol_t)
+    phi_t   = getphi(bulkevol_t)
 
     fill!(B1_t,  0)
     fill!(B2_t,  0)
@@ -16,10 +17,24 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
 end
 
 
+# TODO: use precomputed u derivatives here?
 function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
                                 bulkconstrain::BulkConstrained, gauge_t::Gauge,
                                 bulkevol::BulkEvolved, boundary::Boundary,
                                 gauge::Gauge, sys::System{Inner}, evoleq::AffineNull)
+    B1GF    = getB1(bulkevol)
+    B2GF    = getB2(bulkevol)
+    GGF     = getG(bulkevol)
+    phiGF   = getphi(bulkevol)
+    B1dGF   = getB1d(bulkconstrain)
+    B2dGF   = getB2d(bulkconstrain)
+    GdGF    = getGd(bulkconstrain)
+    phidGF  = getphid(bulkconstrain)
+    AGF     = getA(bulkconstrain)
+
+    xiGF    = getxi(gauge)
+    xiGF_t  = getxi(gauge_t)
+
     uu  = sys.ucoord
     Du  = sys.Du
     Dx  = sys.Dx
@@ -31,24 +46,27 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
 
     Nu, Nx, Ny = size(sys)
 
-    B1_t, B2_t, G_t, phi_t = unpack(bulkevol_t)
+    B1_t    = getB1(bulkevol_t)
+    B2_t    = getB2(bulkevol_t)
+    G_t     = getG(bulkevol_t)
+    phi_t   = getphi(bulkevol_t)
 
     # u = 0
     @fastmath @inbounds for j in 1:Ny
         @inbounds @simd for i in 1:Nx
-            xi     = gauge.xi[1,i,j]
+            xi     = xiGF[1,i,j]
 
-            B1     = bulkevol.B1[1,i,j]
-            B2     = bulkevol.B2[1,i,j]
-            G      = bulkevol.G[1,i,j]
+            B1     = B1GF[1,i,j]
+            B2     = B2GF[1,i,j]
+            G      = GGF[1,i,j]
 
-            B1_u   = Du(bulkevol.B1, 1,i,j)
-            B2_u   = Du(bulkevol.B2, 1,i,j)
-            G_u    = Du(bulkevol.G,  1,i,j)
+            B1_u   = Du(B1GF, 1,i,j)
+            B2_u   = Du(B2GF, 1,i,j)
+            G_u    = Du(GGF,  1,i,j)
 
-            B1d_u  = Du(bulkconstrain.B1d, 1,i,j)
-            B2d_u  = Du(bulkconstrain.B2d, 1,i,j)
-            Gd_u   = Du(bulkconstrain.Gd,  1,i,j)
+            B1d_u  = Du(B1dGF, 1,i,j)
+            B2d_u  = Du(B2dGF, 1,i,j)
+            Gd_u   = Du(GdGF,  1,i,j)
 
             B1_t[1,i,j]  = B1d_u  + 2.5 * B1_u  + 4 * B1  * xi
             B2_t[1,i,j]  = B2d_u  + 2.5 * B2_u  + 4 * B2  * xi
@@ -59,24 +77,24 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
     # remaining inner grid points
     @fastmath @inbounds for j in 1:Ny
         @inbounds for i in 1:Nx
-            xi    = gauge.xi[1,i,j]
-            xi_t  = gauge_t.xi[1,i,j]
+            xi    = xiGF[1,i,j]
+            xi_t  = xiGF_t[1,i,j]
             @inbounds @simd for a in 2:Nu
                 u      = uu[a]
                 u4     = u * u * u * u
 
-                B1     = bulkevol.B1[a,i,j]
-                B2     = bulkevol.B2[a,i,j]
-                G      = bulkevol.G[a,i,j]
+                B1     = B1GF[a,i,j]
+                B2     = B2GF[a,i,j]
+                G      = GGF[a,i,j]
 
-                B1d    = bulkconstrain.B1d[a,i,j]
-                B2d    = bulkconstrain.B2d[a,i,j]
-                Gd     = bulkconstrain.Gd[a,i,j]
-                A      = bulkconstrain.A[a,i,j]
+                B1d    = B1dGF[a,i,j]
+                B2d    = B2dGF[a,i,j]
+                Gd     = GdGF[a,i,j]
+                A      = AGF[a,i,j]
 
-                B1_u   = Du(bulkevol.B1, a,i,j)
-                B2_u   = Du(bulkevol.B2, a,i,j)
-                G_u    = Du(bulkevol.G,  a,i,j)
+                B1_u   = Du(B1GF, a,i,j)
+                B2_u   = Du(B2GF, a,i,j)
+                G_u    = Du(GGF,  a,i,j)
 
 		B1_t[a,i,j] = ((u * B1_u + 4 * B1) *
                                (-2 * u * u * xi_t + A * u4 +
@@ -110,15 +128,15 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
     # u = 0
     @fastmath @inbounds for j in 1:Ny
         @inbounds @simd for i in 1:Nx
-            xi     = gauge.xi[1,i,j]
+            xi     = xiGF[1,i,j]
             xi3    = xi * xi * xi
-            xi_t   = gauge_t.xi[1,i,j]
+            xi_t   = xiGF_t[1,i,j]
 
-            phi    = bulkevol.phi[1,i,j]
+            phi    = phiGF[1,i,j]
 
-            phi_u  = Du(bulkevol.phi,1,i,j)
+            phi_u  = Du(phiGF,1,i,j)
 
-            phid_u = Du(bulkconstrain.phid,1,i,j)
+            phid_u = Du(phidGF,1,i,j)
 
             phi_t[1,i,j] = -xi3 / phi02 + 3 * xi * phi +  2//3 * xi +
                 2 * xi * xi_t / phi02 + phid_u + 2 * phi_u
@@ -128,20 +146,20 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
     # remaining inner grid points
     @fastmath @inbounds for j in 1:Ny
         @inbounds for i in 1:Nx
-            xi     = gauge.xi[1,i,j]
+            xi     = xiGF[1,i,j]
             xi2    = xi * xi
             xi3    = xi * xi * xi
-            xi_t   = gauge_t.xi[1,i,j]
+            xi_t   = xiGF_t[1,i,j]
             @inbounds @simd for a in 2:Nu
                 u      = uu[a]
                 u2     = u * u
                 u4     = u2 * u2
 
-                phi    = bulkevol.phi[a,i,j]
-                phid   = bulkconstrain.phid[a,i,j]
-                A      = bulkconstrain.A[a,i,j]
+                phi    = phiGF[a,i,j]
+                phid   = phidGF[a,i,j]
+                A      = AGF[a,i,j]
 
-                phi_u  = Du(bulkevol.phi,a,i,j)
+                phi_u  = Du(phiGF,a,i,j)
 
                 phi_t[a,i,j] = (
                     - 6 * xi3 * u
@@ -165,6 +183,19 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
                                 bulkconstrain::BulkConstrained, gauge_t::Gauge,
                                 bulkevol::BulkEvolved, boundary::Boundary,
                                 gauge::Gauge, sys::System{Outer}, evoleq::AffineNull)
+    B1GF    = getB1(bulkevol)
+    B2GF    = getB2(bulkevol)
+    GGF     = getG(bulkevol)
+    phiGF   = getphi(bulkevol)
+    B1dGF   = getB1d(bulkconstrain)
+    B2dGF   = getB2d(bulkconstrain)
+    GdGF    = getGd(bulkconstrain)
+    phidGF  = getphid(bulkconstrain)
+    AGF     = getA(bulkconstrain)
+
+    xiGF    = getxi(gauge)
+    xiGF_t  = getxi(gauge_t)
+
     uu  = sys.ucoord
     Du  = sys.Du
     Dx  = sys.Dx
@@ -176,23 +207,26 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
 
     Nu, Nx, Ny = size(sys)
 
-    B1_t, B2_t, G_t, phi_t = unpack(bulkevol_t)
+    B1_t    = getB1(bulkevol_t)
+    B2_t    = getB2(bulkevol_t)
+    G_t     = getG(bulkevol_t)
+    phi_t   = getphi(bulkevol_t)
 
     @fastmath @inbounds for j in 1:Ny
         @inbounds for i in 1:Nx
-            xi_t  = gauge_t.xi[1,i,j]
+            xi_t  = xiGF_t[1,i,j]
             @inbounds @simd for a in 1:Nu
                 u      = uu[a]
                 u2     = u * u
 
-                B1d    = bulkconstrain.B1d[a,i,j]
-                B2d    = bulkconstrain.B2d[a,i,j]
-                Gd     = bulkconstrain.Gd[a,i,j]
-                A      = bulkconstrain.A[a,i,j]
+                B1d    = B1dGF[a,i,j]
+                B2d    = B2dGF[a,i,j]
+                Gd     = GdGF[a,i,j]
+                A      = AGF[a,i,j]
 
-                B1_u   = Du(bulkevol.B1, a,i,j)
-                B2_u   = Du(bulkevol.B2, a,i,j)
-                G_u    = Du(bulkevol.G,  a,i,j)
+                B1_u   = Du(B1GF, a,i,j)
+                B2_u   = Du(B2GF, a,i,j)
+                G_u    = Du(GGF,  a,i,j)
 
 		B1_t[a,i,j] = B1d + u2 * (A/2 - xi_t) * B1_u
 		B2_t[a,i,j] = B2d + u2 * (A/2 - xi_t) * B2_u
@@ -211,15 +245,15 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
 
     @fastmath @inbounds for j in 1:Ny
         @inbounds for i in 1:Nx
-            xi_t   = gauge_t.xi[1,i,j]
+            xi_t   = xiGF_t[1,i,j]
             @inbounds @simd for a in 1:Nu
                 u      = uu[a]
                 u2     = u * u
 
-                phid   = bulkconstrain.phid[a,i,j]
-                A      = bulkconstrain.A[a,i,j]
+                phid   = phidGF[a,i,j]
+                A      = AGF[a,i,j]
 
-                phi_u  = Du(bulkevol.phi, a,i,j)
+                phi_u  = Du(phiGF, a,i,j)
 
 		phi_t[a,i,j] = phid + u2 * (A/2 - xi_t) * phi_u
             end
@@ -246,15 +280,25 @@ function sync_bulkevolved!(bulkevol1_t::BulkEvolved, bulkevol2_t::BulkEvolved,
                            sys1::System{Outer}, sys2::System{Outer}, evoleq::AffineNull)
     u0 = sys2.ucoord[1]
 
+    AGF     = getA(bulkconstrain2)
+    xiGF_t  = getxi(gauge_t)
+
     _, Nx, Ny = size(sys2)
 
-    B11_t, B21_t, G1_t, phi1_t = unpack(bulkevol1_t)
-    B12_t, B22_t, G2_t, phi2_t = unpack(bulkevol2_t)
+    B11_t    = getB1(bulkevol1_t)
+    B21_t    = getB2(bulkevol1_t)
+    G1_t     = getG(bulkevol1_t)
+    phi1_t   = getphi(bulkevol1_t)
+
+    B12_t    = getB1(bulkevol2_t)
+    B22_t    = getB2(bulkevol2_t)
+    G2_t     = getG(bulkevol2_t)
+    phi2_t   = getphi(bulkevol2_t)
 
     @fastmath @inbounds for j in 1:Ny
         @inbounds for i in 1:Nx
-            xi_t   = gauge_t.xi[1,i,j]
-            A      = bulkconstrain2.A[1,i,j]
+            xi_t   = xiGF_t[1,i,j]
+            A      = AGF[1,i,j]
 
             # characteristic speed
             c = u0 * u0 * (A/2 - xi_t)
@@ -282,6 +326,9 @@ end
 function sync_bulkevolved!(bulkevol1_t::BulkEvolved, bulkevol2_t::BulkEvolved,
                            bulkconstrain2::BulkConstrained, gauge_t::Gauge,
                            sys1::System{Inner}, sys2::System{Outer}, evoleq::AffineNull)
+    AGF     = getA(bulkconstrain2)
+    xiGF_t  = getxi(gauge_t)
+
     u0  = sys2.ucoord[1]
     u02 = u0 * u0
     u03 = u0 * u02
@@ -293,13 +340,20 @@ function sync_bulkevolved!(bulkevol1_t::BulkEvolved, bulkevol2_t::BulkEvolved,
 
     _, Nx, Ny = size(sys2)
 
-    B11_t, B21_t, G1_t, phi1_t = unpack(bulkevol1_t)
-    B12_t, B22_t, G2_t, phi2_t = unpack(bulkevol2_t)
+    B11_t    = getB1(bulkevol1_t)
+    B21_t    = getB2(bulkevol1_t)
+    G1_t     = getG(bulkevol1_t)
+    phi1_t   = getphi(bulkevol1_t)
+
+    B12_t    = getB1(bulkevol2_t)
+    B22_t    = getB2(bulkevol2_t)
+    G2_t     = getG(bulkevol2_t)
+    phi2_t   = getphi(bulkevol2_t)
 
     @fastmath @inbounds for j in 1:Ny
         @inbounds for i in 1:Nx
-            xi_t   = gauge_t.xi[1,i,j]
-            A      = bulkconstrain2.A[1,i,j]
+            xi_t   = xiGF_t[1,i,j]
+            A      = AGF[1,i,j]
 
             # characteristic speed
             c = u0 * u0 * (A/2 - xi_t)
@@ -326,8 +380,8 @@ function sync_bulkevolved!(bulkevol1_t::BulkEvolved, bulkevol2_t::BulkEvolved,
 
     @fastmath @inbounds for j in 1:Ny
         @inbounds for i in 1:Nx
-            xi_t   = gauge_t.xi[1,i,j]
-            A      = bulkconstrain2.A[1,i,j]
+            xi_t   = xiGF_t[1,i,j]
+            A      = AGF[1,i,j]
 
             # characteristic speed
             c = u0 * u0 * (A/2 - xi_t)
