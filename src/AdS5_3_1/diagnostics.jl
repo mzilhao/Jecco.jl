@@ -37,7 +37,7 @@ function (diagnostics::DiagAH)(
     evoleq::EvolutionEquations, io::InOut)
 
     # Apparent Horizon surface
-    sigma = similar(getxi(gauge))
+    sigma = similar(gauge.xi)
 
     empty   = Cartesian{1}("u", systems[1].ucoord[1], systems[1].ucoord[1], 1)
     chart2D = Chart(empty, systems[end].xcoord, systems[end].ycoord)

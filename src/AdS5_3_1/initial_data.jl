@@ -93,7 +93,7 @@ function (id::InitialData)(bulkconstrains, bulkevols, bulkderivs, boundary::Boun
     nested(bulkevols, boundary, gauge, evoleq)
 
     # find the Apparent Horizon
-    sigma = similar(getxi(gauge))
+    sigma = similar(gauge.xi)
     fill!(sigma, 1/AH_pos)  # initial guess
     find_AH!(sigma, bulkconstrains[end], bulkevols[end], bulkderivs[end], gauge,
              horizoncache, systems[end], id.ahf)
