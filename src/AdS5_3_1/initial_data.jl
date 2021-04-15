@@ -1,5 +1,25 @@
 
-Base.@kwdef struct BlackBrane{T} <: InitialData
+Base.@kwdef struct BlackBrane_xi1{T} <: InitialData
+    a40           :: T   = 1.0
+    # guess for the AH position
+    AH_pos        :: T   = 1.0
+    phi0          :: T   = 0.0
+    xi_0          :: T   = 0.0
+    xi_Ax         :: T   = 0.0
+    xi_nx         :: Int = 1
+    xi_Ay         :: T   = 0.0
+    xi_ny         :: Int = 1
+    xmax          :: T
+    xmin          :: T
+    ymax          :: T
+    ymin          :: T
+    ahf           :: AHF = AHF()
+end
+
+
+abstract type ID_ConstantAH  <: InitialData end
+
+Base.@kwdef struct BlackBrane{T} <: ID_ConstantAH
     energy_dens   :: T   = 1.0
     AH_pos        :: T   = 1.0
     phi0          :: T   = 0.0
@@ -25,6 +45,7 @@ Base.@kwdef struct BlackBranePert{T} <: InitialData
     a4_ampy       :: T   = 0.0
     a4_kx         :: Int = 1
     a4_ky         :: Int = 1
+    xi0           :: T   = 0.0
     xmax          :: T
     xmin          :: T
     ymax          :: T
@@ -32,7 +53,7 @@ Base.@kwdef struct BlackBranePert{T} <: InitialData
     ahf           :: AHF = AHF()
 end
 
-Base.@kwdef struct PhiGaussian_u{T} <: InitialData
+Base.@kwdef struct PhiGaussian_u{T} <: ID_ConstantAH
     energy_dens   :: T   = 1.0
     AH_pos        :: T   = 1.0
     phi0          :: T   = 0.0
@@ -55,6 +76,35 @@ end
 
 
 function (id::InitialData)(bulkconstrains, bulkevols, bulkderivs, boundary::Boundary,
+                           gauge::Gauge, horizoncache::HorizonCache, systems::SystemPartition,
+                           evoleq::EvolutionEquations)
+    _, Nx, Ny = size(systems[end])
+    AH_pos    = id.AH_pos
+    xi        = getxi(gauge)
+
+    # function to solve the nested system
+    nested = Nested(systems, bulkconstrains)
+
+    init_data!(boundary, systems[1],   id)
+
+    init_data!(gauge,    systems[end], id)
+    init_data!(bulkevols, gauge, systems, id)
+
+    # solve nested system for the constrained variables
+    nested(bulkevols, boundary, gauge, evoleq)
+
+    # find the Apparent Horizon
+    sigma = similar(getxi(gauge))
+    fill!(sigma, 1/AH_pos)  # initial guess
+    find_AH!(sigma, bulkconstrains[end], bulkevols[end], bulkderivs[end], gauge,
+             horizoncache, systems[end], id.ahf)
+
+    nothing
+end
+
+
+
+function (id::ID_ConstantAH)(bulkconstrains, bulkevols, bulkderivs, boundary::Boundary,
                            gauge::Gauge, horizoncache::HorizonCache, systems::SystemPartition,
                            evoleq::EvolutionEquations)
     _, Nx, Ny = size(systems[end])
@@ -234,6 +284,53 @@ function init_data!(bulk::BulkEvolved, gauge::Gauge, sys::System{Outer},
 end
 
 
+# BlackBrane_xi1
+
+analytic_B1(u, x, y, id::BlackBrane_xi1)  = 0
+analytic_B2(u, x, y, id::BlackBrane_xi1)  = 0
+analytic_G(u, x, y, id::BlackBrane_xi1)   = 0
+analytic_phi(u, x, y, id::BlackBrane_xi1) = 0
+
+function init_data!(ff::Boundary, sys::System, id::BlackBrane_xi1)
+    a40 = id.a40
+
+    a4  = geta4(ff)
+    fx2 = getfx2(ff)
+    fy2 = getfy2(ff)
+
+    fill!(a4, a40)
+    fill!(fx2, 0)
+    fill!(fy2, 0)
+
+    ff
+end
+
+function init_data!(ff::Gauge, sys::System, id::BlackBrane_xi1)
+    _, Nx, Ny = size(sys)
+    xx = sys.xcoord
+    yy = sys.ycoord
+    xi  = getxi(ff)
+
+    xmax  = id.xmax
+    xmin  = id.xmin
+    ymax  = id.ymax
+    ymin  = id.ymin
+
+    for j in 1:Ny
+        for i in 1:Nx
+            x         = xx[i]
+            y         = yy[j]
+
+            xi[1,i,j] = id.xi_0 +
+                id.xi_Ax * sin( 2 * π * id.xi_nx * (xmax-x)/(xmax-xmin) ) +
+                id.xi_Ay * sin( 2 * π * id.xi_ny * (ymax-y)/(ymax-ymin) )
+        end
+    end
+
+    ff
+end
+
+
 # BlackBrane initial data
 
 analytic_B1(u, x, y, id::BlackBrane)  = 0
@@ -368,7 +465,11 @@ function init_data!(ff::Gauge, sys::System, id::BlackBranePert)
     AH_pos  = id.AH_pos
 
     # TODO: this guess works best for the conformal case. is there a better one?
-    xi0     = (-a40)^0.25 - 1/AH_pos
+    if id.xi0 == 0
+        xi0 = (-a40)^0.25 - 1/AH_pos
+    else
+        xi0 = id.xi0
+    end
 
     xi  = getxi(ff)
 
