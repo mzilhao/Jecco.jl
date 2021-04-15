@@ -641,9 +641,9 @@ function create_new_data(grid::SpecCartGrid3D, io::InOut, new_parameters::NewPar
         plan   = plan_rfft(e)
         e0     = real(1/(Nx_new*Ny_new)*(plan*e)[1])
         a40    = real(1/(Nx_new*Ny_new)*(plan*a4_new)[1])
-        k      = (-4/3*(e_new-e0)*phi0^4-maximum(a4_new)+a40)/(a40-maximum(a4_new))
-        a4_new = k*(a4_new.-maximum(a4_new)).+maximum(a4_new)
-        #a4_new  = a4_new.+4/3*(e0-e_new)
+        #k      = (-4/3*(e_new-e0)*phi0^4-maximum(a4_new)+a40)/(a40-maximum(a4_new))
+        #a4_new = k*(a4_new.-maximum(a4_new)).+maximum(a4_new)
+        a4_new  = a4_new.+4/3*(e0-e_new)
     end
 #boosting, with static cold phase (edge).
     if new_parameters.boostx
