@@ -45,6 +45,7 @@ Base.@kwdef struct BlackBranePert{T} <: ID_ConstantAH
     a4_ampy       :: T   = 0.0
     a4_kx         :: Int = 1
     a4_ky         :: Int = 1
+    xi0           :: T   = 0.0
     xmax          :: T
     xmin          :: T
     ymax          :: T
@@ -464,7 +465,11 @@ function init_data!(ff::Gauge, sys::System, id::BlackBranePert)
     AH_pos  = id.AH_pos
 
     # TODO: this guess works best for the conformal case. is there a better one?
-    xi0     = (-a40)^0.25 - 1/AH_pos
+    if id.xi0 == 0
+        xi0 = (-a40)^0.25 - 1/AH_pos
+    else
+        xi0 = id.xi0
+    end
 
     xi  = getxi(ff)
 
