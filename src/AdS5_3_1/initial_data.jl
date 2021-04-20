@@ -45,6 +45,14 @@ Base.@kwdef struct BlackBranePert{T} <: InitialData
     a4_ampy       :: T   = 0.0
     a4_kx         :: Int = 1
     a4_ky         :: Int = 1
+    fx2_ampx      :: T   = 0.0
+    fx2_ampy      :: T   = 0.0
+    fx2_kx        :: Int = 1
+    fx2_ky        :: Int = 1
+    fy2_ampx      :: T   = 0.0
+    fy2_ampy      :: T   = 0.0
+    fy2_kx        :: Int = 1
+    fy2_ky        :: Int = 1
     xi0           :: T   = 0.0
     xmax          :: T
     xmin          :: T
@@ -421,11 +429,20 @@ function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBranePert)
     oophiM2 = id.oophiM2
 
     # a4 perturbation amplitude
-    ampx  = id.a4_ampx
-    ampy  = id.a4_ampy
+    ampx     = id.a4_ampx
+    ampy     = id.a4_ampy
+    fx2_ampx = id.fx2_ampx
+    fx2_ampy = id.fx2_ampy
+    fy2_ampx = id.fy2_ampx
+    fy2_ampy = id.fy2_ampy
     # number of maxima
-    kx   = id.a4_kx
-    ky   = id.a4_ky
+    kx     = id.a4_kx
+    ky     = id.a4_ky
+    fx2_kx = id.fx2_kx
+    fx2_ky = id.fx2_ky
+    fy2_kx = id.fy2_kx
+    fy2_ky = id.fy2_ky
+    
     xmax = id.xmax
     xmin = id.xmin
     xmid = (xmax + xmin) / 2
@@ -454,6 +471,12 @@ function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBranePert)
             y = yy[j]
             a4[1,i,j]  += -a40 * ( ampx * cos(2 * π * kx * (x-xmid)/(xmax-xmin)) +
                                    ampy * cos(2 * π * ky * (y-ymid)/(ymax-ymin)) )
+
+            fx2[1,i,j] += fx2_ampx * cos(2 * π * fx2_kx * (x-xmid)/(xmax-xmin)) +
+                           fx2_ampy * cos(2 * π * fx2_ky * (y-ymid)/(ymax-ymin))
+
+            fy2[1,i,j] += fy2_ampx * cos(2 * π * fy2_kx * (x-xmid)/(xmax-xmin)) +
+                          fy2_ampy * cos(2 * π * fy2_ky * (y-ymid)/(ymax-ymin))
         end
     end
 
