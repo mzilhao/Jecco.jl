@@ -134,3 +134,33 @@ function UUp(phi, potential::PhiAlphaBetaPotential)
             8/3*alpha*oophiQ*(2+beta)*phi^(1+beta)
 
 end
+
+Base.@kwdef struct PhiPoli{T} <: Potential
+    alpha :: T   = 0.0
+    beta  :: T   = 0.0
+end
+
+function UU(phi, potential::PhiPoli)
+    phi2 = phi  * phi
+    phi4 = phi2 * phi2
+
+    alpha = potential.alpha
+    beta  = potential.beta
+
+    -1/3 + alpha * phi2 + beta * phi4
+end
+
+@doc raw"""
+```math
+Up = \frac{dU}{dϕ}
+```
+"""
+function UUp(phi, potential::PhiPoli)
+    phi2 = phi  * phi
+    phi3 = phi  * phi2
+
+    alpha = potential.alpha
+    beta  = potential.beta
+
+    2 * alpha * phi + 4 * beta * phi3
+end

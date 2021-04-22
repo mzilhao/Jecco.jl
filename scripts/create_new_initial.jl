@@ -1,31 +1,38 @@
-using Jecco
-using Jecco.AdS5_3_1
+using Jecco, Jecco.AdS5_3_1
 using FFTW
-using Plots
-gr()
+#using Plots
+#sgr()
 
-dirname   = "/home/mikel/Documentos/Jecco.jl/data/end_data/"
-outdir    = "/home/mikel/Documentos/Jecco.jl/data/new_data/"
+dirname   = "/Users/apple/Documents/Jecco.jl/data/test/end_data/"
+outdir    = "/Users/apple/Documents/Jecco.jl/data/test/new_data/"
 
 grid = SpecCartGrid3D(
-    x_min            = -15.0,
-    x_max            =  15.0,
-    x_nodes          =  32,
-    y_min            = -15.0,
-    y_max            =  15.0,
-    y_nodes          =  32,
+    x_min            = -0.5,
+    x_max            =  0.5,
+    x_nodes          =  6,
+    y_min            = -0.5,
+    y_max            =  0.5,
+    y_nodes          =  6,
     u_outer_min      =  0.1,
     u_outer_max      =  1.005,
     u_outer_domains  =  1,
-    u_outer_nodes    =  64,
+    u_outer_nodes    =  48,
     u_inner_nodes    =  12,
     fd_order         =  4,
     sigma_diss       =  0.2,
 )
-io = InOut(recover_dir = dirname, out_dir = outdir, checkpoint_dir = outdir, out_boundary_every=1,out_gauge_every=1,out_bulk_every=1,remove_existing = true,)
+
+potential = AdS5_3_1.PhiAlphaBetaPotential(
+    oophiM2 = -1.0,
+    oophiQ  = 0.1,
+    #alpha   = -0.01,
+    #beta    = 10,
+)
+
+io = InOut(recover_dir = dirname, out_dir = outdir, checkpoint_dir = outdir, out_boundary_every=1, out_gauge_every=1,out_bulk_every=1,remove_existing = true,)
 
 parameters = AdS5_3_1.new_parameters(
-#    e_new   = 1.5,
+    e_new   = 0.058,
 #    a4_ampy = 1.0,
 #    a4_ky   = 2,
 #    boostx = true,
@@ -33,6 +40,7 @@ parameters = AdS5_3_1.new_parameters(
     #u_AH   = 0.9,
 )
 
+#=
 parameters_collision =AdS5_3_1.new_parameters_coll(
     dirname1  = dirname,
     dirname2  = dirname,
@@ -46,8 +54,9 @@ parameters_collision =AdS5_3_1.new_parameters_coll(
     fy22      = 0.0,
     u_AH      = 1.0,
 )
+=#
 
-AdS5_3_1.create_new_data(grid, io, parameters)
+AdS5_3_1.create_new_data(grid, io, parameters, potential)
 #AdS5_3_1.design_collision(grid, io, parameters_collision)
 
 #=
@@ -60,16 +69,16 @@ phi22 = BulkTimeSeries(outdir,:phi,2)
 
 
 e  = VEVTimeSeries(outdir,:energy)
-Jx = VEVTimeSeries(outdir,:Jx)
-Jy = VEVTimeSeries(outdir,:Jy)
+#Jx = VEVTimeSeries(outdir,:Jx)
+#Jy = VEVTimeSeries(outdir,:Jy)
 
 t,x,y = get_coords(e,:,:,:)
 plan  = plan_rfft(e[1,:,:])
 Nx    = length(x)
 Ny    = length(y)
 e0    = real(1/(Nx*Ny) * (plan * e[1,:,:]))[1]
-Jx0   = real(1/(Nx*Ny) * (plan * Jx[1,:,:]))[1]
-Jy0   = real(1/(Nx*Ny) * (plan * Jy[1,:,:]))[1]
+#Jx0   = real(1/(Nx*Ny) * (plan * Jx[1,:,:]))[1]
+#Jy0   = real(1/(Nx*Ny) * (plan * Jy[1,:,:]))[1]
 
 #=
 plan = plan_fft(e_old[end,:,:]);
@@ -96,10 +105,10 @@ println("(xmin, xmax) = ($(x[1]),$(x[end]+x[2]-x[1]))")
 println("(ymin, ymax) = ($(y[1]),$(y[end]+y[2]-y[1]))")
 println("Nx, Ny = $(length(x)), $(length(y))")
 println("Average Energy Density = $e0")
-println("Average x momenta = $Jx0")
-println("Average y momenta = $Jy0")
-println("Maximum x momenta = $(maximum(abs.(Jx[end,:,:])))")
-println("Maximum y momenta = $(maximum(abs.(Jy[end,:,:])))")
+#println("Average x momenta = $Jx0")
+#println("Average y momenta = $Jy0")
+#println("Maximum x momenta = $(maximum(abs.(Jx[end,:,:])))")
+#println("Maximum y momenta = $(maximum(abs.(Jy[end,:,:])))")
 #=
 plot(x,y,e[1,:,:],st=:surface, camera=(50,65))
 xlabel!("x")
