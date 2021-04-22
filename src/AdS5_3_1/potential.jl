@@ -9,6 +9,11 @@ parameters(potential::ZeroPotential) = ()
 """
 * `oophiM2` : 1/ϕM^2
 * `oophiQ`  : 1/ϕQ
+
+Note that, in the notation used in the paper XXXX.XXXX,
+```math
+λ₄ = 1/(4 ϕM^2), λ₆ = 1/ϕQ
+```
 """
 Base.@kwdef struct Phi8Potential{T} <: Potential
     oophiM2 :: T = 0.0
