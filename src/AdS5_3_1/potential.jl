@@ -140,6 +140,9 @@ Base.@kwdef struct PhiPoli{T} <: Potential
     beta  :: T   = 0.0
 end
 
+parameters(potential::PhiPoli) = (alpha=potential.alpha, beta=potential.beta)
+
+
 function UU(phi, potential::PhiPoli)
     phi2 = phi  * phi
     phi4 = phi2 * phi2

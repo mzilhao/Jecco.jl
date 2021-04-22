@@ -442,7 +442,7 @@ function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBranePert)
     fx2_ky = id.fx2_ky
     fy2_kx = id.fy2_kx
     fy2_ky = id.fy2_ky
-    
+
     xmax = id.xmax
     xmin = id.xmin
     xmid = (xmax + xmin) / 2
