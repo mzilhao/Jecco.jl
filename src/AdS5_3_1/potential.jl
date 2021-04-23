@@ -138,19 +138,22 @@ end
 Base.@kwdef struct PhiPoli{T} <: Potential
     alpha :: T   = 0.0
     beta  :: T   = 0.0
+    gamma :: T   = 0.0
 end
 
-parameters(potential::PhiPoli) = (alpha=potential.alpha, beta=potential.beta)
+parameters(potential::PhiPoli) = (alpha=potential.alpha, beta=potential.beta, gamma=potential.gamma)
 
 
 function UU(phi, potential::PhiPoli)
     phi2 = phi  * phi
     phi4 = phi2 * phi2
+    phi6 = phi2 * phi4
 
     alpha = potential.alpha
     beta  = potential.beta
+    gamma = potential.gamma
 
-    -1/3 + alpha * phi2 + beta * phi4
+    -1/3 + alpha * phi2 + beta * phi4 + gamma * phi6
 end
 
 @doc raw"""
@@ -161,9 +164,11 @@ Up = \frac{dU}{dϕ}
 function UUp(phi, potential::PhiPoli)
     phi2 = phi  * phi
     phi3 = phi  * phi2
+    phi5 = phi2 * phi3
 
     alpha = potential.alpha
     beta  = potential.beta
+    gamma = potential.gamma
 
-    2 * alpha * phi + 4 * beta * phi3
+    2 * alpha * phi + 4 * beta * phi3 + 6 * gamma * phi5
 end

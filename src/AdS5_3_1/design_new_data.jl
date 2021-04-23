@@ -447,7 +447,7 @@ end
 #For the moment we use the same grid as in the phase separation file and we will use create_new_data to change anything at the end.
 #We use the B's and G of the PS state, and we modify the scalar fields and boundary data. f2 to 0 for the moment. Center the low energy
 #phase in the middle of the box, so that the metaestable state will lie outside
-function bubble_expansion(grid::SpecCartGrid3D, io::InOut, A_dir::String, B_dir::String, PS_dir::String)
+function bubble_expansion(grid::SpecCartGrid3D, io::InOut, potential::Potential, A_dir::String, B_dir::String, PS_dir::String)
     atlas   = Atlas(grid)
     systems = SystemPartition(grid)
     Nsys    = length(systems)
@@ -499,12 +499,13 @@ function bubble_expansion(grid::SpecCartGrid3D, io::InOut, A_dir::String, B_dir:
 
 
     phi0 = 1.0
-    potential = Phi8Potential(oophiM2=-1.0, oophiQ=0.1,)
+    #potential = Phi8Potential(oophiM2=-1.0, oophiQ=0.1,)
     try
         phi0  = a4_PS.ts.params["phi0"]
-        potential = Phi8Potential(oophiM2=a4_PS.ts.params["oophiM2"], oophiQ=a4_PS.ts.params["oophiQ"],)
+        #potential = Phi8Potential(oophiM2=a4_PS.ts.params["oophiM2"], oophiQ=a4_PS.ts.params["oophiQ"],)
     catch
-        @warn "No ts.params field, setting phi0=1.0, oophiM2=-1,0 and oophiQ=0.1"
+        #@warn "No ts.params field, setting phi0=1.0, oophiM2=-1,0 and oophiQ=0.1"
+        @warn "No ts.params field, setting phi0=1.0"
     end
     empty = Cartesian{1}("u", 0.0, 0.0, 1)
     chart2D = Chart(empty, systems[1].xcoord, systems[1].ycoord)
