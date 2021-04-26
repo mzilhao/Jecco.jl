@@ -18,18 +18,19 @@ grid = SpecCartGrid3D(
 )
 
 potential = AdS5_3_1.PhiPoli(
-    alpha   = -1.,
-    beta    = 0.3,
+    alpha   = -0.55,
+    beta    = 0.1,
+    #gamma  = 0.0,
 )
 
 id = BlackBranePert(
-    energy_dens = -0.5,
+    energy_dens = -0.53,
     phi0        = 1.0,
-    phi2        = 2.,
+    phi2        = 1.2,
     #a4_ampx     = -0.05,
     #a4_kx       = 1,
-    xi0         = 0.3,
-    AH_pos      = 1.0,
+    xi0         = 0.05,
+    AH_pos      = 0.95,
     xmax        = grid.x_max,
     xmin        = grid.x_min,
     ymin        = grid.y_min,
@@ -61,7 +62,7 @@ io = InOut(
 
 integration = Integration(
     #dt              = 0.001,
-    tmax            = 60.0,
+    tmax            = 20.0,
     ODE_method      = AdS5_3_1.VCABM3(),
     #ODE_method      = AdS5_3_1.AB3(),
     adaptive        = true,
