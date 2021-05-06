@@ -3,19 +3,19 @@ using FFTW
 using Plots
 gr()
 
-#dirname   = "/Users/apple/Documents/Jecco.jl/data/test/end_data/"
-outdir    = "/Users/apple/Dropbox/PhD/Jecco/bubbles/new_potential/a_-1_b_0.3/bubble/"
-A_dir     = "/Users/apple/Dropbox/PhD/Jecco/bubbles/new_potential/a_-1_b_0.3/state_A_e_2.06/"
-B_dir     = "/Users/apple/Dropbox/PhD/Jecco/bubbles/new_potential/a_-1_b_0.3/state_B_e_-0.48/"
-PS_dir    = "/Users/apple/Dropbox/PhD/Jecco/bubbles/new_potential/a_-1_b_0.3/phase_separated/"
+dirname   = "/home/mikel/Documents/Jecco.jl/data/end_data/"
+outdir    = "/home/mikel/Documents/Jecco.jl/data/initial/"
+#A_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_A_e_1.318/"
+#B_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_B_e_0.133/"
+#PS_dir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated_initial/"
 
 grid = SpecCartGrid3D(
-    x_min            = -150.,
-    x_max            =  150.,
-    x_nodes          =  1200,
+    x_min            = -0.5,
+    x_max            =  0.5,
+    x_nodes          =  6,
     y_min            = -0.5,
     y_max            =  0.5,
-    y_nodes          =  4,
+    y_nodes          =  6,
     u_outer_min      =  0.1,
     u_outer_max      =  1.005,
     u_outer_domains  =  1,
@@ -26,23 +26,27 @@ grid = SpecCartGrid3D(
 )
 
 potential = AdS5_3_1.PhiPoli(
-    alpha   = -1.,
-    beta    = 0.3,
+    alpha   = -0.5,
+    beta    = 0.05,
+    gamma   = 0.05,
+    #oophiM2 = -1.38408,
+    #oophiQ  = 0.1,
 )
 
-io = InOut(recover_dir = outdir, out_dir = outdir, checkpoint_dir = outdir,
+
+io = InOut(recover_dir = dirname, out_dir = outdir, checkpoint_dir = outdir,
            out_boundary_every=1, out_gauge_every=1,out_bulk_every=1,remove_existing = true,)
 
-#=
+
 parameters = AdS5_3_1.new_parameters(
-    e_new   = 0.058,
+    e_new   = -0.4,
 #    a4_ampy = 1.0,
 #    a4_ky   = 2,
 #    boostx = true,
     #fx20   = 1.0,
     #u_AH   = 0.9,
 )
-=#
+
 
 #=
 parameters_collision =AdS5_3_1.new_parameters_coll(
@@ -59,10 +63,12 @@ parameters_collision =AdS5_3_1.new_parameters_coll(
     u_AH      = 1.0,
 )
 =#
+#new_center = (15.,15.)
+#AdS5_3_1.shift(io, new_center=new_center)
 
-#AdS5_3_1.create_new_data(grid, io, parameters, potential)
+AdS5_3_1.create_new_data(grid, io, parameters, potential)
 #AdS5_3_1.design_collision(grid, io, parameters_collision)
-AdS5_3_1.bubble_expansion(grid, io, potential, A_dir, B_dir, PS_dir)
+#AdS5_3_1.bubble_expansion(grid, io, potential, A_dir, B_dir, PS_dir)
 
 #=
 phi11 = BulkTimeSeries(dirname,:phi,1)
@@ -74,10 +80,10 @@ phi22 = BulkTimeSeries(outdir,:phi,2)
 
 
 e     = VEVTimeSeries(outdir, :energy)
-px    = VEVTimeSeries(outdir, :px)
-e_A   = VEVTimeSeries(A_dir, :energy)
-e_B   = VEVTimeSeries(B_dir, :energy)
-e_PS  = VEVTimeSeries(PS_dir, :energy)
+#px    = VEVTimeSeries(outdir, :px)
+#e_A   = VEVTimeSeries(A_dir, :energy)
+#e_B   = VEVTimeSeries(B_dir, :energy)
+#e_PS  = VEVTimeSeries(PS_dir, :energy)
 #Jx = VEVTimeSeries(outdir,:Jx)
 #Jy = VEVTimeSeries(outdir,:Jy)
 
@@ -114,12 +120,12 @@ println("(xmin, xmax) = ($(x[1]),$(x[end]+x[2]-x[1]))")
 println("(ymin, ymax) = ($(y[1]),$(y[end]+y[2]-y[1]))")
 println("Nx, Ny = $(length(x)), $(length(y))")
 println("Average Energy Density = $e0")
-println("Maximum energy = $(maximum(e[end,:,:]))")
-println("Minimum energy = $(minimum(e[end,:,:]))")
-println("A energy = $(e_A[end,1,1])")
-println("B energy = $(e_B[end,1,1])")
-println("Maximum px = $(maximum(px[end,:,:]))")
-println("Minimum px = $(minimum(px[end,:,:]))")
+#println("Maximum energy = $(maximum(e[end,:,:]))")
+#println("Minimum energy = $(minimum(e[end,:,:]))")
+#println("A energy = $(e_A[end,1,1])")
+#println("B energy = $(e_B[end,1,1])")
+#println("Maximum px = $(maximum(px[end,:,:]))")
+#println("Minimum px = $(minimum(px[end,:,:]))")
 #println("Average x momenta = $Jx0")
 #println("Average y momenta = $Jy0")
 #println("Maximum x momenta = $(maximum(abs.(Jx[end,:,:])))")

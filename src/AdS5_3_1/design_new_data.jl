@@ -515,7 +515,7 @@ end
 
 #For the moment we change a4 and fx2, fy2 by multiplying the energy by some factor. We can change this so that we decide what
 #profile is used for these functions. We mantain the cold phase to its original value. Enbed in a bigger box by extending the edge value
-function create_new_data(grid::SpecCartGrid3D, io::InOut, new_parameters::NewParameters)
+function create_new_data(grid::SpecCartGrid3D, io::InOut, new_parameters::NewParameters, potential::Potential)
     dirname   = io.recover_dir
     atlas     = Atlas(grid)
     systems   = SystemPartition(grid)
@@ -544,14 +544,31 @@ function create_new_data(grid::SpecCartGrid3D, io::InOut, new_parameters::NewPar
     Nx    = length(x)
     Ny    = length(y)
     #Old runs do not have ts.params field, I set it by hand to what we usually use.
-    phi0 = 1.0
-    potential = Phi8Potential(oophiM2=-1.0, oophiQ=0.1,)
-    try
-        phi0  = a4.ts.params["phi0"]
-        potential = Phi8Potential(oophiM2=a4.ts.params["oophiM2"], oophiQ=a4.ts.params["oophiQ"],)
-    catch
-        @warn "No ts.params field, setting phi0=1.0, oophiM2=-1,0 and oophiQ=0.1"
+    phi0 = try
+        a4.ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
     end
+    oophiM2 = try
+        a4.ts.params["oophiM2"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "oophiM2" is not found in the params Dict, set oophiM2 = 0
+        else
+            throw(e)
+        end
+    end
+    #potential = Phi8Potential(oophiM2=-1.0, oophiQ=0.1,)
+    #try
+    #    phi0  = a4.ts.params["phi0"]
+    #    potential = Phi8Potential(oophiM2=a4.ts.params["oophiM2"], oophiQ=a4.ts.params["oophiQ"],)
+    #catch
+    #    @warn "No ts.params field, setting phi0=1.0, oophiM2=-1,0 and oophiQ=0.1"
+    #end
 
     interp = xy_interpolator(x,y)
 
@@ -567,6 +584,7 @@ function create_new_data(grid::SpecCartGrid3D, io::InOut, new_parameters::NewPar
     phi2_new = zeros(Nx_new,Ny_new)
 
     u = Array{Array{Real,1},1}(undef,Nsys)
+    println("We start the insertion in the new box")
 
     for i in 1:Nsys
         B1  = BulkTimeSeries(dirname, :B1, i)
@@ -633,7 +651,8 @@ function create_new_data(grid::SpecCartGrid3D, io::InOut, new_parameters::NewPar
             end
         end
     end
-    e       = AdS5_3_1.compute_energy.(a4_new, phi2_new, phi0, potential.oophiM2)
+    println("Already set in the new box")
+    e       = AdS5_3_1.compute_energy.(a4_new, phi2_new, phi0, oophiM2)
     e_new   = new_parameters.e_new
     fx20    = new_parameters.fx20
     fy20    = new_parameters.fy20
@@ -673,7 +692,6 @@ function create_new_data(grid::SpecCartGrid3D, io::InOut, new_parameters::NewPar
 
     plan   = plan_rfft(a4_new)
     a40    = real(1/(Nx_new*Ny_new)*(plan*a4_new)[1])
-
     for j in 1:Ny_new
         for i in 1:Nx_new
             x = x_new[i]

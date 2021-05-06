@@ -24,12 +24,21 @@ potential = AdS5_3_1.PhiPoli(
 )
 
 id = BlackBranePert(
+<<<<<<< HEAD
     energy_dens = 0.4,
     phi0        = 1.0,
     phi2        = 0.4,
     a4_ampx     = -0.05,
     a4_kx       = 1,
     xi0         = 0.05,
+=======
+    energy_dens = -0.21,
+    phi0        = 1.0,
+    phi2        = 0.85,
+    #a4_ampx     = -0.05,
+    #a4_kx       = 1,
+    xi0         = 0.001,
+>>>>>>> 6f0fdff1cdf7bdb88a76d039c6e820e6ad9ab327
     AH_pos      = 0.95,
     xmax        = grid.x_max,
     xmin        = grid.x_min,
@@ -50,6 +59,7 @@ diag = DiagAH(
 outdir = "/Users/apple/Documents/Jecco.jl/data/new_potential/e_0.4_L_20_N_80_a_-0.29_b_-0.06_c_0.022/"
 
 io = InOut(
+<<<<<<< HEAD
     out_boundary_every_t        = 5.,
     out_bulk_every_t            = 5.,
     out_gauge_every_t           = 5.,
@@ -59,12 +69,27 @@ io = InOut(
     recover                     = :no,
     #recover_dir                 = "/Users/apple/Dropbox/PhD/Jecco/bubbles/new_potential/a_-1_b_0.3/bubble/",
     checkpoint_dir              = outdir,
+=======
+    out_boundary_every_t        = 0.2,
+    out_bulk_every_t            = 0.2,
+    out_gauge_every_t           = 0.2,
+    #out_bulkconstrained_every_t = 5.0,
+    #checkpoint_every_walltime_hours = 1,
+    out_dir                     ="/home/mikel/Documents/Jecco.jl/data/a_-0.29_b_-0.06_c_0.022/",
+    recover                     = :no,
+    recover_dir                 = "/home/mikel/Documents/Jecco.jl/data/initial/",
+    #checkpoint_dir              = "/home/mikel/Documents/Jecco.jl/data/test/",
+>>>>>>> 6f0fdff1cdf7bdb88a76d039c6e820e6ad9ab327
     remove_existing             = true,
 )
 
 integration = Integration(
     #dt              = 0.001,
+<<<<<<< HEAD
     tmax            = 150.0,
+=======
+    tmax            = 60.0,
+>>>>>>> 6f0fdff1cdf7bdb88a76d039c6e820e6ad9ab327
     ODE_method      = AdS5_3_1.VCABM3(),
     #ODE_method      = AdS5_3_1.AB3(),
     adaptive        = true,
