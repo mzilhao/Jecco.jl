@@ -52,18 +52,6 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
         boundary    = getboundary(ff)
         gauge       = getgauge(ff)
 
-```
-In what follows we removed the @threads for the parallelization due to
-suspicion for possible problem with race conditions. The motivation
-comes from a similar problem in the KG branch, that has similar
-structure as below.
-
-The parallelization was implemented via putting @threads after the
-@inbounds in the two loops below.
-
-TODO: fix the parallelization below
-```
-
         # filter after each integration (sub)step
         if t > 0 && integration.filter_poststep
             @inbounds for aa in 1:Nsys
@@ -82,6 +70,8 @@ TODO: fix the parallelization below
         compute_xi_t!(gauge_t, bulkconstrains[Nsys], bulkevols[Nsys], bulkderivs[Nsys],
                       gauge, cache, systems[Nsys], evoleq.gaugecondition)
 
+        # TODO: check if this loop is thread-safe
+        # @inbounds @threads for aa in 1:Nsys
         @inbounds for aa in 1:Nsys
             sys           = systems[aa]
             bulkevol_t    = bulkevols_t[aa]
