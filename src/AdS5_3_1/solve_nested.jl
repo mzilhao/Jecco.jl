@@ -8,6 +8,13 @@ function solve_lin_system!(A_mat, b_vec)
     nothing
 end
 
+function solve_lin_system_pivot!(A_mat, b_vec)
+    # for the larger matrices, in the coupled equations, it's better to pivot
+    A_fact = lu!(A_mat, Val(true))
+    ldiv!(A_fact, b_vec)        # b_vec is overwritten to store the result
+    nothing
+end
+
 struct Aux{T<:Real}
     A_mat   :: Matrix{T}
     b_vec   :: Vector{T}
@@ -325,7 +332,7 @@ function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                 aux.A_mat2[2*Nu,aa+Nu] = Du[1,aa]
             end
 
-            solve_lin_system!(aux.A_mat2, aux.b_vec2)
+            solve_lin_system_pivot!(aux.A_mat2, aux.b_vec2)
 
             @inbounds @simd for aa in 1:Nu
                 bulk.Fx[aa,i,j] = aux.b_vec2[aa]
@@ -829,7 +836,7 @@ function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_ac
             aux.A_mat2[1+Nu,:]   .= 0.0
             aux.A_mat2[1+Nu,1+Nu] = 1.0
 
-            solve_lin_system!(aux.A_mat2, aux.b_vec2)
+            solve_lin_system_pivot!(aux.A_mat2, aux.b_vec2)
 
             @inbounds @simd for aa in 1:Nu
                 bulk.B1d[aa,i,j] = aux.b_vec2[aa]
