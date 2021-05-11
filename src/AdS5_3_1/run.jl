@@ -64,7 +64,8 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     evolvars  = EvolVars(boundary, gauge, bulkevols)
 
     # function that updates the state vector
-    rhs! = setup_rhs(bulkconstrains, bulkderivs, horizoncache, systems, integration)
+    rhs! = setup_rhs(evolvars, bulkconstrains, bulkderivs, horizoncache,
+                     systems, integration)
 
     #=
     limit the default integrator dtmax and qmax values. see:
