@@ -1,15 +1,4 @@
 
-function (filters::Filters)(bulkevol::BulkEvolved)
-    @sync begin
-        @spawn filters.exp_filter(bulkevol.B1)
-        @spawn filters.exp_filter(bulkevol.B2)
-        @spawn filters.exp_filter(bulkevol.G)
-        @spawn filters.exp_filter(bulkevol.phi)
-    end
-    nothing
-end
-
-
 function setup_rhs(tmp::EvolVars, bulkconstrains::BulkPartition{Nsys},
                    bulkderivs::BulkPartition{Nsys},
                    cache::HorizonCache, systems::SystemPartition,

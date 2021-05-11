@@ -93,3 +93,14 @@ function apply_dissipation!(bulkevol::BulkEvolved, cache::BulkEvolved,
 
     nothing
 end
+
+# exponential filtering
+function (filters::Filters)(bulkevol::BulkEvolved)
+    @sync begin
+        @spawn filters.exp_filter(bulkevol.B1)
+        @spawn filters.exp_filter(bulkevol.B2)
+        @spawn filters.exp_filter(bulkevol.G)
+        @spawn filters.exp_filter(bulkevol.phi)
+    end
+    nothing
+end
