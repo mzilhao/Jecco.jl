@@ -156,10 +156,12 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
         Jecco.out_info(tinfo.it, tinfo.t, deltat/telapsed, gauge.xi, "ξ", 1, 200)
 
         # write data
+        vprint("INFO: output data")
         output_evol(u)
         output_constrained(bulkconstrains)
 
         # diagnostics
+        vprint("INFO: diagnostics")
         diag()
 
         # checkpoint

@@ -21,8 +21,10 @@ function setup_rhs(tmp::EvolVars, bulkconstrains::BulkPartition{Nsys},
         boundary    = getboundary(ff)
         gauge       = getgauge(ff)
 
+
         # filter state vector after each integration (sub)step.
-        #
+        vprint("INFO: filtering")
+
         # Note: one problem with this approach is that it always filters the
         # state vector upon calling, ie, if this function is called twice with
         # the *same* state vector (say, for error estimate purposes), the state
@@ -42,14 +44,19 @@ function setup_rhs(tmp::EvolVars, bulkconstrains::BulkPartition{Nsys},
             apply_dissipation!(gauge, gauge_cache,  systems[Nsys])
         end
 
+
+        vprint("INFO: compute_boundary_t")
         compute_boundary_t!(boundary_t, bulkevols[1], boundary, gauge, systems[1], evoleq)
 
         # solve nested system for the constrained variables
+        vprint("INFO: nested system")
         nested(bulkevols, boundary, gauge, evoleq)
 
+        vprint("INFO: compute_xi_t")
         compute_xi_t!(gauge_t, bulkconstrains[Nsys], bulkevols[Nsys], bulkderivs[Nsys],
                       gauge, cache, systems[Nsys], evoleq.gaugecondition)
 
+        vprint("INFO: bulkevolved_t")
         # TODO: check if this loop is thread-safe
         # @inbounds @threads for aa in 1:Nsys
         @inbounds for aa in 1:Nsys
