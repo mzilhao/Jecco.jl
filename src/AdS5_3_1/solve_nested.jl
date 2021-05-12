@@ -1248,13 +1248,13 @@ function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc
     # solve for Sd
     solve_Sd!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
 
-    # solving for B2d, (B1d,Gd) and phid are independent processes. we can
-    # therefore @spawn, here
-    @sync begin
-        @spawn solve_B2d!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
-        @spawn solve_B1dGd!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
-        @spawn solve_phid!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
-    end
+    # equations for B2d, (B1d, Gd) and phid are actually independent of each
+    # other and could be solved in parallel. however, it seems that use of
+    # @spawn here is actually harmful for scaling. since the loops in each
+    # function are already threaded, it seems better not to @spawn.
+    solve_B2d!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
+    solve_B1dGd!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
+    solve_phid!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
 
     # solve for A
     solve_A!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
