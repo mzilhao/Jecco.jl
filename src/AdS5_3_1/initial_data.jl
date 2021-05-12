@@ -102,35 +102,6 @@ function (id::InitialData)(bulkconstrains, bulkevols, bulkderivs, boundary::Boun
     nested(bulkevols, boundary, gauge, evoleq)
 
     # find the Apparent Horizon
-    sigma = similar(getxi(gauge))
-    fill!(sigma, 1/AH_pos)  # initial guess
-    find_AH!(sigma, bulkconstrains[end], bulkevols[end], bulkderivs[end], gauge,
-             horizoncache, systems[end], id.ahf)
-
-    nothing
-end
-
-
-
-function (id::ID_ConstantAH)(bulkconstrains, bulkevols, bulkderivs, boundary::Boundary,
-                           gauge::Gauge, horizoncache::HorizonCache, systems::SystemPartition,
-                           evoleq::EvolutionEquations)
-    _, Nx, Ny = size(systems[end])
-    AH_pos    = id.AH_pos
-    xi        = getxi(gauge)
-
-    # function to solve the nested system
-    nested = Nested(systems, bulkconstrains)
-
-    init_data!(boundary, systems[1],   id)
-
-    init_data!(gauge,    systems[end], id)
-    init_data!(bulkevols, gauge, systems, id)
-
-    # solve nested system for the constrained variables
-    nested(bulkevols, boundary, gauge, evoleq)
-
-    # find the Apparent Horizon
     sigma = similar(gauge.xi)
     fill!(sigma, 1/AH_pos)  # initial guess
     find_AH!(sigma, bulkconstrains[end], bulkevols[end], bulkderivs[end], gauge,
