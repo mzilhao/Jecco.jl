@@ -44,11 +44,11 @@ function apply_dissipation!(boundary::Boundary, cache::Boundary, sys::System)
     fx2_cache = getfx2(cache)
     fy2_cache = getfy2(cache)
 
-    @sync begin
-        @spawn apply_dissipation_2D!( a4_cache,  a4, sys)
-        @spawn apply_dissipation_2D!(fx2_cache, fx2, sys)
-        @spawn apply_dissipation_2D!(fy2_cache, fy2, sys)
-    end
+    # the loops in these functions are threaded, so it's probably not worth it
+    # to @spawn here
+    apply_dissipation_2D!( a4_cache,  a4, sys)
+    apply_dissipation_2D!(fx2_cache, fx2, sys)
+    apply_dissipation_2D!(fy2_cache, fy2, sys)
 
     copyto!( a4,  a4_cache)
     copyto!(fx2, fx2_cache)
@@ -79,12 +79,12 @@ function apply_dissipation!(bulkevol::BulkEvolved, cache::BulkEvolved,
     G_cache   = getG(cache)
     phi_cache = getphi(cache)
 
-    @sync begin
-        @spawn apply_dissipation_3D!( B1_cache,  B1, sys)
-        @spawn apply_dissipation_3D!( B2_cache,  B2, sys)
-        @spawn apply_dissipation_3D!(  G_cache,   G, sys)
-        @spawn apply_dissipation_3D!(phi_cache, phi, sys)
-    end
+    # the loops in these functions are threaded, so it's probably not worth it
+    # to @spawn here
+    apply_dissipation_3D!( B1_cache,  B1, sys)
+    apply_dissipation_3D!( B2_cache,  B2, sys)
+    apply_dissipation_3D!(  G_cache,   G, sys)
+    apply_dissipation_3D!(phi_cache, phi, sys)
 
     copyto!( B1,  B1_cache)
     copyto!( B2,  B2_cache)
