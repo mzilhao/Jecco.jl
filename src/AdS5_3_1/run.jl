@@ -184,6 +184,8 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     end
 
     println("-------------------------------------------------------------")
+    println("Total runtime: $(tinfo.runtime) s")
+    println("-------------------------------------------------------------")
     println("Done.")
 end
 
