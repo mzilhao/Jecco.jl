@@ -5,17 +5,6 @@ import Base.Threads.@spawn
 #Functions that manipulate the output to generate an new initial state from which to run Jecco.
 #It creates a checkpoint file from where to run jecco and also normal files to plot it in mathematica and see
 #if it is what you wanted
-function create_outputs(out_dir, evolvars, chart2D, charts, io, potential, phi0)
-    tinfo      = Jecco.TimeInfo(0, 0.0, 0.0, 0.0)
-    try run(`rm -r $out_dir`) catch end
-    run(`mkdir $out_dir`)
-    checkpoint = AdS5_3_1.checkpoint_writer(evolvars, chart2D, charts, tinfo, io)
-    out        = AdS5_3_1.output_writer(evolvars, chart2D, charts, tinfo, io, potential, phi0)
-
-    checkpoint(evolvars)
-    out(evolvars)
-    nothing
-end
 
 abstract type NewParameters end
 
@@ -86,7 +75,7 @@ function (interpolator::xy_interpolator)(f::Array{T,3}) where {T<:Real}
         #@assert interpolator.xmin<=x<=interpolator.xmax
         #@assert interpolator.ymin<=y<=interpolator.ymax
         sum = im*zeros(Nu)
-        @fastmath @inbounds for i in 1:Nu
+        @fastmath @inbounds Threads.@threads for i in 1:Nu
             for k in 1:length(k_y)
                 for j in 1:length(k_x)
                     sum[i] += fk[i,j,k]*exp(im*(k_x[j]*(x-xmin)+k_y[k]*(y-ymin)))
@@ -95,6 +84,31 @@ function (interpolator::xy_interpolator)(f::Array{T,3}) where {T<:Real}
         end
         real(sum)
     end
+    #=
+    function (l::Int, x::TP, y::TP) where {TP<:Real}
+        #@assert interpolator.xmin<=x<=interpolator.xmax
+        #@assert interpolator.ymin<=y<=interpolator.ymax
+        sum = im*0.0
+        @fastmath @inbounds Threads.@threads for k in 1:length(k_y)
+            for j in 1:length(k_x)
+                sum = fk[l,j,k]*exp(im*(k_x[j]*(x-xmin)+k_y[k]*(y-ymin)))
+            end
+        end
+        real(sum)
+    end
+    function (x::Array{TP,2}, y::Array{TP,2}) where {TP<:Real}
+        Nx, Ny = size(x)
+        sum = im*zeros(Nu, Nx, Ny)
+        @fastmath @inbounds Threads.@threads for i in 1:Nu
+            for k in 1:length(k_y)
+                for j in 1:length(k_x)
+                    sum[i,:,:] += fk[i,j,k]*exp.(im*(k_x[j]*(x.-xmin)+k_y[k]*(y.-ymin)))
+                end
+            end
+        end
+        real(sum)
+    end
+=#
 end
 
 function change_B!(B_old::T, u::T, dxi::T, gidx::Int, grid::Int) where T<:Real
@@ -173,6 +187,56 @@ function construct_bulkevols(ts::OpenPMDTimeSeries, it::Int)
     end
 
     return AdS5_3_1.BulkPartition((bulk...)), charts
+end
+
+function create_outputs(out_dir, evolvars, chart2D, charts, io, potential, phi0)
+    tinfo      = Jecco.TimeInfo(0, 0.0, 0.0, 0.0)
+    try run(`rm -r $out_dir`) catch end
+    run(`mkdir $out_dir`)
+    checkpoint = AdS5_3_1.checkpoint_writer(evolvars, chart2D, charts, tinfo, io)
+    out        = AdS5_3_1.output_writer(evolvars, chart2D, charts, tinfo, io, potential, phi0)
+
+    checkpoint(evolvars)
+    out(evolvars)
+    nothing
+end
+
+#Creates a checkpoint file with the data of the last iteration in a given folder.
+function create_checkpoint(io, potential)
+    ts          = OpenPMDTimeSeries(io.recover_dir, prefix="boundary_")
+    it_boundary = ts.iterations[end]
+    boundary, _ = construct_boundary(ts, it_boundary)
+    t_boundary  = ts.current_t
+
+    ts             = OpenPMDTimeSeries(io.recover_dir, prefix="gauge_")
+    it_gauge       = ts.iterations[end]
+    gauge, chart2D = construct_gauge(ts, it_gauge)
+    t_gauge        = ts.current_t
+
+    ts                = OpenPMDTimeSeries(io.recover_dir, prefix="bulk_")
+    it_bulk           = ts.iterations[end]
+    bulkevols, charts = construct_bulkevols(ts, it_bulk)
+    t_bulk            = ts.current_t
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
+    end
+    it = max(it_bulk, it_gauge, it_bulk)
+    t  = max(t_bulk, t_gauge, t_bulk)
+
+    evolvars = AdS5_3_1.EvolVars(boundary, gauge, bulkevols)
+    tinfo    = Jecco.TimeInfo(it, t, 0.0, 0.0)
+
+    try run(`rm -r $(io.out_dir)`) catch end
+    run(`mkdir $(io.out_dir)`)
+    checkpoint = AdS5_3_1.checkpoint_writer(evolvars, chart2D, charts, tinfo, io)
+    checkpoint(evolvars)
 end
 
 function change_gauge!(sigma::Array{T,3}, grid::SpecCartGrid3D, boundary::Boundary, gauge::Gauge, bulkevols::BulkPartition,
@@ -259,16 +323,16 @@ function change_gauge!(sigma::Array{T,3}, grid::SpecCartGrid3D, boundary::Bounda
     #return sigma, bulkevols, bulkconstrains, gauge
 end
 
-
 function new_box(grid::SpecCartGrid3D, boundary::Boundary , bulkevols::BulkPartition ,gauge::Gauge,
-                              x::Array{T,1}, y::Array{T,1}) where {T<:Real}
+                              chart2D::Chart)
 
     systems = SystemPartition(grid)
     Nsys    = length(systems)
-    x_new   = systems[1].xcoord
-    y_new   = systems[1].ycoord
+    x_new   = systems[1].xcoord[:]
+    y_new   = systems[1].ycoord[:]
     Nx_new  = length(x_new)
     Ny_new  = length(y_new)
+    _, x, y = chart2D[:]
 
     if x_new[1] == x[1] && x_new[end] == x[end] && Nx_new == length(x)
         if y_new[1] == y[1] && y_new[end] == y[end] && Ny_new == length(y)
@@ -291,6 +355,11 @@ function new_box(grid::SpecCartGrid3D, boundary::Boundary , bulkevols::BulkParti
     fy2_new = boundary_new.fy2
     xi_new  = gauge_new.xi
 
+    ifirst = findfirst(x_new .>= x[1])
+    jfirst = findfirst(y_new .>= y[1])
+    ilast  = findfirst(x_new .>= x[end])
+    jlast  = findfirst(y_new .>= y[end])
+
     for i in 1:Nsys
         B1  = interp(bulkevols[i].B1)
         B2  = interp(bulkevols[i].B2)
@@ -302,58 +371,154 @@ function new_box(grid::SpecCartGrid3D, boundary::Boundary , bulkevols::BulkParti
         G_new   = bulkevols_new[i].G
         phi_new = bulkevols_new[i].phi
 
-        Threads.@threads for k in 1:Ny_new
-            for j in 1:Nx_new
-                if x[1] <= x_new[j] <= x[end] && y[1] <= y_new[k] <= y[end]
-                    B1_new[:,j,k]  = B1(x_new[j],y_new[k])
-                    B2_new[:,j,k]  = B2(x_new[j],y_new[k])
-                    G_new[:,j,k]   = G(x_new[j],y_new[k])
-                    phi_new[:,j,k] = phi(x_new[j],y_new[k])
-                    if i==1
-                        a4_new[:,j,k]  = a4(x_new[j],y_new[k])
-                        fx2_new[:,j,k] = fx2(x_new[j],y_new[k])
-                        fy2_new[:,j,k] = fy2(x_new[j],y_new[k])
-                        xi_new[:,j,k]  = xi(x_new[j],y_new[k])
-                    end
-                elseif x[1] <= x_new[j] <= x[end]
-                    B1_new[:,j,k]  = B1(x_new[j],y[1])
-                    B2_new[:,j,k]  = B2(x_new[j],y[1])
-                    G_new[:,j,k]   = G(x_new[j],y[1])
-                    phi_new[:,j,k] = phi(x_new[j],y[1])
-                    if i==1
-                        a4_new[:,j,k]  = a4(x_new[j],y[1])
-                        fx2_new[:,j,k] = fx2(x_new[j],y[1])
-                        fy2_new[:,j,k] = fy2(x_new[j],y[1])
-                        xi_new[:,j,k]  = xi(x_new[j],y[1])
-                    end
-                elseif y[1] <= y_new[k] <= y[end]
-                    B1_new[:,j,k]  = B1(x[1],y_new[k])
-                    B2_new[:,j,k]  = B2(x[1],y_new[k])
-                    G_new[:,j,k]   = G(x[1],y_new[k])
-                    phi_new[:,j,k] = phi(x[1],y_new[k])
-                    if i==1
-                        a4_new[:,j,k]  = a4(x[1],y_new[k])
-                        fx2_new[:,j,k] = fx2(x[1],y_new[k])
-                        fy2_new[:,j,k] = fy2(x[1],y_new[k])
-                        xi_new[:,j,k]  = xi(x[1],y_new[k])
-                    end
-                else
-                    B1_new[:,j,k]  = B1(x[1],y[1])
-                    B2_new[:,j,k]  = B2(x[1],y[1])
-                    G_new[:,j,k]   = G(x[1],y[1])
-                    phi_new[:,j,k] = phi(x[1],y[1])
-                    if i==1
-                        a4_new[:,j,k]  = a4(x[1],y[1])
-                        fx2_new[:,j,k] = fx2(x[1],y[1])
-                        fy2_new[:,j,k] = fy2(x[1],y[1])
-                        xi_new[:,j,k]  = xi(x[1],y[1])
-                    end
+        @time B1_new[:,1:ifirst-1,1:jfirst-1]  .= B1(x[1], y[1])
+        @time B2_new[:,1:ifirst-1,1:jfirst-1]  .= B2(x[1], y[1])
+        @time G_new[:,1:ifirst-1,1:jfirst-1]   .= G(x[1], y[1])
+        @time phi_new[:,1:ifirst-1,1:jfirst-1] .= phi(x[1], y[1])
+
+        @time B1_new[:,1:ifirst-1,jlast+1:end]  .= B1(x[1], y[1])
+        @time B2_new[:,1:ifirst-1,jlast+1:end]  .= B2(x[1], y[1])
+        @time G_new[:,1:ifirst-1,jlast+1:end]   .= G(x[1], y[1])
+        @time phi_new[:,1:ifirst-1,jlast+1:end] .= phi(x[1], y[1])
+
+        @time B1_new[:,ilast+1:end,1:jfirst-1]  .= B1(x[1], y[1])
+        @time B2_new[:,ilast+1:end,1:jfirst-1]  .= B2(x[1], y[1])
+        @time G_new[:,ilast+1:end,1:jfirst-1]   .= G(x[1], y[1])
+        @time phi_new[:,ilast+1:end,1:jfirst-1] .= phi(x[1], y[1])
+
+        @time B1_new[:,ilast+1:end,jlast+1:end]  .= B1(x[1], y[1])
+        @time B2_new[:,ilast+1:end,jlast+1:end]  .= B2(x[1], y[1])
+        @time G_new[:,ilast+1:end,jlast+1:end]   .= G(x[1], y[1])
+        @time phi_new[:,ilast+1:end,jlast+1:end] .= phi(x[1], y[1])
+
+        if i == 1
+            @time a4_new[:,1:ifirst-1,1:jfirst-1]  .= a4(x[1], y[1])
+            @time fx2_new[:,1:ifirst-1,1:jfirst-1] .= fx2(x[1], y[1])
+            @time fy2_new[:,1:ifirst-1,1:jfirst-1] .= fy2(x[1], y[1])
+            @time xi_new[:,1:ifirst-1,1:jfirst-1]  .= xi(x[1], y[1])
+
+            @time a4_new[:,1:ifirst-1,jlast+1:end]  .= a4(x[1], y[1])
+            @time fx2_new[:,1:ifirst-1,jlast+1:end] .= fx2(x[1], y[1])
+            @time fy2_new[:,1:ifirst-1,jlast+1:end] .= fy2(x[1], y[1])
+            @time xi_new[:,1:ifirst-1,jlast+1:end]  .= xi(x[1], y[1])
+
+            @time a4_new[:,ilast+1:end,1:jfirst-1]  .= a4(x[1], y[1])
+            @time fx2_new[:,ilast+1:end,1:jfirst-1] .= fx2(x[1], y[1])
+            @time fy2_new[:,ilast+1:end,1:jfirst-1] .= fy2(x[1], y[1])
+            @time xi_new[:,ilast+1:end,1:jfirst-1]  .= xi(x[1], y[1])
+
+            @time a4_new[:,ilast+1:end,jlast+1:end]  .= a4(x[1], y[1])
+            @time fx2_new[:,ilast+1:end,jlast+1:end] .= fx2(x[1], y[1])
+            @time fy2_new[:,ilast+1:end,jlast+1:end] .= fy2(x[1], y[1])
+            @time xi_new[:,ilast+1:end,jlast+1:end]  .= xi(x[1], y[1])
+        end
+
+        @time @fastmath @inbounds Threads.@threads for j in ifirst:ilast
+            B1_new[:,j,1:jfirst-1]  .= B1(x_new[j], y[1])
+            B2_new[:,j,1:jfirst-1]  .= B2(x_new[j], y[1])
+            G_new[:,j,1:jfirst-1]   .= G(x_new[j], y[1])
+            phi_new[:,j,1:jfirst-1] .= phi(x_new[j], y[1])
+
+            B1_new[:,j,jlast+1:end]  .= B1(x_new[j], y[1])
+            B2_new[:,j,jlast+1:end]  .= B2(x_new[j], y[1])
+            G_new[:,j,jlast+1:end]   .= G(x_new[j], y[1])
+            phi_new[:,j,jlast+1:end] .= phi(x_new[j], y[1])
+            if i == 1
+                a4_new[:,j,1:jfirst-1]  .= a4(x_new[j], y[1])
+                fx2_new[:,j,1:jfirst-1] .= fx2(x_new[j], y[1])
+                fy2_new[:,j,1:jfirst-1] .= fy2(x_new[j], y[1])
+                xi_new[:,j,1:jfirst-1]  .= xi(x_new[j], y[1])
+
+                a4_new[:,j,jlast+1:end]  .= a4(x_new[j], y[1])
+                fx2_new[:,j,jlast+1:end] .= fx2(x_new[j], y[1])
+                fy2_new[:,j,jlast+1:end] .= fy2(x_new[j], y[1])
+                xi_new[:,j,jlast+1:end]  .= xi(x_new[j], y[1])
+            end
+        end
+
+        @time @fastmath @inbounds Threads.@threads for k in jfirst:jlast
+            B1_new[:,1:ifirst-1,k]  .= B1(x[1], y_new[k])
+            B2_new[:,1:ifirst-1,k]  .= B2(x[1], y_new[k])
+            G_new[:,1:ifirst-1,k]   .= G(x[1], y_new[k])
+            phi_new[:,1:ifirst-1,k] .= phi(x[1], y_new[k])
+
+            B1_new[:,ilast+1:end,k]  .= B1(x[1], y_new[k])
+            B2_new[:,ilast+1:end,k]  .= B2(x[1], y_new[k])
+            G_new[:,ilast+1:end,k]   .= G(x[1], y_new[k])
+            phi_new[:,ilast+1:end,k] .= phi(x[1], y_new[k])
+            if i == 1
+                a4_new[:,1:ifirst-1,k]  .= a4(x[1], y_new[k])
+                fx2_new[:,1:ifirst-1,k] .= fx2(x[1], y_new[k])
+                fy2_new[:,1:ifirst-1,k] .= fy2(x[1], y_new[k])
+                xi_new[:,1:ifirst-1,k]  .= xi(x[1], y_new[k])
+
+                a4_new[:,ilast+1:end,k]  .= a4(x[1], y_new[k])
+                fx2_new[:,ilast+1:end,k] .= fx2(x[1], y_new[k])
+                fy2_new[:,ilast+1:end,k] .= fy2(x[1], y_new[k])
+                xi_new[:,ilast+1:end,k]  .= xi(x[1], y_new[k])
+            end
+        end
+
+        @time @fastmath @inbounds Threads.@threads for k in jfirst:jlast
+            for j in ifirst:ilast
+                B1_new[:,j,k]  = B1(x_new[j], y_new[k])
+                B2_new[:,j,k]  = B2(x_new[j], y_new[k])
+                G_new[:,j,k]   = G(x_new[j], y_new[k])
+                phi_new[:,j,k] = phi(x_new[j], y_new[k])
+                if i == 1
+                    a4_new[:,j,k]  = a4(x_new[j], y_new[k])
+                    fx2_new[:,j,k] = fx2(x_new[j], y_new[k])
+                    fy2_new[:,j,k] = fy2(x_new[j], y_new[k])
+                    xi_new[:,j,k]  = xi(x_new[j], y_new[k])
                 end
             end
         end
-    end
-
+     end
     return boundary_new, bulkevols_new, gauge_new
+end
+
+function new_box(grid::SpecCartGrid3D, io::InOut, potential::Potential)
+    read_dir     = io.recover_dir
+
+    ts                = OpenPMDTimeSeries(read_dir, prefix="boundary_")
+    boundary, chart2D = construct_boundary(ts, ts.iterations[end])
+
+    ts       = OpenPMDTimeSeries(read_dir, prefix="gauge_")
+    gauge, _ = construct_gauge(ts, ts.iterations[end])
+
+    ts                = OpenPMDTimeSeries(read_dir, prefix="bulk_")
+    bulkevols, charts = construct_bulkevols(ts, ts.iterations[end])
+
+
+    boundary, bulkevols, gauge = new_box(grid, boundary, bulkevols, gauge, chart2D)
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
+    end
+    oophiM2 = try
+        ts.params["oophiM2"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "oophiM2" is not found in the params Dict, set oophiM2 = 0
+        else
+            throw(e)
+        end
+    end
+    atlas   = Atlas(grid)
+    systems = SystemPartition(grid)
+    tinfo   = Jecco.TimeInfo(0, 0.0, 0.0, 0.0)
+    empty   = Cartesian{1}("u", 0.0, 0.0, 1)
+    chart2D = Chart(empty, systems[1].xcoord, systems[1].ycoord)
+
+    evolvars = AdS5_3_1.EvolVars(boundary, gauge, bulkevols)
+    create_outputs(io.out_dir, evolvars, chart2D, Tuple(charts), io, potential, phi0)
+
 end
 
 function shift!(boundary::Boundary, bulkevols::BulkPartition, gauge::Gauge, chart2D::Chart, new_center::Tuple{T,T}) where {T<:Real}
@@ -414,7 +579,7 @@ function shift!(boundary::Boundary, bulkevols::BulkPartition, gauge::Gauge, char
     end
 end
 
-function shift(io::InOut; new_center::Tuple{T,T}=(0,0)) where {T<:Real}
+function shift(io::InOut, potential::Potential; new_center::Tuple{T,T}=(0,0)) where {T<:Real}
     read_dir     = io.recover_dir
 
     ts                = OpenPMDTimeSeries(read_dir, prefix="boundary_")
@@ -432,16 +597,76 @@ function shift(io::InOut; new_center::Tuple{T,T}=(0,0)) where {T<:Real}
 
     shift!(boundary, bulkevols, gauge, chart2D, new_center)
 
-    phi0 = 1.0
-    potential = Phi8Potential(oophiM2=-1.0, oophiQ=0.1,)
-    try
-        phi0  = ts.params["phi0"]
-        potential = Phi8Potential(oophiM2=ts.params["oophiM2"], oophiQ=ts.params["oophiQ"],)
-    catch
-        @warn "No ts.params field, setting phi0=1.0, oophiM2=-1,0 and oophiQ=0.1"
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
+    end
+
+    oophiM2 = try
+        ts.params["oophiM2"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "oophiM2" is not found in the params Dict, set oophiM2 = 0
+        else
+            throw(e)
+        end
     end
     evolvars = AdS5_3_1.EvolVars(boundary, gauge, bulkevols)
     create_outputs(io.out_dir, evolvars, chart2D, Tuple(charts), io, potential, phi0)
+end
+
+function change_energy(io::InOut, e_new::T, potential::Potential) where {T<:Real}
+    read_dir     = io.recover_dir
+
+    ts                = OpenPMDTimeSeries(read_dir, prefix="boundary_")
+    boundary, chart2D = construct_boundary(ts, ts.iterations[end])
+
+    ts       = OpenPMDTimeSeries(read_dir, prefix="gauge_")
+    gauge, _ = construct_gauge(ts, ts.iterations[end])
+
+    ts                = OpenPMDTimeSeries(read_dir, prefix="bulk_")
+    bulkevols, charts = construct_bulkevols(ts, ts.iterations[end])
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
+    end
+
+    oophiM2 = try
+        ts.params["oophiM2"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "oophiM2" is not found in the params Dict, set oophiM2 = 0
+        else
+            throw(e)
+        end
+    end
+
+    a4        = boundary.a4
+    phi2      = BoundaryTimeSeries(read_dir, :phi2)[:,:,:]
+    _, Nx, Ny = size(a4)
+
+    e       = AdS5_3_1.compute_energy.(a4, phi2, phi0, oophiM2)
+    plan    = plan_rfft(e)
+    e0      = real(1/(Nx*Ny)*(plan*e)[1])
+    a40     = real(1/(Nx*Ny)*(plan*a4)[1])
+    #k      = (-4/3*(e_new-e0)*phi0^4-maximum(a4)+a40)/(a40-maximum(a4))
+    #a4 = k*(a4.-maximum(a4)).+maximum(a4)
+    a4  .= a4.+4/3*(e0-e_new)
+
+    evolvars = AdS5_3_1.EvolVars(boundary, gauge, bulkevols)
+    create_outputs(io.out_dir, evolvars, chart2D, Tuple(charts), io, potential, phi0)
+
 end
 
 #For the moment we use the same grid as in the phase separation file and we will use create_new_data to change anything at the end.
@@ -458,11 +683,14 @@ function bubble_expansion(grid::SpecCartGrid3D, io::InOut, potential::Potential,
     xi_A  = XiTimeSeries(A_dir)[end,1,1]
     xi_B  = XiTimeSeries(B_dir)[end,1,1]
     xi_PS = XiTimeSeries(PS_dir)
-    _,x,y = get_coords(a4_PS,1,:,:)
-    Nx    = length(x)
-    Ny    = length(y)
+    _, chart2D = get_field(a4_PS.ts, it=0, field="a4")
+    _, x, y = chart2D[:]
+    Nx    = chart2D.coords[2].nodes
+    Ny    = chart2D.coords[3].nodes
     hot   = CartesianIndex(1,1)
     cold  = CartesianIndex(Int(floor(Nx/2)),Int(floor(Ny/2)))
+    a4_B  = a4_PS[end,cold]
+    xi_B  = xi_PS[end,cold]
     k_a4  = (a4_A-a4_B)/(a4_PS[end,hot]-a4_PS[end,cold])
     k_xi  = (xi_A-xi_B)/(xi_PS[end,hot]-xi_PS[end,cold])
 
@@ -482,6 +710,7 @@ function bubble_expansion(grid::SpecCartGrid3D, io::InOut, potential::Potential,
         phi_A  = BulkTimeSeries(A_dir, :phi, n)[end,:,1,1]
         phi_B  = BulkTimeSeries(B_dir, :phi, n)[end,:,1,1]
         phi_PS = BulkTimeSeries(PS_dir, :phi, n)
+        phi_B .= phi_PS[end,:,cold]
         B1     = BulkTimeSeries(PS_dir, :B2, n)[end,:,:,:]
         B2     = BulkTimeSeries(PS_dir, :B2, n)[end,:,:,:]
         G      = BulkTimeSeries(PS_dir, :G, n)[end,:,:,:]
@@ -495,18 +724,18 @@ function bubble_expansion(grid::SpecCartGrid3D, io::InOut, potential::Potential,
     end
 
     bulkevols = AdS5_3_1.BulkPartition((bulk...))
-    boundary_new, bulkevols_new, gauge_new = new_box(grid, boundary, bulkevols, gauge, x, y)
+    boundary_new, bulkevols_new, gauge_new = new_box(grid, boundary, bulkevols, gauge, chart2D)
 
-
-    phi0 = 1.0
-    #potential = Phi8Potential(oophiM2=-1.0, oophiQ=0.1,)
-    try
-        phi0  = a4_PS.ts.params["phi0"]
-        #potential = Phi8Potential(oophiM2=a4_PS.ts.params["oophiM2"], oophiQ=a4_PS.ts.params["oophiQ"],)
-    catch
-        #@warn "No ts.params field, setting phi0=1.0, oophiM2=-1,0 and oophiQ=0.1"
-        @warn "No ts.params field, setting phi0=1.0"
+    phi0 = try
+        a4_PS.ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
     end
+
     empty = Cartesian{1}("u", 0.0, 0.0, 1)
     chart2D = Chart(empty, systems[1].xcoord, systems[1].ycoord)
     evolvars = AdS5_3_1.EvolVars(boundary_new, gauge_new, bulkevols_new)

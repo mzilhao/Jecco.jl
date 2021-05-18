@@ -54,7 +54,7 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
 
         # filter after each integration (sub)step
         if t > 0 && integration.filter_poststep
-            @inbounds @threads for aa in 1:Nsys
+            @inbounds for aa in 1:Nsys
                 sys = systems[aa]
                 sys.filters(bulkevols[aa])
             end
@@ -70,7 +70,7 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
         compute_xi_t!(gauge_t, bulkconstrains[Nsys], bulkevols[Nsys], bulkderivs[Nsys],
                       gauge, cache, systems[Nsys], evoleq.gaugecondition)
 
-        @inbounds @threads for aa in 1:Nsys
+        @inbounds for aa in 1:Nsys
             sys           = systems[aa]
             bulkevol_t    = bulkevols_t[aa]
             bulkevol      = bulkevols[aa]

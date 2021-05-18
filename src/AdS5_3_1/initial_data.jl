@@ -41,6 +41,7 @@ Base.@kwdef struct BlackBranePert{T} <: InitialData
     G_nx          :: Int = 1
     G_ny          :: Int = 2
     phi2          :: T   = 0.0
+    phi5          :: T   = 0.0
     a4_ampx       :: T   = 0.0
     a4_ampy       :: T   = 0.0
     a4_kx         :: Int = 1
@@ -375,7 +376,7 @@ end
 
 # BlackBranePert initial data
 
-analytic_phi(u, x, y, id::BlackBranePert) = id.phi2 / id.phi0^3
+analytic_phi(u, x, y, id::BlackBranePert) = id.phi2 / id.phi0^3 + id.phi5 / id.phi0^3*u
 
 function analytic_B1(u, x, y, id::BlackBranePert)
     # add the perturbation on B1

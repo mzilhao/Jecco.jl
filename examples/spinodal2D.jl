@@ -2,12 +2,12 @@
 using Jecco.AdS5_3_1
 
 grid = SpecCartGrid3D(
-    x_min            = -10.,
-    x_max            =  10.,
-    x_nodes          =  80,
+    x_min            = -0.5,
+    x_max            =  0.5,
+    x_nodes          =  6,
     y_min            = -0.5,
     y_max            =  0.5,
-    y_nodes          =  4,
+    y_nodes          =  6,
     u_outer_min      =  0.1,
     u_outer_max      =  1.005,
     u_outer_domains  =  1,
@@ -18,28 +18,22 @@ grid = SpecCartGrid3D(
 )
 
 potential = AdS5_3_1.PhiPoli(
-    alpha   = -0.29,
-    beta    = -0.06,
-    gamma   = 0.022,
+    alpha   = -0.2,
+    beta    = 0.008,
+    gamma   = 0.0,
+    #oophiM2 = -1.38408,
+    #oophiQ  = 0.1,
 )
 
 id = BlackBranePert(
-<<<<<<< HEAD
-    energy_dens = 0.4,
+    energy_dens = -0.26,
     phi0        = 1.0,
-    phi2        = 0.4,
-    a4_ampx     = -0.05,
-    a4_kx       = 1,
-    xi0         = 0.05,
-=======
-    energy_dens = -0.21,
-    phi0        = 1.0,
-    phi2        = 0.85,
+    phi2        = 0.698331,
+    phi5        = 2.2,
     #a4_ampx     = -0.05,
     #a4_kx       = 1,
-    xi0         = 0.001,
->>>>>>> 6f0fdff1cdf7bdb88a76d039c6e820e6ad9ab327
-    AH_pos      = 0.95,
+    xi0         = -0.0155308,
+    AH_pos      = 0.9,
     xmax        = grid.x_max,
     xmin        = grid.x_min,
     ymin        = grid.y_min,
@@ -56,40 +50,23 @@ diag = DiagAH(
     find_AH_every_t    = 1.0,
 )
 
-outdir = "/Users/apple/Documents/Jecco.jl/data/new_potential/e_0.4_L_20_N_80_a_-0.29_b_-0.06_c_0.022/"
+outdir = "/home/mikel/Documents/Jecco.jl/data/new_potential/a_-0.2_b_0.008"
 
 io = InOut(
-<<<<<<< HEAD
-    out_boundary_every_t        = 5.,
-    out_bulk_every_t            = 5.,
-    out_gauge_every_t           = 5.,
+    out_boundary_every_t        = 0.5,
+    out_bulk_every_t            = 0.5,
+    out_gauge_every_t           = 0.5,
     #out_bulkconstrained_every_t = 5.0,
     checkpoint_every_walltime_hours = 1,
     out_dir                     = outdir,
     recover                     = :no,
-    #recover_dir                 = "/Users/apple/Dropbox/PhD/Jecco/bubbles/new_potential/a_-1_b_0.3/bubble/",
+    recover_dir                 = "/home/mikel/Documents/Jecco.jl/data/new_data/",
     checkpoint_dir              = outdir,
-=======
-    out_boundary_every_t        = 0.2,
-    out_bulk_every_t            = 0.2,
-    out_gauge_every_t           = 0.2,
-    #out_bulkconstrained_every_t = 5.0,
-    #checkpoint_every_walltime_hours = 1,
-    out_dir                     ="/home/mikel/Documents/Jecco.jl/data/a_-0.29_b_-0.06_c_0.022/",
-    recover                     = :no,
-    recover_dir                 = "/home/mikel/Documents/Jecco.jl/data/initial/",
-    #checkpoint_dir              = "/home/mikel/Documents/Jecco.jl/data/test/",
->>>>>>> 6f0fdff1cdf7bdb88a76d039c6e820e6ad9ab327
     remove_existing             = true,
 )
 
 integration = Integration(
-    #dt              = 0.001,
-<<<<<<< HEAD
-    tmax            = 150.0,
-=======
-    tmax            = 60.0,
->>>>>>> 6f0fdff1cdf7bdb88a76d039c6e820e6ad9ab327
+    tmax            = 60.,
     ODE_method      = AdS5_3_1.VCABM3(),
     #ODE_method      = AdS5_3_1.AB3(),
     adaptive        = true,

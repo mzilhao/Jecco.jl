@@ -59,6 +59,9 @@ function initial_conditions(ff::VEVTimeSeries, kx::Array{T,2}, ky::Array{T,2}) w
         Tk[i] = 0.0
     end
 
+
+#We can paralelize this using for loops and Threads.@threads macro
+#Probably is going to be faster
     h_t    = im.*zeros(Nkx,Nky)
     h      = Tk./(kx.^2 + ky.^2)
     h[1,1] = Tk[1,1]
