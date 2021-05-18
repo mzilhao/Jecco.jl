@@ -1,50 +1,38 @@
 
 function (filters::Filters)(boundary::Boundary)
-    a4  = geta4(boundary)
-    fx2 = getfx2(boundary)
-    fy2 = getfy2(boundary)
-
-    filters.ko_filter2D_x(a4)
-    filters.ko_filter2D_x(fx2)
-    filters.ko_filter2D_x(fy2)
-    filters.ko_filter2D_y(a4)
-    filters.ko_filter2D_y(fx2)
-    filters.ko_filter2D_y(fy2)
+    filters.ko_filter2D_x(boundary.a4)
+    filters.ko_filter2D_x(boundary.fx2)
+    filters.ko_filter2D_x(boundary.fy2)
+    filters.ko_filter2D_y(boundary.a4)
+    filters.ko_filter2D_y(boundary.fx2)
+    filters.ko_filter2D_y(boundary.fy2)
     nothing
 end
 
 function (filters::Filters)(gauge::Gauge)
-    xi  = getxi(gauge)
-
-    filters.ko_filter2D_x(xi)
-    filters.ko_filter2D_y(xi)
+    filters.ko_filter2D_x(gauge.xi)
+    filters.ko_filter2D_y(gauge.xi)
     nothing
 end
 
-
 function (filters::Filters)(bulkevol::BulkEvolved)
-    B1  = getB1(bulkevol)
-    B2  = getB2(bulkevol)
-    G   = getG(bulkevol)
-    phi = getphi(bulkevol)
-
     @sync begin
-        @spawn filters.ko_filter_x(B1)
-        @spawn filters.ko_filter_x(B2)
-        @spawn filters.ko_filter_x(G)
-        @spawn filters.ko_filter_x(phi)
+        @spawn filters.ko_filter_x(bulkevol.B1)
+        @spawn filters.ko_filter_x(bulkevol.B2)
+        @spawn filters.ko_filter_x(bulkevol.G)
+        @spawn filters.ko_filter_x(bulkevol.phi)
     end
     @sync begin
-        @spawn filters.ko_filter_y(B1)
-        @spawn filters.ko_filter_y(B2)
-        @spawn filters.ko_filter_y(G)
-        @spawn filters.ko_filter_y(phi)
+        @spawn filters.ko_filter_y(bulkevol.B1)
+        @spawn filters.ko_filter_y(bulkevol.B2)
+        @spawn filters.ko_filter_y(bulkevol.G)
+        @spawn filters.ko_filter_y(bulkevol.phi)
     end
     @sync begin
-        @spawn filters.exp_filter(B1)
-        @spawn filters.exp_filter(B2)
-        @spawn filters.exp_filter(G)
-        @spawn filters.exp_filter(phi)
+        @spawn filters.exp_filter(bulkevol.B1)
+        @spawn filters.exp_filter(bulkevol.B2)
+        @spawn filters.exp_filter(bulkevol.G)
+        @spawn filters.exp_filter(bulkevol.phi)
     end
     nothing
 end
@@ -64,18 +52,6 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
         boundary    = getboundary(ff)
         gauge       = getgauge(ff)
 
-```
-In what follows we removed the @threads for the parallelization due to
-suspicion for possible problem with race conditions. The motivation
-comes from a similar problem in the KG branch, that has similar
-structure as below.
-
-The parallelization was implemented via putting @threads after the
-@inbounds in the two loops below.
-
-TODO: fix the parallelization below
-```
-
         # filter after each integration (sub)step
         if t > 0 && integration.filter_poststep
             @inbounds for aa in 1:Nsys
@@ -94,6 +70,8 @@ TODO: fix the parallelization below
         compute_xi_t!(gauge_t, bulkconstrains[Nsys], bulkevols[Nsys], bulkderivs[Nsys],
                       gauge, cache, systems[Nsys], evoleq.gaugecondition)
 
+        # TODO: check if this loop is thread-safe
+        # @inbounds @threads for aa in 1:Nsys
         @inbounds for aa in 1:Nsys
             sys           = systems[aa]
             bulkevol_t    = bulkevols_t[aa]
