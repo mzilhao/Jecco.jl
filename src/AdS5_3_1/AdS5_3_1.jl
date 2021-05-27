@@ -4,6 +4,9 @@ using Jecco
 using LinearAlgebra
 using SparseArrays: SparseMatrixCSC
 using OrdinaryDiffEq
+using Interpolations
+
+
 
 import Base.Threads.@threads
 import Base.Threads.@spawn
@@ -50,6 +53,8 @@ include("VEVs.jl")
 include("utils.jl")
 include("design_new_data.jl")
 include("recipes.jl")
+include("GW.jl")
+
 
 
 # always set the number of BLAS threads to 1 upon loading the module. by default

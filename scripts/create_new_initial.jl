@@ -3,19 +3,19 @@ using FFTW
 using Plots
 gr()
 
-dirname   = "/home/mikel/Documents/Jecco.jl/data/end_data/"
-outdir    = "/home/mikel/Documents/Jecco.jl/data/new_data/"
+dirname   = "/home/mikel/Documents/Jecco.jl/data/bubbles/end_data/"
+outdir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/initial/"
 A_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_A_e_1.318/"
 B_dir     = A_dir
 PS_dir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/"
 
 grid = SpecCartGrid3D(
-    x_min            = -50.,
-    x_max            =  50.,
-    x_nodes          =  400,
-    y_min            = -50.,
-    y_max            =  50.,
-    y_nodes          =  400,
+    x_min            = -75.0,
+    x_max            =  75.0,
+    x_nodes          =  375,
+    y_min            = -50.0,
+    y_max            =  50.0,
+    y_nodes          =  250,
     u_outer_min      =  0.1,
     u_outer_max      =  1.005,
     u_outer_domains  =  1,
@@ -27,9 +27,9 @@ grid = SpecCartGrid3D(
 
 
 potential = AdS5_3_1.Phi8Potential(
-    #alpha   = -0.7,
-    #beta    = 0.16,
-    #gamma   = 0.0,
+    #alpha   = -0.2,
+    #beta    = -0.05,
+    #gamma   = 0.01,
     oophiM2 = -1.38408,
     oophiQ  = 0.1,
 )
@@ -68,13 +68,15 @@ parameters_collision =AdS5_3_1.new_parameters_coll(
 )
 =#
 
-AdS5_3_1.create_checkpoint(io, potential)
+#AdS5_3_1.create_checkpoint(io, potential)
+#AdS5_3_1.initial_numerical_phi(grid, io, potential)
 #AdS5_3_1.shift(io, potential, new_center=new_center)
-#AdS5_3_1.new_box(grid, io, potential)
+AdS5_3_1.new_box(grid, io, potential)
 #AdS5_3_1.change_energy(io, e_new, potential)
 #AdS5_3_1.create_new_data(grid, io, parameters, potential)
 #AdS5_3_1.design_collision(grid, io, parameters_collision)
 #AdS5_3_1.bubble_expansion(grid, io, potential, A_dir, B_dir, PS_dir)
+#AdS5_3_1.join_boxes(io, potential, dirname, dirname)
 
 #=
 phi11 = BulkTimeSeries(dirname,:phi,1)
@@ -83,6 +85,7 @@ phi21 = BulkTimeSeries(outdir,:phi,1)
 phi22 = BulkTimeSeries(outdir,:phi,2)
 =#
 
+convert_to_mathematica(io.out_dir)
 
 
 e     = VEVTimeSeries(outdir, :energy)

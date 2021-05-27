@@ -189,8 +189,8 @@ function construct_bulkevols(ts::OpenPMDTimeSeries, it::Int)
     return AdS5_3_1.BulkPartition((bulk...)), charts
 end
 
-function create_outputs(out_dir, evolvars, chart2D, charts, io, potential, phi0)
-    tinfo      = Jecco.TimeInfo(0, 0.0, 0.0, 0.0)
+function create_outputs(out_dir, evolvars, chart2D, charts, io, potential, phi0; it=0, t=0)
+    tinfo      = Jecco.TimeInfo(it, t, 0.0, 0.0)
     try run(`rm -r $out_dir`) catch end
     run(`mkdir $out_dir`)
     checkpoint = AdS5_3_1.checkpoint_writer(evolvars, chart2D, charts, tinfo, io)
@@ -202,7 +202,7 @@ function create_outputs(out_dir, evolvars, chart2D, charts, io, potential, phi0)
 end
 
 #Creates a checkpoint file with the data of the last iteration in a given folder.
-function create_checkpoint(io, potential)
+function create_checkpoint(io::InOut, potential::Potential)
     ts          = OpenPMDTimeSeries(io.recover_dir, prefix="boundary_")
     it_boundary = ts.iterations[end]
     boundary, _ = construct_boundary(ts, it_boundary)
@@ -481,14 +481,23 @@ function new_box(grid::SpecCartGrid3D, io::InOut, potential::Potential)
     read_dir     = io.recover_dir
 
     ts                = OpenPMDTimeSeries(read_dir, prefix="boundary_")
-    boundary, chart2D = construct_boundary(ts, ts.iterations[end])
+    it_boundary       = ts.iterations[end]
+    boundary, chart2D = construct_boundary(ts, it_boundary)
+    t_boundary        = ts.current_t
 
     ts       = OpenPMDTimeSeries(read_dir, prefix="gauge_")
-    gauge, _ = construct_gauge(ts, ts.iterations[end])
+    it_gauge = ts.iterations[end]
+    gauge, _ = construct_gauge(ts, it_gauge)
+    t_gauge  = ts.current_t
 
     ts                = OpenPMDTimeSeries(read_dir, prefix="bulk_")
-    bulkevols, charts = construct_bulkevols(ts, ts.iterations[end])
+    it_bulk           = ts.iterations[end]
+    bulkevols, charts = construct_bulkevols(ts, it_bulk)
+    t_bulk            = ts.current_t
 
+    it       = max(it_bulk, it_gauge, it_bulk)
+    t        = max(t_bulk, t_gauge, t_bulk)
+    tinfo    = Jecco.TimeInfo(it, t, 0.0, 0.0)
 
     boundary, bulkevols, gauge = new_box(grid, boundary, bulkevols, gauge, chart2D)
 
@@ -510,15 +519,155 @@ function new_box(grid::SpecCartGrid3D, io::InOut, potential::Potential)
             throw(e)
         end
     end
+
+
     atlas   = Atlas(grid)
     systems = SystemPartition(grid)
-    tinfo   = Jecco.TimeInfo(0, 0.0, 0.0, 0.0)
     empty   = Cartesian{1}("u", 0.0, 0.0, 1)
     chart2D = Chart(empty, systems[1].xcoord, systems[1].ycoord)
 
     evolvars = AdS5_3_1.EvolVars(boundary, gauge, bulkevols)
-    create_outputs(io.out_dir, evolvars, chart2D, Tuple(charts), io, potential, phi0)
+    create_outputs(io.out_dir, evolvars, chart2D, Tuple(charts), io, potential, phi0
+                                ,t=t, it=it)
 
+end
+
+function join_boxes(boundary_1::Boundary, boundary_2::Boundary)
+    _, Nx_1, Ny = size(boundary_1.a4)
+    _, Nx_2, _  = size(boundary_2.a4)
+    Nx       = Nx_1 + Nx_2
+
+    a4  = zeros(1, Nx, Ny)
+    fy2 = zeros(1, Nx, Ny)
+    fx2 = zeros(1, Nx, Ny)
+
+    a4[1,1:Nx_1,:]      = boundary_1.a4
+    a4[1,Nx_1+1:end,:]  = boundary_2.a4
+    fx2[1,1:Nx_1,:]     = boundary_1.fx2
+    fx2[1,Nx_1+1:end,:] = boundary_2.fx2
+    fy2[1,1:Nx_1,:]     = boundary_1.fy2
+    fy2[1,Nx_1+1:end,:] = boundary_2.fy2
+
+    Boundary(a4, fx2, fy2)
+end
+
+function join_boxes(gauge_1::Gauge, gauge_2::Gauge)
+    _, Nx_1, Ny = size(gauge_1.xi)
+    _, Nx_2, _  = size(gauge_2.xi)
+    Nx       = Nx_1 + Nx_2
+
+    xi = zeros(1, Nx, Ny)
+
+    xi[1,1:Nx_1,:]     = gauge_1.xi
+    xi[1,Nx_1+1:end,:] = gauge_2.xi
+
+    Gauge(xi)
+end
+
+function join_boxes(bulkevols_1::BulkPartition, bulkevols_2::BulkPartition)
+
+    if length(bulkevols_1) != length(bulkevols_2)
+        @warn "Both bulk grids must be identical"
+        return
+    end
+
+    Nsys          = length(bulkevols_1)
+    _, Nx_1, Ny   = size(bulkevols_1[1].B1)
+    _, Nx_2, _    = size(bulkevols_2[1].B1)
+    Nx            = Nx_1 + Nx_2
+    bulk          = Array{BulkEvolved,1}(undef, Nsys)
+
+    for n in 1:Nsys
+        Nu, _, _  = size(bulkevols_1[n].B1)
+        B1        = zeros(Nu, Nx, Ny)
+        B2        = zeros(Nu, Nx, Ny)
+        G         = zeros(Nu, Nx, Ny)
+        phi       = zeros(Nu, Nx, Ny)
+
+        B1[:,1:Nx_1,:]      = bulkevols_1[n].B1
+        B1[:,Nx_1+1:end,:]  = bulkevols_2[n].B1
+        B2[:,1:Nx_1,:]      = bulkevols_1[n].B2
+        B2[:,Nx_1+1:end,:]  = bulkevols_2[n].B2
+        G[:,1:Nx_1,:]       = bulkevols_1[n].G
+        G[:,Nx_1+1:end,:]   = bulkevols_2[n].G
+        phi[:,1:Nx_1,:]     = bulkevols_1[n].phi
+        phi[:,Nx_1+1:end,:] = bulkevols_2[n].phi
+
+        bulk[n] = BulkEvolved(B1, B2, G, phi)
+    end
+
+    AdS5_3_1.BulkPartition((bulk...))
+end
+
+function join_boxes(chart2D_1::Chart, chart2D_2::Chart)
+    xmin_1   = chart2D_1.coords[2].min
+    xmax_1   = chart2D_1.coords[2].max
+    dx_1     = Jecco.delta(chart2D_1.coords[2])
+    xmin_2   = chart2D_2.coords[2].min
+    xmax_2   = chart2D_2.coords[2].max
+    Nx_1     = chart2D_1.coords[2].nodes
+    Nx_2     = chart2D_2.coords[2].nodes
+    xmax     = xmax_2-xmin_2
+    xmin     = xmin_1-(xmax_1+dx_1)
+    Nx       = Nx_1+Nx_2
+    xcoord   = Cartesian{2}("x", xmin, xmax, Nx)
+    ycoord   = chart2D_1.coords[3]
+    empty    = Cartesian{1}("u", 0.0, 0.0, 1)
+
+    Chart(empty, xcoord, ycoord)
+end
+
+function join_boxes(charts_1::Array{Chart,1}, chart2D::Chart)
+    Nsys   = length(charts_1)
+    charts = Array{Chart,1}(undef, Nsys)
+    for n in 1:Nsys
+        ucoord   = charts_1[n].coords[1]
+        xcoord   = chart2D.coords[2]
+        ycoord   = chart2D.coords[3]
+        charts[n] = Chart(ucoord, xcoord, ycoord)
+    end
+
+    Tuple(charts)
+end
+
+function join_boxes(io::InOut, potential::Potential, dir1::String, dir2::String)
+    ts                    = OpenPMDTimeSeries(dir1, prefix="boundary_")
+    boundary_1, chart2D_1 = construct_boundary(ts, ts.iterations[end])
+    ts                    = OpenPMDTimeSeries(dir2, prefix="boundary_")
+    boundary_2, chart2D_2 = construct_boundary(ts, ts.iterations[end])
+
+    ts         = OpenPMDTimeSeries(dir1, prefix="gauge_")
+    gauge_1, _ = construct_gauge(ts, ts.iterations[end])
+    ts         = OpenPMDTimeSeries(dir2, prefix="gauge_")
+    gauge_2, _ = construct_gauge(ts, ts.iterations[end])
+
+    ts                    = OpenPMDTimeSeries(dir1, prefix="bulk_")
+    bulkevols_1, charts_1 = construct_bulkevols(ts, ts.iterations[end])
+    ts                    = OpenPMDTimeSeries(dir2, prefix="bulk_")
+    bulkevols_2, charts_2 = construct_bulkevols(ts, ts.iterations[end])
+#=
+    if charts_1[1].coords[1] != charts_2[1].coords[1] || charts_1[2].coords[1] != chart_2[2].coords[1]
+        @warn "Bulk grids must coincide for both data sets"
+        return
+    end
+=#
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
+    end
+    chart2D   = join_boxes(chart2D_1, chart2D_2)
+    charts    = join_boxes(charts_1, chart2D)
+    boundary  = join_boxes(boundary_1, boundary_2)
+    gauge     = join_boxes(gauge_1, gauge_2)
+    bulkevols = join_boxes(bulkevols_1, bulkevols_2)
+    evolvars  = AdS5_3_1.EvolVars(boundary, gauge, bulkevols)
+
+    create_outputs(io.out_dir, evolvars, chart2D, charts, io, potential, phi0)
 end
 
 function shift!(boundary::Boundary, bulkevols::BulkPartition, gauge::Gauge, chart2D::Chart, new_center::Tuple{T,T}) where {T<:Real}
@@ -716,7 +865,7 @@ function bubble_expansion(grid::SpecCartGrid3D, io::InOut, potential::Potential,
         G      = BulkTimeSeries(PS_dir, :G, n)[end,:,:,:]
         phi    = similar(phi_PS[end,:,:,:])
         k      = (phi_A-phi_B)./(phi_PS[end,:,hot]-phi_PS[end,:,cold])
-        Nu = length(phi[:,1,1])
+        Nu     = length(phi[:,1,1])
         for i in 1:Nu
             phi[i,:,:] = k[i].*(phi_PS[end,i,:,:].-phi_PS[end,i,cold]).+phi_B[i]
         end
@@ -740,6 +889,56 @@ function bubble_expansion(grid::SpecCartGrid3D, io::InOut, potential::Potential,
     chart2D = Chart(empty, systems[1].xcoord, systems[1].ycoord)
     evolvars = AdS5_3_1.EvolVars(boundary_new, gauge_new, bulkevols_new)
     create_outputs(io.out_dir, evolvars, chart2D, atlas.charts, io, potential, phi0)
+end
+
+function initial_numerical_phi(grid::SpecCartGrid3D, io::InOut, potential::Potential)
+    atlas   = Atlas(grid)
+    systems = SystemPartition(grid)
+    Nsys    = length(systems)
+
+    boundary       = Boundary(grid)
+    gauge          = Gauge(grid)
+    bulkevols      = BulkEvolvedPartition(grid)
+    tinfo          = Jecco.TimeInfo(0, 0.0, 0.0, 0.0)
+    empty          = Cartesian{1}("u", 0.0, 0.0, 1)
+    chart2D        = Chart(empty, systems[1].xcoord, systems[1].ycoord)
+    _, Nx, Ny      = size(chart2D)
+
+    fid    = h5open(string(io.recover_dir,"phi_mathematica.h5"), "r")
+    f      = read(fid)
+
+    phiug1 = f["phi c1"]
+    phiug2 = f["phi c2"]
+    phi0   = f["phi0"]
+    a4     = f["a4"]
+    xi     = f["xi"]
+
+    fill!(boundary.a4, a4)
+    fill!(boundary.fx2, 0.0)
+    fill!(boundary.fy2, 0.0)
+    fill!(gauge.xi, xi)
+    fill!(bulkevols[1].B1, 0.0)
+    fill!(bulkevols[1].B2, 0.0)
+    fill!(bulkevols[1].G, 0.0)
+    fill!(bulkevols[2].B1, 0.0)
+    fill!(bulkevols[2].B2, 0.0)
+    fill!(bulkevols[2].G, 0.0)
+
+    phi1 = bulkevols[1].phi
+    phi2 = bulkevols[2].phi
+
+    @threads for j in 1:Ny
+        for i in 1:Nx
+            phi1[:,i,j] = phiug1
+            phi2[:,i,j] = phiug2
+        end
+    end
+
+    evolvars = AdS5_3_1.EvolVars(boundary, gauge, bulkevols)
+    create_outputs(io.out_dir, evolvars, chart2D, atlas.charts, io, potential, phi0)
+
+    close(fid)
+
 end
 
 #For the moment we change a4 and fx2, fy2 by multiplying the energy by some factor. We can change this so that we decide what
