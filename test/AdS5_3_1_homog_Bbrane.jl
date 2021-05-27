@@ -54,12 +54,12 @@
 
     # inner grid
     bulk_in  = bulkconstrains[1]
-    chart_in = atlas.charts[1]
+    chart_in = atlas[1]
     uu_in    = chart_in.coords[1][:]
 
     # first outer grid
     bulk_out_1  = bulkconstrains[2]
-    chart_out_1 = atlas.charts[2]
+    chart_out_1 = atlas[2]
     uu_out_1    = chart_out_1.coords[1][:]
 
     # take u-derivatives
@@ -89,12 +89,12 @@
     for i in 2:grid.u_outer_domains
         Du_1    = systems[i].Du
         bulk_1  = bulkconstrains[i]
-        chart_1 = atlas.charts[i]
+        chart_1 = atlas[i]
         uu_1    = chart_1.coords[1][:]
 
         Du_2    = systems[i+1].Du
         bulk_2  = bulkconstrains[i+1]
-        chart_2 = atlas.charts[i+1]
+        chart_2 = atlas[i+1]
         uu_2    = chart_2.coords[1][:]
 
         # take u-derivatives
@@ -128,7 +128,7 @@
     for i in 2:grid.u_outer_domains+1
         Du    = systems[i].Du
         bulk  = bulkconstrains[i]
-        chart = atlas.charts[i]
+        chart = atlas[i]
         uu    = chart.coords[1][:]
 
         # take u-derivative

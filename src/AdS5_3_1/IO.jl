@@ -1,7 +1,7 @@
 
-function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInfo,
+function output_writer(u::EvolVars, chart2D::Chart, atlas, tinfo::Jecco.TimeInfo,
                        io::InOut, potential::Potential, phi0)
-    Nsys = length(charts)
+    Nsys = length(atlas)
 
     # output structures
     out_bdry  = Jecco.Output(io.out_dir, "boundary_", tinfo)
@@ -43,10 +43,10 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
     )
     gauge_fields = Jecco.Field("xi", gauge.xi, chart2D)
     bulkevols_fields = ntuple(i -> (
-        Jecco.Field("B1 c=$i",  bulkevols[i].B1,  charts[i]),
-        Jecco.Field("B2 c=$i",  bulkevols[i].B2,  charts[i]),
-        Jecco.Field("G c=$i",   bulkevols[i].G,   charts[i]),
-        Jecco.Field("phi c=$i", bulkevols[i].phi, charts[i])
+        Jecco.Field("B1 c=$i",  bulkevols[i].B1,  atlas[i]),
+        Jecco.Field("B2 c=$i",  bulkevols[i].B2,  atlas[i]),
+        Jecco.Field("G c=$i",   bulkevols[i].G,   atlas[i]),
+        Jecco.Field("phi c=$i", bulkevols[i].phi, atlas[i])
     ), Nsys)
 
     last_output_boundary_t = -io.out_boundary_every_t
@@ -131,10 +131,10 @@ function output_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInf
 end
 
 
-function output_writer(bulkconstrains::BulkPartition{Nsys,BulkConstrained{T}}, charts,
+function output_writer(bulkconstrains::BulkPartition{Nsys,BulkConstrained{T}}, atlas,
                        tinfo::Jecco.TimeInfo, io::InOut, potential::Potential,
                        phi0) where {Nsys,T}
-    @assert Nsys == length(charts)
+    @assert Nsys == length(atlas)
 
     # NamedTuple with potential parameters
     params = parameters(potential)
@@ -145,15 +145,15 @@ function output_writer(bulkconstrains::BulkPartition{Nsys,BulkConstrained{T}}, c
 
     # output fields
     fields = ntuple(i -> (
-        Jecco.Field("S c=$i",    bulkconstrains[i].S,    charts[i]),
-        Jecco.Field("Fx c=$i",   bulkconstrains[i].Fx,   charts[i]),
-        Jecco.Field("Fy c=$i",   bulkconstrains[i].Fy,   charts[i]),
-        Jecco.Field("B1d c=$i",  bulkconstrains[i].B1d,  charts[i]),
-        Jecco.Field("B2d c=$i",  bulkconstrains[i].B2d,  charts[i]),
-        Jecco.Field("Gd c=$i",   bulkconstrains[i].Gd,   charts[i]),
-        Jecco.Field("phid c=$i", bulkconstrains[i].phid, charts[i]),
-        Jecco.Field("Sd c=$i",   bulkconstrains[i].Sd,   charts[i]),
-        Jecco.Field("A c=$i",    bulkconstrains[i].A,    charts[i])
+        Jecco.Field("S c=$i",    bulkconstrains[i].S,    atlas[i]),
+        Jecco.Field("Fx c=$i",   bulkconstrains[i].Fx,   atlas[i]),
+        Jecco.Field("Fy c=$i",   bulkconstrains[i].Fy,   atlas[i]),
+        Jecco.Field("B1d c=$i",  bulkconstrains[i].B1d,  atlas[i]),
+        Jecco.Field("B2d c=$i",  bulkconstrains[i].B2d,  atlas[i]),
+        Jecco.Field("Gd c=$i",   bulkconstrains[i].Gd,   atlas[i]),
+        Jecco.Field("phid c=$i", bulkconstrains[i].phid, atlas[i]),
+        Jecco.Field("Sd c=$i",   bulkconstrains[i].Sd,   atlas[i]),
+        Jecco.Field("A c=$i",    bulkconstrains[i].A,    atlas[i])
     ), Nsys)
 
     last_output_t = -io.out_bulkconstrained_every_t
@@ -195,9 +195,9 @@ function output_writer(bulkconstrains::BulkPartition{Nsys,BulkConstrained{T}}, c
 end
 
 
-function checkpoint_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.TimeInfo,
+function checkpoint_writer(u::EvolVars, chart2D::Chart, atlas, tinfo::Jecco.TimeInfo,
                            io::InOut)
-    Nsys = length(charts)
+    Nsys = length(atlas)
 
     # output structure
     out  = Jecco.Output(io.checkpoint_dir, "checkpoint_it", tinfo)
@@ -214,10 +214,10 @@ function checkpoint_writer(u::EvolVars, chart2D::Chart, charts, tinfo::Jecco.Tim
     )
     gauge_fields = Jecco.Field("xi", gauge.xi, chart2D)
     bulkevols_fields = ntuple(i -> (
-        Jecco.Field("B1 c=$i",  bulkevols[i].B1,  charts[i]),
-        Jecco.Field("B2 c=$i",  bulkevols[i].B2,  charts[i]),
-        Jecco.Field("G c=$i",   bulkevols[i].G,   charts[i]),
-        Jecco.Field("phi c=$i", bulkevols[i].phi, charts[i])
+        Jecco.Field("B1 c=$i",  bulkevols[i].B1,  atlas[i]),
+        Jecco.Field("B2 c=$i",  bulkevols[i].B2,  atlas[i]),
+        Jecco.Field("G c=$i",   bulkevols[i].G,   atlas[i]),
+        Jecco.Field("phi c=$i", bulkevols[i].phi, atlas[i])
     ), Nsys)
 
     function (u::EvolVars)
@@ -317,3 +317,9 @@ function recover(bulkevols::BulkPartition, boundary::Boundary, gauge::Gauge,
 
     ts.current_iteration, ts.current_t
 end
+
+# for non-verbose output
+vprint = x -> nothing
+
+# for verbose output
+# vprint(x) = println(x)

@@ -26,7 +26,7 @@ Base.@kwdef struct BlackBrane{T} <: ID_ConstantAH
     ahf           :: AHF = AHF()
 end
 
-Base.@kwdef struct BlackBranePert{T} <: InitialData
+Base.@kwdef struct BlackBranePert{T} <: ID_ConstantAH
     energy_dens   :: T   = 1.0
     AH_pos        :: T   = 1.0
     phi0          :: T   = 0.0
@@ -103,7 +103,7 @@ function (id::InitialData)(bulkconstrains, bulkevols, bulkderivs, boundary::Boun
     nested(bulkevols, boundary, gauge, evoleq)
 
     # find the Apparent Horizon
-    sigma = similar(getxi(gauge))
+    sigma = similar(gauge.xi)
     fill!(sigma, 1/AH_pos)  # initial guess
     find_AH!(sigma, bulkconstrains[end], bulkevols[end], bulkderivs[end], gauge,
              horizoncache, systems[end], id.ahf)

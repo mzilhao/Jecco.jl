@@ -20,6 +20,9 @@ include("potential.jl")
 
 include("initial_data.jl")
 
+# Kreiss-Oliger dissipation and filtering
+include("dissipation.jl")
+
 # time marching orders
 include("setup_rhs.jl")
 
@@ -72,8 +75,8 @@ end
 
 export SpecCartGrid3D
 export Potential, ZeroPotential, Phi8Potential
-export BlackBrane, BlackBranePert, PhiGaussian_u
-export ConstantAH, AHF
+export BlackBrane, BlackBranePert, BlackBrane_xi1, PhiGaussian_u
+export Advect_xi, ConstantAH, AHF
 export AffineNull, EvolTest0
 export NoDiag, DiagAH
 export BulkEvolved, BulkConstrained, Boundary, Gauge, Bulk

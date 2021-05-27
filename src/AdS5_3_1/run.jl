@@ -8,7 +8,7 @@ function estimate_dtmax(chart::Chart)
     0.8 * min(dx, dy, du_avg)
 end
 function estimate_dtmax(atlas::Atlas)
-    dtmaxs = estimate_dtmax.(atlas.charts)
+    dtmaxs = estimate_dtmax.(atlas)
     minimum(dtmaxs)
 end
 
@@ -64,7 +64,8 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     evolvars  = EvolVars(boundary, gauge, bulkevols)
 
     # function that updates the state vector
-    rhs! = setup_rhs(bulkconstrains, bulkderivs, horizoncache, systems, integration)
+    rhs! = setup_rhs(evolvars, bulkconstrains, bulkderivs, horizoncache,
+                     systems, integration)
 
     #=
     limit the default integrator dtmax and qmax values. see:
@@ -101,11 +102,11 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     chart2D = Chart(empty, systems[1].xcoord, systems[1].ycoord)
 
     # prepare functions to write data
-    output_evol = output_writer(evolvars, chart2D, atlas.charts, tinfo, io,
+    output_evol = output_writer(evolvars, chart2D, atlas, tinfo, io,
                                 evoleq.potential, evoleq.phi0)
 
     if io.out_bulkconstrained_every > 0 || io.out_bulkconstrained_every_t > 0
-        output_constrained = output_writer(bulkconstrains, atlas.charts, tinfo, io,
+        output_constrained = output_writer(bulkconstrains, atlas, tinfo, io,
                                            evoleq.potential, evoleq.phi0)
     else
         output_constrained = x -> nothing
@@ -113,7 +114,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
     # prepare checkpointing function
     if io.checkpoint_every_walltime_hours > 0
-        checkpoint = checkpoint_writer(evolvars, chart2D, atlas.charts, tinfo, io)
+        checkpoint = checkpoint_writer(evolvars, chart2D, atlas, tinfo, io)
     else
         checkpoint = x -> nothing
     end
@@ -155,10 +156,12 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
         Jecco.out_info(tinfo.it, tinfo.t, deltat/telapsed, gauge.xi, "ξ", 1, 200)
 
         # write data
+        vprint("INFO: output data")
         output_evol(u)
         output_constrained(bulkconstrains)
 
         # diagnostics
+        vprint("INFO: diagnostics")
         diag()
 
         # checkpoint
@@ -183,6 +186,8 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
     end
 
+    println("-------------------------------------------------------------")
+    println("Total runtime: $(tinfo.runtime) s")
     println("-------------------------------------------------------------")
     println("Done.")
 end

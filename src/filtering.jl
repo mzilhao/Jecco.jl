@@ -1,11 +1,48 @@
 
+struct KO_Centered{N} end
+
+#= Kreiss-Oliger dissipation
+
+These are operators of the form
+
+  σ (-1)^(ord+3)/2 / 2^(ord+1) h^(ord+1) ∂^(ord+1) / ∂x^(ord+1)
+
+note that, unlike the reference below, we add these directly to the state vector
+(and *not* to its time-derivative)
+
+cf: https://einsteintoolkit.org/thornguide/CactusNumerical/Dissipation/documentation.html
+=#
+function KO_Centered{N}(order::Int, sigma_diss::T, dx::T,
+                        len::Int) where {T<:AbstractFloat,N}
+    @assert (order + 1) % 2 == 0 "Only implemented for odd order."
+
+    derivative_order    = order + 1
+    approximation_order = 2
+    stencil_length      = order + 2
+    stencil_offset      = div(stencil_length-1,2)
+
+    weights = calculate_weights(order + 1, order + 1, 0)
+
+    a   = div(order + 3, 2)
+    s   = (-1)^a
+
+    stencil_coefs = s * sigma_diss / 2^(order + 1) .* weights
+
+    PeriodicFD{T,N,typeof(stencil_coefs)}(derivative_order, approximation_order,
+                                          dx, len, stencil_length,
+                                          stencil_offset, stencil_coefs)
+end
+
 abstract type Filter{T,N} end
 
 #= Kreiss-Oliger dissipation
 
 These are operators of the form
 
-  σ (-1)^(ord+3)/2 / 2^(ord+1) ∂^(ord+1) / ∂x^(ord+1)
+  σ (-1)^(ord+3)/2 / 2^(ord+1) h^(ord+1) ∂^(ord+1) / ∂x^(ord+1)
+
+note that, unlike the reference below, we add these directly to the state vector
+(and *not* to its time-derivative)
 
 cf: https://einsteintoolkit.org/thornguide/CactusNumerical/Dissipation/documentation.html
 =#
@@ -168,8 +205,10 @@ function (filter::ConvFilter{T,M})(f::AbstractArray{T}) where {T,M}
 end
 
 
-# see, eg, "Idempotent filtering in spectral and spectral element methods",
-# Journal of Computational Physics 220 (2006) 41-58
+# see, eg, D. Gottlieb, J.S. Hesthaven, "Spectral methods for hyperbolic
+# problems", Journal of Computational and Applied Mathematics 128 (2001) 83–131,
+# or "Idempotent filtering in spectral and spectral element methods", Journal of
+# Computational Physics 220 (2006) 41-58
 function (filter::FftFilter)(f::AbstractVector)
     M  = length(f) - 1
     id = Threads.threadid()
@@ -180,7 +219,7 @@ function (filter::FftFilter)(f::AbstractVector)
     # compute the DCT-I of f
     mul!(f, filter.fft_plan, cache)
 
-    # in momentum space, act with the filter kernel [eq (2.5) of the paper above]
+    # in momentum space, act with the filter kernel [eq (2.5) of "Idempotent filtering..."]
     # filter.kernel .* f
     @inbounds @simd for i in eachindex(f)
         # the division by 2*(N-1) is to invert the FFT, see below
