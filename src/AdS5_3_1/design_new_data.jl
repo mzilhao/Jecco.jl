@@ -323,7 +323,93 @@ function change_gauge!(sigma::Array{T,3}, grid::SpecCartGrid3D, boundary::Bounda
     #return sigma, bulkevols, bulkconstrains, gauge
 end
 
-function new_box(grid::SpecCartGrid3D, boundary::Boundary , bulkevols::BulkPartition ,gauge::Gauge,
+function same_grid_spacing!(f_new::Array{T,3}, f::Array{T,3}, x_indices::Tuple{Int,Int},
+                                            y_indices::Tuple{Int,Int}) where {T<:Real}
+
+    ifirst, ilast = x_indices
+    jfirst, jlast = y_indices
+    _, Nx, Ny     = size(f)
+
+    if ilast-ifirst+1 != Nx || jlast-jfirst+1 != Ny
+        @warn "Something is wrong with the x and y indices"
+        return
+    end
+
+    f_new[:,1:ifirst,1:jfirst]        .= f[:,1,1]
+    f_new[:,1:ifirst,jfirst:jlast]    .= f[:,1,:]
+    f_new[:,1:ifirst,jlast:end]       .= f[:,1,end]
+    f_new[:,ifirst:ilast,1:jfirst]    .= f[:,:,1]
+    f_new[:,ifirst:ilast,jfirst:jlast] = f
+    f_new[:,ifirst:ilast,jlast:end]    = f[:,:,end]
+    f_new[:,ilast:end,1:jfirst]        = f[:,end,1]
+    f_new[:,ilast:end,jfirst:jlast]    = f[:,end,:]
+    f_new[:,ilast:end,jlast:end]       = f[:,end,end]
+
+    nothing
+end
+
+function same_grid_spacing(grid::SpecCartGrid3D, boundary::Boundary , bulkevols::BulkPartition ,gauge::Gauge, chart2D::Chart)
+    systems = SystemPartition(grid)
+    Nsys    = length(systems)
+    x_new   = systems[1].xcoord[:]
+    y_new   = systems[1].ycoord[:]
+    Nx_new  = length(x_new)
+    Ny_new  = length(y_new)
+    _, x, y = chart2D[:]
+
+    if x_new[1] == x[1] && x_new[end] == x[end] && Nx_new == length(x)
+        if y_new[1] == y[1] && y_new[end] == y[end] && Ny_new == length(y)
+            return boundary, bulkevols, gauge
+        end
+    end
+    boundary_new  = Boundary(grid)
+    gauge_new     = Gauge(grid)
+    bulkevols_new = BulkEvolvedPartition(grid)
+
+    ifirst = findfirst(x_new .>= x[1])
+    jfirst = findfirst(y_new .>= y[1])
+    ilast  = findfirst(x_new .>= x[end])
+    jlast  = findfirst(y_new .>= y[end])
+
+    x_indices = (ifirst, ilast)
+    y_indices = (jfirst, jlast)
+
+    a4      = boundary.a4
+    fx2     = boundary.fx2
+    fy2     = boundary.fy2
+    xi      = gauge.xi
+    a4_new  = boundary_new.a4
+    fx2_new = boundary_new.fx2
+    fy2_new = boundary_new.fy2
+    xi_new  = gauge_new.xi
+
+    @time same_grid_spacing!(a4_new, a4, x_indices, y_indices)
+    @time same_grid_spacing!(fx2_new, fx2, x_indices, y_indices)
+    @time same_grid_spacing!(fy2_new, fy2, x_indices, y_indices)
+    @time same_grid_spacing!(xi_new, xi, x_indices, y_indices)
+
+    for i in 1:Nsys
+        B1      = bulkevols[i].B1
+        B2      = bulkevols[i].B2
+        G       = bulkevols[i].G
+        phi     = bulkevols[i].phi
+        B1_new  = bulkevols_new[i].B1
+        B2_new  = bulkevols_new[i].B2
+        G_new   = bulkevols_new[i].G
+        phi_new = bulkevols_new[i].phi
+
+        @time same_grid_spacing!(B1_new, B1, x_indices, y_indices)
+        @time same_grid_spacing!(B2_new, B2, x_indices, y_indices)
+        @time same_grid_spacing!(G_new, G, x_indices, y_indices)
+        @time same_grid_spacing!(phi_new, phi, x_indices, y_indices)
+
+    end
+
+    boundary_new, bulkevols_new, gauge_new
+
+end
+
+function different_grid_spacing(grid::SpecCartGrid3D, boundary::Boundary , bulkevols::BulkPartition ,gauge::Gauge,
                               chart2D::Chart)
 
     systems = SystemPartition(grid)
@@ -477,7 +563,8 @@ function new_box(grid::SpecCartGrid3D, boundary::Boundary , bulkevols::BulkParti
     return boundary_new, bulkevols_new, gauge_new
 end
 
-function new_box(grid::SpecCartGrid3D, io::InOut, potential::Potential)
+function new_box(grid::SpecCartGrid3D, io::InOut, potential::Potential;
+                            same_grid_spacing::Bool = false)
     read_dir     = io.recover_dir
 
     ts                = OpenPMDTimeSeries(read_dir, prefix="boundary_")
@@ -499,7 +586,11 @@ function new_box(grid::SpecCartGrid3D, io::InOut, potential::Potential)
     t        = max(t_bulk, t_gauge, t_bulk)
     tinfo    = Jecco.TimeInfo(it, t, 0.0, 0.0)
 
-    boundary, bulkevols, gauge = new_box(grid, boundary, bulkevols, gauge, chart2D)
+    if same_grid_spacing
+        boundary, bulkevols, gauge = same_grid_spacing(grid, boundary, bulkevols, gauge, chart2D)
+    else
+        boundary, bulkevols, gauge = different_grid_spacing(grid, boundary, bulkevols, gauge, chart2D)
+    end
 
     phi0 = try
         ts.params["phi0"]
