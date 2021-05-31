@@ -71,7 +71,7 @@ parameters_collision =AdS5_3_1.new_parameters_coll(
 #AdS5_3_1.create_checkpoint(io, potential)
 #AdS5_3_1.initial_numerical_phi(grid, io, potential)
 #AdS5_3_1.shift(io, potential, new_center=new_center)
-AdS5_3_1.new_box(grid, io, potential, same_grid_spacing=true)
+AdS5_3_1.new_box(grid, io, potential, same_spacing=:yes)
 #AdS5_3_1.change_energy(io, e_new, potential)
 #AdS5_3_1.create_new_data(grid, io, parameters, potential)
 #AdS5_3_1.design_collision(grid, io, parameters_collision)

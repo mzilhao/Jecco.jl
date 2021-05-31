@@ -31,9 +31,6 @@ function setup_rhs(tmp::EvolVars, bulkconstrains::BulkPartition{Nsys},
         # vector will be filtered *twice*.
         if t > 0 && integration.filter_poststep
             @inbounds for aa in 1:Nsys
-<<<<<<< HEAD
-                sys = systems[aa]
-=======
                 sys            = systems[aa]
                 bulkevol       = bulkevols[aa]
                 bulkevol_cache = bulkevols_cache[aa]
@@ -41,7 +38,6 @@ function setup_rhs(tmp::EvolVars, bulkconstrains::BulkPartition{Nsys},
                 apply_dissipation!(bulkevol, bulkevol_cache, sys)
 
                 # exponential filter
->>>>>>> upstream/experimental
                 sys.filters(bulkevols[aa])
             end
             apply_dissipation!(boundary, boundary_cache, systems[1])
@@ -60,12 +56,9 @@ function setup_rhs(tmp::EvolVars, bulkconstrains::BulkPartition{Nsys},
         compute_xi_t!(gauge_t, bulkconstrains[Nsys], bulkevols[Nsys], bulkderivs[Nsys],
                       gauge, cache, systems[Nsys], evoleq.gaugecondition)
 
-<<<<<<< HEAD
-=======
         vprint("INFO: bulkevolved_t")
         # TODO: check if this loop is thread-safe
         # @inbounds @threads for aa in 1:Nsys
->>>>>>> upstream/experimental
         @inbounds for aa in 1:Nsys
             sys           = systems[aa]
             bulkevol_t    = bulkevols_t[aa]

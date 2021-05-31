@@ -1,6 +1,7 @@
 using FFTW
 using HDF5
 import Base.Threads.@spawn
+import Base.Threads.@threads
 #using Interpolations
 #Functions that manipulate the output to generate an new initial state from which to run Jecco.
 #It creates a checkpoint file from where to run jecco and also normal files to plot it in mathematica and see
@@ -38,15 +39,16 @@ end
 abstract type XYInterpolator end
  #Interpolator of real functions.
 struct xy_interpolator{T<:Real, TP<:Integer} <: XYInterpolator
-    xmin :: T
-    xmax :: T
-    ymin :: T
-    ymax :: T
-    Nx   :: TP
-    Ny   :: TP
+    xmin      :: T
+    xmax      :: T
+    ymin      :: T
+    ymax      :: T
+    Nx        :: TP
+    Ny        :: TP
+    tolerance :: T
 end
 
-function xy_interpolator(x::Array{T,1}, y::Array{T,1}) where T<:Real
+function xy_interpolator(x::Array{T,1}, y::Array{T,1}; tolerance::T = 0.0) where T<:Real
     xmin = x[1]
     xmax = x[end]+x[2]-x[1]
     ymin = y[1]
@@ -54,7 +56,7 @@ function xy_interpolator(x::Array{T,1}, y::Array{T,1}) where T<:Real
     Nx   = length(x)
     Ny   = length(y)
 
-    xy_interpolator{typeof(xmin),typeof(Nx)}(xmin,xmax,ymin,ymax,Nx,Ny)
+    xy_interpolator{typeof(xmin),typeof(Nx)}(xmin,xmax,ymin,ymax,Nx,Ny,tolerance)
 end
 
 #Careful, FFTW decomposes taking as origin the (xmin,ymin), not the middle of the box as I am used to think.
@@ -68,47 +70,37 @@ function (interpolator::xy_interpolator)(f::Array{T,3}) where {T<:Real}
     k_x  = 2π*fftfreq(interpolator.Nx,1/dx)
     k_y  = 2π*fftfreq(interpolator.Ny,1/dy)
     fk   = im*zeros(Nu,length(k_x),length(k_y))
-    for i in 1:Nu
-        fk[i,:,:] = 1/(interpolator.Nx*interpolator.Ny)*(plan*f[i,:,:])
+    index = Array{Array{CartesianIndex{2},1},1}(undef, Nu)
+    tol = interpolator.tolerance
+    @fastmath @inbounds @threads for i in 1:Nu
+        fk[i,:,:]  = 1/(interpolator.Nx*interpolator.Ny)*(plan*f[i,:,:])
+        index[i]   = findall(abs.(fk[i,:,:]) .> tol)
     end
     function (x::TP, y::TP) where {TP<:Real}
         #@assert interpolator.xmin<=x<=interpolator.xmax
         #@assert interpolator.ymin<=y<=interpolator.ymax
-        sum = im*zeros(Nu)
-        @fastmath @inbounds Threads.@threads for i in 1:Nu
-            for k in 1:length(k_y)
-                for j in 1:length(k_x)
-                    sum[i] += fk[i,j,k]*exp(im*(k_x[j]*(x-xmin)+k_y[k]*(y-ymin)))
-                end
+        sum     = im*zeros(Nu)
+        @fastmath @inbounds @threads for i in 1:Nu
+            for I in index[i]
+                sum[i] += fk[i,I]*exp(im*(k_x[I[1]]*(x-xmin)+k_y[I[2]]*(y-ymin)))
             end
         end
         real(sum)
     end
     #=
-    function (l::Int, x::TP, y::TP) where {TP<:Real}
+    function (x::Array{TP,2}, y::Array{TP,2}) where {TP<:Real}
         #@assert interpolator.xmin<=x<=interpolator.xmax
         #@assert interpolator.ymin<=y<=interpolator.ymax
-        sum = im*0.0
-        @fastmath @inbounds Threads.@threads for k in 1:length(k_y)
-            for j in 1:length(k_x)
-                sum = fk[l,j,k]*exp(im*(k_x[j]*(x-xmin)+k_y[k]*(y-ymin)))
+        Nx, Ny  = size(x)
+        sum     = im*zeros(Nu, Nx, Ny)
+        @fastmath @inbounds @threads for i in 1:Nu
+            for I in index[i]
+                sum[i,:,:] += fk[i,I]*exp.(im*(k_x[I[1]]*(x.-xmin)+k_y[I[2]]*(y.-ymin)))
             end
         end
-        real(sum)
+        real.(sum)
     end
-    function (x::Array{TP,2}, y::Array{TP,2}) where {TP<:Real}
-        Nx, Ny = size(x)
-        sum = im*zeros(Nu, Nx, Ny)
-        @fastmath @inbounds Threads.@threads for i in 1:Nu
-            for k in 1:length(k_y)
-                for j in 1:length(k_x)
-                    sum[i,:,:] += fk[i,j,k]*exp.(im*(k_x[j]*(x.-xmin)+k_y[k]*(y.-ymin)))
-                end
-            end
-        end
-        real(sum)
-    end
-=#
+    =#
 end
 
 function change_B!(B_old::T, u::T, dxi::T, gidx::Int, grid::Int) where T<:Real
@@ -326,9 +318,10 @@ end
 function same_grid_spacing!(f_new::Array{T,3}, f::Array{T,3}, x_indices::Tuple{Int,Int},
                                             y_indices::Tuple{Int,Int}) where {T<:Real}
 
-    ifirst, ilast = x_indices
-    jfirst, jlast = y_indices
-    _, Nx, Ny     = size(f)
+    ifirst, ilast     = x_indices
+    jfirst, jlast     = y_indices
+    _, Nx, Ny         = size(f)
+    _, Nx_new, Ny_new = size(f_new)
 
     if ilast-ifirst+1 != Nx || jlast-jfirst+1 != Ny
         @warn "Something is wrong with the x and y indices"
@@ -336,14 +329,23 @@ function same_grid_spacing!(f_new::Array{T,3}, f::Array{T,3}, x_indices::Tuple{I
     end
 
     f_new[:,1:ifirst,1:jfirst]        .= f[:,1,1]
-    f_new[:,1:ifirst,jfirst:jlast]    .= f[:,1,:]
+    @fastmath @inbounds @threads for i in 1:ifirst
+        f_new[:,i,jfirst:jlast]       .= @view f[:,1,:]
+    end
     f_new[:,1:ifirst,jlast:end]       .= f[:,1,end]
-    f_new[:,ifirst:ilast,1:jfirst]    .= f[:,:,1]
-    f_new[:,ifirst:ilast,jfirst:jlast] = f
-    f_new[:,ifirst:ilast,jlast:end]    = f[:,:,end]
-    f_new[:,ilast:end,1:jfirst]        = f[:,end,1]
-    f_new[:,ilast:end,jfirst:jlast]    = f[:,end,:]
-    f_new[:,ilast:end,jlast:end]       = f[:,end,end]
+
+    @fastmath @inbounds @threads for i in ifirst:ilast
+        n = i-ifirst+1
+        f_new[:,i,1:jfirst]           .= f[:,n,1]
+        f_new[:,i,jlast:end]          .= f[:,n,end]
+    end
+    f_new[:,ifirst:ilast,jfirst:jlast] = @view f[:,:,:]
+
+    f_new[:,ilast:end,1:jfirst]       .= f[:,end,1]
+    @fastmath @inbounds @threads for i in ilast:Nx_new
+        f_new[:,i,jfirst:jlast]       .= @view f[:,end,:]
+    end
+    f_new[:,ilast:end,jlast:end]      .= f[:,end,end]
 
     nothing
 end
@@ -499,7 +501,7 @@ function different_grid_spacing(grid::SpecCartGrid3D, boundary::Boundary , bulke
             @time xi_new[:,ilast+1:end,jlast+1:end]  .= xi(x[1], y[1])
         end
 
-        @time @fastmath @inbounds Threads.@threads for j in ifirst:ilast
+        @time @fastmath @inbounds @threads for j in ifirst:ilast
             B1_new[:,j,1:jfirst-1]  .= B1(x_new[j], y[1])
             B2_new[:,j,1:jfirst-1]  .= B2(x_new[j], y[1])
             G_new[:,j,1:jfirst-1]   .= G(x_new[j], y[1])
@@ -522,7 +524,7 @@ function different_grid_spacing(grid::SpecCartGrid3D, boundary::Boundary , bulke
             end
         end
 
-        @time @fastmath @inbounds Threads.@threads for k in jfirst:jlast
+        @time @fastmath @inbounds @threads for k in jfirst:jlast
             B1_new[:,1:ifirst-1,k]  .= B1(x[1], y_new[k])
             B2_new[:,1:ifirst-1,k]  .= B2(x[1], y_new[k])
             G_new[:,1:ifirst-1,k]   .= G(x[1], y_new[k])
@@ -545,7 +547,8 @@ function different_grid_spacing(grid::SpecCartGrid3D, boundary::Boundary , bulke
             end
         end
 
-        @time @fastmath @inbounds Threads.@threads for k in jfirst:jlast
+        @time @fastmath @inbounds
+         @threads for k in jfirst:jlast
             for j in ifirst:ilast
                 B1_new[:,j,k]  = B1(x_new[j], y_new[k])
                 B2_new[:,j,k]  = B2(x_new[j], y_new[k])
@@ -564,7 +567,7 @@ function different_grid_spacing(grid::SpecCartGrid3D, boundary::Boundary , bulke
 end
 
 function new_box(grid::SpecCartGrid3D, io::InOut, potential::Potential;
-                            same_grid_spacing::Bool = false)
+                            same_spacing::Symbol = :no)
     read_dir     = io.recover_dir
 
     ts                = OpenPMDTimeSeries(read_dir, prefix="boundary_")
@@ -586,7 +589,7 @@ function new_box(grid::SpecCartGrid3D, io::InOut, potential::Potential;
     t        = max(t_bulk, t_gauge, t_bulk)
     tinfo    = Jecco.TimeInfo(it, t, 0.0, 0.0)
 
-    if same_grid_spacing
+    if same_spacing == :yes
         boundary, bulkevols, gauge = same_grid_spacing(grid, boundary, bulkevols, gauge, chart2D)
     else
         boundary, bulkevols, gauge = different_grid_spacing(grid, boundary, bulkevols, gauge, chart2D)
