@@ -412,7 +412,7 @@ function same_grid_spacing(grid::SpecCartGrid3D, boundary::Boundary , bulkevols:
 end
 
 function different_grid_spacing(grid::SpecCartGrid3D, boundary::Boundary , bulkevols::BulkPartition ,gauge::Gauge,
-                              chart2D::Chart)
+                              chart2D::Chart, tolerance::Real)
 
     systems = SystemPartition(grid)
     Nsys    = length(systems)
@@ -428,7 +428,7 @@ function different_grid_spacing(grid::SpecCartGrid3D, boundary::Boundary , bulke
         end
     end
 
-    interp = xy_interpolator(x,y)
+    interp = xy_interpolator(x,y, tolerance=tolerance)
     a4     = interp(boundary.a4)
     fx2    = interp(boundary.fx2)
     fy2    = interp(boundary.fy2)
@@ -547,8 +547,7 @@ function different_grid_spacing(grid::SpecCartGrid3D, boundary::Boundary , bulke
             end
         end
 
-        @time @fastmath @inbounds
-         @threads for k in jfirst:jlast
+        @time @fastmath @inbounds @threads for k in jfirst:jlast
             for j in ifirst:ilast
                 B1_new[:,j,k]  = B1(x_new[j], y_new[k])
                 B2_new[:,j,k]  = B2(x_new[j], y_new[k])
@@ -567,7 +566,7 @@ function different_grid_spacing(grid::SpecCartGrid3D, boundary::Boundary , bulke
 end
 
 function new_box(grid::SpecCartGrid3D, io::InOut, potential::Potential;
-                            same_spacing::Symbol = :no)
+                            same_spacing::Symbol = :no, tolerance::Real = 0.0)
     read_dir     = io.recover_dir
 
     ts                = OpenPMDTimeSeries(read_dir, prefix="boundary_")
@@ -592,7 +591,7 @@ function new_box(grid::SpecCartGrid3D, io::InOut, potential::Potential;
     if same_spacing == :yes
         boundary, bulkevols, gauge = same_grid_spacing(grid, boundary, bulkevols, gauge, chart2D)
     else
-        boundary, bulkevols, gauge = different_grid_spacing(grid, boundary, bulkevols, gauge, chart2D)
+        boundary, bulkevols, gauge = different_grid_spacing(grid, boundary, bulkevols, gauge, chart2D, tolerance)
     end
 
     phi0 = try
@@ -1034,235 +1033,6 @@ function initial_numerical_phi(grid::SpecCartGrid3D, io::InOut, potential::Poten
     close(fid)
 
 end
-
-#For the moment we change a4 and fx2, fy2 by multiplying the energy by some factor. We can change this so that we decide what
-#profile is used for these functions. We mantain the cold phase to its original value. Enbed in a bigger box by extending the edge value
-function create_new_data(grid::SpecCartGrid3D, io::InOut, new_parameters::NewParameters, potential::Potential)
-    dirname   = io.recover_dir
-    atlas     = Atlas(grid)
-    systems   = SystemPartition(grid)
-    Nsys      = length(systems)
-
-    boundary       = Boundary(grid)
-    gauge          = Gauge(grid)
-    bulkevols      = BulkEvolvedPartition(grid)
-    tinfo          = Jecco.TimeInfo(0, 0.0, 0.0, 0.0)
-    empty          = Cartesian{1}("u", 0.0, 0.0, 1)
-    chart2D        = Chart(empty, systems[1].xcoord, systems[1].ycoord)
-    _,x_new,y_new  = chart2D[:]
-    Nx_new         = length(x_new)
-    Ny_new         = length(y_new)
-
-    a4    = BoundaryTimeSeries(dirname,:a4)
-    fx2   = BoundaryTimeSeries(dirname,:fx2)
-    fy2   = BoundaryTimeSeries(dirname,:fy2)
-    phi2  = BoundaryTimeSeries(dirname,:phi2)
-    xi    = XiTimeSeries(dirname)
-    _,x,y = get_coords(a4,1,:,:)
-    xmin  = x[1]
-    xmax  = x[end]
-    ymin  = y[1]
-    ymax  = y[end]
-    Nx    = length(x)
-    Ny    = length(y)
-    #Old runs do not have ts.params field, I set it by hand to what we usually use.
-    phi0 = try
-        a4.ts.params["phi0"]
-    catch e
-        if isa(e, KeyError)
-            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
-        else
-            throw(e)
-        end
-    end
-    oophiM2 = try
-        a4.ts.params["oophiM2"]
-    catch e
-        if isa(e, KeyError)
-            0.0   # if "oophiM2" is not found in the params Dict, set oophiM2 = 0
-        else
-            throw(e)
-        end
-    end
-    #potential = Phi8Potential(oophiM2=-1.0, oophiQ=0.1,)
-    #try
-    #    phi0  = a4.ts.params["phi0"]
-    #    potential = Phi8Potential(oophiM2=a4.ts.params["oophiM2"], oophiQ=a4.ts.params["oophiQ"],)
-    #catch
-    #    @warn "No ts.params field, setting phi0=1.0, oophiM2=-1,0 and oophiQ=0.1"
-    #end
-
-    interp = xy_interpolator(x,y)
-
-    a4_inter   = interp(a4[:,:,:])
-    fx2_inter  = interp(fx2[:,:,:])
-    fy2_inter  = interp(fy2[:,:,:])
-    phi2_inter = interp(phi2[:,:,:])
-    xi_inter   = interp(xi[:,:,:])
-
-    a4_new   = zeros(Nx_new,Ny_new)
-    fx2_new  = zeros(Nx_new,Ny_new)
-    fy2_new  = zeros(Nx_new,Ny_new)
-    phi2_new = zeros(Nx_new,Ny_new)
-
-    u = Array{Array{Real,1},1}(undef,Nsys)
-    println("We start the insertion in the new box")
-
-    for i in 1:Nsys
-        B1  = BulkTimeSeries(dirname, :B1, i)
-        B2  = BulkTimeSeries(dirname, :B2, i)
-        G   = BulkTimeSeries(dirname, :G, i)
-        phi = BulkTimeSeries(dirname, :phi, i)
-        u[i]   = systems[i].ucoord[:]
-
-        B1_inter  = interp(B1[end,:,:,:])
-        B2_inter  = interp(B2[end,:,:,:])
-        G_inter   = interp(G[end,:,:,:])
-        phi_inter = interp(phi[end,:,:,:])
-        for l in 1:Ny_new
-            for k in 1:Nx_new
-                if xmin<=x_new[k]<=xmax && ymin<=y_new[l]<=ymax
-                    bulkevols[i].B1[:,k,l]  = B1_inter(x_new[k],y_new[l])
-                    bulkevols[i].B2[:,k,l]  = B2_inter(x_new[k],y_new[l])
-                    bulkevols[i].G[:,k,l]   = G_inter(x_new[k],y_new[l])
-                    bulkevols[i].phi[:,k,l] = phi_inter(x_new[k],y_new[l])
-                    if i == 1
-                        a4_new[k,l]     = a4_inter(x_new[k],y_new[l])[1]
-                        fx2_new[k,l]    = fx2_inter(x_new[k],y_new[l])[1]
-                        fy2_new[k,l]    = fy2_inter(x_new[k],y_new[l])[1]
-                        phi2_new[k,l]   = phi2_inter(x_new[k],y_new[l])[1]
-                        gauge.xi[1,k,l] = xi_inter(x_new[k],y_new[l])[1]
-                    end
-                elseif xmin<=x_new[k]<=xmax
-                    bulkevols[i].B1[:,k,l]  = B1_inter(x_new[k],ymin)
-                    bulkevols[i].B2[:,k,l]  = B2_inter(x_new[k],ymin)
-                    bulkevols[i].G[:,k,l]   = G_inter(x_new[k],ymin)
-                    bulkevols[i].phi[:,k,l] = phi_inter(x_new[k],ymin)
-                    if i == 1
-                        a4_new[k,l]     = a4_inter(x_new[k],ymin)[1]
-                        fx2_new[k,l]    = fx2_inter(x_new[k],ymin)[1]
-                        fy2_new[k,l]    = fy2_inter(x_new[k],ymin)[1]
-                        phi2_new[k,l]   = phi2_inter(x_new[k],ymin)[1]
-                        gauge.xi[1,k,l] = xi_inter(x_new[k],ymin)[1]
-                    end
-                elseif ymin<=y_new[l]<=ymax
-                    bulkevols[i].B1[:,k,l]  = B1_inter(xmin,y_new[l])
-                    bulkevols[i].B2[:,k,l]  = B2_inter(xmin,y_new[l])
-                    bulkevols[i].G[:,k,l]   = G_inter(xmin,y_new[l])
-                    bulkevols[i].phi[:,k,l] = phi_inter(xmin,y_new[l])
-                    if i == 1
-                        a4_new[k,l]     = a4_inter(xmin,y_new[l])[1]
-                        fx2_new[k,l]    = fx2_inter(xmin,y_new[l])[1]
-                        fy2_new[k,l]    = fy2_inter(xmin,y_new[l])[1]
-                        phi2_new[k,l]   = phi2_inter(xmin,y_new[l])[1]
-                        gauge.xi[1,k,l] = xi_inter(xmin,y_new[l])[1]
-                    end
-                else
-                    bulkevols[i].B1[:,k,l]  = B1[end,:,1,1]
-                    bulkevols[i].B2[:,k,l]  = B2[end,:,1,1]
-                    bulkevols[i].G[:,k,l]   = G[end,:,1,1]
-                    bulkevols[i].phi[:,k,l] = phi[end,:,1,1]
-                    if i == 1
-                        a4_new[k,l]   = a4[end,1,1]
-                        fx2_new[k,l]  = fx2[end,1,1]
-                        fy2_new[k,l]  = fy2[end,1,1]
-                        phi2_new[k,l] = phi2[end,1,1]
-                        gauge.xi[1,k,l] = xi[end,1,1]
-                    end
-                end
-            end
-        end
-    end
-    println("Already set in the new box")
-    e       = AdS5_3_1.compute_energy.(a4_new, phi2_new, phi0, oophiM2)
-    e_new   = new_parameters.e_new
-    fx20    = new_parameters.fx20
-    fy20    = new_parameters.fy20
-#change of energy
-    if e_new != -1.0
-        plan   = plan_rfft(e)
-        e0     = real(1/(Nx_new*Ny_new)*(plan*e)[1])
-        a40    = real(1/(Nx_new*Ny_new)*(plan*a4_new)[1])
-        #k      = (-4/3*(e_new-e0)*phi0^4-maximum(a4_new)+a40)/(a40-maximum(a4_new))
-        #a4_new = k*(a4_new.-maximum(a4_new)).+maximum(a4_new)
-        a4_new  = a4_new.+4/3*(e0-e_new)
-    end
-#boosting, with static cold phase (edge).
-    if new_parameters.boostx
-        boundary.fx2[1,:,:] .= fx2_new
-        fx2 = fx20*(e)#.-minimum(e))
-        kappa = 0.1/fx20
-    else
-        boundary.fx2[1,:,:] .= fx2_new
-    end
-    if new_parameters.boosty
-        boundary.fy2[1,:,:] .= fy20.*(e.-minimum(e))
-    else
-        boundary.fy2[1,:,:] .= fy2_new
-    end
-#We add the specified a4 cos perturbation
-    ampx    = new_parameters.a4_ampx
-    ampy    = new_parameters.a4_ampy
-    kx      = new_parameters.a4_kx
-    ky      = new_parameters.a4_ky
-    xmin    = grid.x_min
-    xmax    = grid.x_max
-    ymin    = grid.y_min
-    ymax    = grid.y_max
-    xmid    = (xmax+xmin)/2
-    ymid    = (ymax+ymin)/2
-
-    plan   = plan_rfft(a4_new)
-    a40    = real(1/(Nx_new*Ny_new)*(plan*a4_new)[1])
-    for j in 1:Ny_new
-        for i in 1:Nx_new
-            x = x_new[i]
-            y = y_new[j]
-
-            boundary.a4[1,i,j] = a4_new[i,j]-a40*(ampx*cos(2*π*kx*(x-xmid)/(xmax-xmin))
-                                                  +ampy*cos(2*π*ky*(y-ymid)/(ymax-ymin)))
-        end
-    end
-
-#=
-    #TODO: Change gauge
-    u_AH = new_parameters.u_AH
-    evoleq = AffineNull(phi0=phi0, potential=potential, gaugecondition = ConstantAH(u_AH = 1.0),)
-
-    sigma  = 0.5*ones(1,Nx_new,Ny_new)
-    change_gauge!(sigma, grid, boundary, gauge, bulkevols, evoleq, systems, u_AH)
-    epsilon = 0
-    println("epsilon = $epsilon")
-    evoleq  = AffineNull(phi0=phi0, potential=potential, gaugecondition = ConstantAH(u_AH = u_AH),)
-
-    while epsilon < 1.0
-        n     = 0
-        #kappa = kappa/0.8
-        sigma = 1/(2.0*u[end][end])*ones(1,Nx_new,Ny_new)
-        while maximum(1 ./sigma) >= u[end][end]+0.005
-            if n != 0
-                kappa = kappa*0.8
-            end
-            n += 1
-            aux                 = epsilon+kappa
-            boundary.fx2[1,:,:] = fx2*aux^0.4
-#            boundary.fy2 .= fy2*aux^0.5
-            try
-                change_gauge!(sigma, grid, boundary, gauge, bulkevols, evoleq, systems, u_AH)
-            catch
-
-            end
-        end
-        epsilon += kappa
-        println("epsilon = $epsilon")
-        println("max fx2 = $(maximum(boundary.fx2))")
-    end
-=#
-    evolvars = AdS5_3_1.EvolVars(boundary, gauge, bulkevols)
-    create_outputs(io.out_dir, evolvars, chart2D, atlas.charts, io, potential, phi0)
-    #return bulkevols, boundary, gauge
-end
-
 
 #We take 2 equilibrium configurations and we join them along some side and boost them at will.
 #Both configuration should have the same u coordinate settings, at least until we implement changes in create_new_data()
