@@ -3,35 +3,37 @@ using FFTW
 using Plots
 gr()
 
-dirname   = "/home/mikel/Documents/Jecco.jl/data/bubbles/end_data/"
-outdir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/initial/"
-A_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_A_e_1.318/"
-B_dir     = A_dir
-PS_dir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/"
+dirname   = "/Users/apple/Documents/Jecco.jl/data/end_data/"
+outdir    = "/Users/apple/Documents/Jecco.jl/data/initial/"
+#A_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_A_e_1.318/"
+#B_dir     = A_dir
+#PS_dir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/"
 
 grid = SpecCartGrid3D(
-    x_min            = -100.0,
-    x_max            =  100.0,
-    x_nodes          =  500,
-    y_min            = -70.0,
-    y_max            =  70.0,
-    y_nodes          =  350,
+    x_min            = -0.5,
+    x_max            =  0.5,
+    x_nodes          =  6,
+    y_min            = -0.5,
+    y_max            =  0.5,
+    y_nodes          =  6,
     u_outer_min      =  0.1,
     u_outer_max      =  1.005,
     u_outer_domains  =  1,
-    u_outer_nodes    =  48,
+    u_outer_nodes    =  64,
     u_inner_nodes    =  12,
     fd_order         =  4,
     sigma_diss       =  0.2,
 )
 
 
-potential = AdS5_3_1.Phi8Potential(
-    #alpha   = -0.2,
-    #beta    = -0.05,
-    #gamma   = 0.01,
+potential = AdS5_3_1.PhiAlphaBetaPotential(
+    #alpha   = -0.013,
+    #beta    = 8,
+    #gamma   = 0.1,
     oophiM2 = -1.38408,
     oophiQ  = 0.1,
+    alpha   = -0.013,
+    beta    = 8,
 )
 
 
@@ -69,9 +71,9 @@ parameters_collision =AdS5_3_1.new_parameters_coll(
 =#
 
 #AdS5_3_1.create_checkpoint(io, potential)
-#AdS5_3_1.initial_numerical_phi(grid, io, potential)
+AdS5_3_1.initial_numerical_phi(grid, io, potential)
 #AdS5_3_1.shift(io, potential, new_center=new_center)
-AdS5_3_1.new_box(grid, io, potential, same_spacing=:yes)
+#AdS5_3_1.new_box(grid, io, potential, same_spacing=:no)
 #AdS5_3_1.change_energy(io, e_new, potential)
 #AdS5_3_1.create_new_data(grid, io, parameters, potential)
 #AdS5_3_1.design_collision(grid, io, parameters_collision)
@@ -90,9 +92,9 @@ convert_to_mathematica(io.out_dir)
 
 e     = VEVTimeSeries(outdir, :energy)
 px    = VEVTimeSeries(outdir, :px)
-e_A   = VEVTimeSeries(A_dir, :energy)
+#e_A   = VEVTimeSeries(A_dir, :energy)
 #e_B   = VEVTimeSeries(B_dir, :energy)
-e_PS  = VEVTimeSeries(PS_dir, :energy)
+#e_PS  = VEVTimeSeries(PS_dir, :energy)
 #Jx = VEVTimeSeries(outdir,:Jx)
 #Jy = VEVTimeSeries(outdir,:Jy)
 
@@ -131,8 +133,8 @@ println("Nx, Ny = $(length(x)), $(length(y))")
 println("Average Energy Density = $e0")
 println("Maximum energy = $(maximum(e[end,:,:]))")
 println("Minimum energy = $(minimum(e[end,:,:]))")
-println("A energy = $(e_A[end,1,1])")
-println("B energy = $(minimum(e_PS[end,:,:]))")
+#println("A energy = $(e_A[end,1,1])")
+#println("B energy = $(minimum(e_PS[end,:,:]))")
 println("Maximum px = $(maximum(px[end,:,:]))")
 println("Minimum px = $(minimum(px[end,:,:]))")
 #println("Average x momenta = $Jx0")
