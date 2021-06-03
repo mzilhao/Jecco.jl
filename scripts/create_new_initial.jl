@@ -3,8 +3,8 @@ using FFTW
 using Plots
 gr()
 
-dirname   = "/Users/apple/Documents/Jecco.jl/data/end_data/"
-outdir    = "/Users/apple/Documents/Jecco.jl/data/initial/"
+dirname   = "/home/mikel/Documents/Jecco.jl/data/new_potential/end_data/"
+outdir    = "/home/mikel/Documents/Jecco.jl/data/new_data/"
 #A_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_A_e_1.318/"
 #B_dir     = A_dir
 #PS_dir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/"
@@ -17,7 +17,7 @@ grid = SpecCartGrid3D(
     y_max            =  0.5,
     y_nodes          =  6,
     u_outer_min      =  0.1,
-    u_outer_max      =  1.005,
+    u_outer_max      =  2.005,
     u_outer_domains  =  1,
     u_outer_nodes    =  64,
     u_inner_nodes    =  12,
@@ -27,13 +27,11 @@ grid = SpecCartGrid3D(
 
 
 potential = AdS5_3_1.PhiAlphaBetaPotential(
-    #alpha   = -0.013,
-    #beta    = 8,
-    #gamma   = 0.1,
-    oophiM2 = -1.38408,
-    oophiQ  = 0.1,
-    alpha   = -0.013,
+    alpha   = -0.01,
     beta    = 8,
+    #gamma   = 0.1,
+    oophiM2 = -1.68662506324844,
+    oophiQ  = 0.2,
 )
 
 
@@ -41,7 +39,7 @@ io = InOut(recover_dir = dirname, out_dir = outdir, checkpoint_dir = outdir,
            out_boundary_every=1, out_gauge_every=1,out_bulk_every=1,remove_existing = true,)
 
 new_center = (10.,10.)
-e_new      = 1.3
+e_new      = 1.2
 
 #=
 parameters = AdS5_3_1.new_parameters(

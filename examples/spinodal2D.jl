@@ -11,24 +11,25 @@ grid = SpecCartGrid3D(
     u_outer_min      =  0.1,
     u_outer_max      =  1.005,
     u_outer_domains  =  1,
-    u_outer_nodes    =  64,
+    u_outer_nodes    =  48,
     u_inner_nodes    =  12,
     fd_order         =  4,
     sigma_diss       =  0.2,
 )
 
-potential = AdS5_3_1.PhiPoli(
-    alpha   = 0.0,
-    beta    = -0.4,
-    gamma   = 0.1,
-    #oophiM2 = -1.38408,
-    #oophiQ  = 0.1,
+potential = AdS5_3_1.PhiAlphaBetaPotential(
+    alpha   = -0.01,
+    beta    = 8,
+    #gamma   = 0.1,
+    oophiM2 = -1.68662506324844,
+    oophiQ  = 0.2,
 )
 
 id = BlackBranePert(
-    energy_dens = -0.367007,
+    energy_dens = 0.5,
     phi0        = 1.0,
-    phi2        = 1.08642,
+    phi2        = 1.1,
+    oophiM2     = potential.oophiM2,
     #phi5        = 1.1,
     #a4_ampx     = -0.05,
     #a4_kx       = 1,
@@ -50,7 +51,7 @@ diag = DiagAH(
     find_AH_every_t    = 1.0,
 )
 
-outdir = "/home/mikel/Documents/Jecco.jl/data/new_potential/b_-0.4_c_0.1"
+outdir = "/home/mikel/Documents/Jecco.jl/data/new_potential/superpotential8/phiM_0.77_phiQ_5_a_-0.01"
 
 io = InOut(
     out_boundary_every_t        = 0.5,
@@ -59,7 +60,7 @@ io = InOut(
     #out_bulkconstrained_every_t = 5.0,
     checkpoint_every_walltime_hours = 1,
     out_dir                     = outdir,
-    recover                     = :yes,
+    recover                     = :no,
     recover_dir                 = "/home/mikel/Documents/Jecco.jl/data/new_data/",
     checkpoint_dir              = outdir,
     remove_existing             = true,
