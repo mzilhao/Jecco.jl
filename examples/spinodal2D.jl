@@ -17,24 +17,24 @@ grid = SpecCartGrid3D(
     sigma_diss       =  0.2,
 )
 
-potential = AdS5_3_1.PhiAlphaBetaPotential(
-    alpha   = -0.01,
-    beta    = 8,
+potential = AdS5_3_1.Phi8Potential(
+    #alpha   = -0.01,
+    #beta    = 8,
     #gamma   = 0.1,
-    oophiM2 = -1.68662506324844,
-    oophiQ  = 0.2,
+    oophiM2 = -1.38408,
+    oophiQ  = 0.1,
 )
 
 id = BlackBranePert(
-    energy_dens = 0.5,
+    energy_dens = 0.13,
     phi0        = 1.0,
-    phi2        = 1.1,
+    phi2        = 0.8,
     oophiM2     = potential.oophiM2,
     #phi5        = 1.1,
     #a4_ampx     = -0.05,
     #a4_kx       = 1,
-    xi0         = 0.2,
-    AH_pos      = 1.0,
+    xi0         = 0.02,
+    AH_pos      = 0.95,
     xmax        = grid.x_max,
     xmin        = grid.x_min,
     ymin        = grid.y_min,
@@ -51,7 +51,7 @@ diag = DiagAH(
     find_AH_every_t    = 1.0,
 )
 
-outdir = "/home/mikel/Documents/Jecco.jl/data/new_potential/superpotential8/phiM_0.77_phiQ_5_a_-0.01"
+outdir = "/Users/apple/Documents/Jecco.jl/data/bubbles/state_B_e_0.13"
 
 io = InOut(
     out_boundary_every_t        = 0.5,

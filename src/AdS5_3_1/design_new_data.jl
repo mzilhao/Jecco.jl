@@ -969,6 +969,7 @@ function change_energy(io::InOut, e_new::T, potential::Potential) where {T<:Real
     catch e
         if isa(e, KeyError)
             0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+            @warn "phi0 not found, setting it to 0.0"
         else
             throw(e)
         end
@@ -979,6 +980,7 @@ function change_energy(io::InOut, e_new::T, potential::Potential) where {T<:Real
     catch e
         if isa(e, KeyError)
             0.0   # if "oophiM2" is not found in the params Dict, set oophiM2 = 0
+            @warn "oophhiM2 not found, setting it to 0.0"
         else
             throw(e)
         end
@@ -1004,7 +1006,8 @@ end
 #For the moment we use the same grid as in the phase separation file and we will use create_new_data to change anything at the end.
 #We use the B's and G of the PS state, and we modify the scalar fields and boundary data. f2 to 0 for the moment. Center the low energy
 #phase in the middle of the box, so that the metaestable state will lie outside
-function bubble_expansion(grid::SpecCartGrid3D, io::InOut, potential::Potential, A_dir::String, B_dir::String, PS_dir::String)
+function bubble_expansion(grid::SpecCartGrid3D, io::InOut, potential::Potential, A_dir::String, B_dir::String, PS_dir::String;
+                                    same_spacing::Symbol = :no)
     atlas   = Atlas(grid)
     systems = SystemPartition(grid)
     Nsys    = length(systems)
@@ -1056,7 +1059,12 @@ function bubble_expansion(grid::SpecCartGrid3D, io::InOut, potential::Potential,
     end
 
     bulkevols = AdS5_3_1.BulkPartition((bulk...))
-    boundary_new, bulkevols_new, gauge_new = new_box(grid, boundary, bulkevols, gauge, chart2D)
+    #boundary_new, bulkevols_new, gauge_new = new_box(grid, boundary, bulkevols, gauge, chart2D)
+    if same_spacing == :yes
+        boundary_new, bulkevols_new, gauge_new = same_grid_spacing(grid, boundary, bulkevols, gauge, chart2D)
+    else
+        boundary_new, bulkevols_new, gauge_new = different_grid_spacing(grid, boundary, bulkevols, gauge, chart2D)
+    end
 
     phi0 = try
         a4_PS.ts.params["phi0"]
