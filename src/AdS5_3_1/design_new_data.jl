@@ -952,7 +952,8 @@ function shift(io::InOut, potential::Potential; new_center::Tuple{T,T}=(0,0)) wh
     create_outputs(io.out_dir, evolvars, chart2D, Tuple(charts), io, potential, phi0)
 end
 
-function change_energy(io::InOut, e_new::T, potential::Potential) where {T<:Real}
+function change_energy(io::InOut, e_new::T, potential::Potential;
+                                        fix::Symbol=:no) where {T<:Real}
     read_dir     = io.recover_dir
 
     ts                = OpenPMDTimeSeries(read_dir, prefix="boundary_")
@@ -994,13 +995,128 @@ function change_energy(io::InOut, e_new::T, potential::Potential) where {T<:Real
     plan    = plan_rfft(e)
     e0      = real(1/(Nx*Ny)*(plan*e)[1])
     a40     = real(1/(Nx*Ny)*(plan*a4)[1])
-    #k      = (-4/3*(e_new-e0)*phi0^4-maximum(a4)+a40)/(a40-maximum(a4))
-    #a4 = k*(a4.-maximum(a4)).+maximum(a4)
-    a4  .= a4.+4/3*(e0-e_new)
+
+    if fix == :low
+        k      = (-4/3*(e_new-e0)*phi0^4-maximum(a4)+a40)/(a40-maximum(a4))
+        a4    .= k*(a4.-maximum(a4)).+maximum(a4)
+    elseif fix == :high
+        k      = (-4/3*(e_new-e0)*phi0^4-minimum(a4)+a40)/(a40-minimum(a4))
+        a4    .= k*(a4.-minimum(a4)).+minimum(a4)
+    elseif fix == :no
+        a4    .= a4.+4/3*(e0-e_new)
+    else
+        @warn "Choose a correct option for fix: :high, :low or :no."
+        return
+    end
 
     evolvars = AdS5_3_1.EvolVars(boundary, gauge, bulkevols)
     create_outputs(io.out_dir, evolvars, chart2D, Tuple(charts), io, potential, phi0)
 
+end
+
+function to1plus1(grid::SpecCartGrid3D, boundary::Boundary, gauge::Gauge,
+                                    bulkevols::BulkPartition)
+
+
+    atlas         = Atlas(grid)
+    systems       = SystemPartition(grid)
+    Nsys          = length(systems)
+    boundary_new  = Boundary(grid)
+    gauge_new     = Gauge(grid)
+    bulkevols_new = BulkEvolvedPartition(grid)
+    empty         = Cartesian{1}("u", 0.0, 0.0, 1)
+    chart2D       = Chart(empty, systems[1].xcoord, systems[1].ycoord)
+
+    a4_new  = boundary_new.a4
+    fx2_new = boundary_new.fx2
+    fy2_new = boundary_new.fy2
+    xi_new  = gauge_new.xi
+    a4      = boundary.a4
+    fx2     = boundary.fx2
+    fy2     = boundary.fy2
+    xi      = gauge.xi
+
+    _, Nx, Ny         = size(a4)
+    _, Nx_new, Ny_new = size(a4_new)
+
+    if Nx != Nx_new
+        @warn "New grid has to be identical in the x direction"
+        return
+    end
+
+    y_index = Int(floor(Ny/2))
+
+    #For when you want to freely specify the y coordinate of the slice.
+    # y_index = findfirst(ycoord .>= y_specified)
+
+    a4_new[1,:,:] .= view(a4,1,:,y_index)
+    fx2_new[1,:,:].= view(fx2,1,:,y_index)
+    xi_new[1,:,:] .= view(xi,1,:,y_index)
+
+    fill!(fy2_new, 0.0)
+
+    for n in 1:Nsys
+
+        B1      = bulkevols[n].B1
+        B2      = bulkevols[n].B2
+        G       = bulkevols[n].G
+        phi     = bulkevols[n].phi
+        B1_new  = bulkevols_new[n].B1
+        B2_new  = bulkevols_new[n].B2
+        G_new   = bulkevols_new[n].G
+        phi_new = bulkevols_new[n].phi
+
+        B1_new  .= view(B1,:,:,y_index)
+        B2_new  .= view(B2,:,:,y_index)
+        G_new   .= view(G,:,:,y_index)
+        phi_new .= view(phi,:,:,y_index)
+        #fill!(G_new, 0.0)
+    end
+
+    boundary_new, gauge_new, bulkevols_new, chart2D, atlas
+
+end
+
+function to1plus1(grid::SpecCartGrid3D, io::InOut, potential::Potential)
+
+
+    read_dir    = io.recover_dir
+
+    ts           = OpenPMDTimeSeries(read_dir, prefix="boundary_")
+    boundary, _  = construct_boundary(ts, ts.iterations[end])
+
+    ts           = OpenPMDTimeSeries(read_dir, prefix="gauge_")
+    gauge, _     = construct_gauge(ts, ts.iterations[end])
+
+    ts           = OpenPMDTimeSeries(read_dir, prefix="bulk_")
+    bulkevols, _ = construct_bulkevols(ts, ts.iterations[end])
+
+    boundary, gauge, bulkevols, chart2D, atlas = to1plus1(grid, boundary, gauge, bulkevols)
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+            @warn "phi0 not found, setting it to 0.0"
+        else
+            throw(e)
+        end
+    end
+
+    oophiM2 = try
+        ts.params["oophiM2"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "oophiM2" is not found in the params Dict, set oophiM2 = 0
+            @warn "oophhiM2 not found, setting it to 0.0"
+        else
+            throw(e)
+        end
+    end
+
+    evolvars = AdS5_3_1.EvolVars(boundary, gauge, bulkevols)
+    create_outputs(io.out_dir, evolvars, chart2D, atlas.x, io, potential, phi0)
 end
 
 #For the moment we use the same grid as in the phase separation file and we will use create_new_data to change anything at the end.

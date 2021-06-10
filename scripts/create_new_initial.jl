@@ -3,11 +3,11 @@ using FFTW
 using Plots
 gr()
 
-dirname   = "/Users/apple/Documents/Jecco.jl/data/end_data/"
-outdir    = "/Users/apple/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/bubble/"
-A_dir     = "/Users/apple/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_A_e_1.318/"
-B_dir     = "/Users/apple/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_B_e_0.13/"
-PS_dir    = "/Users/apple/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/e_1.8/"
+dirname   = "/home/mikel/Documents/Jecco.jl/data/end_data/"
+outdir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/bubble/"
+A_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_A_e_1.318/"
+B_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_B_e_0.133/"
+PS_dir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/"
 
 grid = SpecCartGrid3D(
     x_min            = -40.,
@@ -17,7 +17,7 @@ grid = SpecCartGrid3D(
     y_max            =  40.,
     y_nodes          =  160,
     u_outer_min      =  0.1,
-    u_outer_max      =  2.005,
+    u_outer_max      =  1.005,
     u_outer_domains  =  1,
     u_outer_nodes    =  48,
     u_inner_nodes    =  12,
@@ -40,7 +40,7 @@ io = InOut(recover_dir = dirname, out_dir = outdir, checkpoint_dir = outdir,
            out_boundary_every=1, out_gauge_every=1,out_bulk_every=1,remove_existing = true,)
 
 new_center = (10.,10.)
-e_new      = 2.0
+e_new      = 1.82
 
 #=
 parameters = AdS5_3_1.new_parameters(
@@ -73,7 +73,8 @@ parameters_collision =AdS5_3_1.new_parameters_coll(
 #AdS5_3_1.initial_numerical_phi(grid, io, potential)
 #AdS5_3_1.shift(io, potential, new_center=new_center)
 #AdS5_3_1.new_box(grid, io, potential, same_spacing=:yes)
-#AdS5_3_1.change_energy(io, e_new, potential)
+#AdS5_3_1.change_energy(io, e_new, potential, fix=:high)
+#AdS5_3_1.to1plus1(grid, io, potential)
 #AdS5_3_1.create_new_data(grid, io, parameters, potential)
 #AdS5_3_1.design_collision(grid, io, parameters_collision)
 AdS5_3_1.bubble_expansion(grid, io, potential, A_dir, B_dir, PS_dir, same_spacing=:no)
@@ -91,17 +92,19 @@ convert_to_mathematica(io.out_dir)
 
 e     = VEVTimeSeries(outdir, :energy)
 px    = VEVTimeSeries(outdir, :px)
+e_old = VEVTimeSeries(dirname, :energy)
 e_A   = VEVTimeSeries(A_dir, :energy)
 e_B   = VEVTimeSeries(B_dir, :energy)
 e_PS  = VEVTimeSeries(PS_dir, :energy)
 #Jx = VEVTimeSeries(outdir,:Jx)
 #Jy = VEVTimeSeries(outdir,:Jy)
 
-t,x,y = get_coords(e,:,:,:)
-plan  = plan_rfft(e[1,:,:])
-Nx    = length(x)
-Ny    = length(y)
-e0    = real(1/(Nx*Ny) * (plan * e[1,:,:]))[1]
+t,x,y  = get_coords(e,:,:,:)
+plan   = plan_rfft(e[1,:,:])
+Nx     = length(x)
+Ny     = length(y)
+e0     = real(1/(Nx*Ny) * (plan * e[1,:,:]))[1]
+#e0_old = real(1/(Nx*Ny) * (plan * e_old[1,:,:]))[1]
 #Jx0   = real(1/(Nx*Ny) * (plan * Jx[1,:,:]))[1]
 #Jy0   = real(1/(Nx*Ny) * (plan * Jy[1,:,:]))[1]
 
@@ -132,6 +135,9 @@ println("Nx, Ny = $(length(x)), $(length(y))")
 println("Average Energy Density = $e0")
 println("Maximum energy = $(maximum(e[end,:,:]))")
 println("Minimum energy = $(minimum(e[end,:,:]))")
+#println("Old Average Energy Density = $e0_old")
+#println("Old Maximum energy = $(maximum(e_old[end,:,:]))")
+#println("Old Minimum energy = $(minimum(e_old[end,:,:]))")
 println("A energy = $(e_A[end,1,1])")
 println("B energy = $(minimum(e_PS[end,:,:]))")
 println("Maximum px = $(maximum(px[end,:,:]))")
