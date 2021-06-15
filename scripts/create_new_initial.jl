@@ -3,19 +3,19 @@ using FFTW
 using Plots
 gr()
 
-dirname   = "/home/mikel/Documents/Jecco.jl/data/end_data/"
-outdir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/bubble/"
+dirname   = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/bubble/"
+outdir    = "/home/mikel/Documents/Jecco.jl/data/new_data/"
 A_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_A_e_1.318/"
 B_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_B_e_0.133/"
-PS_dir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/"
+PS_dir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/e_1.0_L_40/"
 
 grid = SpecCartGrid3D(
-    x_min            = -40.,
-    x_max            =  40.,
-    x_nodes          =  160,
-    y_min            = -40.,
-    y_max            =  40.,
-    y_nodes          =  160,
+    x_min            = -20.,
+    x_max            =  20.,
+    x_nodes          =  150,
+    y_min            = -20.,
+    y_max            =  20.,
+    y_nodes          =  150,
     u_outer_min      =  0.1,
     u_outer_max      =  1.005,
     u_outer_domains  =  1,
@@ -72,13 +72,16 @@ parameters_collision =AdS5_3_1.new_parameters_coll(
 #AdS5_3_1.create_checkpoint(io, potential)
 #AdS5_3_1.initial_numerical_phi(grid, io, potential)
 #AdS5_3_1.shift(io, potential, new_center=new_center)
-#AdS5_3_1.new_box(grid, io, potential, same_spacing=:yes)
+#AdS5_3_1.new_box(grid, io, potential, same_spacing=:no)
 #AdS5_3_1.change_energy(io, e_new, potential, fix=:high)
 #AdS5_3_1.to1plus1(grid, io, potential)
+#AdS5_3_1.to2plus1(io, potential)
 #AdS5_3_1.create_new_data(grid, io, parameters, potential)
 #AdS5_3_1.design_collision(grid, io, parameters_collision)
-AdS5_3_1.bubble_expansion(grid, io, potential, A_dir, B_dir, PS_dir, same_spacing=:no)
+#AdS5_3_1.bubble_expansion(grid, io, potential, A_dir, B_dir, PS_dir,
+#                                    same_spacing=:no, b_cold=false)
 #AdS5_3_1.join_boxes(io, potential, dirname, dirname)
+AdS5_3_1.cut_circular_hole(io, potential, 6.0, 100, 100)
 
 #=
 phi11 = BulkTimeSeries(dirname,:phi,1)
@@ -93,20 +96,22 @@ convert_to_mathematica(io.out_dir)
 e     = VEVTimeSeries(outdir, :energy)
 px    = VEVTimeSeries(outdir, :px)
 e_old = VEVTimeSeries(dirname, :energy)
-e_A   = VEVTimeSeries(A_dir, :energy)
-e_B   = VEVTimeSeries(B_dir, :energy)
-e_PS  = VEVTimeSeries(PS_dir, :energy)
-#Jx = VEVTimeSeries(outdir,:Jx)
-#Jy = VEVTimeSeries(outdir,:Jy)
+
+#e_A   = VEVTimeSeries(A_dir, :energy)
+#e_B   = VEVTimeSeries(B_dir, :energy)
+#e_PS  = VEVTimeSeries(PS_dir, :energy)
+Jx = VEVTimeSeries(outdir,:Jx)
+Jy = VEVTimeSeries(outdir,:Jy)
 
 t,x,y  = get_coords(e,:,:,:)
+t_old, x_old, y_old = get_coords(e_old,:,:,:)
 plan   = plan_rfft(e[1,:,:])
 Nx     = length(x)
 Ny     = length(y)
 e0     = real(1/(Nx*Ny) * (plan * e[1,:,:]))[1]
 #e0_old = real(1/(Nx*Ny) * (plan * e_old[1,:,:]))[1]
-#Jx0   = real(1/(Nx*Ny) * (plan * Jx[1,:,:]))[1]
-#Jy0   = real(1/(Nx*Ny) * (plan * Jy[1,:,:]))[1]
+Jx0   = real(1/(Nx*Ny) * (plan * Jx[1,:,:]))[1]
+Jy0   = real(1/(Nx*Ny) * (plan * Jy[1,:,:]))[1]
 
 #=
 plan = plan_fft(e_old[end,:,:]);
@@ -138,18 +143,27 @@ println("Minimum energy = $(minimum(e[end,:,:]))")
 #println("Old Average Energy Density = $e0_old")
 #println("Old Maximum energy = $(maximum(e_old[end,:,:]))")
 #println("Old Minimum energy = $(minimum(e_old[end,:,:]))")
-println("A energy = $(e_A[end,1,1])")
-println("B energy = $(minimum(e_PS[end,:,:]))")
+#println("A energy = $(e_A[end,1,1])")
+#println("B energy = $(e_B[end,1,1])")
 println("Maximum px = $(maximum(px[end,:,:]))")
 println("Minimum px = $(minimum(px[end,:,:]))")
-#println("Average x momenta = $Jx0")
-#println("Average y momenta = $Jy0")
-#println("Maximum x momenta = $(maximum(abs.(Jx[end,:,:])))")
-#println("Maximum y momenta = $(maximum(abs.(Jy[end,:,:])))")
+println("Average x momenta = $Jx0")
+println("Average y momenta = $Jy0")
+println("Maximum x momenta = $(maximum(abs.(Jx[end,:,:])))")
+println("Maximum y momenta = $(maximum(abs.(Jy[end,:,:])))")
 
-#plot(x, e[end,:,1], lw=3)
+plot(x, e[end,:,25], lw=3)
+plot!(x, e_old[end,15:end-16,40], lw=3)
+xlabel!("x")
 #=
 plot(x,y,e[1,:,:],st=:surface, camera=(50,65))
 xlabel!("x")
 ylabel!("y")
 =#
+
+a4     = XiTimeSeries(outdir)
+a4_old = XiTimeSeries(dirname)
+
+plot(x, a4[end,:,25], lw=3)
+plot!(x, a4_old[end,15:end-16,40], lw=3)
+xlabel!("x")

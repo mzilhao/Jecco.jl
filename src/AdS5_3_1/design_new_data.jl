@@ -642,8 +642,8 @@ function different_grid_spacing(grid::SpecCartGrid3D, boundary::Boundary , bulke
 
     ifirst = findfirst(x_new .>= x[1])
     jfirst = findfirst(y_new .>= y[1])
-    ilast  = findfirst(x_new .>= x[end])
-    jlast  = findfirst(y_new .>= y[end])
+    ilast  = findlast(x_new .<= x[end])
+    jlast  = findlast(y_new .<= y[end])
 
     x_indices = (ifirst, ilast)
     y_indices = (jfirst, jlast)
@@ -1119,11 +1119,288 @@ function to1plus1(grid::SpecCartGrid3D, io::InOut, potential::Potential)
     create_outputs(io.out_dir, evolvars, chart2D, atlas.x, io, potential, phi0)
 end
 
+#Function to create a circularly symmetric configuration from a y-independent data.
+#We are going to use the 2D linear interpolator, if you want to optimize create a 1D interpolator, as you
+#only need the x direction
+function to2plus1(boundary::Boundary, gauge::Gauge, bulkevols::BulkPartition, chart2D::Chart, charts::Array{Chart, 1})
+    a4        = boundary.a4
+    xi        = gauge.xi
+    _, Nx, Ny = size(a4)
+    Nsys      = length(bulkevols)
+    xcoord    = chart2D.coords[2]
+    ycoord    = CartesianCoord{3,typeof(xcoord[1])}("y", xcoord.min, xcoord.max, xcoord.nodes)
+    x         = xcoord[:]
+    y         = ycoord[:]
+    interp    = Linear_Interpolator(chart2D)
+    a4_inter  = interp(a4[1,:,:])
+    xi_inter  = interp(xi[1,:,:])
+    a4_new    = zeros(1,Nx,Nx)
+    fx2_new   = zeros(1,Nx,Nx)
+    fy2_new   = zeros(1,Nx,Nx)
+    xi_new    = zeros(1,Nx,Nx)
+
+    @fastmath @inbounds @threads for j in 1:Nx
+        for i in 1:Nx
+            r = sqrt(x[i]^2+y[j]^2)
+            if r > x[end] r = x[1] end
+            a4_new[1,i,j] = a4_inter(r, 0.)
+            xi_new[1,i,j] = xi_inter(r, 0.)
+        end
+    end
+
+    boundary_new   = Boundary{typeof(a4_new[1,1,1])}(a4_new, fx2_new, fy2_new)
+    gauge_new      = Gauge{typeof(xi_new[1,1,1])}(xi_new)
+    bulk_new       = Array{BulkEvolved,1}(undef, Nsys)
+    charts_new     = Array{Chart, 1}(undef, Nsys)
+
+    for n in 1:Nsys
+        B1            = bulkevols[n].B1
+        B2            = bulkevols[n].B2
+        phi           = bulkevols[n].phi
+        Nu, _, _      = size(B1)
+        ucoord        = charts[n].coords[1]
+        charts_new[n] = Chart(ucoord, xcoord, ycoord)
+        B1_new        = zeros(Nu, Nx, Nx)
+        B2_new        = zeros(Nu, Nx, Nx)
+        G_new         = zeros(Nu, Nx, Nx)
+        phi_new       = zeros(Nu, Nx, Nx)
+
+        for i in 1:Nu
+            phi_inter = interp(phi[i,:,:])
+            @fastmath @inbounds @threads for k in 1:Nx
+                for j in 1:Nx
+                    r = sqrt(x[j]^2+y[k]^2)
+                    if r > x[end] r = x[1] end
+                    phi_new[i,j,k]  = phi_inter(r, 0.)
+                end
+            end
+        end
+        bulk_new[n] = BulkEvolved{typeof(B1_new[1,1,1])}(B1_new, B2_new, G_new, phi_new)
+    end
+    bulkevols_new   = AdS5_3_1.BulkPartition((bulk_new...))
+    empty           = Cartesian{1}("u", 0.0, 0.0, 1)
+    chart2D         = Chart(empty, xcoord, ycoord)
+    evolvars        = AdS5_3_1.EvolVars(boundary_new, gauge_new, bulkevols_new)
+
+    evolvars, chart2D, charts_new
+end
+
+function to2plus1(io::InOut, potential::Potential)
+    read_dir          = io.recover_dir
+    ts                = OpenPMDTimeSeries(read_dir, prefix="boundary_")
+    boundary, chart2D = construct_boundary(ts, ts.iterations[end])
+    ts                = OpenPMDTimeSeries(read_dir, prefix="gauge_")
+    gauge, _          = construct_gauge(ts, ts.iterations[end])
+    ts                = OpenPMDTimeSeries(read_dir, prefix="bulk_")
+    bulkevols, charts = construct_bulkevols(ts, ts.iterations[end])
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+            @warn "phi0 not found, setting it to 0.0"
+        else
+            throw(e)
+        end
+    end
+
+    oophiM2 = try
+        ts.params["oophiM2"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "oophiM2" is not found in the params Dict, set oophiM2 = 0
+            @warn "oophhiM2 not found, setting it to 0.0"
+        else
+            throw(e)
+        end
+    end
+
+    evolvars, chart2D, charts = to2plus1(boundary, gauge, bulkevols, chart2D, charts)
+    create_outputs(io.out_dir, evolvars, chart2D, Tuple(charts), io, potential, phi0)
+end
+
+function cut_circular_hole(boundary::Boundary, R::T, chart2D::Chart, chart2D_new::Chart) where {T<:Real}
+    a4        = boundary.a4
+    fx2       = boundary.fx2
+    fy2       = boundary.fy2
+    interp    = Linear_Interpolator(chart2D)
+    a4_inter  = interp(a4[1,:,:])
+    fx2_inter = interp(fx2[1,:,:])
+    fy2_inter = interp(fy2[1,:,:])
+    x_old     = chart2D.coords[2][:]
+    y_old     = chart2D.coords[3][:]
+    x_new     = chart2D_new.coords[2][:]
+    y_new     = chart2D_new.coords[3][:]
+    Nx        = chart2D_new.coords[2].nodes
+    Ny        = chart2D_new.coords[3].nodes
+    #xcoord    = Cartesian{2}("x", x_old[1]+R, x_old[end]-R, Nx)
+    #ycoord    = Cartesian{3}("y", y_old[1]+R, y_old[end]-R, Ny)
+    #x_new     = xcoord[:]
+    #y_new     = ycoord[:]
+    a4_new    = zeros(1, Nx, Ny)
+    fx2_new   = zeros(1, Nx, Ny)
+    fy2_new   = zeros(1, Nx, Ny)
+
+    @fastmath @inbounds @threads for j in 1:Ny
+        for i in 1:Nx
+            x  = x_new[i]
+            y  = y_new[j]
+            r  = sqrt(x^2+y^2)
+            if r == 0.0
+                xx, yy = (R, 0.)
+            else
+                xx = (R+r)/r*x
+                yy = (R+r)/r*y
+            end
+            a4_new[1,i,j]  = a4_inter(xx, yy)
+            fx2_new[1,i,j] = fx2_inter(xx, yy)
+            fy2_new[1,i,j] = fy2_inter(xx, yy)
+        end
+    end
+    Boundary{typeof(a4_new[1,1,1])}(a4_new, fx2_new, fy2_new)
+end
+
+function cut_circular_hole(gauge::Gauge, R::T, chart2D::Chart, chart2D_new::Chart) where {T<:Real}
+    xi        = gauge.xi
+    interp    = Linear_Interpolator(chart2D)
+    xi_inter  = interp(xi[1,:,:])
+    x_old     = chart2D.coords[2][:]
+    y_old     = chart2D.coords[3][:]
+    x_new     = chart2D_new.coords[2][:]
+    y_new     = chart2D_new.coords[3][:]
+    Nx        = chart2D_new.coords[2].nodes
+    Ny        = chart2D_new.coords[3].nodes
+    #xcoord    = Cartesian{2}("x", x_old[1]+R, x_old[end]-R, Nx)
+    #ycoord    = Cartesian{3}("y", y_old[1]+R, y_old[end]-R, Ny)
+    #x_new     = xcoord[:]
+    #y_new     = ycoord[:]
+    xi_new    = zeros(1, Nx, Ny)
+
+    @fastmath @inbounds @threads for j in 1:Ny
+        for i in 1:Nx
+            x  = x_new[i]
+            y  = y_new[j]
+            r  = sqrt(x^2+y^2)
+            if r == 0.0
+                xx, yy = (R, 0.)
+            else
+                xx = (R+r)/r*x
+                yy = (R+r)/r*y
+            end
+            xi_new[1,i,j]  = xi_inter(xx, yy)
+        end
+    end
+    Gauge{typeof(xi_new[1,1,1])}(xi_new)
+end
+
+function cut_circular_hole(bulkevols::BulkPartition, R::T, chart2D::Chart, chart2D_new::Chart) where {T<:Real}
+    Nsys      = length(bulkevols)
+    interp    = Linear_Interpolator(chart2D)
+    x_old     = chart2D.coords[2][:]
+    y_old     = chart2D.coords[3][:]
+    x_new     = chart2D_new.coords[2][:]
+    y_new     = chart2D_new.coords[3][:]
+    Nx        = chart2D_new.coords[2].nodes
+    Ny        = chart2D_new.coords[3].nodes
+    #xcoord    = Cartesian{2}("x", x_old[1]+R, x_old[end]-R, Nx)
+    #ycoord    = Cartesian{3}("y", y_old[1]+R, y_old[end]-R, Ny)
+    #x_new     = xcoord[:]
+    #y_new     = ycoord[:]
+    bulk      = Array{BulkEvolved, 1}(undef, Nsys)
+
+    for n in 1:Nsys
+        B1        = bulkevols[n].B1
+        B2        = bulkevols[n].B2
+        G         = bulkevols[n].G
+        phi       = bulkevols[n].phi
+        Nu, _, _  = size(B1)
+        B1_new    = zeros(Nu, Nx, Ny)
+        B2_new    = zeros(Nu, Nx, Ny)
+        G_new     = zeros(Nu, Nx, Ny)
+        phi_new   = zeros(Nu, Nx, Ny)
+        for i in 1:Nu
+            B1_inter  = interp(B1[i,:,:])
+            B2_inter  = interp(B2[i,:,:])
+            G_inter   = interp(G[i,:,:])
+            phi_inter = interp(phi[i,:,:])
+            @fastmath @inbounds @threads for k in 1:Ny
+                for j in 1:Nx
+                    x  = x_new[j]
+                    y  = y_new[k]
+                    r  = sqrt(x^2+y^2)
+                    if r == 0.0
+                        xx, yy = (R, 0.)
+                    else
+                        xx = (R+r)/r*x
+                        yy = (R+r)/r*y
+                    end
+                    B1_new[i,j,k]  = B1_inter(xx, yy)
+                    B2_new[i,j,k]  = B2_inter(xx, yy)
+                    G_new[i,j,k]   = G_inter(xx, yy)
+                    phi_new[i,j,k] = phi_inter(xx, yy)
+                end
+            end
+        end
+        bulk[n] = BulkEvolved(B1_new, B2_new, G_new, phi_new)
+    end
+
+    AdS5_3_1.BulkPartition((bulk...))
+end
+
+function cut_circular_hole(io::InOut, potential::Potential, R::T, Nx::Int, Ny::Int) where {T<:Real}
+    read_dir          = io.recover_dir
+    ts                = OpenPMDTimeSeries(read_dir, prefix="boundary_")
+    boundary, chart2D = construct_boundary(ts, ts.iterations[end])
+    ts                = OpenPMDTimeSeries(read_dir, prefix="gauge_")
+    gauge, _          = construct_gauge(ts, ts.iterations[end])
+    ts                = OpenPMDTimeSeries(read_dir, prefix="bulk_")
+    bulkevols, charts = construct_bulkevols(ts, ts.iterations[end])
+
+    empty       = Cartesian{1}("u", 0.0, 0.0, 1)
+    xcoord      = Cartesian{2}("x", chart2D.coords[2].min+R, chart2D.coords[2].max-R, Nx)
+    ycoord      = Cartesian{3}("y", chart2D.coords[3].min+R, chart2D.coords[3].max-R, Ny)
+    chart2D_new = Chart(empty, xcoord, ycoord)
+    Nsys        = length(bulkevols)
+    charts_new  = Array{Chart, 1}(undef, Nsys)
+    for n in 1:Nsys
+        charts_new[n] = Chart(charts[n].coords[1], xcoord, ycoord)
+    end
+
+    boundary_new  = cut_circular_hole(boundary, R, chart2D, chart2D_new)
+    gauge_new     = cut_circular_hole(gauge, R, chart2D, chart2D_new)
+    bulkevols_new = cut_circular_hole(bulkevols, R, chart2D, chart2D_new)
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+            @warn "phi0 not found, setting it to 0.0"
+        else
+            throw(e)
+        end
+    end
+
+    oophiM2 = try
+        ts.params["oophiM2"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "oophiM2" is not found in the params Dict, set oophiM2 = 0
+            @warn "oophhiM2 not found, setting it to 0.0"
+        else
+            throw(e)
+        end
+    end
+    evolvars = AdS5_3_1.EvolVars(boundary_new, gauge_new, bulkevols_new)
+    create_outputs(io.out_dir, evolvars, chart2D_new, Tuple(charts_new), io, potential, phi0)
+end
+
 #For the moment we use the same grid as in the phase separation file and we will use create_new_data to change anything at the end.
 #We use the B's and G of the PS state, and we modify the scalar fields and boundary data. f2 to 0 for the moment. Center the low energy
 #phase in the middle of the box, so that the metaestable state will lie outside
 function bubble_expansion(grid::SpecCartGrid3D, io::InOut, potential::Potential, A_dir::String, B_dir::String, PS_dir::String;
-                                    same_spacing::Symbol = :no)
+                                    same_spacing::Symbol = :no, b_cold::Bool=false)
     atlas   = Atlas(grid)
     systems = SystemPartition(grid)
     Nsys    = length(systems)
@@ -1140,8 +1417,10 @@ function bubble_expansion(grid::SpecCartGrid3D, io::InOut, potential::Potential,
     Ny    = chart2D.coords[3].nodes
     hot   = CartesianIndex(1,1)
     cold  = CartesianIndex(Int(floor(Nx/2)),Int(floor(Ny/2)))
-    a4_B  = a4_PS[end,cold]
-    xi_B  = xi_PS[end,cold]
+    if b_cold
+        a4_B  = a4_PS[end,cold]
+        xi_B  = xi_PS[end,cold]
+    end
     k_a4  = (a4_A-a4_B)/(a4_PS[end,hot]-a4_PS[end,cold])
     k_xi  = (xi_A-xi_B)/(xi_PS[end,hot]-xi_PS[end,cold])
 
@@ -1150,8 +1429,8 @@ function bubble_expansion(grid::SpecCartGrid3D, io::InOut, potential::Potential,
     fx2 = zeros(1,Nx,Ny)
     fy2 = zeros(1,Nx,Ny)
 
-    a4[1,:,:] = k_a4.*(a4_PS[end,:,:].-a4_PS[end,cold]).+a4_B
-    xi[1,:,:] = k_xi.*(xi_PS[end,:,:].-xi_PS[end,cold]).+xi_B
+    a4[1,:,:] = k_a4*(a4_PS[end,:,:].-a4_PS[end,cold]).+a4_B
+    xi[1,:,:] = k_xi*(xi_PS[end,:,:].-xi_PS[end,cold]).+xi_B
 
     boundary  = Boundary{typeof(a4[1,1,1])}(a4,fx2,fy2)
     gauge     = Gauge{typeof(xi[1,1,1])}(xi)
@@ -1161,7 +1440,9 @@ function bubble_expansion(grid::SpecCartGrid3D, io::InOut, potential::Potential,
         phi_A  = BulkTimeSeries(A_dir, :phi, n)[end,:,1,1]
         phi_B  = BulkTimeSeries(B_dir, :phi, n)[end,:,1,1]
         phi_PS = BulkTimeSeries(PS_dir, :phi, n)
-        phi_B .= phi_PS[end,:,cold]
+        if b_cold
+            phi_B .= phi_PS[end,:,cold]
+        end
         B1     = BulkTimeSeries(PS_dir, :B2, n)[end,:,:,:]
         B2     = BulkTimeSeries(PS_dir, :B2, n)[end,:,:,:]
         G      = BulkTimeSeries(PS_dir, :G, n)[end,:,:,:]
@@ -1169,7 +1450,7 @@ function bubble_expansion(grid::SpecCartGrid3D, io::InOut, potential::Potential,
         k      = (phi_A-phi_B)./(phi_PS[end,:,hot]-phi_PS[end,:,cold])
         Nu     = length(phi[:,1,1])
         for i in 1:Nu
-            phi[i,:,:] = k[i].*(phi_PS[end,i,:,:].-phi_PS[end,i,cold]).+phi_B[i]
+            phi[i,:,:] = k[i]*(phi_PS[end,i,:,:].-phi_PS[end,i,cold]).+phi_B[i]
         end
         bulk[n] = BulkEvolved{typeof(B1[1,1,1])}(B1, B2, G, phi)
     end
@@ -1191,8 +1472,7 @@ function bubble_expansion(grid::SpecCartGrid3D, io::InOut, potential::Potential,
             throw(e)
         end
     end
-
-    empty = Cartesian{1}("u", 0.0, 0.0, 1)
+    empty   = Cartesian{1}("u", 0.0, 0.0, 1)
     chart2D = Chart(empty, systems[1].xcoord, systems[1].ycoord)
     evolvars = AdS5_3_1.EvolVars(boundary_new, gauge_new, bulkevols_new)
     create_outputs(io.out_dir, evolvars, chart2D, atlas.x, io, potential, phi0)
