@@ -90,7 +90,7 @@ function rhs(h_evol::Array{T,1}, param::Parameters, t::TP) where {T<:Complex, TP
 #Also it might be better to solve all kx and ky as matrix equation at once
 #and do a loop over the 4 components that we have to solve.
 #Bear in mind that we will get to runs with many points in x and y.
-    @time for j in 1:Nky
+    @time @fastmath @inbounds for j in 1:Nky
         for i in 1:Nkx
             kkx  = kx[i,j]
             kky  = ky[i,j]
@@ -146,7 +146,7 @@ function solve_GW(dirname::String; dt::T = 0.0, alg, option::String="static", to
     kx       = zeros(Nkx,Nky)
     ky       = zeros(Nkx,Nky)
 
-    @time @threads for j in eachindex(kyy)
+    @time @fastmath @inbounds @threads for j in eachindex(kyy)
         for i in eachindex(kxx)
             kx[i,j] = kxx[i]
             ky[i,j] = kyy[j]

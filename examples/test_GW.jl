@@ -7,7 +7,7 @@ include("../src/AdS5_3_1/GW.jl")
 dirname = "/home/mikel/Documents/Jecco.jl/data/spinodal2D_e_1.0_L_20_N_80_AH_0.95"
 dt = 0.08
 alg = AB3()
-h, h_t, t_2, kxx, kyy, pxk, pyk, pzk = solve_GW(dirname, dt=dt, alg=alg, tol=10^-7)
+@time h, h_t, t_2, kxx, kyy, pxk, pyk, pzk = solve_GW(dirname, dt=dt, alg=alg, tol=10^-7)
 nothing
 
 plot(t_2, real.(h[:,2,2,1]), lw=3)
