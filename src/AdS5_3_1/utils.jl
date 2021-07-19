@@ -68,6 +68,16 @@ struct AHTimeSeries{T} <: TimeSeries{2,T}
     end
 end
 
+struct GWTimeSeries{T} <: TimeSeries{2,T}
+    ts    :: T
+    field :: Symbol
+
+    function GWTimeSeries(foldername::String, field::Symbol)
+        ts = OpenPMDTimeSeries(foldername, "perturbation_")
+        new{typeof(ts)}(ts, field)
+    end
+end
+
 
 function get_data(ff::BoundaryTimeSeries, it::Int)
     f, chart = get_field(ff.ts, it=it, field=String(ff.field))
@@ -131,6 +141,12 @@ function get_data(ff::AHTimeSeries, it::Int)
     end
     _, x, y = chart[:]
     f[1,:,:], [x,y]
+end
+
+function get_data(ff::GWTimeSeries, it::Int)
+    f, chart = get_field(ff.ts, it=it, field=String(ff.field))
+    x, y  = chart[:]
+    f[:,:], [x, y]
 end
 
 function Base.size(ff::TimeSeries)

@@ -34,7 +34,7 @@ function get_evol_variable(u::Array{T,3}, u_t::Array{T,3}) where {T<:Complex}
     u_evol
 end
 
-function get_tensors(u_evol::Array{T,1}, Nkx::N, Nky::N) where {T<:Complex, N<:Int}
+function get_tensors(u_evol::Array{T,1}, Nkx::Int, Nky::Int) where {T<:Complex}
     Ntot     = length(u_evol)
     idxsplit = Int(Ntot/2)
     h        = reshape(u_evol[1:idxsplit],Nkx,Nky,4)
@@ -44,50 +44,58 @@ function get_tensors(u_evol::Array{T,1}, Nkx::N, Nky::N) where {T<:Complex, N<:I
 end
 
 function Fourier_Transform_2D(f::Array{T,2}) where {T<:Real}
-    Nx   = length(f[:,1])
-    Ny   = length(f[1,:])
+    Nx, Ny = size(f)
     plan = plan_rfft(f)
 
     fk   = 1/(Nx*Ny).*(plan * f)
 end
 
-#We can print the physical grid and the kx ky plane should be easy computable from it
-function output_GW(outdir::String, h::Array{T,3}, h_t::Array{T,3}, chart2D::Chart, tinfo::Jecco.TimeInfo) where{T<:Complex}
-    if tinfo.it == 0
-        try run(`rm -r $outdir`) catch end
-        run(`mkdir $outdir`)
+function Inverse_Fourier_Transform_2D(u::Array{T,1}, Nkx::Int, Nky::Int, Nx::Int) where {T<:Complex}
+    fk, fk_t   = get_tensors(u, Nkx, Nky)
+    _, Ny, n = size(fk)
+    if n != 4
+        @warn "There should be 4 components for the h and hd tensors"
+        return
+    elseif Ny != Nky
+        @warn "Missmatch between the y grid and the number of ky"
     end
-    hxx          = view(h, :, :, 1)
-    hxy          = view(h, :, :, 2)
-    hyy          = view(h, :, :, 3)
-    hzz          = view(h, :, :, 4)
-    hdxx         = view(h_t, :, :, 1)
-    hdxy         = view(h_t, :, :, 2)
-    hdyy         = view(h_t, :, :, 3)
-    hdzz         = view(h_t, :, :, 4)
+    plan = plan_irfft(fk[:,:,1], Nx)
+    f    = zeros(Nx, Ny, n)
+    f_t  = zeros(Nx, Ny, n)
+    for i in 1:n
+        f[:,:,i] = Nx*Ny .*(plan * @view fk[:,:,i])
+        f_t[:,:,i] = Nx*Ny .*(plan * @view fk_t[:,:,i])
+    end
+
+    f, f_t
+end
+
+#We can print the physical grid and the kx ky plane should be easy computable from it
+function output_GW(outdir::String, h::Array{T,3}, h_t::Array{T,3}, chart2D::Chart,
+                                    tinfo::Jecco.TimeInfo) where{T<:Real}
+    if tinfo.it == 0
+        try run(`mkdir $outdir`) catch end
+    end
+
     perturbation = (
-            Jecco.Field("hxx", hxx, chart2D),
-            Jecco.Field("hxy", hxy, chart2D),
-            Jecco.Field("hyy", hyy, chart2D),
-            Jecco.Field("hzz", hzz, chart2D),
-            Jecco.Field("hdxx", hdxx, chart2D),
-            Jecco.Field("hdxy", hdxy, chart2D),
-            Jecco.Field("hdyy", hdyy, chart2D),
-            Jecco.Field("hdzz", hdzz, chart2D),
+            Jecco.Field("hxx", view(h, :, :, 1), chart2D),
+            Jecco.Field("hxy", view(h, :, :, 2), chart2D),
+            Jecco.Field("hyy", view(h, :, :, 3), chart2D),
+            Jecco.Field("hzz", view(h, :, :, 4), chart2D),
+            Jecco.Field("hdxx", view(h_t, :, :, 1), chart2D),
+            Jecco.Field("hdxy", view(h_t, :, :, 2), chart2D),
+            Jecco.Field("hdyy", view(h_t, :, :, 3), chart2D),
+            Jecco.Field("hdzz", view(h_t, :, :, 4), chart2D),
     )
     pert_writer  = Jecco.Output(outdir, "perturbation_", tinfo)
     pert_writer(perturbation)
 end
 
 function initial_conditions(ff::VEVTimeSeries, kx::Array{T,2}, ky::Array{T,2}) where {T<:Real}
-    #Tk  = Fourier_Transform_2D(ff[1,:,:])
     Nkx = length(kx[:,1])
     Nky = length(ky[1,:])
-
-
-    h_t    = im.*zeros(Nkx, Nky, 4)
-    h      = im.*zeros(Nkx, Nky, 4)
-
+    h   = im.*zeros(Nkx, Nky, 4)
+    h_t = im.*zeros(Nkx, Nky, 4)
 
     get_evol_variable(h,h_t)
 end
@@ -107,7 +115,6 @@ function rhs(h_evol::Array{T,1}, param::Parameters, t::TP) where {T<:Complex, TP
     pxy       = Fourier_Transform_2D(pxy_inter)
     py        = Fourier_Transform_2D(py_inter)
     pz        = Fourier_Transform_2D(pz_inter)
-
     h, h_t    = get_tensors(h_evol, Nkx, Nky)
     dh        = similar(h)
     dh_t      = similar(h_t)
@@ -131,7 +138,7 @@ function rhs(h_evol::Array{T,1}, param::Parameters, t::TP) where {T<:Complex, TP
                 M[i] = 0.0
             end
             dh[i,j,:]   = h_t[i,j,:]
-            dh_t[i,j,:] = -k2.*h[i,j,:]-M
+            dh_t[i,j,:] = -M -k2.*h[i,j,:]
         end
     end
     ppx         = px[1,1]
@@ -159,8 +166,10 @@ function solve_GW(outdir::String, dirname::String; dt::T = 0.0, dt_output::T = 0
     pz       = VEVTimeSeries(dirname, :pz)
     tt, x, y = get_coords(px,:,:,:)
     tspan    = (tt[1],tt[end])
+
     if dt == 0.0 dt = tt[2]-tt[1] end
     if dt_output == 0.0 dt_output = tt[2]-tt[1] end
+
     dx       = x[2]-x[1]
     dy       = y[2]-y[1]
     kxx      = 2π.*rfftfreq(length(x), 1/dx)
@@ -169,16 +178,18 @@ function solve_GW(outdir::String, dirname::String; dt::T = 0.0, dt_output::T = 0
     Nky      = length(kyy)
     kx       = zeros(Nkx,Nky)
     ky       = zeros(Nkx,Nky)
+
     @fastmath @inbounds @threads for j in eachindex(kyy)
         for i in eachindex(kxx)
             kx[i,j] = kxx[i]
             ky[i,j] = kyy[j]
         end
     end
-#This will be useful to transform back to physical grid from the data and also to obtain the frequencies ki
-    chart2D      = Chart(["Cartesian","Cartesian"], ["x","y"], [x[1],y[1]], [x[end],y[end]], [length(x),length(y)])
+
+    Nx, Ny       = (length(x), length(y))
+    chart2D      = Chart(["Cartesian","Cartesian"], ["x","y"], [x[1],y[1]], [x[end],y[end]], [Nx, Ny])
     h0_evol      = initial_conditions(px,kx,ky)
-    h0, h0_t     = get_tensors(h0_evol, Nkx, Nky)
+    h, h_t       = Inverse_Fourier_Transform_2D(h0_evol, Nkx, Nky, Nx)
     px_inter     = interpolate((tt,x,y,), px[:,:,:], Gridded(Linear()))
     pxy_inter    = interpolate((tt,x,y,), pxy[:,:,:], Gridded(Linear()))
     py_inter     = interpolate((tt,x,y,), py[:,:,:], Gridded(Linear()))
@@ -190,20 +201,17 @@ function solve_GW(outdir::String, dirname::String; dt::T = 0.0, dt_output::T = 0
     integrator   = init(problem, alg, save_everystep=false, dt=dt, adaptive=false)
     tstart       = time()
     tinfo        = Jecco.TimeInfo(0, 0.0, 0.0, 0.0)
-    output_GW(outdir, h0, h0_t, chart2D, tinfo)
+    output_GW(outdir, h, h_t, chart2D, tinfo)
     last_printed = tspan[1]
     for (u, t) in tuples(integrator)
         tinfo.it     += 1
         tinfo.dt      = integrator.dt
         tinfo.t       = t
         tinfo.runtime = time()-tstart
-        h, h_t        = get_tensors(u,Nkx,Nky)
-        pxk           = Fourier_Transform_2D(prm.px(t,prm.x,prm.y))
-        pyk           = Fourier_Transform_2D(prm.py(t,prm.x,prm.y))
-        pzk           = Fourier_Transform_2D(prm.pz(t,prm.x,prm.y))
-        umax          = maximum(abs.(u[2:Nkx*Nky]))
-        dumax         = maximum(abs.(u[Nkx*Nky+2:end]))
-        indices       = findfirst(abs.(h_t) .== dumax)
+        h, h_t        = Inverse_Fourier_Transform_2D(u, Nkx, Nky, Nx)
+        umax          = maximum(abs.(@view u[2:Nkx*Nky]))
+        dumax         = maximum(abs.(@view u[Nkx*Nky+2:end]))
+        indices       = findfirst(abs.(@view u[Nkx*Nky+2:end]) .== dumax)
 
         if t-last_printed-1e-12 >= dt_output
             last_printed = t
@@ -214,8 +222,8 @@ function solve_GW(outdir::String, dirname::String; dt::T = 0.0, dt_output::T = 0
         println((t-tspan[1])%dt_output)
         println("t = $t")
         println("\n")
-        println("max |h| = $umax")
-        println("max |h_t| = $dumax")
+        println("max |hk| = $umax")
+        println("max |hk_t| = $dumax")
         println("index = $indices")
         println("------------------------------------------------------------")
         println("\n")
