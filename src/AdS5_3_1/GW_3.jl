@@ -18,8 +18,9 @@ struct param{T<:VEVTimeSeries, TP<:Real} <: Parameters
     py      :: T
     pz      :: T
     chart2D :: Chart
-    kx      :: Array{TP,2}
-    ky      :: Array{TP,2}
+    tt      :: Array{TP,1}
+    kx      :: Array{TP,1}
+    ky      :: Array{TP,1}
     dt      :: TP
     tol     :: TP
 end
@@ -90,9 +91,9 @@ function output_GW(outdir::String, h::Array{T,3}, h_t::Array{T,3}, chart2D::Char
     pert_writer(perturbation)
 end
 
-function initial_conditions(ff::VEVTimeSeries, kx::Array{T,2}, ky::Array{T,2}) where {T<:Real}
-    Nkx = length(kx[:,1])
-    Nky = length(ky[1,:])
+function initial_conditions(ff::VEVTimeSeries, Nkx::Int, Nky::Int) where {T<:Real}
+    #Nkx = length(kx[:,1])
+    #Nky = length(ky[1,:])
     h   = im.*zeros(Nkx, Nky, 4)
     h_t = im.*zeros(Nkx, Nky, 4)
 
@@ -103,16 +104,24 @@ end
 function rhs(h_evol::Array{T,1}, param::Parameters, t::TP) where {T<:Complex, TP<:Real}
     tol       = param.tol
     x, y      = param.chart2D[:]
+    tt        = param.tt
     ifirst    = findfirst(tt .<= t)
     ilast     = findfirst(tt .>= t)
-    px_inter  = interpolate((tt[ifirst:ilast],x,y,), param.px[ifirst:ilast,:,:], Gridded(Linear()))(t,x,y)
-    pxy_inter = interpolate((tt[ifirst:ilast],x,y,), param.pxy[ifirst:ilast,:,:], Gridded(Linear()))(t,x,y)
-    py_inter  = interpolate((tt[ifirst:ilast],x,y,), param.py[ifirst:ilast,:,:], Gridded(Linear()))(t,x,y)
-    pz_inter  = interpolate((tt[ifirst:ilast],x,y,), param.pz[ifirst:ilast,:,:], Gridded(Linear()))(t,x,y)
+    if ifirst == ilast
+        px_inter  = param.px[ifirst,:,:]
+        pxy_inter = param.pxy[ifirst,:,:]
+        py_inter  = param.py[ifirst,:,:]
+        pz_inter  = param.pz[ifirst,:,:]
+    else
+        px_inter  = interpolate((tt[ifirst:ilast],x,y,), param.px[ifirst:ilast,:,:], Gridded(Linear()))(t,x,y)
+        pxy_inter = interpolate((tt[ifirst:ilast],x,y,), param.pxy[ifirst:ilast,:,:], Gridded(Linear()))(t,x,y)
+        py_inter  = interpolate((tt[ifirst:ilast],x,y,), param.py[ifirst:ilast,:,:], Gridded(Linear()))(t,x,y)
+        pz_inter  = interpolate((tt[ifirst:ilast],x,y,), param.pz[ifirst:ilast,:,:], Gridded(Linear()))(t,x,y)
+    end
     kx        = param.kx
     ky        = param.ky
-    Nkx       = length(kx[:,1])
-    Nky       = length(ky[1,:])
+    Nkx       = length(kx)
+    Nky       = length(ky)
     px        = Fourier_Transform_2D(px_inter)
     pxy       = Fourier_Transform_2D(pxy_inter)
     py        = Fourier_Transform_2D(py_inter)
@@ -124,8 +133,8 @@ function rhs(h_evol::Array{T,1}, param::Parameters, t::TP) where {T<:Complex, TP
 #TODO: @threads gives me instability here for some reason...
     @time @fastmath @inbounds for j in 1:Nky
         for i in 1:Nkx
-            kkx  = kx[i,j]
-            kky  = ky[i,j]
+            kkx  = kx[i]
+            kky  = ky[j]
             kkx2 = kkx^2
             kky2 = kky^2
             k2   = kkx^2+kky^2
@@ -178,23 +187,21 @@ function solve_GW(outdir::String, dirname::String; dt::T = 0.0, dt_output::T = 0
     if dt == 0.0 dt = tt[2]-tt[1] end
     if dt_output == 0.0 dt_output = tt[2]-tt[1] end
 
-    dx       = x[2]-x[1]
-    dy       = y[2]-y[1]
-    kxx      = 2π.*rfftfreq(Nx, 1/dx)
-    kyy      = 2π.*fftfreq(Ny, 1/dy)
-    Nkx      = length(kxx)
-    Nky      = length(kyy)
-    kx       = zeros(Nkx,Nky)
-    ky       = zeros(Nkx,Nky)
+    kx      = 2π.*rfftfreq(Nx, 1/dx)
+    ky      = 2π.*fftfreq(Ny, 1/dy)
+    Nkx      = length(kx)
+    Nky      = length(ky)
+    #kx       = zeros(Nkx,Nky)
+    #ky       = zeros(Nkx,Nky)
 
-    @fastmath @inbounds @threads for j in eachindex(kyy)
-        for i in eachindex(kxx)
-            kx[i,j] = kxx[i]
-            ky[i,j] = kyy[j]
-        end
-    end
+    #@fastmath @inbounds @threads for j in eachindex(kyy)
+    #    for i in eachindex(kxx)
+    #        kx[i,j] = kxx[i]
+    #        ky[i,j] = kyy[j]
+    #    end
+    #end
 
-    h0_evol      = initial_conditions(px,kx,ky)
+    h0_evol      = initial_conditions(px, Nkx, Nky)
     h, h_t       = Inverse_Fourier_Transform_2D(h0_evol, Nkx, Nky, Nx)
     prm          = param{typeof(px),typeof(kx[1,1])}(px,pxy,py,pz,chart2D,tt,kx,ky,dt,tol)
     problem      = ODEProblem(rhs, h0_evol, tspan, prm)
