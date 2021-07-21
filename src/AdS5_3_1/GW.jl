@@ -90,14 +90,13 @@ function rhs(h_evol::Array{T,1}, param::Parameters, t::TP) where {T<:Complex, TP
 #Also it might be better to solve all kx and ky as matrix equation at once
 #and do a loop over the 4 components that we have to solve.
 #Bear in mind that we will get to runs with many points in x and y.
-    @time @fastmath @inbounds for j in 1:Nky
+    @time @fastmath @inbounds @threads for j in 1:Nky
         for i in 1:Nkx
             kkx  = kx[i,j]
             kky  = ky[i,j]
             kkx2 = kkx^2
             kky2 = kky^2
             k2   = kkx^2+kky^2
-
             ppx  = px[i,j]
             ppxy = pxy[i,j]
             ppy  = py[i,j]
@@ -116,11 +115,11 @@ function rhs(h_evol::Array{T,1}, param::Parameters, t::TP) where {T<:Complex, TP
     ppxy        = pxy[1,1]
     ppy         = py[1,1]
     ppz         = pz[1,1]
-    trT         = ppx+ppy+ppz
+    trT         = ppx + ppy + ppz
     M           = [ppx, ppxy, ppy, ppz] -1/3*trT.*[1,0,1,1]
-    indices = findall(abs.(M) .< tol)
+    indices     = findall(abs.(M) .< tol)
     for i in indices
-        M[i] = 0.0
+        M[i]    = 0.0
     end
     dh_t[1,1,:] = -M
 

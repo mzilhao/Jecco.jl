@@ -639,13 +639,15 @@ function different_grid_spacing(grid::SpecCartGrid3D, boundary::Boundary , bulke
     gauge_new     = Gauge(grid)
     bulkevols_new = BulkEvolvedPartition(grid)
 
-    ifirst = findlast(x_new .<= x[1])
-    jfirst = findlast(y_new .<= y[1])
+    ifirst = findfirst(x_new .>= x[1])
+    jfirst = findfirst(y_new .>= y[1])
     ilast  = findlast(x_new .<= x[end])
     jlast  = findlast(y_new .<= y[end])
 
     println((ifirst, ilast))
     println((jfirst, jlast))
+    println((x_new[ifirst], x[1]))
+    println((y_new[jfirst], y[1]))
     println((x_new[ilast], x[end]))
     println((y_new[jlast], y[end]))
 
@@ -661,7 +663,7 @@ end
 
 function new_box(grid::SpecCartGrid3D, io::InOut, potential::Potential;
                             same_spacing::Symbol = :no)
-    read_dir     = io.recover_dir
+    read_dir          = io.recover_dir
 
     ts                = OpenPMDTimeSeries(read_dir, prefix="boundary_")
     it_boundary       = ts.iterations[end]
