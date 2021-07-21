@@ -303,7 +303,7 @@ function Energy_to_mathematica(dirname::String; dit::Int = 1, outfile::String="e
     T_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
 
     n = 1
-    for i in 1:dit:Nt
+    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
         for j in 1:Nx
             for k in 1:Ny
                 T_m[:,n] = [t[i] x[j] y[k] en[i,j,k]]
@@ -382,7 +382,7 @@ function convert_to_mathematica_local(dirname::String; outfile::String="local_da
 
 end
 
-function GW_to_mathematica(dirname::String; outfile::String="GW_mathematica.h5")
+function GW_to_mathematica(dirname::String; dit::Int = 1, outfile::String="GW_mathematica.h5")
 
     ts         = OpenPMDTimeSeries(dirname, prefix="perturbation_")
     iterations = ts.iterations
@@ -390,10 +390,9 @@ function GW_to_mathematica(dirname::String; outfile::String="GW_mathematica.h5")
     t          = zeros(Nt)
     it         = 0
     _, chart   = get_field(ts, it=it, field="hxx")
-    x, y    = chart[:]
-    Nx         = length(x)
-    Ny         = length(y)
-    hdot2      = zeros(Nt, Nx, Ny)
+    x, y       = chart[:]
+    Nx, Ny     = size(chart)
+    hdot2      = zeros(Int(floor(Nt/dit)), Nx, Ny)
 
     for (idx,it) in enumerate(iterations)
         hdxx           = get_field(ts, it=it, field="hdxx")[1]
@@ -405,10 +404,10 @@ function GW_to_mathematica(dirname::String; outfile::String="GW_mathematica.h5")
     end
 
     # store in an array suitable for Mathematica
-    hdot2_m = zeros(4, Nt*Nx*Ny)
+    hdot2_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
 
     n = 1
-    for i in 1:Nt
+    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
         for j in 1:Nx
             for k in 1:Ny
                 hdot2_m[:,n] = [t[i] x[j] y[k] hdot2[i,j,k]]
