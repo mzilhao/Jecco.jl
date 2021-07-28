@@ -191,6 +191,7 @@ function solve_GW(outdir::String, dirname::String; dt::T = 0.0, dt_output::T = 0
     ky      = 2π.*fftfreq(Ny, 1/dy)
     Nkx      = length(kx)
     Nky      = length(ky)
+    println("The max frequency is 1/ω = $(1/kx[end]) and δt = $(dt).")
 
     h0_evol      = initial_conditions(px, Nkx, Nky)
     h, h_t       = Inverse_Fourier_Transform_2D(h0_evol, Nkx, Nky, Nx)
