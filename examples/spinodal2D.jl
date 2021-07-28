@@ -2,12 +2,12 @@
 using Jecco.AdS5_3_1
 
 grid = SpecCartGrid3D(
-    x_min            = -50.,
-    x_max            =  50.,
-    x_nodes          =  125,
-    y_min            = -50.,
-    y_max            =  50.,
-    y_nodes          =  125,
+    x_min            = -115.,
+    x_max            =  115.,
+    x_nodes          =  575,
+    y_min            = -100.,
+    y_max            =  100.,
+    y_nodes          =  500,
     u_outer_min      =  0.1,
     u_outer_max      =  1.005,
     u_outer_domains  =  1,
@@ -18,7 +18,7 @@ grid = SpecCartGrid3D(
 )
 
 
-phiM2 = -(0.85)^2
+phiM2 = -(1.0)^2
 phiQ  = 10.
 
 potential = AdS5_3_1.Phi8Potential(
@@ -30,17 +30,17 @@ potential = AdS5_3_1.Phi8Potential(
 )
 
 id = BlackBranePert(
-    energy_dens = .209,
+    energy_dens = 0.8,
     phi0        = 1.0,
-    phi2        = 0.9,
+    phi2        = 0.3,
     oophiM2     = potential.oophiM2,
     #phi5        = 1.1,
-    #a4_ampx     = -0.05,
-    #a4_kx       = 1,
-    #a4_ampy     = -0.05,
-    #a4_ky       = 1,
+    a4_ampx     = -0.005,
+    a4_kx       = 1,
+    a4_ampy     = -0.005,
+    a4_ky       = 1,
     xi0         = 0.02,
-    AH_pos      = 0.9,
+    AH_pos      = 1.0,
     xmax        = grid.x_max,
     xmin        = grid.x_min,
     ymin        = grid.y_min,
@@ -57,7 +57,7 @@ diag = DiagAH(
     find_AH_every_t    = 0.1,
 )
 
-outdir = "/home/mikel/Documents/Jecco.jl/data/test/"
+outdir = "/home/mikel/Documents/Jecco.jl/data/run/"
 
 io = InOut(
     out_boundary_every_t        = 1.,
@@ -66,7 +66,7 @@ io = InOut(
     #out_bulkconstrained_every_t = 5.0,
     checkpoint_every_walltime_hours = 1,
     out_dir                     = outdir,
-    recover                     = :yes,
+    recover                     = :no,
     recover_dir                 = "/home/mikel/Documents/Jecco.jl/data/new_data/",
     checkpoint_dir              = outdir,
     remove_existing             = true,
