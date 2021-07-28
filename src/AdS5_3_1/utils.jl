@@ -392,7 +392,7 @@ function GW_to_mathematica(dirname::String; dit::Int = 1, outfile::String="GW_ma
     _, chart   = get_field(ts, it=it, field="hxx")
     x, y       = chart[:]
     Nx, Ny     = size(chart)
-    hdot2      = zeros(Int(floor(Nt/dit)), Nx, Ny)
+    hdot2      = zeros(Nt, Nx, Ny)
 
     for (idx,it) in enumerate(iterations)
         hdxx           = get_field(ts, it=it, field="hdxx")[1]
