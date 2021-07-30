@@ -210,29 +210,29 @@ function solve_GW(outdir::String, dirname::String; dt::T = 0.0, dt_output::T = 0
         tinfo.runtime = time()-tstart
         h, h_t        = Inverse_Fourier_Transform_2D(u, Nkx, Nky, Nx)
         umax          = maximum(abs.(@view u[2:Nkx*Nky*4]))
-        #dumax         = maximum(abs.(@view u[Nkx*Nky*4+2:end]))
         indices       = findfirst(abs.(@view u[2:Nkx*Nky*4]) .== umax)
         if indices%(Nkx*Nky) == 0
             i = Nkx
             j = Nky
-            k = indices-i-Nkx*(j-1)+1
+            k = Int((indices-i-Nkx*(j-1))/Nkx*Nky)+1
         else
             k = Int(floor(indices/(Nkx*Nky)))+1
-            j = Int(floor((indices-Nkx*Nky*(k-1))/Nkx))+1
-            i = indices-Nkx*(j-1)-Nkx*Nky*(k-1)
+            if (indices-Nkx*Nky*(k-1))%Nkx == 0
+                i = Nkx
+                j = Int((indices-i-Nkx*Nky*(k-1))/Nkx)+1
+            else
+                j = Int(floor((indices-Nkx*Nky*(k-1))/Nkx))+1
+                i = indices-Nkx*(j-1)-Nkx*Nky*(k-1)
+            end
         end
 
-        if t-last_printed-dt >= dt_output
+        if t-last_printed+dt >= dt_output
             last_printed = t
             output_GW(outdir, h, h_t, chart2D, tinfo)
-            println("File printed")
         end
 
-        println((t-tspan[1])%dt_output)
         println("t = $t")
         println("\n")
-        #println("max |hk| = $umax")
-        #println("max |hk_t| = $dumax")
         if k == 1
             println("max: hxx = $umax")
         elseif k == 2
@@ -243,7 +243,6 @@ function solve_GW(outdir::String, dirname::String; dt::T = 0.0, dt_output::T = 0
             println("max: hzz = $umax")
         end
         println("mode = ($(i-1), $(j-1))")
-        println("n = $indices")
         println("------------------------------------------------------------")
         println("\n")
     end
