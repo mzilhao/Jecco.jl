@@ -1,8 +1,6 @@
 #This script will set up and solve the equations, in fourier space, for the gravitational wave
 #perturbation h as a function of time. We solve (Dtt+k^2)h(t,k)=T(t,k).
 
-#TODO: The integrator does not evolve in time, always spits dh = 0, fix it.
-
 import Base.Threads.@threads
 using FFTW
 using LinearAlgebra
@@ -48,6 +46,13 @@ function Fourier_Transform_2D(f::Array{T,2}) where {T<:Real}
     plan = plan_rfft(f)
 
     fk   = 1/(Nx*Ny).*(plan * f)
+end
+
+function Inverse_Fourier_Transform_2D(f::Array{T,2}, Nx::Int) where {T<:Complex}
+    plan  = plan_irfft(f, Nx)
+    _, Ny = size(f)
+
+    f_xy  = Nx*Ny.*(plan * f)
 end
 
 function Inverse_Fourier_Transform_2D(u::Array{T,1}, Nkx::Int, Nky::Int, Nx::Int) where {T<:Complex}
@@ -157,9 +162,10 @@ function rhs(h_evol::Array{T,1}, param::Parameters, t::TP) where {T<:Complex, TP
 end
 
 #Computes the component associated to field in the bounbdary stress tensor.
-#E.g. field=energy gives us h00 as solution.
+#TODO: It will be faster if we put the index regarding what component of the stress tensor as first
+#Now is set to be the third index.
 function solve_GW(outdir::String, dirname::String; dt::T = 0.0, dt_output::T = 0.0,
-                                    alg, adaptive::Bool = false, option::String="static", tol::T=10^-10) where {T<:Real}
+                                    alg, adaptive::Bool = false, option::String="static", tol::T=10^-16) where {T<:Real}
     px       = VEVTimeSeries(dirname, :px)
     pxy      = VEVTimeSeries(dirname, :pxy)
     py       = VEVTimeSeries(dirname, :py)
@@ -245,5 +251,89 @@ function solve_GW(outdir::String, dirname::String; dt::T = 0.0, dt_output::T = 0
         println("mode = ($(i-1), $(j-1))")
         println("------------------------------------------------------------")
         println("\n")
+    end
+end
+
+
+#Routines to find the TT part of the stress tensor only
+function output_TT_tensor(outdir::String, T_TT::Array{T,3}, chart2D::Chart,
+                                tinfo::Jecco.TimeInfo) where {T<:Real}
+
+    if tinfo.it == 0
+        try run(`mkdir $outdir`) catch end
+    end
+
+    tensor = (
+        Jecco.Field("Txx", view(T_TT, :, :, 1), chart2D),
+        Jecco.Field("Txy", view(T_TT, :, :, 2), chart2D),
+        Jecco.Field("Tyy", view(T_TT, :, :, 3), chart2D),
+        Jecco.Field("Tzz", view(T_TT, :, :, 4), chart2D),
+    )
+    tensor_writer = Jecco.Output(outdir, "TT_", tinfo)
+    tensor_writer(tensor)
+end
+
+function Inverse_Fourier_Transform_2D(f::Array{T,3}, Nx::Int) where {T<:Complex}
+    Nkx, Nky, n = size(f)
+    Ny          = Nky
+    if n != 4
+        @warn "Wrong size for the third index"
+        return
+    end
+
+    plan  = plan_irfft(f[:,:,1], Nx)
+
+    f_xy = zeros(Nx, Ny, n)
+
+    @inbounds @fastmath for i in 1:n
+        f_xy[:,:,i] = Nx*Ny.*(plan * @view f[:,:,i])
+    end
+
+    f_xy
+end
+
+function get_TT_stress_tensor(outdir::String, dirname::String)
+    px         = VEVTimeSeries(dirname, :px)
+    pxy        = VEVTimeSeries(dirname, :pxy)
+    py         = VEVTimeSeries(dirname, :py)
+    pz         = VEVTimeSeries(dirname, :pz)
+    ts         = px.ts
+    Nt, Nx, Ny = size(px)
+    t, x, y    = get_coords(px, :, :, :)
+    chart2D    = Chart(["Cartesian","Cartesian"], ["x","y"], [x[1],y[1]], [x[end],y[end]], [Nx, Ny])
+    dx, dy     = Jecco.delta(chart2D)
+
+    kx       = 2π.*rfftfreq(Nx, 1/dx)
+    ky       = 2π.*fftfreq(Ny, 1/dy)
+    Nkx, Nky = (length(kx), length(ky))
+
+    tinfo = Jecco.TimeInfo(0, 0.0, t[2]-t[1], 0.0)
+
+    @fastmath @inbounds for n in 1:Nt
+        T_TTk = im.*zeros(Nkx, Nky, 4)
+        pxk   = Fourier_Transform_2D(px[n,:,:])
+        pxyk  = Fourier_Transform_2D(pxy[n,:,:])
+        pyk   = Fourier_Transform_2D(py[n,:,:])
+        pzk   = Fourier_Transform_2D(pz[n,:,:])
+        @threads for j in 1:Nky
+            for i in 1:Nkx
+                kkx  = kx[i]
+                kky  = ky[j]
+                k2   = kkx^2+kky^2
+                ppx  = pxk[i,j]
+                ppxy = pxyk[i,j]
+                ppy  = pyk[i,j]
+                ppz  = pzk[i,j]
+
+                T_TTk[i,j,:] = 0.5/k2*(kky^2*ppx+kkx^2*ppy+2*kkx*kky*ppxy-k2*ppz).*[kky^2/k2, kkx*kky/k2, kkx^2/k2, -1]
+            end
+        end
+
+        T_TTk[1,1,:] = [pxk[1,1], pxyk[1,1], pyk[1,1], pzk[1,1]]
+
+        T_TT      = Inverse_Fourier_Transform_2D(T_TTk, Nx)
+        tinfo.it  = ts.iterations[n]
+        tinfo.t   = t[n]
+        output_TT_tensor(outdir, T_TT, chart2D, tinfo)
     end
 end

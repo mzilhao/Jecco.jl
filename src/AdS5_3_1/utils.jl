@@ -78,6 +78,16 @@ struct GWTimeSeries{T} <: TimeSeries{2,T}
     end
 end
 
+struct TTTimeSeries{T} <: TimeSeries{2,T}
+    ts    :: T
+    field :: Symbol
+
+    function TTTimeSeries(foldername::String, field::Symbol)
+        ts = OpenPMDTimeSeries(foldername, "TT_")
+        new{typeof(ts)}(ts, field)
+    end
+end
+
 
 function get_data(ff::BoundaryTimeSeries, it::Int)
     f, chart = get_field(ff.ts, it=it, field=String(ff.field))
@@ -144,6 +154,12 @@ function get_data(ff::AHTimeSeries, it::Int)
 end
 
 function get_data(ff::GWTimeSeries, it::Int)
+    f, chart = get_field(ff.ts, it=it, field=String(ff.field))
+    x, y  = chart[:]
+    f[:,:], [x, y]
+end
+
+function get_data(ff::TTTimeSeries, it::Int)
     f, chart = get_field(ff.ts, it=it, field=String(ff.field))
     x, y  = chart[:]
     f[:,:], [x, y]
@@ -277,6 +293,262 @@ function convert_to_mathematica(dirname::String; outfile::String="data_mathemati
     close(fid)
 end
 
+function e_to_mathematica(ts::OpenPMDTimeSeries, group::HDF5.Group, dit::Int)
+    iterations = ts.iterations
+
+    Nt = length(iterations)
+    t  = zeros(Nt)
+
+    it = 0
+    _, chart = get_energy(ts, it=it)
+
+    _, x, y = chart[:]
+    Nx = length(x)
+    Ny = length(y)
+
+    en   = zeros(Nt,Nx,Ny)
+
+    for (idx,it) in enumerate(iterations)
+        en[idx,:,:] = get_energy(ts, it=it)[1][1,:,:]
+        t[idx]      = ts.current_t
+    end
+
+    T_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
+    n = 1
+    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
+        for j in 1:Nx
+            for k in 1:Ny
+                T_m[:,n] = [t[i] x[j] y[k] en[i,j,k]]
+                n += 1
+            end
+        end
+    end
+    Jecco.write_dataset(group, "energy", T_m)
+    nothing
+end
+
+function Jx_to_mathematica(ts::OpenPMDTimeSeries, group::HDF5.Group, dit::Int)
+    iterations = ts.iterations
+
+    Nt = length(iterations)
+    t  = zeros(Nt)
+
+    it = 0
+    _, chart = get_Jx(ts, it=it)
+
+    _, x, y = chart[:]
+    Nx = length(x)
+    Ny = length(y)
+
+    Jx   = zeros(Nt,Nx,Ny)
+
+    for (idx,it) in enumerate(iterations)
+        Jx[idx,:,:] = get_Jx(ts, it=it)[1][1,:,:]
+        t[idx]      = ts.current_t
+    end
+
+    T_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
+    n = 1
+    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
+        for j in 1:Nx
+            for k in 1:Ny
+                T_m[:,n] = [t[i] x[j] y[k] Jx[i,j,k]]
+                n += 1
+            end
+        end
+    end
+    Jecco.write_dataset(group, "Jx", T_m)
+    nothing
+end
+
+function Jy_to_mathematica(ts::OpenPMDTimeSeries, group::HDF5.Group, dit::Int)
+    iterations = ts.iterations
+
+    Nt = length(iterations)
+    t  = zeros(Nt)
+
+    it = 0
+    _, chart = get_Jy(ts, it=it)
+
+    _, x, y = chart[:]
+    Nx = length(x)
+    Ny = length(y)
+
+    Jy   = zeros(Nt,Nx,Ny)
+
+    for (idx,it) in enumerate(iterations)
+        Jy[idx,:,:] = get_Jy(ts, it=it)[1][1,:,:]
+        t[idx]      = ts.current_t
+    end
+
+    T_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
+    n = 1
+    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
+        for j in 1:Nx
+            for k in 1:Ny
+                T_m[:,n] = [t[i] x[j] y[k] Jy[i,j,k]]
+                n += 1
+            end
+        end
+    end
+    Jecco.write_dataset(group, "Jy", T_m)
+    nothing
+end
+
+function px_to_mathematica(ts::OpenPMDTimeSeries, group::HDF5.Group, dit::Int)
+    iterations = ts.iterations
+
+    Nt = length(iterations)
+    t  = zeros(Nt)
+
+    it = 0
+    _, chart = get_px(ts, it=it)
+
+    _, x, y = chart[:]
+    Nx = length(x)
+    Ny = length(y)
+
+    px   = zeros(Nt,Nx,Ny)
+
+    for (idx,it) in enumerate(iterations)
+        px[idx,:,:] = get_px(ts, it=it)[1][1,:,:]
+        t[idx]      = ts.current_t
+    end
+
+    T_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
+    n = 1
+    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
+        for j in 1:Nx
+            for k in 1:Ny
+                T_m[:,n] = [t[i] x[j] y[k] px[i,j,k]]
+                n += 1
+            end
+        end
+    end
+    Jecco.write_dataset(group, "px", T_m)
+    nothing
+end
+
+function pxy_to_mathematica(ts::OpenPMDTimeSeries, group::HDF5.Group, dit::Int)
+    iterations = ts.iterations
+
+    Nt = length(iterations)
+    t  = zeros(Nt)
+
+    it = 0
+    _, chart = get_pxy(ts, it=it)
+
+    _, x, y = chart[:]
+    Nx = length(x)
+    Ny = length(y)
+
+    pxy   = zeros(Nt,Nx,Ny)
+
+    for (idx,it) in enumerate(iterations)
+        pxy[idx,:,:] = get_pxy(ts, it=it)[1][1,:,:]
+        t[idx]      = ts.current_t
+    end
+
+    T_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
+    n = 1
+    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
+        for j in 1:Nx
+            for k in 1:Ny
+                T_m[:,n] = [t[i] x[j] y[k] pxy[i,j,k]]
+                n += 1
+            end
+        end
+    end
+    Jecco.write_dataset(group, "pxy", T_m)
+    nothing
+end
+
+function py_to_mathematica(ts::OpenPMDTimeSeries, group::HDF5.Group, dit::Int)
+    iterations = ts.iterations
+
+    Nt = length(iterations)
+    t  = zeros(Nt)
+
+    it = 0
+    _, chart = get_py(ts, it=it)
+
+    _, x, y = chart[:]
+    Nx = length(x)
+    Ny = length(y)
+
+    py   = zeros(Nt,Nx,Ny)
+
+    for (idx,it) in enumerate(iterations)
+        py[idx,:,:] = get_py(ts, it=it)[1][1,:,:]
+        t[idx]      = ts.current_t
+    end
+
+    T_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
+    n = 1
+    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
+        for j in 1:Nx
+            for k in 1:Ny
+                T_m[:,n] = [t[i] x[j] y[k] py[i,j,k]]
+                n += 1
+            end
+        end
+    end
+    Jecco.write_dataset(group, "py", T_m)
+    nothing
+end
+
+function pz_to_mathematica(ts::OpenPMDTimeSeries, group::HDF5.Group, dit::Int)
+    iterations = ts.iterations
+
+    Nt = length(iterations)
+    t  = zeros(Nt)
+
+    it = 0
+    _, chart = get_pz(ts, it=it)
+
+    _, x, y = chart[:]
+    Nx = length(x)
+    Ny = length(y)
+
+    pz   = zeros(Nt,Nx,Ny)
+
+    for (idx,it) in enumerate(iterations)
+        pz[idx,:,:] = get_pz(ts, it=it)[1][1,:,:]
+        t[idx]      = ts.current_t
+    end
+
+    T_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
+    n = 1
+    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
+        for j in 1:Nx
+            for k in 1:Ny
+                T_m[:,n] = [t[i] x[j] y[k] pz[i,j,k]]
+                n += 1
+            end
+        end
+    end
+    Jecco.write_dataset(group, "pz", T_m)
+    nothing
+end
+
+function convert_to_mathematica_2(dirname::String; dit::Int = 1, outfile::String="data_mathematica.h5")
+    output     = abspath(dirname, outfile)
+    fid        = h5open(output, "w")
+    group_st   = g_create(fid, "data")
+    ts         = OpenPMDTimeSeries(dirname, prefix="boundary_")
+
+    e_to_mathematica(ts, group_st, dit)
+    Jx_to_mathematica(ts, group_st, dit)
+    Jy_to_mathematica(ts, group_st, dit)
+    px_to_mathematica(ts, group_st, dit)
+    pxy_to_mathematica(ts, group_st, dit)
+    py_to_mathematica(ts, group_st, dit)
+    pz_to_mathematica(ts, group_st, dit)
+
+    close(fid)
+end
+
+#If you have memory issues for big datasets run this routine for the different VEVs you want. it does not load that much.
 function Energy_to_mathematica(dirname::String; dit::Int = 1, outfile::String="energy_mathematica.h5")
     ts = OpenPMDTimeSeries(dirname, prefix="boundary_")
 
@@ -420,5 +692,46 @@ function GW_to_mathematica(dirname::String; dit::Int = 1, outfile::String="GW_ma
     fid      = h5open(output, "w")
     group_st = g_create(fid, "data")
     Jecco.write_dataset(group_st, "hdot2", hdot2_m)
+    close(fid)
+end
+
+function TT_to_mathematica(dirname::String; dit::Int = 1, outfile::String="TTT_mathematica.h5")
+
+    ts         = OpenPMDTimeSeries(dirname, prefix="TT_")
+    iterations = ts.iterations
+    Nt         = length(iterations)
+    t          = zeros(Nt)
+    it         = 0
+    _, chart   = get_field(ts, it=it, field="Txx")
+    x, y       = chart[:]
+    Nx, Ny     = size(chart)
+    T2         = zeros(Nt, Nx, Ny)
+
+    for (idx,it) in enumerate(iterations)
+        Txx         = get_field(ts, it=it, field="Txx")[1]
+        Txy         = get_field(ts, it=it, field="Txy")[1]
+        Tyy         = get_field(ts, it=it, field="Tyy")[1]
+        Tzz         = get_field(ts, it=it, field="Tzz")[1]
+        t[idx]      = ts.current_t
+        T2[idx,:,:] = Txx.^2+Txy.^2+Tyy.^2+Tzz.^2
+    end
+
+    # store in an array suitable for Mathematica
+    T2_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
+
+    n = 1
+    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
+        for j in 1:Nx
+            for k in 1:Ny
+                T2_m[:,n] = [t[i] x[j] y[k] T2[i,j,k]]
+                n += 1
+            end
+        end
+    end
+
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "T2", T2_m)
     close(fid)
 end
