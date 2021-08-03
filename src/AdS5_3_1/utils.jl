@@ -154,14 +154,34 @@ function get_data(ff::AHTimeSeries, it::Int)
 end
 
 function get_data(ff::GWTimeSeries, it::Int)
-    f, chart = get_field(ff.ts, it=it, field=String(ff.field))
+    if String(ff.field) == "hd2"
+        hdxx, chart = get_field(ff.ts, it=it, field="hdxx")
+        hdxy, _     = get_field(ff.ts, it=it, field="hdxy")
+        hdyy, _     = get_field(ff.ts, it=it, field="hdyy")
+        hdzz, _     = get_field(ff.ts, it=it, field="hdzz")
+
+        f   = hdxx.^2+hdxy.^2+hdyy.^2+hdzz.^2
+    else
+        f, chart = get_field(ff.ts, it=it, field=String(ff.field))
+    end
     x, y  = chart[:]
+
     f[:,:], [x, y]
 end
 
 function get_data(ff::TTTimeSeries, it::Int)
-    f, chart = get_field(ff.ts, it=it, field=String(ff.field))
+    if String(ff.field) == "T2"
+        Txx, chart = get_field(ff.ts, it=it, field="Txx")
+        Txy, _     = get_field(ff.ts, it=it, field="Txy")
+        Tyy, _     = get_field(ff.ts, it=it, field="Tyy")
+        Tzz, _     = get_field(ff.ts, it=it, field="Tzz")
+
+        f   = Txx.^2+Txy.^2+Tyy.^2+Tzz.^2
+    else
+        f, chart = get_field(ff.ts, it=it, field=String(ff.field))
+    end
     x, y  = chart[:]
+
     f[:,:], [x, y]
 end
 

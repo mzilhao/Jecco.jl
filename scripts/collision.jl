@@ -16,20 +16,20 @@ folders        = ["2D_bubble_collision_Lx_120_Ly_100_Nx_300_Ny_250/",
                     "2D_bubble_collision_Lx_230_Ly_200_Nx_575_Ny_500/"
 ]
 =#
+#=
 folders = ["2D_eA_1.318_eB_ecold_L_100_N_400",
                         "2D_eA_1.318_eB_ecold_L_120_N_480",
                         "2D_eA_1.318_eB_ecold_L_140_N_560",
                         "2D_eA_1.318_eB_ecold_L_152_N_608",
                         "2D_eA_1.318_eB_ecold_L_172_N_688"
 ]
+=#
+#directories = main_directory.*folders
 
-directories = main_directory.*folders
+#outdir = main_directory.*"2D_eA_1.318_eB_ecold"
 
-outdir = main_directory.*"2D_eA_1.318_eB_ecold"
+#@time AdS5_3_1.same_box_all_runs(outdir, directories)
 
-@time AdS5_3_1.same_box_all_runs(outdir, directories)
-
-nothing
 
 #=
 dirname1 = "/home/mikel/Dropbox/CollisionNewPotential/GW/bubble_collisions/data/2D_bubble_collision"
@@ -49,7 +49,7 @@ plot(x1, e1[1,:,Int(floor(Ny1/2))], lw=3)
 plot!(x2, e2[1,:,Int(floor(Ny2/2))], lw=3)
 
 
-#=
+=#
 dirname = "/home/mikel/Dropbox/CollisionNewPotential/GW/bubble_collisions/data/2D_bubble_collision/"
 #dirname = "/home/mikel/Documents/Jecco.jl/data/spinodal2D_e_1.0_L_20_N_80_AH_0.95/"
 #AdS5_3_1.Energy_to_mathematica(outdir, dit=2)
@@ -97,6 +97,4 @@ hplot = wireframe(
         zlabel = "energy",
         reuse  = false,
 )
-=#
-=#
 =#

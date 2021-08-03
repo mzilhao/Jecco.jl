@@ -1,13 +1,17 @@
 using Jecco, Jecco.AdS5_3_1
-using  PyPlot, PyCall
-import PyPlot.view_init
-#pyplot()
+using Plots
+#using  PyPlot, PyCall
+#import PyPlot.view_init
+pyplot()
 
-dirname = "/home/mikel/Dropbox/CollisionNewPotential/bubble_expansion/2+1/expansions/data/2D_eA_1.318_eB_ecold"
+dirname   = "/home/mikel/Dropbox/CollisionNewPotential/GW/bubble_collisions/data/2D_bubble_collision/"
+video_file = "/home/mikel/Dropbox/CollisionNewPotential/GW/bubble_collisions/e_T2_hd2.gif"
 
 en         = VEVTimeSeries(dirname, :energy)
-t, x, y    = get_coords(en, :, :, :)
-Nt, Nx, Ny = size(en)
+T2         = AdS5_3_1.TTTimeSeries(dirname, :T2)
+hd2        = GWTimeSeries(dirname, :hd2)
+t, x, y    = get_coords(hd2, :, :, :)
+Nt, Nx, Ny = size(hd2)
 
 xx = zeros(Nx, Ny)
 yy = zeros(Nx, Ny)
@@ -21,26 +25,29 @@ end
 
 xcord = reshape(xx, Nx*Ny)
 ycord = reshape(yy, Nx*Ny)
-een   = reshape(en[Nt,:,:], Nx*Ny)
+emax   = maximum(en[:,:,:])
+emin   = minimum(en[:,:,:])
+hd2min = minimum(hd2[:,:,:])
+hd2max = maximum(hd2[:,:,:])
 
 
-
-figure(figsize=(8,8))
-grid(false)
-view_init(50,50)
-xlabel("xΛ")
-ylabel("yΛ")
-zlabel("ℰ/Λ⁴")
-surf(xcord[1:20:end], ycord[1:20:end], een[1:20:end], cmap=ColorMap(:jet)) 
-
-
-#=
-function plot(a::Real, b::Real)
-    xlabel("xΛ")
-    ylabel("yΛ")
-    zlabel("ℰ/Λ⁴")
-    grid(false)
-    view_init(a,b)
-    surf(xcord[1:20:end], ycord[1:20:end], een[1:20:end], cmap=ColorMap("jet"))
+anim = @animate for n in 1:Nt
+    @time begin
+        println("progress = $(Int(floor(n/Nt*100)))%")
+        een = reshape(en[n,:,:], Nx*Ny)
+        p1  = surface(xcord[1:20:end], ycord[1:20:end], een[1:20:end], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin,emax), clims=(emin,emax), camera=(50,50), title="tΛ = $(t[n])")
+        nothing
+        een  = reshape(hd2[n,:,:], Nx*Ny)
+        p2   = surface(xcord[1:20:end], ycord[1:20:end], een[1:20:end], xlabel="xΛ", ylabel="yΛ", zlabel="hd²/Λ⁸",color=:jet, zlim=(hd2min,hd2max), clims=(hd2min,hd2max), camera=(50,50))
+        nothing
+        een   = reshape(T2[n,:,:], Nx*Ny)
+        T2min = minimum(een[:])
+        T2max = maximum(een[:])
+        p3 = surface(xcord[1:20:end], ycord[1:20:end], een[1:20:end], xlabel="xΛ", ylabel="yΛ", zlabel="T²/Λ⁸",color=:jet, zlim=(T2min,T2max), clims=(T2min,T2max), camera=(50,50))
+        nothing
+        plot(p1,p2,p3,size=(1500,1500))
+        nothing
+    end
 end
-=#
+
+gif(anim, video_file, fps=11)

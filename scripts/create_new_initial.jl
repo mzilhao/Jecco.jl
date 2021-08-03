@@ -4,18 +4,18 @@ using Plots
 gr()
 
 dirname   = "/home/mikel/Documents/Jecco.jl/data/end_data/"
-outdir    = "/home/mikel/Dropbox/PhD/Jecco/bubbles/new_data"
+outdir    = "/home/mikel/Documents/Jecco.jl/data/new_data/"
 A_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_A_e_2.0/"
 B_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_B_e_0.209/"
 PS_dir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/e_1.7_L_20_AH_0.95/"
 
 grid = SpecCartGrid3D(
-    x_min            = -40.,
-    x_max            =  40.,
-    x_nodes          =  120,
-    y_min            = -40.,
-    y_max            =  40.,
-    y_nodes          =  120,
+    x_min            = -20.,
+    x_max            =  20.,
+    x_nodes          =  160,
+    y_min            = -20.,
+    y_max            =  20.,
+    y_nodes          =  160,
     u_outer_min      =  0.1,
     u_outer_max      =  1.005,
     u_outer_domains  =  1,
@@ -72,13 +72,13 @@ parameters_collision =AdS5_3_1.new_parameters_coll(
 #AdS5_3_1.create_checkpoint(io, potential)
 #AdS5_3_1.initial_numerical_phi(grid, io, potential)
 #AdS5_3_1.shift(io, potential, new_center=new_center)
-#AdS5_3_1.new_box(grid, io, potential, same_spacing=:no)
+AdS5_3_1.new_box(grid, io, potential, same_spacing=:yes)
 #AdS5_3_1.change_energy(io, e_new, potential, fix=:no)
 #AdS5_3_1.to1plus1(grid, io, potential)
 #AdS5_3_1.to2plus1(io, potential)
 #AdS5_3_1.design_collision(grid, io, parameters_collision)
-AdS5_3_1.bubble_expansion(grid, io, potential, A_dir, B_dir, PS_dir,
-                                  same_spacing=:no, b_cold=true)
+#AdS5_3_1.bubble_expansion(grid, io, potential, A_dir, B_dir, PS_dir,
+#                                  same_spacing=:no, b_cold=true)
 #AdS5_3_1.join_boxes(io, potential, dirname, dirname)
 #AdS5_3_1.cut_1D_hole(io, potential, 3.0, 50)
 #AdS5_3_1.cut_circular_hole(io, potential, 1.0, 70, 70)
@@ -90,6 +90,7 @@ phi21 = BulkTimeSeries(outdir,:phi,1)
 phi22 = BulkTimeSeries(outdir,:phi,2)
 =#
 
+#=
 convert_to_mathematica(io.out_dir)
 
 
@@ -173,4 +174,5 @@ plot!(xPS, a4_AA, lw=3)
 plot!(xPS, a4_BB, lw=3)
 xlabel!("x")
 ylabel!("Energy")
+=#
 =#

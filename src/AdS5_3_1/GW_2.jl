@@ -307,7 +307,10 @@ function get_TT_stress_tensor(outdir::String, dirname::String)
     ky       = 2π.*fftfreq(Ny, 1/dy)
     Nkx, Nky = (length(kx), length(ky))
 
-    tinfo = Jecco.TimeInfo(0, 0.0, t[2]-t[1], 0.0)
+    dt = 0.0
+    try dt = t[2]-t[1] catch end
+
+    tinfo = Jecco.TimeInfo(0, 0.0, dt, 0.0)
 
     @fastmath @inbounds for n in 1:Nt
         T_TTk = im.*zeros(Nkx, Nky, 4)
