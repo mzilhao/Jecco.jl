@@ -62,21 +62,6 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
     _, Nx, Ny = size(sys)
     bulk = Bulk(bulkevol, bulkconstrain)
 
-    B1GF    = getB1(bulk)
-    B2GF    = getB2(bulk)
-    GGF     = getG(bulk)
-    phiGF   = getphi(bulk)
-    SGF     = getS(bulk)
-    FxGF    = getFx(bulk)
-    FyGF    = getFy(bulk)
-    SdGF    = getSd(bulk)
-    B1dGF   = getB1d(bulk)
-    B2dGF   = getB2d(bulk)
-    GdGF    = getGd(bulk)
-    phidGF  = getphid(bulk)
-    AGF     = getA(bulk)
-    xiGF    = getxi(gauge)
-
     Du  = sys.Du
     Dx  = sys.Dx
     Dxx = sys.Dxx
@@ -150,28 +135,28 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
     # nested system, so they haven't been computed before. since we need them
     # here, compute them now
     @sync begin
-        @spawn mul!(deriv.Du_Sd,  Du,  SdGF)
-        @spawn mul!(deriv.Du_B1d, Du,  B1dGF)
-        @spawn mul!(deriv.Du_B2d, Du,  B2dGF)
-        @spawn mul!(deriv.Du_Gd,  Du,  GdGF)
+        @spawn mul!(deriv.Du_Sd,  Du,  bulkconstrain.Sd)
+        @spawn mul!(deriv.Du_B1d, Du,  bulkconstrain.B1d)
+        @spawn mul!(deriv.Du_B2d, Du,  bulkconstrain.B2d)
+        @spawn mul!(deriv.Du_Gd,  Du,  bulkconstrain.Gd)
     end
 
     # interpolate bulk functions (and u-derivatives) to the u=uAH surface
     @inbounds Threads.@threads for j in 1:Ny
         @inbounds for i in 1:Nx
-            B1_uAH[1,i,j]       = interp(view(B1GF,  :,i,j))(uAH)
-            B2_uAH[1,i,j]       = interp(view(B2GF,  :,i,j))(uAH)
-            G_uAH[1,i,j]        = interp(view(GGF,   :,i,j))(uAH)
-            phi_uAH[1,i,j]      = interp(view(phiGF, :,i,j))(uAH)
-            S_uAH[1,i,j]        = interp(view(SGF,   :,i,j))(uAH)
-            Fx_uAH[1,i,j]       = interp(view(FxGF,  :,i,j))(uAH)
-            Fy_uAH[1,i,j]       = interp(view(FyGF,  :,i,j))(uAH)
-            Sd_uAH[1,i,j]       = interp(view(SdGF,  :,i,j))(uAH)
-            B1d_uAH[1,i,j]      = interp(view(B1dGF, :,i,j))(uAH)
-            B2d_uAH[1,i,j]      = interp(view(B2dGF, :,i,j))(uAH)
-            Gd_uAH[1,i,j]       = interp(view(GdGF,  :,i,j))(uAH)
-            phid_uAH[1,i,j]     = interp(view(phidGF,:,i,j))(uAH)
-            A_uAH[1,i,j]        = interp(view(AGF,   :,i,j))(uAH)
+            B1_uAH[1,i,j]       = interp(view(bulk.B1,  :,i,j))(uAH)
+            B2_uAH[1,i,j]       = interp(view(bulk.B2,  :,i,j))(uAH)
+            G_uAH[1,i,j]        = interp(view(bulk.G,   :,i,j))(uAH)
+            phi_uAH[1,i,j]      = interp(view(bulk.phi, :,i,j))(uAH)
+            S_uAH[1,i,j]        = interp(view(bulk.S,   :,i,j))(uAH)
+            Fx_uAH[1,i,j]       = interp(view(bulk.Fx,  :,i,j))(uAH)
+            Fy_uAH[1,i,j]       = interp(view(bulk.Fy,  :,i,j))(uAH)
+            Sd_uAH[1,i,j]       = interp(view(bulk.Sd,  :,i,j))(uAH)
+            B1d_uAH[1,i,j]      = interp(view(bulk.B1d, :,i,j))(uAH)
+            B2d_uAH[1,i,j]      = interp(view(bulk.B2d, :,i,j))(uAH)
+            Gd_uAH[1,i,j]       = interp(view(bulk.Gd,  :,i,j))(uAH)
+            phid_uAH[1,i,j]     = interp(view(bulk.phid,:,i,j))(uAH)
+            A_uAH[1,i,j]        = interp(view(bulk.A,   :,i,j))(uAH)
 
             Du_B1_uAH[1,i,j]    = interp(view(deriv.Du_B1,  :,i,j))(uAH)
             Du_B2_uAH[1,i,j]    = interp(view(deriv.Du_B2,  :,i,j))(uAH)
@@ -203,12 +188,12 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
         @inbounds for i in 1:Nx
             idx   = ind2D[i,j]
 
-            xi    = xiGF[1,i,j]
-            xi_x  = Dx(xiGF, 1,i,j)
-            xi_y  = Dy(xiGF, 1,i,j)
-            xi_xx = Dxx(xiGF, 1,i,j)
-            xi_yy = Dyy(xiGF, 1,i,j)
-            xi_xy = Dx(Dy, xiGF, 1,i,j)
+            xi    = gauge.xi[1,i,j]
+            xi_x  = Dx(gauge.xi, 1,i,j)
+            xi_y  = Dy(gauge.xi, 1,i,j)
+            xi_xx = Dxx(gauge.xi, 1,i,j)
+            xi_yy = Dyy(gauge.xi, 1,i,j)
+            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
             B1    = B1_uAH[1,i,j]
             B2    = B2_uAH[1,i,j]

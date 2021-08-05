@@ -17,6 +17,9 @@ include("potential.jl")
 
 include("initial_data.jl")
 
+# Kreiss-Oliger dissipation and filtering
+include("dissipation.jl")
+
 # time marching orders
 include("setup_rhs.jl")
 

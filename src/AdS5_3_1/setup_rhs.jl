@@ -1,59 +1,16 @@
 
-function (filters::Filters)(boundary::Boundary)
-    a4  = geta4(boundary)
-    fx2 = getfx2(boundary)
-    fy2 = getfy2(boundary)
-
-    filters.ko_filter2D_x(a4)
-    filters.ko_filter2D_x(fx2)
-    filters.ko_filter2D_x(fy2)
-    filters.ko_filter2D_y(a4)
-    filters.ko_filter2D_y(fx2)
-    filters.ko_filter2D_y(fy2)
-    nothing
-end
-
-function (filters::Filters)(gauge::Gauge)
-    xi  = getxi(gauge)
-
-    filters.ko_filter2D_x(xi)
-    filters.ko_filter2D_y(xi)
-    nothing
-end
-
-
-function (filters::Filters)(bulkevol::BulkEvolved)
-    B1  = getB1(bulkevol)
-    B2  = getB2(bulkevol)
-    G   = getG(bulkevol)
-    phi = getphi(bulkevol)
-
-    @sync begin
-        @spawn filters.ko_filter_x(B1)
-        @spawn filters.ko_filter_x(B2)
-        @spawn filters.ko_filter_x(G)
-        @spawn filters.ko_filter_x(phi)
-    end
-    @sync begin
-        @spawn filters.ko_filter_y(B1)
-        @spawn filters.ko_filter_y(B2)
-        @spawn filters.ko_filter_y(G)
-        @spawn filters.ko_filter_y(phi)
-    end
-    @sync begin
-        @spawn filters.exp_filter(B1)
-        @spawn filters.exp_filter(B2)
-        @spawn filters.exp_filter(G)
-        @spawn filters.exp_filter(phi)
-    end
-    nothing
-end
-
-function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartition{Nsys},
+function setup_rhs(tmp::EvolVars, bulkconstrains::BulkPartition{Nsys},
+                   bulkderivs::BulkPartition{Nsys},
                    cache::HorizonCache, systems::SystemPartition,
                    integration::Integration) where {Nsys}
     # function to solve the nested system
     nested = Nested(systems, bulkconstrains, bulkderivs)
+
+    diss_cache = similar(tmp)
+
+    bulkevols_cache   = getbulkevolvedpartition(diss_cache)
+    boundary_cache    = getboundary(diss_cache)
+    gauge_cache       = getgauge(diss_cache)
 
     function (ff_t::EvolVars, ff::EvolVars, evoleq::EvolutionEquations, t)
         bulkevols_t = getbulkevolvedpartition(ff_t)
@@ -64,25 +21,45 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
         boundary    = getboundary(ff)
         gauge       = getgauge(ff)
 
-        # filter after each integration (sub)step
+
+        # filter state vector after each integration (sub)step.
+        vprint("INFO: filtering")
+
+        # Note: one problem with this approach is that it always filters the
+        # state vector upon calling, ie, if this function is called twice with
+        # the *same* state vector (say, for error estimate purposes), the state
+        # vector will be filtered *twice*.
         if t > 0 && integration.filter_poststep
-            @inbounds @threads for aa in 1:Nsys
-                sys = systems[aa]
+            @inbounds for aa in 1:Nsys
+                sys            = systems[aa]
+                bulkevol       = bulkevols[aa]
+                bulkevol_cache = bulkevols_cache[aa]
+
+                apply_dissipation!(bulkevol, bulkevol_cache, sys)
+
+                # exponential filter
                 sys.filters(bulkevols[aa])
             end
-            systems[1].filters(boundary)
-            systems[Nsys].filters(gauge)
+            apply_dissipation!(boundary, boundary_cache, systems[1])
+            apply_dissipation!(gauge, gauge_cache,  systems[Nsys])
         end
 
+
+        vprint("INFO: compute_boundary_t")
         compute_boundary_t!(boundary_t, bulkevols[1], boundary, gauge, systems[1], evoleq)
 
         # solve nested system for the constrained variables
+        vprint("INFO: nested system")
         nested(bulkevols, boundary, gauge, evoleq)
 
+        vprint("INFO: compute_xi_t")
         compute_xi_t!(gauge_t, bulkconstrains[Nsys], bulkevols[Nsys], bulkderivs[Nsys],
                       gauge, cache, systems[Nsys], evoleq.gaugecondition)
 
-        @inbounds @threads for aa in 1:Nsys
+        vprint("INFO: bulkevolved_t")
+        # TODO: check if this loop is thread-safe
+        # @inbounds @threads for aa in 1:Nsys
+        @inbounds for aa in 1:Nsys
             sys           = systems[aa]
             bulkevol_t    = bulkevols_t[aa]
             bulkevol      = bulkevols[aa]

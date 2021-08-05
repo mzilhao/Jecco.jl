@@ -24,6 +24,7 @@ export Cartesian, GaussLobatto
 export CenteredDiff, EqualSizeStencilFD, ChebDeriv, FourierDeriv
 export ChebInterpolator
 export KO_Filter, Exp_Filter
+export KO_Centered
 
 export OpenPMDTimeSeries, get_field
 export FieldTimeSeries, get_coords

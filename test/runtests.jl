@@ -2,8 +2,6 @@ using Test
 
 using Jecco
 using Jecco.AdS5_3_1
-import Jecco.AdS5_3_1.getA
-import Jecco.AdS5_3_1.getxi
 
 @testset "All tests:" begin
 
