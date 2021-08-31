@@ -64,7 +64,8 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     evolvars  = EvolVars(boundary, gauge, bulkevols)
 
     # function that updates the state vector
-    rhs! = setup_rhs(bulkconstrains, bulkderivs, horizoncache, systems, integration)
+    rhs! = setup_rhs(evolvars, bulkconstrains, bulkderivs, horizoncache,
+                     systems, integration)
 
     #=
     limit the default integrator dtmax and qmax values. see:
@@ -155,10 +156,12 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
         Jecco.out_info(tinfo.it, tinfo.t, deltat/telapsed, gauge.xi, "ξ", 1, 200)
 
         # write data
+        vprint("INFO: output data")
         output_evol(u)
         output_constrained(bulkconstrains)
 
         # diagnostics
+        vprint("INFO: diagnostics")
         diag()
 
         # checkpoint

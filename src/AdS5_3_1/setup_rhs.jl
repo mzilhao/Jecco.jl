@@ -1,47 +1,16 @@
 
-function (filters::Filters)(boundary::Boundary)
-    filters.ko_filter2D_x(boundary.a4)
-    filters.ko_filter2D_x(boundary.fx2)
-    filters.ko_filter2D_x(boundary.fy2)
-    filters.ko_filter2D_y(boundary.a4)
-    filters.ko_filter2D_y(boundary.fx2)
-    filters.ko_filter2D_y(boundary.fy2)
-    nothing
-end
-
-function (filters::Filters)(gauge::Gauge)
-    filters.ko_filter2D_x(gauge.xi)
-    filters.ko_filter2D_y(gauge.xi)
-    nothing
-end
-
-function (filters::Filters)(bulkevol::BulkEvolved)
-    @sync begin
-        @spawn filters.ko_filter_x(bulkevol.B1)
-        @spawn filters.ko_filter_x(bulkevol.B2)
-        @spawn filters.ko_filter_x(bulkevol.G)
-        @spawn filters.ko_filter_x(bulkevol.phi)
-    end
-    @sync begin
-        @spawn filters.ko_filter_y(bulkevol.B1)
-        @spawn filters.ko_filter_y(bulkevol.B2)
-        @spawn filters.ko_filter_y(bulkevol.G)
-        @spawn filters.ko_filter_y(bulkevol.phi)
-    end
-    @sync begin
-        @spawn filters.exp_filter(bulkevol.B1)
-        @spawn filters.exp_filter(bulkevol.B2)
-        @spawn filters.exp_filter(bulkevol.G)
-        @spawn filters.exp_filter(bulkevol.phi)
-    end
-    nothing
-end
-
-function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartition{Nsys},
+function setup_rhs(tmp::EvolVars, bulkconstrains::BulkPartition{Nsys},
+                   bulkderivs::BulkPartition{Nsys},
                    cache::HorizonCache, systems::SystemPartition,
                    integration::Integration) where {Nsys}
     # function to solve the nested system
     nested = Nested(systems, bulkconstrains, bulkderivs)
+
+    diss_cache = similar(tmp)
+
+    bulkevols_cache   = getbulkevolvedpartition(diss_cache)
+    boundary_cache    = getboundary(diss_cache)
+    gauge_cache       = getgauge(diss_cache)
 
     function (ff_t::EvolVars, ff::EvolVars, evoleq::EvolutionEquations, t)
         bulkevols_t = getbulkevolvedpartition(ff_t)
@@ -52,24 +21,42 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, bulkderivs::BulkPartitio
         boundary    = getboundary(ff)
         gauge       = getgauge(ff)
 
-        # filter after each integration (sub)step
+
+        # filter state vector after each integration (sub)step.
+        vprint("INFO: filtering")
+
+        # Note: one problem with this approach is that it always filters the
+        # state vector upon calling, ie, if this function is called twice with
+        # the *same* state vector (say, for error estimate purposes), the state
+        # vector will be filtered *twice*.
         if t > 0 && integration.filter_poststep
             @inbounds for aa in 1:Nsys
-                sys = systems[aa]
+                sys            = systems[aa]
+                bulkevol       = bulkevols[aa]
+                bulkevol_cache = bulkevols_cache[aa]
+
+                apply_dissipation!(bulkevol, bulkevol_cache, sys)
+
+                # exponential filter
                 sys.filters(bulkevols[aa])
             end
-            systems[1].filters(boundary)
-            systems[Nsys].filters(gauge)
+            apply_dissipation!(boundary, boundary_cache, systems[1])
+            apply_dissipation!(gauge, gauge_cache,  systems[Nsys])
         end
 
+
+        vprint("INFO: compute_boundary_t")
         compute_boundary_t!(boundary_t, bulkevols[1], boundary, gauge, systems[1], evoleq)
 
         # solve nested system for the constrained variables
+        vprint("INFO: nested system")
         nested(bulkevols, boundary, gauge, evoleq)
 
+        vprint("INFO: compute_xi_t")
         compute_xi_t!(gauge_t, bulkconstrains[Nsys], bulkevols[Nsys], bulkderivs[Nsys],
                       gauge, cache, systems[Nsys], evoleq.gaugecondition)
 
+        vprint("INFO: bulkevolved_t")
         # TODO: check if this loop is thread-safe
         # @inbounds @threads for aa in 1:Nsys
         @inbounds for aa in 1:Nsys

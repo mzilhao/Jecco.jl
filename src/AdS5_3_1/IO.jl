@@ -317,3 +317,9 @@ function recover(bulkevols::BulkPartition, boundary::Boundary, gauge::Gauge,
 
     ts.current_iteration, ts.current_t
 end
+
+# for non-verbose output
+vprint = x -> nothing
+
+# for verbose output
+# vprint(x) = println(x)

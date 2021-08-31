@@ -51,41 +51,30 @@ function Jecco.Atlas(grid::SpecCartGrid3D{T}) where {T}
     Atlas([inner_chart; outer_charts])
 end
 
-struct Filters{F1,F2,F3,F4,F5}
+struct Filters{F1}
     exp_filter    :: F1
-    ko_filter_x   :: F2
-    ko_filter_y   :: F3
-    ko_filter2D_x :: F4
-    ko_filter2D_y :: F5
 end
 function Filters(filter_gamma::T, KO_order::Int, sigma_diss::T,
                  Nu::Int, Nx::Int, Ny::Int) where {T}
     exp_filter    = Exp_Filter{1}(filter_gamma, Nu, Nx, Ny)
-
-    ko_filter_x   = KO_Filter{2}(KO_order, sigma_diss, Nu, Nx, Ny)
-    ko_filter_y   = KO_Filter{3}(KO_order, sigma_diss, Nu, Nx, Ny)
-
-    ko_filter2D_x = KO_Filter{2}(KO_order, sigma_diss, 1, Nx, Ny)
-    ko_filter2D_y = KO_Filter{3}(KO_order, sigma_diss, 1, Nx, Ny)
-
-    Filters{typeof(exp_filter), typeof(ko_filter_x), typeof(ko_filter_y), typeof(ko_filter2D_x),
-            typeof(ko_filter2D_y)}(exp_filter, ko_filter_x, ko_filter_y,
-                                   ko_filter2D_x, ko_filter2D_y)
+    Filters{typeof(exp_filter)}(exp_filter)
 end
 
-struct System{GT,Cu,Cx,Cy,Du,Dx,Dy,TI,TF}
+struct System{GT,Cu,Cx,Cy,TDu,TDx,TDy,TI,TF,TDKOx,TDKOy}
     gridtype    :: GT
     ucoord      :: Cu
     xcoord      :: Cx
     ycoord      :: Cy
-    Du          :: Du
-    Duu         :: Du
-    Dx          :: Dx
-    Dxx         :: Dx
-    Dy          :: Dy
-    Dyy         :: Dy
+    Du          :: TDu
+    Duu         :: TDu
+    Dx          :: TDx
+    Dxx         :: TDx
+    Dy          :: TDy
+    Dyy         :: TDy
     uinterp     :: TI
     filters     :: TF
+    DKOx        :: TDKOx
+    DKOy        :: TDKOy
 end
 
 function System(gridtype::GT, ucoord::GaussLobattoCoord,
@@ -106,10 +95,15 @@ function System(gridtype::GT, ucoord::GaussLobattoCoord,
     filters  = Filters(filter_gamma, KO_order, sigma_diss, ucoord.nodes,
                        xcoord.nodes, ycoord.nodes)
 
+    DKOx  = KO_Centered{2}(KO_order, sigma_diss, Jecco.delta(xcoord), xcoord.nodes)
+    DKOy  = KO_Centered{3}(KO_order, sigma_diss, Jecco.delta(ycoord), ycoord.nodes)
+
     System{GT, typeof(ucoord), typeof(xcoord), typeof(ycoord), typeof(Du),
            typeof(Dx), typeof(Dy), typeof(uinterp),
-           typeof(filters)}(gridtype, ucoord, xcoord, ycoord,
-                            Du, Duu, Dx, Dxx, Dy, Dyy, uinterp, filters)
+           typeof(filters),
+           typeof(DKOx), typeof(DKOy)}(gridtype, ucoord, xcoord, ycoord,
+                                       Du, Duu, Dx, Dxx, Dy, Dyy, uinterp, filters,
+                                       DKOx, DKOy)
 end
 
 Base.size(sys::System) = (sys.ucoord.nodes, sys.xcoord.nodes, sys.ycoord.nodes)

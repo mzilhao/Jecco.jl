@@ -1,69 +1,57 @@
 
-function initial_data(sys, p::ParamID)
-    if p.ID_type == "sine2D"
-        return sine2D(sys, p)
-    elseif p.ID_type == "uniform2D"
-        return uniform2D(sys, p)
-    else
-        error("Unknown initial data type.")
-    end
+Base.@kwdef struct Uniform2D{T} <: InitialData
+    phi2  :: T  = 1.0
 end
 
-function uniform2D(sys::System, p::ParamID)
+Base.@kwdef struct Sine2D{T} <: InitialData
+    Lx :: T
+    Ly :: T
+    kx :: Int
+    ky :: Int
+end
+
+
+function (id::InitialData)(bulkevols, boundary::Boundary, systems::SystemPartition)
+    init_data!(boundary, systems[1], id)
+    init_data!(bulkevols, systems, id)
+    nothing
+end
+
+function init_data!(bulkevols, systems::SystemPartition, id::InitialData)
+    # the Ref() makes its argument a scalar with respect to broadcast
+    init_data!.(bulkevols, systems, Ref(id))
+end
+
+function init_data!(bulk::BulkEvolved, sys::System, id::InitialData)
     Nu, Nx, Ny = size(sys)
+    xx = sys.xcoord
+    yy = sys.ycoord
+    uu = sys.ucoord
 
-    phif  = zeros(Nu, Nx, Ny)
-
-    # TODO: make parameter
-    phi2 = 1.0
+    phi = getphi(bulk)
 
     for j in 1:Ny
         for i in 1:Nx
             for a in 1:Nu
-                phif[a,i,j] = phi2
+                u  = uu[a]
+                x  = xx[i]
+                y  = yy[j]
+                phi[a,i,j] = analytic_phi(u, x, y, id)
             end
         end
     end
 
-    phif
+    bulk
 end
 
-uniform2D(systems::Array, p::ParamID) = [uniform2D(sys, p) for sys in systems]
+analytic_phi(u, x, y, id::Uniform2D) = id.phi2
 
-sine2D(x, y, Lx::Real, Ly::Real, kx::Integer, ky::Integer) =
-             sin( 2*π * kx / Lx * x ) * sin( 2*π * ky / Ly * y )
+analytic_phi(u, x, y, id::Sine2D) =
+    sin( 2*π * id.kx / id.Lx * x ) * sin( 2*π * id.ky / id.Ly * y )
 
-function sine2D(sys::System, p::ParamID)
-    Nu, Nx, Ny = size(sys)
-    ucoord = sys.ucoord
-    xcoord = sys.xcoord
-    ycoord = sys.ycoord
 
-    phif  = zeros(Nu, Nx, Ny)
+function init_data!(boundary::Boundary, sys::System, id::InitialData)
+    a4GF = geta4(boundary)
 
-    Lx    = p.Lx
-    Ly    = p.Ly
-
-    kx = 2
-    ky = 4
-
-    for j in 1:Ny
-        for i in 1:Nx
-            for a in 1:Nu
-                u = ucoord[a]
-                x = xcoord[i]
-                y = ycoord[j]
-                phif[a,i,j] = sine2D(x, y, Lx, Ly, kx, ky)
-            end
-        end
-    end
-
-    phif
-end
-
-sine2D(systems::Array, p::ParamID) = [sine2D(sys, p) for sys in systems]
-
-function ones2D(sys::System)
-    Nu, Nx, Ny = size(sys)
-    ones(Nx, Ny)
+    fill!(a4GF, -1)
 end

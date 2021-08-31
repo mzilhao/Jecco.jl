@@ -1,12 +1,10 @@
 
-import Base.Threads.@threads
-import Base.Threads.@spawn
-using LinearAlgebra
-
-function solve_lin_system!(sol, A_mat, b_vec)
-    A_fact = lu!(A_mat)
-    ldiv!(A_fact, b_vec)
-    sol .= b_vec
+function solve_lin_system!(A_mat, b_vec)
+    # passing Val(false) to the second argument turns off pivoting. it seems to
+    # improve speed for the small matrices that we typically consider. we can
+    # revisit this (or make it a parameter) if needed.
+    A_fact = lu!(A_mat, Val(false))
+    ldiv!(A_fact, b_vec)        # b_vec is overwritten to store the result
     nothing
 end
 
@@ -14,157 +12,177 @@ struct Aux{T<:Real}
     A_mat   :: Matrix{T}
     b_vec   :: Vector{T}
     ABCS    :: Vector{T}
-    vars    :: AllVars{T}
-
     function Aux{T}(N::Int) where {T<:Real}
         A_mat  = zeros(T, N, N)
         b_vec  = zeros(T, N)
         ABCS   = zeros(T, 4)
-        vars   = AllVars{T}()
-
-        new(A_mat, b_vec, ABCS, vars)
+        new(A_mat, b_vec, ABCS)
     end
 end
-
-struct Nested{S,D,T<:Real}
-    sys     :: S
-    uu      :: Vector{T}
-    xx      :: Vector{T}
-    yy      :: Vector{T}
-    Du_phi  :: D
-    Dxx_phi :: D
-    Dyy_phi :: D
-    Du_phid :: D
-    aux_acc :: Vector{Aux{T}}
-end
-function Nested(sys::System)
+function Aux{T}(sys::System) where {T}
     Nu, Nx, Ny = size(sys)
-    uu   = sys.ucoord[:]
-    xx   = sys.xcoord[:]
-    yy   = sys.ycoord[:]
-
-    Du_phi    = zeros(Nu, Nx, Ny)
-    Dxx_phi   = zeros(Nu, Nx, Ny)
-    Dyy_phi   = zeros(Nu, Nx, Ny)
-    Du_phid   = zeros(Nu, Nx, Ny)
-
     nt = Threads.nthreads()
     # pre-allocate thread-local aux quantities
-    aux_acc = [Aux{eltype(uu)}(Nu) for _ in 1:nt]
-
-    Nested{typeof(sys),typeof(Du_phi), eltype(uu)}(sys,uu, xx, yy, Du_phi, Dxx_phi,
-                                                      Dyy_phi, Du_phid, aux_acc)
+    [Aux{T}(Nu) for _ in 1:nt]
 end
 
-Nested(systems::Vector) = [Nested(sys) for sys in systems]
+struct BC{T}
+    phid :: Array{T,2}
+    Sd   :: Array{T,2}
+    A    :: Array{T,2}
+end
+function BC{T}(Nx::Int, Ny::Int) where {T<:Real}
+    phid = Array{T}(undef, Nx, Ny)
+    Sd   = Array{T}(undef, Nx, Ny)
+    A    = Array{T}(undef, Nx, Ny)
+    BC{T}(phid, Sd, A)
+end
+
+function BCs(systems::SystemPartition)
+    sys1  = systems[1]
+    T     = Jecco.coord_eltype(sys1.ucoord)
+    _, Nx, Ny = size(sys1)
+
+    [BC{T}(Nx, Ny) for sys in systems]
+end
 
 
-function solve_nested_g1!(bulk::BulkVars, BC::BulkVars, nested::Nested)
-    sys  = nested.sys
-    uu   = nested.uu
-    xx   = nested.xx
-    yy   = nested.yy
+function solve_phid!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc::BC,
+                     deriv::BulkDeriv, aux_acc, sys::System, evoleq::AffineNull)
+    phiGF  = getphi(bulkevol)
+    phidGF = getphid(bulkconstrain)
+    SdGF   = getSd(bulkconstrain)
+    AGF    = getA(bulkconstrain)
 
-    Du_phi  = nested.Du_phi
-    Dxx_phi = nested.Dxx_phi
-    Dyy_phi = nested.Dyy_phi
-    Du_phid = nested.Du_phid
+    Du_phi  = deriv.Du_phi
 
-    aux_acc = nested.aux_acc
+    Nu, Nx, Ny = size(sys)
 
     Du  = sys.Du
     Duu = sys.Duu
-    # Dx  = sys.Dx
+    Dx  = sys.Dx
     Dxx = sys.Dxx
-    # Dy  = sys.Dy
+    Dy  = sys.Dy
     Dyy = sys.Dyy
 
-    t1 = @spawn mul!(Du_phi, Du, bulk.phi)
-    t2 = @spawn mul!(Dxx_phi, Dxx, bulk.phi)
-    t3 = @spawn mul!(Dyy_phi, Dyy, bulk.phi)
+    potential = evoleq.potential
 
-    # set Sd
-    @fastmath @inbounds for j in eachindex(yy)
-        @inbounds for i in eachindex(xx)
-            @inbounds @simd for a in eachindex(uu)
-                bulk.Sd[a,i,j] = BC.Sd[i,j]
-            end
-        end
-    end
-
-    wait(t1)
-    wait(t2)
-    wait(t3)
-
-    # solve for phidg1
-
-    @fastmath @inbounds @threads for j in eachindex(yy)
-        @inbounds for i in eachindex(xx)
+    @fastmath @inbounds @threads for j in 1:Ny
+        @inbounds for i in 1:Nx
             id  = Threads.threadid()
             aux = aux_acc[id]
 
-            @inbounds @simd for a in eachindex(uu)
-                aux.vars.u       = uu[a]
-                aux.vars.Sd_d0   = bulk.Sd[a,i,j]
-                aux.vars.phi_d0  = bulk.phi[a,i,j]
-                aux.vars.phi_du  = Du_phi[a,i,j]
-                aux.vars.phi_dxx = Dxx_phi[a,i,j]
-                aux.vars.phi_dyy = Dyy_phi[a,i,j]
+            @inbounds @simd for a in 1:Nu
+                u      = sys.ucoord[a]
 
-                phig1_eq_coeff!(aux.ABCS, aux.vars)
+                Sd     = SdGF[a,i,j]
+                phi    = phiGF[a,i,j]
+                phi_u  = Du_phi[a,i,j]
+                phi_xx = Dxx(phiGF,a,i,j)
+                phi_yy = Dyy(phiGF,a,i,j)
 
-                aux.b_vec[a]     = -aux.ABCS[4]
+                vars = (potential, u, Sd, phi, phi_u, phi_xx, phi_yy)
 
-                @inbounds @simd for aa in eachindex(uu)
+                phid_eq_coeff!(aux.ABCS, vars)
+
+                aux.b_vec[a]   = -aux.ABCS[4]
+                @inbounds @simd for aa in 1:Nu
                     aux.A_mat[a,aa] = aux.ABCS[1] * Duu[a,aa] + aux.ABCS[2] * Du[a,aa]
                 end
                 aux.A_mat[a,a] += aux.ABCS[3]
             end
 
-            # boundary condition
-            aux.b_vec[1]    = BC.phid[i,j]
+            # BC (first order equation)
+
+            aux.b_vec[1]    = bc.phid[i,j]
             aux.A_mat[1,:] .= 0.0
             aux.A_mat[1,1]  = 1.0
 
-            sol = view(bulk.phid, :, i, j)
-            solve_lin_system!(sol, aux.A_mat, aux.b_vec)
+            solve_lin_system!(aux.A_mat, aux.b_vec)
+
+            @inbounds @simd for aa in 1:Nu
+                phidGF[aa,i,j] = aux.b_vec[aa]
+            end
+
         end
     end
 
-    # set Ag1
-    @fastmath @inbounds for j in eachindex(yy)
-        @inbounds for i in eachindex(xx)
-            @inbounds @simd for a in eachindex(uu)
-                bulk.A[a,i,j] = BC.A[i,j]
+    nothing
+end
+
+
+function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc::BC,
+                       deriv::BulkDeriv, aux_acc, sys::System, evoleq::AffineNull)
+    phiGF  = getphi(bulkevol)
+    phidGF = getphid(bulkconstrain)
+    SdGF   = getSd(bulkconstrain)
+    AGF    = getA(bulkconstrain)
+
+    Du_phi  = deriv.Du_phi
+    Du_phid = deriv.Du_phid
+
+    Nu, Nx, Ny = size(sys)
+
+    Du  = sys.Du
+    Duu = sys.Duu
+    Dx  = sys.Dx
+    Dxx = sys.Dxx
+    Dy  = sys.Dy
+    Dyy = sys.Dyy
+
+
+    # set Sd and A
+    @fastmath @inbounds for j in 1:Ny
+        @inbounds for i in 1:Nx
+            @inbounds @simd for a in 1:Nu
+                SdGF[a,i,j] = bc.Sd[i,j]
+                AGF[a,i,j]  = bc.A[i,j]
             end
         end
     end
 
+    # solve for phid
+    solve_phid!(bulkconstrain, bulkevol, bc, deriv, aux_acc, sys, evoleq)
 
-    # finally compute dphidt_g1
+    # take u-derivatives of phid
+    mul!(Du_phid,  Du,  phidGF)
 
-    mul!(Du_phid, Du, bulk.phid)
+    nothing
+end
 
-    @fastmath @inbounds @threads for j in eachindex(yy)
-        @inbounds for i in eachindex(xx)
-            id  = Threads.threadid()
-            aux = aux_acc[id]
-            @inbounds @simd for a in eachindex(uu)
-                aux.vars.u       = uu[a]
 
-                aux.vars.phi_d0  = bulk.phi[a,i,j]
-                aux.vars.phid_d0 = bulk.phid[a,i,j]
-                aux.vars.A_d0    = bulk.A[a,i,j]
+function syncBCs!(bc::BC, bulk::BulkConstrained, deriv::BulkDeriv, sys::System)
+    _, Nx, Ny = size(sys)
 
-                aux.vars.phi_du  = Du_phi[a,i,j]
-                aux.vars.phid_du = Du_phid[a,i,j]
+    phidGF = getphid(bulk)
+    SdGF   = getSd(bulk)
+    AGF    = getA(bulk)
 
-                if aux.vars.u > 1.e-9
-                    bulk.dphidt[a,i,j]  = dphig1dt(aux.vars)
-                else
-                    bulk.dphidt[a,i,j]  = dphig1dt_u0(aux.vars)
-                end
-            end
+    # we are here assuming that the inner and outer grids merely touch at the
+    # interface, so we pass the values at this point without any interpolation
+    @fastmath @inbounds @threads for j in 1:Ny
+        @inbounds @simd for i in 1:Nx
+            bc.Sd[i,j]   = SdGF[end,i,j]
+            bc.phid[i,j] = phidGF[end,i,j]
+            bc.A[i,j]    = AGF[end,i,j]
+        end
+    end
+
+    nothing
+end
+
+function set_innerBCs!(bc::BC, bulk::BulkEvolved, boundary::Boundary,
+                       deriv::BulkDeriv, sys::System)
+    _, Nx, Ny = size(sys)
+
+    phiGF = getphi(bulk)
+    a4GF  = geta4(boundary)
+
+    @fastmath @inbounds @threads for j in 1:Ny
+        @inbounds @simd for i in 1:Nx
+            bc.phid[i,j] = phiGF[1,i,j]
+            bc.Sd[i,j]   = 0.5 * a4GF[1,i,j]
+            bc.A[i,j]    = a4GF[1,i,j]
         end
     end
 
@@ -172,68 +190,74 @@ function solve_nested_g1!(bulk::BulkVars, BC::BulkVars, nested::Nested)
 end
 
 
-function solve_nested_g1!(bulk::BulkVars, BC::BulkVars, boundary::BoundaryVars,
-                          nested::Nested)
-    # u=0 boundary
-    BC.Sd   .= 0.5 * boundary.a4
-    BC.phid .= bulk.phi[1,:,:] # phi2
-    BC.A    .= boundary.a4
+function solve_nesteds!(bulkconstrains, bulkevols, boundary::Boundary,
+                        bcs, derivs, aux_accs,
+                        systems::SystemPartition, evoleq::AffineNull)
+    Nsys = length(systems)
 
-    solve_nested_g1!(bulk, BC, nested)
-
-    nothing
-end
-
-function solve_nested_g1!(bulks::Vector, BCs::Vector, boundary::BoundaryVars,
-                          nesteds::Vector)
-    Nsys = length(nesteds)
-
-    # u=0 boundary
-    BCs[1].Sd   .= 0.5 * boundary.a4
-    BCs[1].phid .= bulks[1].phi[1,:,:] # phi2
-    BCs[1].A    .= boundary.a4
-
-    for i in 1:Nsys-1
-        solve_nested_g1!(bulks[i], BCs[i], nesteds[i])
-        BCs[i+1] = bulks[i][end,:,:]
+    # take u-derivatives of the bulkevols functions
+    @inbounds for i in 1:Nsys
+        Du_phi = derivs[i].Du_phi
+        Du     = systems[i].Du
+        phiGF  = getphi(bulkevols[i])
+        mul!(Du_phi, Du, phiGF)
     end
-    solve_nested_g1!(bulks[Nsys], BCs[Nsys], nesteds[Nsys])
 
-    # sync boundary points. note: in a more general situation we may need to
-    # check the characteristic speeds (in this case we just know where the
-    # horizon is)
-    for i in 1:Nsys-1
-        bulks[i].dphidt[end,:,:] .= bulks[i+1].dphidt[1,:,:]
+    set_innerBCs!(bcs[1], bulkevols[1], boundary, derivs[1], systems[1])
+
+    @inbounds for i in 1:Nsys-1
+        solve_nested!(bulkconstrains[i], bulkevols[i], bcs[i],
+                      derivs[i], aux_accs[i], systems[i], evoleq)
+        syncBCs!(bcs[i+1], bulkconstrains[i], derivs[i], systems[i+1])
     end
+    solve_nested!(bulkconstrains[Nsys], bulkevols[Nsys], bcs[Nsys],
+                  derivs[Nsys], aux_accs[Nsys], systems[Nsys], evoleq)
 
     nothing
 end
 
 
-function solve_nested_g1(phi::Array{<:Number,N}, sys::System) where {N}
-    a4 = -ones2D(sys)
-    boundary = BoundaryVars(a4)
-
-    bulk = BulkVars(phi)
-    BC = bulk[1,:,:]
-
-    nested = Nested(sys)
-
-    solve_nested_g1!(bulk, BC, boundary, nested)
-    bulk
+struct Nested{S,C,D,B,A}
+    systems        :: S
+    bulkconstrains :: C
+    derivs         :: D
+    bcs            :: B
+    aux_accs       :: A
 end
 
-function solve_nested_g1(phis::Vector, systems::Vector)
-    a4 = -ones2D(systems[1])
-    boundary = BoundaryVars(a4)
+function Nested(systems::SystemPartition, bulkconstrains::BulkPartition,
+                derivs::BulkPartition)
+    T        = Jecco.coord_eltype(systems[1].ucoord)
+    bcs      = BCs(systems)
+    aux_accs = [Aux{T}(sys) for sys in systems]
 
-    bulks = BulkVars(phis)
-    phis_slice  = [phi[1,:,:] for phi in phis]
-    BCs  = BulkVars(phis_slice)
+    Nested{typeof(systems),typeof(bulkconstrains),typeof(derivs),
+           typeof(bcs),typeof(aux_accs)}(systems, bulkconstrains, derivs, bcs,
+                                         aux_accs)
+end
 
-    Nsys    = length(systems)
-    nesteds = Nested(systems)
+function Nested(systems::SystemPartition, bulkconstrains::BulkPartition)
+    T        = Jecco.coord_eltype(systems[1].ucoord)
+    bcs      = BCs(systems)
+    aux_accs = [Aux{T}(sys) for sys in systems]
+    derivs   = BulkDerivPartition(systems)
 
-    solve_nested_g1!(bulks, BCs, boundary, nesteds)
-    bulks
+    Nested(systems, bulkconstrains, derivs)
+end
+
+function Nested(systems::SystemPartition)
+    T        = Jecco.coord_eltype(systems[1].ucoord)
+    bcs      = BCs(systems)
+    aux_accs = [Aux{T}(sys) for sys in systems]
+
+    bulkconstrains = BulkConstrainedPartition(systems)
+    derivs         = BulkDerivPartition(systems)
+
+    Nested(systems, bulkconstrains, derivs)
+end
+
+function (nested::Nested)(bulkevols::BulkPartition, boundary::Boundary,
+                          evoleq::EvolutionEquations)
+    solve_nesteds!(nested.bulkconstrains, bulkevols, boundary, nested.bcs,
+                   nested.derivs, nested.aux_accs, nested.systems, evoleq)
 end

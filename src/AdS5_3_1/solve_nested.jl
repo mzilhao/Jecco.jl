@@ -8,6 +8,13 @@ function solve_lin_system!(A_mat, b_vec)
     nothing
 end
 
+function solve_lin_system_pivot!(A_mat, b_vec)
+    # for the larger matrices, in the coupled equations, it's better to pivot
+    A_fact = lu!(A_mat, Val(true))
+    ldiv!(A_fact, b_vec)        # b_vec is overwritten to store the result
+    nothing
+end
+
 struct Aux{T<:Real}
     A_mat   :: Matrix{T}
     b_vec   :: Vector{T}
@@ -325,7 +332,7 @@ function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                 aux.A_mat2[2*Nu,aa+Nu] = Du[1,aa]
             end
 
-            solve_lin_system!(aux.A_mat2, aux.b_vec2)
+            solve_lin_system_pivot!(aux.A_mat2, aux.b_vec2)
 
             @inbounds @simd for aa in 1:Nu
                 bulk.Fx[aa,i,j] = aux.b_vec2[aa]
@@ -829,7 +836,7 @@ function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_ac
             aux.A_mat2[1+Nu,:]   .= 0.0
             aux.A_mat2[1+Nu,1+Nu] = 1.0
 
-            solve_lin_system!(aux.A_mat2, aux.b_vec2)
+            solve_lin_system_pivot!(aux.A_mat2, aux.b_vec2)
 
             @inbounds @simd for aa in 1:Nu
                 bulk.B1d[aa,i,j] = aux.b_vec2[aa]
@@ -1219,18 +1226,22 @@ function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc
     bulk = Bulk(bulkevol, bulkconstrain)
 
     # solve for S
+    vprint("INFO: solve_S")
     solve_S!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
 
     # take u-derivatives of S
+    vprint("INFO: S derivatives")
     @sync begin
         @spawn mul!(Du_S,   Du,  bulk.S)
         @spawn mul!(Duu_S,  Duu, bulk.S)
     end
 
     # solve for Fx and Fy
+    vprint("INFO: solve_Fxy")
     solve_Fxy!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
 
     # take u-derivatives of Fx and Fy
+    vprint("INFO: Fxy derivatives")
     @sync begin
         @spawn mul!(Du_Fx,   Du,  bulk.Fx)
         @spawn mul!(Du_Fy,   Du,  bulk.Fy)
@@ -1239,21 +1250,30 @@ function solve_nested!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc
     end
 
     # solve for Sd
+    vprint("INFO: solve_Sd")
     solve_Sd!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
 
-    # solving for B2d, (B1d,Gd) and phid are independent processes. we can
-    # therefore @spawn, here
-    @sync begin
-        @spawn solve_B2d!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
-        @spawn solve_B1dGd!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
-        @spawn solve_phid!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
-    end
+    # equations for B2d, (B1d, Gd) and phid are actually independent of each
+    # other and could be solved in parallel. however, it seems that use of
+    # @spawn here is actually harmful for scaling. since the loops in each
+    # function are already threaded, it seems better not to @spawn.
+
+    vprint("INFO: solve_B2d")
+    solve_B2d!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
+
+    vprint("INFO: solve_B1dGd")
+    solve_B1dGd!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
+
+    vprint("INFO: solve_phid")
+    solve_phid!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
 
     # solve for A
+    vprint("INFO: solve_A")
     solve_A!(bulk, bc, gauge, deriv, aux_acc, sys, evoleq)
 
     # take u-derivatives of A. they will be needed for syncing the domains and
     # also for the xi_t function
+    vprint("INFO: A derivatives")
     mul!(Du_A,   Du,  bulk.A)
     mul!(Duu_A,  Duu, bulk.A)
 
@@ -1449,6 +1469,7 @@ function solve_nesteds!(bulkconstrains, bulkevols, boundary::Boundary, gauge::Ga
     Nsys = length(systems)
 
     # take all u-derivatives of the bulkevols functions
+    vprint("INFO: bulkevols derivatives")
     @sync begin
         @inbounds for i in 1:Nsys
             @spawn mul!(derivs[i].Du_B1,  systems[i].Du,  bulkevols[i].B1)
@@ -1462,18 +1483,23 @@ function solve_nesteds!(bulkconstrains, bulkevols, boundary::Boundary, gauge::Ga
         end
     end
 
+    vprint("INFO: innerBCs")
     set_innerBCs!(bcs[1], bulkevols[1], boundary, gauge, derivs[1], systems[1], evoleq)
 
+    vprint("INFO: solve_nested 1")
     solve_nested!(bulkconstrains[1], bulkevols[1], bcs[1], gauge,
                   derivs[1], aux_accs[1], systems[1], evoleq)
 
+    vprint("INFO: outerBCs")
     set_outerBCs!(bcs[2], bulkconstrains[1], gauge, derivs[1], systems[1], evoleq)
 
     @inbounds for i in 2:Nsys-1
+        vprint("INFO: solve_nested $i")
         solve_nested!(bulkconstrains[i], bulkevols[i], bcs[i], gauge,
                       derivs[i], aux_accs[i], systems[i], evoleq)
         syncBCs!(bcs[i+1], bulkconstrains[i], derivs[i])
     end
+    vprint("INFO: solve_nested $Nsys")
     solve_nested!(bulkconstrains[Nsys], bulkevols[Nsys], bcs[Nsys], gauge,
                   derivs[Nsys], aux_accs[Nsys], systems[Nsys], evoleq)
 

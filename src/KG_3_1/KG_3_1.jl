@@ -1,115 +1,56 @@
 module KG_3_1
 
 using Jecco
+using LinearAlgebra
+using OrdinaryDiffEq
 
-export ParamBase, ParamGrid, ParamID, ParamEvol, ParamIO
-export Potential
-export VV # this will contain the potential
-export System
-export BulkVars, BoundaryVars, AllVars
+import Base.Threads.@threads
+import Base.Threads.@spawn
 
-struct BulkVars{A}
-    phi    :: A
-    S      :: A
-    Sd     :: A
-    phid   :: A
-    A      :: A
-    dphidt :: A
-end
-BulkVars(phi, S, Sd, phid, A, dphidt) =  BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
-function BulkVars(phi::Array{<:Number,N}) where {N}
-    S      = similar(phi)
-    Sd     = similar(phi)
-    phid   = similar(phi)
-    A      = similar(phi)
-    dphidt = similar(phi)
-    BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
-end
+# abstract types and structs used throughout
+include("types.jl")
 
-BulkVars(phis::Vector) = [BulkVars(phi) for phi in phis]
-
-function Base.getindex(bulk::BulkVars, i::Int)
-    phi    = bulk.phi[i]
-    S      = bulk.S[i]
-    Sd     = bulk.Sd[i]
-    phid   = bulk.phid[i]
-    A      = bulk.A[i]
-    dphidt = bulk.dphidt[i]
-    BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
-end
-
-function Base.getindex(bulk::BulkVars, kr::AbstractRange)
-    phi    = bulk.phi[kr]
-    S      = bulk.S[kr]
-    Sd     = bulk.Sd[kr]
-    phid   = bulk.phid[kr]
-    A      = bulk.A[kr]
-    dphidt = bulk.dphidt[kr]
-    BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
-end
-
-function Base.getindex(bulk::BulkVars, I::Vararg)
-    phi    = bulk.phi[I...]
-    S      = bulk.S[I...]
-    Sd     = bulk.Sd[I...]
-    phid   = bulk.phid[I...]
-    A      = bulk.A[I...]
-    dphidt = bulk.dphidt[I...]
-    BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
-end
-
-function Base.getindex(bulk::BulkVars, ::Colon)
-    phi    = bulk.phi[:]
-    S      = bulk.S[:]
-    Sd     = bulk.Sd[:]
-    phid   = bulk.phid[:]
-    A      = bulk.A[:]
-    dphidt = bulk.dphidt[:]
-    BulkVars{typeof(phi)}(phi, S, Sd, phid, A, dphidt)
-end
-
-Base.lastindex(bulk::BulkVars) = lastindex(bulk.phi)
-Base.lastindex(bulk::BulkVars, i::Int) = lastindex(bulk.phi, i)
-
-function setup(par_base)
-    global VV = Potential(par_base)
-end
-
-
-struct BoundaryVars{A}
-    a4   :: A
-end
-
-mutable struct AllVars{T}
-    u        :: T
-
-    phi_d0   :: T
-    phi_du   :: T
-    phi_dxx  :: T
-    phi_dyy  :: T
-
-    Sd_d0    :: T
-
-    phid_d0  :: T
-    phid_du  :: T
-
-    A_d0     :: T
-end
-function AllVars{T}() where {T<:AbstractFloat}
-    N = 1 + 4 + 1 + 2 + 1
-    array = zeros(N)
-    AllVars{T}(array...)
-end
-
-include("param.jl")
 include("system.jl")
-include("initial_data.jl")
+
 include("potential.jl")
-include("dphidt.jl")
+
+include("initial_data.jl")
+
+# nested system
 include("equation_coeff.jl")
 include("solve_nested.jl")
-include("rhs.jl")
+
+# evolution equations
+include("compute_bulkevolved_t.jl")
+
+# time marching orders
+include("setup_rhs.jl")
+
+# input/output
+include("IO.jl")
+
+# run the model
 include("run.jl")
-include("ibvp.jl")
+
+# always set the number of BLAS threads to 1 upon loading the module. by default
+# it uses a bunch of them and we don't want that since they trample over each
+# other when solving the nested systems equations. it's much better to thread
+# over the loop. see also the discussion here:
+# https://github.com/JuliaLang/julia/issues/33409
+#
+# this saves us the tedious task of always setting OMP_NUM_THREADS=1 before
+# launching julia.
+function __init__()
+    LinearAlgebra.BLAS.set_num_threads(1)
+    nothing
+end
+
+export SpecCartGrid3D
+export Potential, ConstPotential, SquarePotential
+export System, SystemPartition
+export BulkEvolvedPartition, BulkConstrainedPartition, Boundary
+export Uniform2D, Sine2D
+export AffineNull
+export Integration, InOut, run_model
 
 end
