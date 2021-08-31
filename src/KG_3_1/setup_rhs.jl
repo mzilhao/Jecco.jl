@@ -21,7 +21,7 @@ function setup_rhs(bulkconstrains::BulkPartition{Nsys}, boundary::Boundary,
         compute_bulkevolved_t_1st!(bulkevol_t, bulkconstrain, bulkevol, deriv,
                                    sys, evoleq)
         # remaining u-domains
-        @inbounds for aa in 2:Nsys
+        @inbounds @threads for aa in 2:Nsys
             sys           = systems[aa]
             bulkevol_t    = bulkevols_t[aa]
             bulkevol      = bulkevols[aa]
