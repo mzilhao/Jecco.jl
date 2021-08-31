@@ -1,4 +1,3 @@
-
 Base.@kwdef struct BlackBrane_xi1{T} <: InitialData
     a40           :: T   = 1.0
     # guess for the AH position
@@ -45,8 +44,6 @@ Base.@kwdef struct BlackBranePert{T} <: ID_ConstantAH
     a4_ampy       :: T   = 0.0
     a4_kx         :: Int = 1
     a4_ky         :: Int = 1
-<<<<<<< HEAD
-=======
     fx2_ampx      :: T   = 0.0
     fx2_ampy      :: T   = 0.0
     fx2_kx        :: Int = 1
@@ -55,7 +52,6 @@ Base.@kwdef struct BlackBranePert{T} <: ID_ConstantAH
     fy2_ampy      :: T   = 0.0
     fy2_kx        :: Int = 1
     fy2_ky        :: Int = 1
->>>>>>> upstream/master
     xi0           :: T   = 0.0
     xmax          :: T
     xmin          :: T
