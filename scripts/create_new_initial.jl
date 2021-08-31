@@ -1,10 +1,7 @@
 using Jecco, Jecco.AdS5_3_1
-using FFTW
-using Plots
-gr()
 
-dirname   = "/home/mikel/Documents/Jecco.jl/data/end_data/"
-outdir    = "/home/mikel/Documents/Jecco.jl/data/new_data/"
+dirname   = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/e_1.6_L_20_AH_0.95/"
+outdir    = "/home/mikel/Dropbox/PhD/Jecco/bubbles/new_data/"
 A_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_A_e_2.0/"
 B_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_B_e_0.209/"
 PS_dir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/e_1.7_L_20_AH_0.95/"
@@ -12,10 +9,10 @@ PS_dir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase
 grid = SpecCartGrid3D(
     x_min            = -20.,
     x_max            =  20.,
-    x_nodes          =  160,
+    x_nodes          =  120,
     y_min            = -20.,
     y_max            =  20.,
-    y_nodes          =  160,
+    y_nodes          =  120,
     u_outer_min      =  0.1,
     u_outer_max      =  1.005,
     u_outer_domains  =  1,
@@ -72,7 +69,7 @@ parameters_collision =AdS5_3_1.new_parameters_coll(
 #AdS5_3_1.create_checkpoint(io, potential)
 #AdS5_3_1.initial_numerical_phi(grid, io, potential)
 #AdS5_3_1.shift(io, potential, new_center=new_center)
-AdS5_3_1.new_box(grid, io, potential, same_spacing=:yes)
+AdS5_3_1.new_box(grid, io, potential, same_spacing=:no)
 #AdS5_3_1.change_energy(io, e_new, potential, fix=:no)
 #AdS5_3_1.to1plus1(grid, io, potential)
 #AdS5_3_1.to2plus1(io, potential)

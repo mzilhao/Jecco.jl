@@ -1,13 +1,12 @@
-
 using Jecco.AdS5_3_1
 
 grid = SpecCartGrid3D(
-    x_min            = -115.,
-    x_max            =  115.,
-    x_nodes          =  575,
-    y_min            = -100.,
-    y_max            =  100.,
-    y_nodes          =  500,
+    x_min            = -10.,
+    x_max            =  10.,
+    x_nodes          =  80,
+    y_min            = -10.,
+    y_max            =  10.,
+    y_nodes          =  80,
     u_outer_min      =  0.1,
     u_outer_max      =  1.005,
     u_outer_domains  =  1,
@@ -40,7 +39,7 @@ id = BlackBranePert(
     a4_ampy     = -0.005,
     a4_ky       = 1,
     xi0         = 0.02,
-    AH_pos      = 1.0,
+    AH_pos      = 0.95,
     xmax        = grid.x_max,
     xmin        = grid.x_min,
     ymin        = grid.y_min,
@@ -54,19 +53,19 @@ evoleq = AffineNull(
 )
 
 diag = DiagAH(
-    find_AH_every_t    = 0.1,
+    find_AH_every_t    = 1.,
 )
 
-outdir = "/home/mikel/Documents/Jecco.jl/data/run/"
+outdir = "/home/mikel/Documents/Jecco.jl/data/e_1.8_L_20_AH_0.95/"
 
 io = InOut(
-    out_boundary_every_t        = 1.,
-    out_bulk_every_t            = 1.,
-    out_gauge_every_t           = 1.,
+    out_boundary_every_t        = 5.,
+    out_bulk_every_t            = 10.,
+    out_gauge_every_t           = 5.,
     #out_bulkconstrained_every_t = 5.0,
     checkpoint_every_walltime_hours = 1,
     out_dir                     = outdir,
-    recover                     = :no,
+    recover                     = :yes,
     recover_dir                 = "/home/mikel/Documents/Jecco.jl/data/new_data/",
     checkpoint_dir              = outdir,
     remove_existing             = true,
@@ -74,7 +73,7 @@ io = InOut(
 
 integration = Integration(
     #dt              = 0.0002,
-    tmax            = 60.,
+    tmax            = 200.,
     ODE_method      = AdS5_3_1.VCABM3(),
     #ODE_method      = AdS5_3_1.AB3(),
     adaptive        = true,
