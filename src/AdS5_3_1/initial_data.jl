@@ -41,6 +41,7 @@ Base.@kwdef struct BlackBranePert{T} <: ID_ConstantAH
     G_nx          :: Int = 1
     G_ny          :: Int = 2
     phi2          :: T   = 0.0
+    phi5          :: T   = 0.0
     a4_ampx       :: T   = 0.0
     a4_ampy       :: T   = 0.0
     a4_kx         :: Int = 1
@@ -80,6 +81,21 @@ Base.@kwdef struct QNM_1D{T} <: InitialData
     oophiM2     :: T   = 0.0
     AH_pos      :: T   = 1.0
     ahf         :: AHF = AHF()
+end
+
+Base.@kwdef struct BlackBraneGaussPert{T} <: InitialData
+    energy_dens   :: T   = 1.0
+    AH_pos        :: T   = 1.0
+    phi0          :: T   = 0.0
+    oophiM2       :: T   = 0.0
+    phi2          :: T   = 0.0
+    xi0           :: T   = 0.0
+    xmax          :: T
+    xmin          :: T
+    ymax          :: T
+    ymin          :: T
+    sigma         :: T
+    ahf           :: AHF = AHF()
 end
 
 
@@ -375,7 +391,7 @@ end
 
 # BlackBranePert initial data
 
-analytic_phi(u, x, y, id::BlackBranePert) = id.phi2 / id.phi0^3
+analytic_phi(u, x, y, id::BlackBranePert) = id.phi2 / id.phi0^3 + id.phi5 / id.phi0^3*u
 
 function analytic_B1(u, x, y, id::BlackBranePert)
     # add the perturbation on B1
@@ -442,7 +458,7 @@ function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBranePert)
     fx2_ky = id.fx2_ky
     fy2_kx = id.fy2_kx
     fy2_ky = id.fy2_ky
-    
+
     xmax = id.xmax
     xmin = id.xmin
     xmid = (xmax + xmin) / 2
@@ -601,6 +617,97 @@ function init_data!(ff::Gauge, sys::System, id::QNM_1D)
     a40 = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
 
     xi0 = 0
+
+    xi  = getxi(ff)
+
+    fill!(xi, xi0)
+
+    ff
+end
+
+
+#Gaussian prob distributions for all the modes
+analytic_phi(u, x, y, id::BlackBraneGaussPert) = id.phi2 / id.phi0^3
+analytic_B1(u, x, y, id::BlackBraneGaussPert)  = 0
+analytic_B2(u, x, y, id::BlackBraneGaussPert)  = 0
+analytic_G(u, x, y, id::BlackBraneGaussPert)   = 0
+
+function a4Perturbation(x::Real, y::Real, nx_max::Int, ny_max::Int, Lx::Real, Ly::Real,
+                            a::Array{T,2}, b::Array{T,2}, c::Array{T,2}, d::Array{T,2}) where {T<:Real}
+
+    sum  = 0.0
+    for ny in 1:ny_max
+        for nx in 1:nx_max
+            sum += a[nx,ny] * cos(2 * π * nx * x / Lx) * cos(2 * π * ny * y / Ly) +
+                    b[nx,ny] * cos(2 * π * nx * x / Lx) * sin(2 * π * ny * y / Ly) +
+                    c[nx,ny] * sin(2 * π * nx * x / Lx) * cos(2 * π * ny * y / Ly) +
+                    d[nx,ny] * sin(2 * π * nx * x / Lx) * sin(2 * π * ny * y / Ly)
+        end
+    end
+
+    sum
+end
+
+function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBraneGaussPert)
+    epsilon = id.energy_dens
+    phi0    = id.phi0
+    phi2    = id.phi2
+    oophiM2 = id.oophiM2
+
+    xmax = id.xmax
+    xmin = id.xmin
+    xmid = (xmax + xmin) / 2
+    ymax = id.ymax
+    ymin = id.ymin
+    ymid = (ymax + ymin) / 2
+    Lx   = xmax-xmin
+    Ly   = ymax-ymin
+
+    _, Nx, Ny = size(sys)
+    xx        = sys.xcoord
+    yy        = sys.ycoord
+
+    phi04 = phi0 * phi0 * phi0 * phi0
+    a40   = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
+
+    a4  = geta4(ff)
+    fx2 = getfx2(ff)
+    fy2 = getfy2(ff)
+
+    fill!(a4, a40)
+    fill!(fx2, 0)
+    fill!(fy2, 0)
+
+    dist = Normal(0.0, id.sigma)
+    a    = reshape(rand(dist, Nx*Ny), Nx, Ny)
+    b    = reshape(rand(dist, Nx*Ny), Nx, Ny)
+    c    = reshape(rand(dist, Nx*Ny), Nx, Ny)
+    d    = reshape(rand(dist, Nx*Ny), Nx, Ny)
+
+    for j in 1:Ny
+        for i in 1:Nx
+            x = xx[i]
+            y = yy[j]
+            # I decided to change to δε/ε following a normal, so the normal pert has to be
+            #multiplied by a factor to enter in the energy correctly.
+            # Going to previous means 4/3*epsilon -> a40
+            a4[1,i,j] += -4/3 * epsilon * a4Perturbation(x, y, Nx, Ny, Lx, Ly, a, b, c, d)
+        end
+    end
+
+    ff
+end
+
+function init_data!(ff::Gauge, sys::System, id::BlackBraneGaussPert)
+    a40     = -id.energy_dens/0.75
+    AH_pos  = id.AH_pos
+
+    # TODO: this guess works best for the conformal case. is there a better one?
+    if id.xi0 == 0
+        xi0 = (-a40)^0.25 - 1/AH_pos
+    else
+        xi0 = id.xi0
+    end
 
     xi  = getxi(ff)
 
