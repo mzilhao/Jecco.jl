@@ -755,3 +755,60 @@ function TT_to_mathematica(dirname::String; dit::Int = 1, outfile::String="TTT_m
     Jecco.write_dataset(group_st, "T2", T2_m)
     close(fid)
 end
+
+
+
+#From exponential basis to cos sin one for real functions.
+function Exp_to_cos_sin(f::Array{T,2}) where {T<:Complex}
+    nkx, nky = size(f)
+    Nkx      = nkx-2
+    Nky      = Int((nky-2)/2)
+    a        = zeros(Nkx, Nky)
+    b        = zeros(Nkx, Nky)
+    c        = zeros(Nkx, Nky)
+    d        = zeros(Nkx, Nky)
+    fk       = im.*zeros(Nkx, 2*Nky)
+
+    fk[:,1:Nky] = f[2:end-1,2:Nky+1]
+    for j in 1:Nky
+        fk[:,Nky+j] = f[2:end-1,end-j+1]
+    end
+    a = real.(fk[:,1:Nky]+fk[:,Nky+1:2*Nky])
+    b = imag.(-fk[:,1:Nky]+fk[:,Nky+1:2*Nky])
+    c = imag.(-fk[:,1:Nky]-fk[:,Nky+1:2*Nky])
+    d = real.(-fk[:,1:Nky]+fk[:,Nky+1:2*Nky])
+
+    a, b, c, d
+end
+
+#Fourier decomposition in coscos, cossin, sincos and sinsin basis
+function Fourier_cos_sin(f::Array{T,2}) where {T<:Real}
+    Nx, Ny     = size(f)
+    plan       = plan_rfft(f)
+    fk         = 1/(Nx*Ny).*(plan * f)
+
+    Exp_to_cos_sin(fk)
+end
+
+function Fourier_cos_sin(dir::String, VEV::Symbol)
+    f          = VEVTimeSeries(dir, VEV)
+    t, x, y    = get_coords(f,:,:,:)
+    Nt, Nx, Ny = size(f)
+    dx         = x[2]-x[1]
+    dy         = y[2]-y[1]
+    kx         = 2*π.*(rfftfreq(Nx,1/dx)[2:end-1])
+    ky         = 2*π.*(rfftfreq(Ny,1/dy)[2:end-1])
+    Nkx        = length(kx)
+    Nky        = length(ky)
+
+    a = zeros(Nt, Nkx, Nky)
+    b = zeros(Nt, Nkx, Nky)
+    c = zeros(Nt, Nkx, Nky)
+    d = zeros(Nt, Nkx, Nky)
+
+    for n in 1:Nt
+        a[n,:,:], b[n,:,:], c[n,:,:], d[n,:,:] = Fourier_cos_sin(f[n,:,:])
+    end
+
+    a, b, c, d
+end
