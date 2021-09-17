@@ -688,8 +688,10 @@ function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBraneGaussPert)
         for i in 1:Nx
             x = xx[i]
             y = yy[j]
-
-            a4[1,i,j] += -a40 * a4Perturbation(x, y, Nx, Ny, Lx, Ly, a, b, c, d)
+            # I decided to change to δε/ε following a normal, so the normal pert has to be
+            #multiplied by a factor to enter in the energy correctly.
+            # Going to previous means 4/3*epsilon -> a40
+            a4[1,i,j] += -4/3 * epsilon * a4Perturbation(x, y, Nx, Ny, Lx, Ly, a, b, c, d)
         end
     end
 
