@@ -1,17 +1,19 @@
 using Jecco, Jecco.AdS5_3_1
 using Plots
-#using  PyPlot, PyCall
-#import PyPlot.view_init
 pyplot()
 
-dirname   = "/home/mikel/Documents/Jecco.jl/data/e_1.8_L_20_AH_0.95/"
-video_file = "/home/mikel/Documents/Jecco.jl/data/e_1.8_L_20_AH_0.95/e_T2.gif"
+dirname    = "/Users/apple/Documents/Jecco.jl/data/spinodal_1/"
+out_file = "/Users/apple/Dropbox/CollisionNewPotential/GW/spinodal/fourier_modes/"
 
+#=
 en         = VEVTimeSeries(dirname, :energy)
 T2         = AdS5_3_1.TTTimeSeries(dirname, :T2)
 #hd2        = GWTimeSeries(dirname, :hd2)
-t, x, y    = get_coords(T2, :, :, :)
-Nt, Nx, Ny = size(T2)
+t, x, y    = get_coords(en, :, :, :)
+Nt, Nx, Ny = size(en)
+Ntt, _, _ = size(T2)
+
+nt = minimum((Ntt, Nt))
 
 
 
@@ -58,22 +60,56 @@ end
 =#
 
 
+
 #If x and y are of same length
 emax   = maximum(en[:,:,:])
 emin   = minimum(en[:,:,:])
+#T2min  = minimum(T2[:,:,:])
+#T2max  = maximum(T2[:,:,:])
 
-anim = @animate for n in 1:Nt
+anim = @animate for n in 1:nt
     @time begin
-        println("progress = $(Int(floor(n/Nt*100)))%")
+        println("progress = $(n/nt*100)%")
         p1  = surface(x, y, en[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin,emax), clims=(emin,emax), camera=(50,50), title="tΛ = $(t[n])")
+        #plot(p1, size=(2000,2000))
         nothing
         T2min = minimum(T2[n,:,:])
         T2max = maximum(T2[n,:,:])
-        p2 = surface(x, y, T2[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="T²/Λ⁸",color=:jet, zlim=(T2min,T2max), clims=(T2min,T2max), camera=(50,50))
+        p2 = surface(x, y, T2[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="T²/Λ⁸",color=:jet, zlim=(T2min,T2max), clims=(T2min,T2max), camera=(50,50), title="tΛ = $(t[n])")
         nothing
-        plot(p1, p2, size=(2000,2000))
+        plot(p1, p2, size=(2000,1000))
         nothing
     end
 end
 
-gif(anim, video_file, fps=1)
+gif(anim, out_file, fps=12)
+
+=#
+
+#Fourier mode plots
+nxmax, nymax = (4, 4)
+@time a, b, c, d  = AdS5_3_1.Fourier_cos_sin(dirname, :energy)
+println("Max cos_cos: $(findmax(abs.(a))[2])")
+println("Max cos_sin: $(findmax(abs.(b))[2])")
+println("Max sin_cos: $(findmax(abs.(c))[2])")
+println("Max sin_sin: $(findmax(abs.(d))[2])")
+
+_, Nkx, Nky = size(a)
+a4          = BoundaryTimeSeries(dirname, :a4)
+t, _, _     = get_coords(a4, :, 1, 1)
+p1 = plot()
+p2 = plot()
+p3 = plot()
+p4 = plot()
+for j in 1:nxmax
+    for i in 1:nymax
+        plot!(p1, t, abs.(a[:,i,j]), lw = 1, label="nx=$i ny=$j")
+        plot!(p2, t, abs.(b[:,i,j]), lw = 1, label="nx=$i ny=$j")
+        plot!(p3, t, abs.(c[:,i,j]), lw = 1, label="nx=$i ny=$j")
+        plot!(p4, t, abs.(d[:,i,j]), lw = 1, label="nx=$i ny=$j")
+    end
+end
+savefig(p1, out_file*"spinodal_a4_cos_cos.pdf")
+savefig(p2, out_file*"spinodal_a4_cos_sin.pdf")
+savefig(p3, out_file*"spinodal_a4_sin_cos.pdf")
+savefig(p4, out_file*"spinodal_a4_sin_sin.pdf")
