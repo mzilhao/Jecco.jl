@@ -2,7 +2,7 @@ using Jecco, Jecco.AdS5_3_1
 using Plots
 pyplot()
 
-dirname    = "/Users/apple/Documents/Jecco.jl/data/spinodal_1/"
+dirname    = "/Users/apple/Documents/Jecco.jl/data/spinodal_2/"
 out_file = "/Users/apple/Dropbox/CollisionNewPotential/GW/spinodal/fourier_modes/"
 
 #=
@@ -82,7 +82,7 @@ anim = @animate for n in 1:nt
     end
 end
 
-gif(anim, out_file, fps=12)
+gif(anim, out_file*"spinodal_a4_e_T2.gif", fps=12)
 
 =#
 
@@ -97,19 +97,39 @@ println("Max sin_sin: $(findmax(abs.(d))[2])")
 _, Nkx, Nky = size(a)
 a4          = BoundaryTimeSeries(dirname, :a4)
 t, _, _     = get_coords(a4, :, 1, 1)
+#idx         = findfirst(t .> 100)
+#println("Max cos_cos: $(findmax(abs.(a[1:idx,:,:]))[2])")
+#println("Max cos_sin: $(findmax(abs.(b[1:idx,:,:]))[2])")
+#println("Max sin_cos: $(findmax(abs.(c[1:idx,:,:]))[2])")
+#println("Max sin_sin: $(findmax(abs.(d[1:idx,:,:]))[2])")
+idx = length(t)
 p1 = plot()
 p2 = plot()
 p3 = plot()
 p4 = plot()
 for j in 1:nxmax
     for i in 1:nymax
-        plot!(p1, t, abs.(a[:,i,j]), lw = 1, label="nx=$i ny=$j")
-        plot!(p2, t, abs.(b[:,i,j]), lw = 1, label="nx=$i ny=$j")
-        plot!(p3, t, abs.(c[:,i,j]), lw = 1, label="nx=$i ny=$j")
-        plot!(p4, t, abs.(d[:,i,j]), lw = 1, label="nx=$i ny=$j")
+        plot!(p1, t[1:idx], abs.(a[1:idx,i,j]), lw = 1, label="nx=$i ny=$j")
+        plot!(p2, t[1:idx], abs.(b[1:idx,i,j]), lw = 1, label="nx=$i ny=$j")
+        plot!(p3, t[1:idx], abs.(c[1:idx,i,j]), lw = 1, label="nx=$i ny=$j")
+        plot!(p4, t[1:idx], abs.(d[1:idx,i,j]), lw = 1, label="nx=$i ny=$j")
     end
 end
-savefig(p1, out_file*"spinodal_a4_cos_cos.pdf")
-savefig(p2, out_file*"spinodal_a4_cos_sin.pdf")
-savefig(p3, out_file*"spinodal_a4_sin_cos.pdf")
-savefig(p4, out_file*"spinodal_a4_sin_sin.pdf")
+xlabel!(p1, "tΛ")
+xlabel!(p2, "tΛ")
+xlabel!(p3, "tΛ")
+xlabel!(p4, "tΛ")
+title!(p1, "Cos*Cos")
+title!(p2, "Cos*Sin")
+title!(p3, "Sin*Cos")
+title!(p4, "Sin*Sin")
+
+pfinal = plot(p1, p2, p3, p4, size=(1000, 1000))
+nothing
+savefig(pfinal, out_file*"spinodal_a4.pdf")
+#=
+savefig(p1, out_file*"spinodal_2_cos_cos.pdf")
+savefig(p2, out_file*"spinodal_2_cos_sin.pdf")
+savefig(p3, out_file*"spinodal_2_sin_cos.pdf")
+savefig(p4, out_file*"spinodal_2_sin_sin.pdf")
+=#
