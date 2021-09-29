@@ -1,4 +1,5 @@
 using HDF5
+using Interpolations
 
 """
 Need to have method `get_data`
@@ -811,4 +812,41 @@ function Fourier_cos_sin(dir::String, VEV::Symbol)
     end
 
     a, b, c, d
+end
+
+function Fourier_ϕ(f::Array{T,2}) where {T<:Real}
+    Nr, Nϕ = size(f)
+    δϕ     = 2π/Nϕ
+    a      = zeros(Nr, Int(floor(Nϕ/2))+1)
+    b      = similar(a)
+    @inbounds for n in 1:Nr
+        plan   = plan_rfft(f[n,:])
+        fk     = 1/Nϕ .* (plan * f[n,:])
+        a[n,:] = 0.5 .*real.(fk)
+        b[n,:] = -0.5 .*imag.(fk)
+    end
+    a, b
+end
+
+function Fourier_ϕ(dir::String, VEV::Symbol; time::Real = 0.0)
+    f         = VEVTimeSeries(dir, VEV)
+    t, x, y   = get_coords(f, :, :, :)
+    δx, δy    = (x[2]-x[1], y[2]-y[1])
+    Lx, Ly    = (x[end]+δx-x[1], y[end]+δy-y[1])
+    n         = findfirst(t .>= time)
+    _, Nx, Ny = size(f)
+    rmax      = minimum((Lx/2-δx, Ly/2-δy))
+    N         = minimum((Nx, Ny))
+    r         = [(i-1)/N*rmax for i in 1:N]
+    ϕ         = [2π*(i-1)/N for i in 1:N]
+    f_inter   = interpolate((x, y, ), f[n,:,:], Gridded(Linear()))
+    f_rϕ      = zeros(N, N)
+
+    @inbounds @threads for j in 1:N
+        for i in 1:N
+            f_rϕ[i,j] = f_inter(r[i]*cos(ϕ[j]), r[i]*sin(ϕ[j]))
+        end
+    end
+
+    r, Fourier_ϕ(f_rϕ)
 end

@@ -274,6 +274,40 @@ function to2plus1(io::InOut, potential::Potential)
     create_outputs(io.out_dir, evolvars, chart2D, Tuple(charts), io, potential, phi0)
 end
 
+function create_circular_symmetric(grid::SpecCartGrid3D, io::InOut, potential::Potential)
+    read_dir          = io.recover_dir
+    ts                = OpenPMDTimeSeries(read_dir, prefix="boundary_")
+    boundary, chart2D = construct_boundary(ts, ts.iterations[end])
+    ts                = OpenPMDTimeSeries(read_dir, prefix="gauge_")
+    gauge, _          = construct_gauge(ts, ts.iterations[end])
+    ts                = OpenPMDTimeSeries(read_dir, prefix="bulk_")
+    bulkevols, charts = construct_bulkevols(ts, ts.iterations[end])
+
+    boundary, gauge, bulkevols, chart2D, atlas = to1plus1(grid, boundary, gauge, bulkevols)
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+            @warn "phi0 not found, setting it to 0.0"
+        else
+            throw(e)
+        end
+    end
+    Nsys = grid.u_outer_domains + 1
+    for n in 1:Nsys
+        fill!(bulkevols[n].G, 0.0)
+        fill!(bulkevols[n].B1, 0.0)
+    end
+    fill!(boundary.fx2, 0.0)
+
+    evolvars, chart2D, charts = to2plus1(boundary, gauge, bulkevols, chart2D, charts)
+    create_outputs(io.out_dir, evolvars, chart2D, Tuple(charts), io, potential, phi0)
+
+end
+
+
 function cut_1D_hole(boundary::Boundary, R::T, chart2D::Chart, chart2D_new::Chart) where {T<:Real}
     a4        = boundary.a4
     fx2       = boundary.fx2

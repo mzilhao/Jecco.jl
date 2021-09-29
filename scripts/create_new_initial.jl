@@ -1,18 +1,18 @@
 using Jecco, Jecco.AdS5_3_1
 
-dirname   = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/e_1.6_L_20_AH_0.95/"
-outdir    = "/home/mikel/Dropbox/PhD/Jecco/bubbles/new_data/"
-A_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_A_e_2.0/"
-B_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_B_e_0.209/"
-PS_dir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/e_1.7_L_20_AH_0.95/"
+dirname   = "/Users/apple/Documents/Jecco.jl/data/end_data_2/"
+outdir    = "/Users/apple/Documents/Jecco.jl/data/new_data_2/"
+#A_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_A_e_2.0/"
+#B_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_B_e_0.209/"
+#PS_dir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/e_1.7_L_20_AH_0.95/"
 
 grid = SpecCartGrid3D(
-    x_min            = -20.,
-    x_max            =  20.,
-    x_nodes          =  120,
-    y_min            = -20.,
-    y_max            =  20.,
-    y_nodes          =  120,
+    x_min            = -50.,
+    x_max            =  50.,
+    x_nodes          =  400,
+    y_min            = -50.,
+    y_max            =  50.,
+    y_nodes          =  400,
     u_outer_min      =  0.1,
     u_outer_max      =  1.005,
     u_outer_domains  =  1,
@@ -22,6 +22,7 @@ grid = SpecCartGrid3D(
     sigma_diss       =  0.2,
 )
 
+phi0  = 1.0
 phiM2 = - (0.85)^2
 phiQ  = 10.
 potential = AdS5_3_1.Phi8Potential(
@@ -69,10 +70,11 @@ parameters_collision =AdS5_3_1.new_parameters_coll(
 #AdS5_3_1.create_checkpoint(io, potential)
 #AdS5_3_1.initial_numerical_phi(grid, io, potential)
 #AdS5_3_1.shift(io, potential, new_center=new_center)
-AdS5_3_1.new_box(grid, io, potential, same_spacing=:no)
+#AdS5_3_1.new_box(grid, io, potential, same_spacing=:no)
 #AdS5_3_1.change_energy(io, e_new, potential, fix=:no)
 #AdS5_3_1.to1plus1(grid, io, potential)
 #AdS5_3_1.to2plus1(io, potential)
+AdS5_3_1.create_circular_symmetric(grid, io, potential)
 #AdS5_3_1.design_collision(grid, io, parameters_collision)
 #AdS5_3_1.bubble_expansion(grid, io, potential, A_dir, B_dir, PS_dir,
 #                                  same_spacing=:no, b_cold=true)
