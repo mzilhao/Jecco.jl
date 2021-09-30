@@ -151,8 +151,8 @@ savefig(p4, out_file*"spinodal_2_sin_sin.pdf")
 =#
 
 
+#=
 #FOURIER MODES IN ANGLE
-
 nmax       = 6
 legend_pos = :topright
 
@@ -171,6 +171,8 @@ title!(p2, "Sin Modes")
 
 pfinal = plot(p1, p2, size=(1000, 500))
 savefig(pfinal, out_file*name)
+=#
+
 
 #=
 #SINGLE RECTANGULAR PLOT

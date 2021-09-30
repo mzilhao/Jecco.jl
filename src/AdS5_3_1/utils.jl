@@ -178,6 +178,38 @@ function get_data(ff::TTTimeSeries, it::Int)
         Tzz, _     = get_field(ff.ts, it=it, field="Tzz")
 
         f   = Txx.^2+Txy.^2+Tyy.^2+Tzz.^2
+    elseif String(ff.field)[2] == 'd'
+        field = split(String(ff.field), 'd')[1]*split(String(ff.field), 'd')[2]
+        if it == ff.ts.iterations[1]
+            T0, chart = get_field(ff.ts, it=it, field=field)
+            i         = ff.ts.current_i
+            t0        = ff.ts.current_t
+            it1       = ff.ts.iterations[i+1]
+            it2       = ff.ts.iterations[i+2]
+            T1, _     = get_field(ff.ts, it=it1, field=field)
+            t1        = ff.ts.current_t
+            T2, _     = get_field(ff.ts, it=it2, field=field)
+            f         = (-1.5 .*T0+2 .*T1-0.5 .*T2)./(t1-t0)
+        elseif it == ff.ts.iterations[end]
+            T0, chart = get_field(ff.ts, it=it, field=field)
+            i         = ff.ts.current_i
+            t0        = ff.ts.current_t
+            it1       = ff.ts.iterations[i-1]
+            it2       = ff.ts.iterations[i-2]
+            T1, _     = get_field(ff.ts, it=it1, field=field)
+            t1        = ff.ts.current_t
+            T2, _     = get_field(ff.ts, it=it2, field=field)
+            f         = (1.5 .*T0-2 .*T1+0.5 .*T2)./(t0-t1)
+        else
+            i         = findfirst(ff.ts.iterations .== it)
+            it1       = ff.ts.iterations[i-1]
+            it2       = ff.ts.iterations[i+1]
+            T1, chart = get_field(ff.ts, it=it1, field=field)
+            t1        = ff.ts.current_t
+            T2, _     = get_field(ff.ts, it=it2, field=field)
+            t2        = ff.ts.current_t
+            f         = (T2-T1)./(t2-t1)
+        end
     else
         f, chart = get_field(ff.ts, it=it, field=String(ff.field))
     end
