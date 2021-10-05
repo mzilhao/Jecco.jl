@@ -218,6 +218,16 @@ function get_data(ff::TTTimeSeries, it::Int)
     f[:,:], [x, y]
 end
 
+function get_Td2(Tdxx::T, Tdxy::T, Tdyy::T, Tdzz::T, it::Int) where {T<:TTTimeSeries}
+
+    Tddxx, _ = get_data(Tdxx, it)
+    Tddxy, _ = get_data(Tdxy, it)
+    Tddyy, _ = get_data(Tdyy, it)
+    Tddzz, _ = get_data(Tdzz, it)
+
+    get_Td2(Tddxx, Tddxy, Tddyy, Tddzz)
+end
+
 function Base.size(ff::TimeSeries)
     Nt  = length(ff.ts.iterations)
     it0 = ff.ts.iterations[1]

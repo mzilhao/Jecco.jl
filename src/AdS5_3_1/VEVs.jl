@@ -403,6 +403,10 @@ function get_entropy(ts_const::OpenPMDTimeSeries, ts_diag::OpenPMDTimeSeries; it
     entr, chart
 end
 
+function get_Td2(Tdxx::Array{T,2}, Tdxy::Array{T,2}, Tdyy::Array{T,2}, Tdzz::Array{T,2}) where {T<:Real}
+
+    Tdxx.^2+Tdxy.^2+Tdyy.^2+Tdzz.^2
+end
 #=
 Computes the fluid velocity and the local frame (diagonal) stress tensor. p3 is just pz. I think that
 ut will always be 1, if not we can always hand ux/ut and uy/ut, which diretly are the speeds measured
