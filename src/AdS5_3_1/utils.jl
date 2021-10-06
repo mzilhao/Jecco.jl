@@ -219,7 +219,6 @@ function get_data(ff::TTTimeSeries, it::Int)
 end
 
 function get_Td2(Tdxx::T, Tdxy::T, Tdyy::T, Tdzz::T, it::Int) where {T<:TTTimeSeries}
-
     Tddxx, _ = get_data(Tdxx, it)
     Tddxy, _ = get_data(Tdxy, it)
     Tddyy, _ = get_data(Tdyy, it)

@@ -2,25 +2,32 @@ using Jecco, Jecco.AdS5_3_1
 using Plots
 pyplot()
 
-dirname    = "/Users/apple/Documents/Jecco.jl/data/new_data/"
-out_file   = "/Users/apple/Dropbox/CollisionNewPotential/bubble_expansion/2+1/expansions/eA_1.318_eB_elow/angular_modes/"
-name       = "Phi_modes_circ_symm_100.pdf"
+dirname   = "/home/mikel/Dropbox/CollisionNewPotential/GW/spinodal/data/spinodal_4/"
+out_file   = "/home/mikel/Dropbox/CollisionNewPotential/GW/spinodal/GW_movies/4/"
+name      = "E_T2_Td2_hd2"
 
 
 en         = VEVTimeSeries(dirname, :energy)
-#T2         = AdS5_3_1.TTTimeSeries(dirname, :T2)
-#hd2        = GWTimeSeries(dirname, :hd2)
+T2         = AdS5_3_1.TTTimeSeries(dirname, :T2)
+hd2        = GWTimeSeries(dirname, :hd2)
 t, x, y    = get_coords(en, :, :, :)
-#Nt, Nx, Ny = size(en)
-#Nt2, _, _  = size(T2)
-#Nt3, _, _  = size(hd2)
+Nt, Nx, Ny = size(en)
+Nt2, _, _  = size(T2)
+Nt3, _, _  = size(hd2)
 
-#nt = minimum((Nt, Nt2, Nt3))
+nt = minimum((Nt, Nt2, Nt3))
+
+Tdxx       = AdS5_3_1.TTTimeSeries(dirname, :Tdxx)
+Tdxy       = AdS5_3_1.TTTimeSeries(dirname, :Tdxy)
+Tdyy       = AdS5_3_1.TTTimeSeries(dirname, :Tdyy)
+Tdzz       = AdS5_3_1.TTTimeSeries(dirname, :Tdzz)
+iterations = Tdxx.ts.iterations
 
 
-#=
+
 #ANIMATIONS
 #Rectangle boxes
+#=
 xx = zeros(Nx, Ny)
 yy = zeros(Nx, Ny)
 
@@ -43,26 +50,32 @@ skip   = 20
 
 anim = @animate for n in 1:nt
     @time begin
-        println("progress = $(Int(floor(n/nt*100)))%")
+        println("progress = $(n/nt*100)%")
         een = reshape(en[n,:,:], Nx*Ny)
-        p1  = surface(xcord[1:skip:end], ycord[1:skip:end], een[1:skip:end], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin,emax), clims=(emin,emax), camera=(50,50), title="tΛ = $(t[n])")
-        nothing
-        een  = reshape(hd2[n,:,:], Nx*Ny)
-        p2   = surface(xcord[1:skip:end], ycord[1:skip:end], een[1:skip:end], xlabel="xΛ", ylabel="yΛ", zlabel="hd²/Λ⁸",color=:jet, zlim=(hd2min,hd2max), clims=(hd2min,hd2max), camera=(50,50))
+        p1  = surface(xcord[1:skip:end], ycord[1:skip:end], een[1:skip:end], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin,emax), clims=(emin,emax), camera=(50,50), title="tΛ = $(t[n])", clegend=:none)
         nothing
         een   = reshape(T2[n,:,:], Nx*Ny)
         T2min = minimum(een[:])
         T2max = maximum(een[:])
-        p3 = surface(xcord[1:skip:end], ycord[1:skip:end], een[1:skip:end], xlabel="xΛ", ylabel="yΛ", zlabel="T²/Λ⁸",color=:jet, zlim=(T2min,T2max), clims=(T2min,T2max), camera=(50,50))
+        p2 = surface(xcord[1:skip:end], ycord[1:skip:end], een[1:skip:end], xlabel="xΛ", ylabel="yΛ", zlabel="T2/Λ⁸",color=:jet, zlim=(T2min,T2max), clims=(T2min,T2max), camera=(50,50), legend=:none)
         nothing
-        plot(p1,p2,p3,size=(3000,2000))
+        Td2   = AdS5_3_1.get_Td2(Tdxx, Tdxy, Tdyy, Tdzz, iterations[n])
+        een   = reshape(Td2[:,:], Nx*Ny)
+        T2min = minimum(een[:])
+        T2max = maximum(een[:])
+        p3 = surface(xcord[1:skip:end], ycord[1:skip:end], een[1:skip:end], xlabel="xΛ", ylabel="yΛ", zlabel="Td2/Λ¹⁰",color=:jet, zlim=(T2min,T2max), clims=(T2min,T2max), camera=(50,50), legend=:none)
+        nothing
+        een  = reshape(hd2[n,:,:], Nx*Ny)
+        p4   = surface(xcord[1:skip:end], ycord[1:skip:end], een[1:skip:end], xlabel="xΛ", ylabel="yΛ", zlabel=String(hd2.field)*"/Λ²",color=:jet, zlim=(hd2min,hd2max), clims=(hd2min,hd2max), camera=(50,50), legend=:none)
+        nothing
+        plot(p1, p2, p3, p4, size=(2000,1000))
         nothing
     end
 end
+=#
 
 
 
-#=
 #SQUARE BOXES
 emax   = maximum(en[:,:,:])
 emin   = maximum(en[:,:,:])
@@ -72,30 +85,33 @@ hd2max = maximum(hd2[:,:,:])
 anim = @animate for n in 1:nt
     @time begin
         println("progress = $(n/nt*100)%")
-        p1  = surface(x, y, en[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin,emax), clims=(emin,emax), camera=(50,50), title="tΛ = $(t[n])")
+        p1     = surface(x, y, en[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin,emax), clims=(emin,emax), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
         nothing
-        T2min = minimum(T2[n,:,:])
-        T2max = maximum(T2[n,:,:])
-        p2 = surface(x, y, T2[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="T²/Λ⁸",color=:jet, zlim=(T2min,T2max), clims=(T2min,T2max), camera=(50,50), title="tΛ = $(t[n])")
+        T2min  = minimum(T2[n,:,:])
+        T2max  = maximum(T2[n,:,:])
+        p2     = surface(x, y, T2[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="T²/Λ⁸",color=:jet, zlim=(T2min,T2max), clims=(T2min,T2max), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
         nothing
-        #hd2min = minimum(hd2[n,:,:])
-        #hd2max = maximum(hd2[n,:,:])
-        p3 = surface(x, y, hd2[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="hd²/Λ⁸",color=:jet, zlim=(hd2min,hd2max), clims=(hd2min,hd2max), camera=(50,50), title="tΛ = $(t[n])")
+        Td2    = AdS5_3_1.get_Td2(Tdxx, Tdxy, Tdyy, Tdzz, iterations[n])
+        Td2min = minimum(Td2[:,:])
+        Td2max = maximum(Td2[:,:])
+        p3     = surface(x, y, Td2[:,:], xlabel="xΛ", ylabel="yΛ", zlabel="Td²/Λ¹⁰",color=:jet, zlim=(Td2min,Td2max), clims=(Td2min,Td2max), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
         nothing
-        plot(p1, p2, p3, size=(3000,2000))
+        p4     = surface(x, y, hd2[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="hd²/Λ⁸",color=:jet, zlim=(hd2min,hd2max), clims=(hd2min,hd2max), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
+        nothing
+        plot(p1, p2, p3, p4, size=(2000,1000))
         nothing
     end
 end
-=#
 
-gif(anim, out_file*video_name*".gif", fps=12)
+
+gif(anim, out_file*name*".gif", fps=12)
 try
-    run(`rm $(out_file*video_name*".mp4")`)
+    run(`rm $(out_file*name*".mp4")`)
 catch
 end
-run(`ffmpeg -i $(out_file*video_name*".gif") -pix_fmt yuv420p $(out_file*video_name*".mp4")`)
-run(`rm $(out_file*video_name*".gif")`)
-=#
+run(`ffmpeg -i $(out_file*name*".gif") -pix_fmt yuv420p $(out_file*name*".mp4")`)
+run(`rm $(out_file*name*".gif")`)
+
 
 
 
@@ -170,7 +186,7 @@ title!(p1, "Cos Modes")
 title!(p2, "Sin Modes")
 
 pfinal = plot(p1, p2, size=(1000, 500))
-savefig(pfinal, out_file*name)
+savefig(pfinal, out_file*name*".pdf")
 =#
 
 
