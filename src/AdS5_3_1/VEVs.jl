@@ -412,7 +412,7 @@ Computes the fluid velocity and the local frame (diagonal) stress tensor. p3 is 
 ut will always be 1, if not we can always hand ux/ut and uy/ut, which diretly are the speeds measured
 in the LAB frame, i.e. dx/dt and dy/dt.
 =#
-function compute_local_VEVs(e, Jx, Jy, px, py, pxy)
+function compute_local_VEVs(e::TP, Jx::TP, Jy::TP, px::TP, py::TP, pxy::TP) where {TP<:Real}
     T = [e -Jx -Jy; -Jx px pxy; -Jy pxy py]
     values, vectors = eigen(T)
     norms = -vectors[1,:].^2 + vectors[2,:].^2 + vectors[3,:].^2
@@ -424,5 +424,48 @@ function compute_local_VEVs(e, Jx, Jy, px, py, pxy)
     p1_local = values[1:end .!=index][1]
     p2_local = values[1:end .!=index][2]
 
-    return ut, ux, uy, e_local, p1_local, p2_local
+    ut, ux, uy, e_local, p1_local, p2_local
+end
+
+function compute_local_VEVs(e::Array{T,3}, Jx::Array{T,3}, Jy::Array{T,3}, px::Array{T,3},
+                                pxy::Array{T,3}, py::Array{T,3}) where {T<:Real}
+    _, Nx, Ny = size(e)
+    ut        = zeros(Nx, Ny)
+    ux        = zeros(Nx, Ny)
+    uy        = zeros(Nx, Ny)
+    el        = zeros(Nx, Ny)
+    p1l       = zeros(Nx, Ny)
+    p2l       = zeros(Nx, Ny)
+
+    @threads for j in 1:Ny
+        for i in 1:Nx
+            ut[i,j], ux[i,j], uy[i,j], el[i,j], p1l[i,j], p2l[i,j] = compute_local_VEVs(e[1,i,j],Jx[1,i,j],Jy[1,i,j],px[1,i,j],pxy[1,i,j],py[1,i,j])
+        end
+    end
+    ut, ux, uy, el, p1l, p2l
+end
+
+#TODO: It might give issues when handing in matrices
+function e_Ideal(ut, e, p)
+    e_local*ut*ut+p*(-1 .+ut*ut)
+end
+
+function Jx_Ideal(ut, ux, e, p)
+    (e+p)*ut*ux
+end
+
+function Jy_Ideal(ut, uy, e, p)
+    (e+p)*ut*uy
+end
+
+function px_Ideal(ux, e, p)
+    e*ux*ux+p*(1 .+ux*ux)
+end
+
+function py_Ideal(uy, e, p)
+    e*uy*uy+p*(1 .+uy*uy)
+end
+
+function pxy_Ideal(ux, uy, e, p)
+    (e+p)*ux*uy
 end

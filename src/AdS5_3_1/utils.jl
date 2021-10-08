@@ -60,7 +60,7 @@ end
 struct AHTimeSeries{T} <: TimeSeries{2,T}
     ts            :: T
     ts_diag       :: T
-    property :: Symbol
+    property      :: Symbol
 
     function AHTimeSeries(foldername::String, property::Symbol)
         ts       = OpenPMDTimeSeries(foldername, "constrained_")
@@ -86,6 +86,17 @@ struct TTTimeSeries{T} <: TimeSeries{2,T}
     function TTTimeSeries(foldername::String, field::Symbol)
         ts = OpenPMDTimeSeries(foldername, "TT_")
         new{typeof(ts)}(ts, field)
+    end
+end
+
+struct IdealHydroTimeSeries{T} <: TimeSeries{2, T}
+    ts  :: T
+    vev :: Symbol
+    eos :: String
+
+    function IdealHydroTimeSeries(foldername::String, path_to_eos::String, vev::Symbol)
+        ts = OpenPMDTimeSeries(foldername, "boundary_")
+        new{typeof(ts)}(ts, vev, path_to_eos)
     end
 end
 
@@ -233,6 +244,53 @@ function Base.size(ff::TimeSeries)
     f0, = get_data(ff, it0)
     size_ = size(f0)
     Nt, size_...
+end
+
+function get_data(ff::IdealHydroTimeSeries, it::Int)
+    ee        = h5read(ff.eos, "Energy")
+    pp        = h5read(ff.eos, "Pressure")
+    e, chart  = get_energy(ff.ts, it=it)
+    Jx, _     = get_Jx(ff.ts, it=it)
+    Jy, _     = get_Jy(ff.ts, it=it)
+    px, _     = get_px(ff.ts, it=it)
+    pxy, _    = get_pxy(ff.ts, it=it)
+    py, _     = get_py(ff.ts, it=it  )
+    _, Nx, Ny = size(e)
+    p         = zeros(Nx, Ny)
+
+    ut, ux, uy, el, _, _ = compute_local_VEVs(e, Jx, Jy, px, pxy, py)
+
+    @inbounds @threads for j in 1:Ny
+        for i in 1:Nx
+            e1 = findlast(ee .<= el[i,j])
+            e2 = findfirst(ee .>= el[i,j])
+            if e1 != e1
+                p[i,j] = (pp[e2]-pp[e1])/(ee[e2]-ee[e1])*(el[i,j]-ee[e1])+pp[e1]
+            else
+                p[i,j] = pp[e1]
+            end
+        end
+    end
+
+    if ff.vev == :energy
+        f = e_Ideal(ut, el, p)
+    elseif ff.vev == :Jx
+        f = Jx_Ideal(ut, ux, el, p)
+    elseif ff.vev == :Jy
+        f = Jy_Ideal(ut, uy, el, p)
+    elseif ff.vev == :px
+        f = px_Ideal(ux, el, p)
+    elseif ff.vev == :pxy
+        f = pxy_Ideal(ux, uy, el, p)
+    elseif ff.vev == :py
+        f = py_Ideal(uy, el, p)
+    else
+        error("Unknown VEV")
+    end
+
+    x, y = chart[:]
+
+    f[:,:], [x, y]
 end
 
 @inline Base.firstindex(ff::TimeSeries, d::Int) = 1
