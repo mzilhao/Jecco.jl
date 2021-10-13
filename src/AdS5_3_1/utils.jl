@@ -89,7 +89,16 @@ struct TTTimeSeries{T} <: TimeSeries{2,T}
     end
 end
 
-struct IdealHydroTimeSeries{T} <: TimeSeries{2, T}
+struct LocalVEVsTimeSeries{T} <: TimeSeries{2,T}
+    ts    :: T
+    field :: Symbol
+    function LocalVEVsTimeSeries(foldername::String, field::Symbol)
+        ts = OpenPMDTimeSeries(foldername, "boundary_")
+        new{typeof(ts)}(ts, field)
+    end
+end
+
+struct IdealHydroTimeSeries{T} <: TimeSeries{2,T}
     ts  :: T
     vev :: Symbol
     eos :: String
@@ -246,6 +255,37 @@ function Base.size(ff::TimeSeries)
     Nt, size_...
 end
 
+function get_data(ff::LocalVEVsTimeSeries, it::Int)
+    e, chart  = get_energy(ff.ts, it=it)
+    Jx, _     = get_Jx(ff.ts, it=it)
+    Jy, _     = get_Jy(ff.ts, it=it)
+    px, _     = get_px(ff.ts, it=it)
+    pxy, _    = get_pxy(ff.ts, it=it)
+    py, _     = get_py(ff.ts, it=it)
+
+    ut, ux, uy, el, p1, p2 = compute_local_VEVs(e, Jx, Jy, px, pxy, py)
+
+    if ff.field == :ut
+        f = ut
+    elseif ff.field == :ux
+        f = ux
+    elseif ff.field == :uy
+        f = uy
+    elseif ff.field == :energy
+        f = el
+    elseif ff.field == :p1
+        f = p1
+    elseif ff.field == :p2
+        f = p2
+    else
+        error("Unknown local field")
+    end
+
+    x, y = chart[:]
+
+    f[:,:], [x, y]
+end
+
 function get_data(ff::IdealHydroTimeSeries, it::Int)
     ee        = h5read(ff.eos, "Energy")
     pp        = h5read(ff.eos, "Pressure")
@@ -264,7 +304,7 @@ function get_data(ff::IdealHydroTimeSeries, it::Int)
         for i in 1:Nx
             e1 = findlast(ee .<= el[i,j])
             e2 = findfirst(ee .>= el[i,j])
-            if e1 != e1
+            if e1 != e2
                 p[i,j] = (pp[e2]-pp[e1])/(ee[e2]-ee[e1])*(el[i,j]-ee[e1])+pp[e1]
             else
                 p[i,j] = pp[e1]
@@ -273,17 +313,19 @@ function get_data(ff::IdealHydroTimeSeries, it::Int)
     end
 
     if ff.vev == :energy
-        f = e_Ideal(ut, el, p)
+        f = e_Ideal.(ut, el, p)
     elseif ff.vev == :Jx
-        f = Jx_Ideal(ut, ux, el, p)
+        f = Jx_Ideal.(ut, ux, el, p)
     elseif ff.vev == :Jy
-        f = Jy_Ideal(ut, uy, el, p)
+        f = Jy_Ideal.(ut, uy, el, p)
     elseif ff.vev == :px
-        f = px_Ideal(ux, el, p)
+        f = px_Ideal.(ux, el, p)
     elseif ff.vev == :pxy
-        f = pxy_Ideal(ux, uy, el, p)
+        f = pxy_Ideal.(ux, uy, el, p)
     elseif ff.vev == :py
-        f = py_Ideal(uy, el, p)
+        f = py_Ideal.(uy, el, p)
+    elseif ff.vev == :pz
+        f = p
     else
         error("Unknown VEV")
     end

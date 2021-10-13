@@ -2,11 +2,11 @@ using Jecco, Jecco.AdS5_3_1
 using Plots
 pyplot()
 
-dirname   = "/home/mikel/Dropbox/CollisionNewPotential/GW/spinodal/data/spinodal_4/"
-out_file   = "/home/mikel/Dropbox/CollisionNewPotential/GW/spinodal/GW_movies/4/"
+dirname   = "/home/mikel/Dropbox/PhD/Jecco/bubbles/2D_eA_1.318_eB_ecold/"
+out_file  = "/home/mikel/Dropbox/CollisionNewPotential/bubble_expansion/2+1/expansions/eA_1.318_eB_elow/"
 name      = "E_T2_Td2_hd2"
 
-
+#=
 en         = VEVTimeSeries(dirname, :energy)
 T2         = AdS5_3_1.TTTimeSeries(dirname, :T2)
 hd2        = GWTimeSeries(dirname, :hd2)
@@ -22,7 +22,7 @@ Tdxy       = AdS5_3_1.TTTimeSeries(dirname, :Tdxy)
 Tdyy       = AdS5_3_1.TTTimeSeries(dirname, :Tdyy)
 Tdzz       = AdS5_3_1.TTTimeSeries(dirname, :Tdzz)
 iterations = Tdxx.ts.iterations
-
+=#
 
 
 #ANIMATIONS
@@ -75,12 +75,12 @@ end
 =#
 
 
-
+#=
 #SQUARE BOXES
 emax   = maximum(en[:,:,:])
-emin   = maximum(en[:,:,:])
-hd2min = minimum(hd2[:,:,:])
+emin   = minimum(en[:,:,:])
 hd2max = maximum(hd2[:,:,:])
+hd2min = minimum(hd2[:,:,:])
 
 anim = @animate for n in 1:nt
     @time begin
@@ -111,7 +111,101 @@ catch
 end
 run(`ffmpeg -i $(out_file*name*".gif") -pix_fmt yuv420p $(out_file*name*".mp4")`)
 run(`rm $(out_file*name*".gif")`)
+=#
 
+#Ideal Hydro expanding bubbles
+pxIdeal  = AdS5_3_1.IdealHydroTimeSeries(dirname, dirname*"eos.h5", :px)
+pxyIdeal = AdS5_3_1.IdealHydroTimeSeries(dirname, dirname*"eos.h5", :pxy)
+pyIdeal  = AdS5_3_1.IdealHydroTimeSeries(dirname, dirname*"eos.h5", :py)
+pzIdeal  = AdS5_3_1.IdealHydroTimeSeries(dirname, dirname*"eos.h5", :pz)
+
+#=
+ut       = AdS5_3_1.LocalVEVsTimeSeries(dirname, :ut)
+ux       = AdS5_3_1.LocalVEVsTimeSeries(dirname, :ux)
+uy       = AdS5_3_1.LocalVEVsTimeSeries(dirname, :uy)
+=#
+
+px       = VEVTimeSeries(dirname, :px)
+pxy      = VEVTimeSeries(dirname, :pxy)
+py       = VEVTimeSeries(dirname, :py)
+pz       = VEVTimeSeries(dirname, :pz)
+
+Nt, Nx, Ny = size(px)
+t, x, y    = get_coords(px, :, :, :)
+idt        = Nt
+idx0       = floor(Int(Nx/2))
+idy        = Int(floor(Ny/2))
+
+
+#=
+p1 = plot(x[idx0-1:end], px[idt,idx0-1:end,idy], lw=2 ,label="Px", legend_pos=:bottomright)
+plot!(p1, x[idx0-1:end], pxIdeal[idt,idx0-1:end,idy], lw=2, ls=:dash, label="Ideal Hydro", legend_pos=:bottomright)
+xlabel!(p1, "xΛ")
+ylabel!(p1, "Px/Λ⁴")
+
+p2 = plot(x[idx0-1:end], pxy[idt,idx0-1:end,idy], lw=2 ,label="Pxy", legend_pos=:bottomright)
+plot!(p2, x[idx0-1:end], pxyIdeal[idt,idx0-1:end,idy], lw=2, ls=:dash, label="Ideal Hydro", legend_pos=:bottomright)
+xlabel!(p2, "xΛ")
+ylabel!(p2, "Pxy/Λ⁴")
+
+p3 = plot(x[idx0-1:end], py[idt,idx0-1:end,idy], lw=2 ,label="Py", legend_pos=:bottomright)
+plot!(p3, x[idx0-1:end], pyIdeal[idt,idx0-1:end,idy], lw=2, ls=:dash, label="Ideal Hydro", legend_pos=:bottomright)
+xlabel!(p3, "xΛ")
+ylabel!(p3, "Py/Λ⁴")
+
+p4 = plot(x[idx0-1:end], pz[idt,idx0-1:end,idy], lw=2 ,label="Pz", legend_pos=:bottomright)
+plot!(p4, x[idx0-1:end], pzIdeal[idt,idx0-1:end,idy], lw=2, ls=:dash, label="Ideal Hydro", legend_pos=:bottomright)
+xlabel!(p4, "xΛ")
+ylabel!(p4, "Pz/Λ⁴")
+
+pfinal = plot(p1, p2, p3, p4, size=(2000,1000))
+savefig(pfinal, out_file*"Ideal_Hydro.pdf")
+=#
+
+
+
+println("Px")
+@time dp = px[:,:,idy]-pxIdeal[:,:,idy]
+
+p1 = plot(x[idx0-1:end], dp[7,idx0-1:end], lw=2, label="t=$(floor(t[7]))", legend_pos=:bottomright)
+plot!(x[idx0-1:end], dp[20,idx0-1:end], lw=2, label="t=$(floor(t[20]))", legend_pos=:bottomright)
+plot!(x[idx0-1:end], dp[40,idx0-1:end], lw=2, label="t=$(floor(t[40]))", legend_pos=:bottomright)
+plot!(x[idx0-1:end], dp[end,idx0-1:end], lw=2, label="t=$(floor(t[end]))", legend_pos=:bottomright)
+xlabel!(p1, "xΛ")
+ylabel!(p1, "Px-PxHydro/Λ^4")
+
+println("Pxy")
+@time dp = pxy[:,:,idy]-pxyIdeal[:,:,idy]
+
+p2 = plot(x[idx0-1:end], dp[7,idx0-1:end], lw=2, label="t=$(floor(t[7]))", legend_pos=:bottomright)
+plot!(x[idx0-1:end], dp[20,idx0-1:end], lw=2, label="t=$(floor(t[20]))", legend_pos=:bottomright)
+plot!(x[idx0-1:end], dp[40,idx0-1:end], lw=2, label="t=$(floor(t[40]))", legend_pos=:bottomright)
+plot!(x[idx0-1:end], dp[end,idx0-1:end], lw=2, label="t=$(floor(t[end]))", legend_pos=:bottomright)
+xlabel!(p2, "xΛ")
+ylabel!(p2, "Pxy-PxyHydro/Λ^4")
+
+println("Py")
+@time dp = py[:,:,idy]-pyIdeal[:,:,idy]
+
+p3 = plot(x[idx0-1:end], dp[7,idx0-1:end], lw=2, label="t=$(floor(t[7]))", legend_pos=:bottomright)
+plot!(x[idx0-1:end], dp[20,idx0-1:end], lw=2, label="t=$(floor(t[20]))", legend_pos=:bottomright)
+plot!(x[idx0-1:end], dp[40,idx0-1:end], lw=2, label="t=$(floor(t[40]))", legend_pos=:bottomright)
+plot!(x[idx0-1:end], dp[end,idx0-1:end], lw=2, label="t=$(floor(t[end]))", legend_pos=:bottomright)
+xlabel!(p3, "xΛ")
+ylabel!(p3, "Py-PyHydro/Λ^4")
+
+println("Pz")
+@time dp = pz[:,:,idy]-pzIdeal[:,:,idy]
+
+p4 = plot(x[idx0-1:end], dp[7,idx0-1:end], lw=2, label="t=$(floor(t[7]))", legend_pos=:bottomright)
+plot!(x[idx0-1:end], dp[20,idx0-1:end], lw=2, label="t=$(floor(t[20]))", legend_pos=:bottomright)
+plot!(x[idx0-1:end], dp[40,idx0-1:end], lw=2, label="t=$(floor(t[40]))", legend_pos=:bottomright)
+plot!(x[idx0-1:end], dp[end,idx0-1:end], lw=2, label="t=$(floor(t[end]))", legend_pos=:bottomright)
+xlabel!(p4, "xΛ")
+ylabel!(p4, "Pz-PzHydro/Λ^4")
+
+pfinal = plot(p1, p2, p3, p4, size=(2000,1000))
+savefig(pfinal, out_file*"dP_IdealHydro.pdf")
 
 
 

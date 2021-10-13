@@ -413,16 +413,16 @@ ut will always be 1, if not we can always hand ux/ut and uy/ut, which diretly ar
 in the LAB frame, i.e. dx/dt and dy/dt.
 =#
 function compute_local_VEVs(e::TP, Jx::TP, Jy::TP, px::TP, py::TP, pxy::TP) where {TP<:Real}
-    T = [e -Jx -Jy; -Jx px pxy; -Jy pxy py]
+    T = [-e -Jx -Jy; Jx px pxy; Jy pxy py]
     values, vectors = eigen(T)
-    norms = -vectors[1,:].^2 + vectors[2,:].^2 + vectors[3,:].^2
-    index = findfirst(==(1), norms.<0)
-    ut = sign(vectors[1,index])*vectors[1,index]/(-norms[index])^0.5
-    ux = sign(vectors[1,index])*vectors[2,index]/(-norms[index])^0.5
-    uy = sign(vectors[1,index])*vectors[3,index]/(-norms[index])^0.5
-    e_local = values[index]
-    p1_local = values[1:end .!=index][1]
-    p2_local = values[1:end .!=index][2]
+    norms           = -vectors[1,:].^2 + vectors[2,:].^2 + vectors[3,:].^2
+    index           = findfirst(==(1), norms.<0)
+    ut              = sign(vectors[1,index])*vectors[1,index]/(-norms[index])^0.5
+    ux              = sign(vectors[1,index])*vectors[2,index]/(-norms[index])^0.5
+    uy              = sign(vectors[1,index])*vectors[3,index]/(-norms[index])^0.5
+    e_local         = -values[index]
+    p1_local        = values[1:end .!=index][1]
+    p2_local        = values[1:end .!=index][2]
 
     ut, ux, uy, e_local, p1_local, p2_local
 end
