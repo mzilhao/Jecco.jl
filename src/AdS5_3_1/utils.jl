@@ -494,13 +494,55 @@ function convert_to_mathematica_y0(dirname::String; outfile::String="data_mathem
     end
 
     # store in an array suitable for Mathematica
-    T_m = zeros(11, Nt*Nx)
+    T_m = zeros(10, Nt*Nx)
 
     n = 1
     for i in 1:Nt
         for j in 1:Nx
             T_m[:,n] = [t[i] x[j] en[i,j] Jx[i,j] Jy[i,j] px[i,j] pxy[i,j] py[i,j] pz[i,j] Ophi[i,j]]
             n += 1
+        end
+    end
+
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "VEVs", T_m)
+    close(fid)
+end
+
+function convert_to_mathematica_diagonal(dirname::String; outfile::String="data_mathematica_diagonal.h5")
+    ts = OpenPMDTimeSeries(dirname, prefix="boundary_")
+
+    iterations = ts.iterations
+
+    Nt = length(iterations)
+    t  = zeros(Nt)
+
+    it = 0
+    en0, chart = get_energy(ts, it=it)
+
+    _, x, y = chart[:]
+    Nx      = length(x)
+    Ny      = length(y)
+
+    # store in an array suitable for Mathematica
+    T_m = zeros(10, Nt*Nx)
+    n   = 1
+    @inbounds for (idx,it) in enumerate(iterations)
+        en    = interpolate((x,y,), get_energy(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        Jx    = interpolate((x,y,), get_Jx(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        Jy    = interpolate((x,y,), get_Jy(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        px    = interpolate((x,y,), get_px(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        py    = interpolate((x,y,), get_py(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        pz    = interpolate((x,y,), get_pz(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        pxy   = interpolate((x,y,), get_pxy(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        Ophi  = interpolate((x,y,), get_Ophi(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        t     = ts.current_t
+        for j in 1:Nx
+            r        = x[j]/sqrt(2)
+            T_m[:,n] = [t x[j] en(t,r,r) Jx(t,r,r) Jy(t,r,r) px(t,r,r) pxy(t,r,r) py(t,r,r) pz(t,r,r) Ophi(t,r,r)]
+            n       += 1
         end
     end
 
