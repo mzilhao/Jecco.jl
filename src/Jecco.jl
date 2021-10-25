@@ -31,5 +31,6 @@ export FieldTimeSeries, get_coords
 
 include("KG_3_1/KG_3_1.jl")
 include("AdS5_3_1/AdS5_3_1.jl")
+include("AdS4_3_1/AdS4_3_1.jl")
 
 end # module
