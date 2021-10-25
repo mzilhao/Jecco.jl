@@ -455,6 +455,62 @@ function convert_to_mathematica(dirname::String; outfile::String="data_mathemati
     close(fid)
 end
 
+function convert_to_mathematica_y0(dirname::String; outfile::String="data_mathematica_y0.h5")
+    ts = OpenPMDTimeSeries(dirname, prefix="boundary_")
+
+    iterations = ts.iterations
+
+    Nt = length(iterations)
+    t  = zeros(Nt)
+
+    it = 0
+    en0, chart = get_energy(ts, it=it)
+
+    _, x, y = chart[:]
+    Nx      = length(x)
+    Ny      = length(y)
+    idy     = Int(floor(Ny/2))
+
+    en   = zeros(Nt,Nx)
+    Jx   = zeros(Nt,Nx)
+    Jy   = zeros(Nt,Nx)
+    px   = zeros(Nt,Nx)
+    py   = zeros(Nt,Nx)
+    pz   = zeros(Nt,Nx)
+    pxy  = zeros(Nt,Nx)
+    Ophi = zeros(Nt,Nx)
+
+    for (idx,it) in enumerate(iterations)
+        en[idx,:]   .= get_energy(ts, it=it)[1][1,:,idy]
+        Jx[idx,:]   .= get_Jx(ts, it=it)[1][1,:,idy]
+        Jy[idx,:]   .= get_Jy(ts, it=it)[1][1,:,idy]
+        px[idx,:]   .= get_px(ts, it=it)[1][1,:,idy]
+        py[idx,:]   .= get_py(ts, it=it)[1][1,:,idy]
+        pz[idx,:]   .= get_pz(ts, it=it)[1][1,:,idy]
+        pxy[idx,:]  .= get_pxy(ts, it=it)[1][1,:,idy]
+        Ophi[idx,:] .= get_Ophi(ts, it=it)[1][1,:,idy]
+
+        t[idx] = ts.current_t
+    end
+
+    # store in an array suitable for Mathematica
+    T_m = zeros(11, Nt*Nx)
+
+    n = 1
+    for i in 1:Nt
+        for j in 1:Nx
+            T_m[:,n] = [t[i] x[j] en[i,j] Jx[i,j] Jy[i,j] px[i,j] pxy[i,j] py[i,j] pz[i,j] Ophi[i,j]]
+            n += 1
+        end
+    end
+
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "VEVs", T_m)
+    close(fid)
+end
+
 function e_to_mathematica(ts::OpenPMDTimeSeries, group::HDF5.Group, dit::Int)
     iterations = ts.iterations
 
