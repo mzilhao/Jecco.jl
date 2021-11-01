@@ -1,18 +1,18 @@
 using Jecco, Jecco.AdS5_3_1
 
-dirname   = "/Users/apple/Documents/Jecco.jl/data/end_data_2/"
-outdir    = "/Users/apple/Documents/Jecco.jl/data/new_data_2/"
-#A_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_A_e_2.0/"
-#B_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_B_e_0.209/"
-#PS_dir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/e_1.7_L_20_AH_0.95/"
+dirname   = "/home/mikel/Documents/Jecco.jl/data/end_data/"
+outdir    = "/home/mikel/Documents/Jecco.jl/data/new_data/"
+A_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_A_e_1.9/"
+B_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_B_e_0.209/"
+PS_dir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/e_1.0_AH_0.95/"
 
 grid = SpecCartGrid3D(
-    x_min            = -50.,
-    x_max            =  50.,
-    x_nodes          =  400,
-    y_min            = -50.,
-    y_max            =  50.,
-    y_nodes          =  400,
+    x_min            = -14.14,
+    x_max            =  14.14,
+    x_nodes          =  80,
+    y_min            = -.5,
+    y_max            =  .5,
+    y_nodes          =  6,
     u_outer_min      =  0.1,
     u_outer_max      =  1.005,
     u_outer_domains  =  1,
@@ -37,7 +37,7 @@ potential = AdS5_3_1.Phi8Potential(
 io = InOut(recover_dir = dirname, out_dir = outdir, checkpoint_dir = outdir,
            out_boundary_every=1, out_gauge_every=1,out_bulk_every=1,remove_existing = true,)
 
-new_center = (10., 10.)
+new_center = (-10., -10.)
 e_new      = 1.7
 
 #=
@@ -72,9 +72,9 @@ parameters_collision =AdS5_3_1.new_parameters_coll(
 #AdS5_3_1.shift(io, potential, new_center=new_center)
 #AdS5_3_1.new_box(grid, io, potential, same_spacing=:no)
 #AdS5_3_1.change_energy(io, e_new, potential, fix=:no)
-#AdS5_3_1.to1plus1(grid, io, potential)
+AdS5_3_1.to1plus1(grid, io, potential,section=:y0)
 #AdS5_3_1.to2plus1(io, potential)
-AdS5_3_1.create_circular_symmetric(grid, io, potential)
+#AdS5_3_1.create_circular_symmetric(grid, io, potential, section=:diagonal)
 #AdS5_3_1.design_collision(grid, io, parameters_collision)
 #AdS5_3_1.bubble_expansion(grid, io, potential, A_dir, B_dir, PS_dir,
 #                                  same_spacing=:no, b_cold=true)
@@ -89,9 +89,9 @@ phi21 = BulkTimeSeries(outdir,:phi,1)
 phi22 = BulkTimeSeries(outdir,:phi,2)
 =#
 
-#=
-convert_to_mathematica(io.out_dir)
 
+convert_to_mathematica(io.out_dir)
+#=
 
 e     = VEVTimeSeries(outdir, :energy)
 px    = VEVTimeSeries(outdir, :px)

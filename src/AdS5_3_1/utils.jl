@@ -541,7 +541,7 @@ function convert_to_mathematica_diagonal(dirname::String; outfile::String="data_
         t     = ts.current_t
         for j in 1:Nx
             r        = x[j]/sqrt(2)
-            T_m[:,n] = [t x[j] en(t,r,r) Jx(t,r,r) Jy(t,r,r) px(t,r,r) pxy(t,r,r) py(t,r,r) pz(t,r,r) Ophi(t,r,r)]
+            T_m[:,n] = [t x[j] en(r,r) Jx(r,r) Jy(r,r) px(r,r) pxy(r,r) py(r,r) pz(r,r) Ophi(r,r)]
             n       += 1
         end
     end

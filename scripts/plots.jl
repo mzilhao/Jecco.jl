@@ -2,21 +2,21 @@ using Jecco, Jecco.AdS5_3_1
 using Plots
 pyplot()
 
-dirname   = "/home/mikel/Dropbox/PhD/Jecco/bubbles/2D_eA_1.318_eB_ecold/"
-out_file  = "/home/mikel/Dropbox/CollisionNewPotential/bubble_expansion/2+1/expansions/eA_1.318_eB_elow/"
-name      = "E_T2_Td2_hd2"
+dirname   = "/home/mikel/Dropbox/CollisionNewPotential/GW/spinodal/data/spinodal_2/"
+out_file  = "/home/mikel/Dropbox/CollisionNewPotential/GW/spinodal/initial_set_up/"
+name      = "crit_size"
 
-#=
+
 en         = VEVTimeSeries(dirname, :energy)
-T2         = AdS5_3_1.TTTimeSeries(dirname, :T2)
-hd2        = GWTimeSeries(dirname, :hd2)
+#T2         = AdS5_3_1.TTTimeSeries(dirname, :T2)
+#hd2        = GWTimeSeries(dirname, :hd2)
 t, x, y    = get_coords(en, :, :, :)
 Nt, Nx, Ny = size(en)
-Nt2, _, _  = size(T2)
-Nt3, _, _  = size(hd2)
+#Nt2, _, _  = size(T2)
+#Nt3, _, _  = size(hd2)
 
-nt = minimum((Nt, Nt2, Nt3))
-
+#nt = minimum((Nt, Nt2, Nt3))
+#=
 Tdxx       = AdS5_3_1.TTTimeSeries(dirname, :Tdxx)
 Tdxy       = AdS5_3_1.TTTimeSeries(dirname, :Tdxy)
 Tdyy       = AdS5_3_1.TTTimeSeries(dirname, :Tdyy)
@@ -24,6 +24,21 @@ Tdzz       = AdS5_3_1.TTTimeSeries(dirname, :Tdzz)
 iterations = Tdxx.ts.iterations
 =#
 
+#=
+en1 = VEVTimeSeries(dirname*"2D_eA_2.0_eB_0.209_emean_1.2_Lold_20_L_80_N_160/", :energy)
+en2 = VEVTimeSeries(dirname*"2D_eA_2.0_eB_0.209_emean_1.6_Lold_20_L_80_N_160/", :energy)
+en3 = VEVTimeSeries(dirname*"2D_eA_2.0_eB_0.209_emean_1.7_Lold_20_L_80_N_160/", :energy)
+en4 = VEVTimeSeries(dirname*"2D_eA_2.0_eB_cold_emean_1.8_L_80_N_160/", :energy)
+
+Nt1, Nx, Ny = size(en1)
+Nt2, _, _   = size(en2)
+Nt3, _, _   = size(en3)
+Nt4, _, _   = size(en4)
+
+nt = maximum((Nt1,Nt2,Nt3,Nt4))
+
+t, x, y = get_coords(en1,:,:,:)
+=#
 
 #ANIMATIONS
 #Rectangle boxes
@@ -75,18 +90,33 @@ end
 =#
 
 
-#=
-#SQUARE BOXES
-emax   = maximum(en[:,:,:])
-emin   = minimum(en[:,:,:])
-hd2max = maximum(hd2[:,:,:])
-hd2min = minimum(hd2[:,:,:])
 
-anim = @animate for n in 1:nt
+#SQUARE BOXES
+n    = 1
+emax = maximum(en[n,:,:])
+emin = minimum(en[n,:,:])
+p1   = surface(x, y, en[n,:,:], size=(700,500), xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin,emax), clims=(emin,emax), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
+display(p1)
+savefig(p1, out_file*"initial.png")
+#hd2max = maximum(hd2[:,:,:])
+#hd2min = minimum(hd2[:,:,:])
+#p1     = surface(x, y, en[1,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin,emax), clims=(emin,emax), camera=(50,50), legend=:none)
+
+#=
+anim = @animate for n in 1:Nt1
     @time begin
-        println("progress = $(n/nt*100)%")
-        p1     = surface(x, y, en[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin,emax), clims=(emin,emax), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
+        println("progress = $(n/Nt1*100)%")
+        p1     = surface(x, y, en1[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin1,emax1), clims=(emin3,emax3), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
         nothing
+        p2     = surface(x, y, en2[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin2,emax2), clims=(emin3,emax3), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
+        nothing
+        if n > 66 j = 66 else j = n end
+        p3     = surface(x, y, en3[j,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin3,emax3), clims=(emin3,emax3), camera=(50,50), title="tΛ = $(t[j])", legend=:none)
+        nothing
+        if n > 65 j = 65 else j = n end
+        p4     = surface(x, y, en4[j,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin4,emax4), clims=(emin3,emax3), camera=(50,50), title="tΛ = $(t[j])", legend=:none)
+        nothing
+        #=
         T2min  = minimum(T2[n,:,:])
         T2max  = maximum(T2[n,:,:])
         p2     = surface(x, y, T2[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="T²/Λ⁸",color=:jet, zlim=(T2min,T2max), clims=(T2min,T2max), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
@@ -98,7 +128,8 @@ anim = @animate for n in 1:nt
         nothing
         p4     = surface(x, y, hd2[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="hd²/Λ⁸",color=:jet, zlim=(hd2min,hd2max), clims=(hd2min,hd2max), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
         nothing
-        plot(p1, p2, p3, p4, size=(2000,1000))
+        =#
+        plot(p1, p2, p3, p4, size=(1500,1000))
         nothing
     end
 end
@@ -114,10 +145,11 @@ run(`rm $(out_file*name*".gif")`)
 =#
 
 #Ideal Hydro expanding bubbles
-pxIdeal  = AdS5_3_1.IdealHydroTimeSeries(dirname, dirname*"eos.h5", :px)
-pxyIdeal = AdS5_3_1.IdealHydroTimeSeries(dirname, dirname*"eos.h5", :pxy)
-pyIdeal  = AdS5_3_1.IdealHydroTimeSeries(dirname, dirname*"eos.h5", :py)
-pzIdeal  = AdS5_3_1.IdealHydroTimeSeries(dirname, dirname*"eos.h5", :pz)
+#=
+pIdeal  = AdS5_3_1.IdealHydroTimeSeries(dirname, dirname*"eos.h5", :pxy)
+#pxyIdeal = AdS5_3_1.IdealHydroTimeSeries(dirname, dirname*"eos.h5", :pxy)
+#pyIdeal  = AdS5_3_1.IdealHydroTimeSeries(dirname, dirname*"eos.h5", :py)
+#pzIdeal  = AdS5_3_1.IdealHydroTimeSeries(dirname, dirname*"eos.h5", :pz)
 
 #=
 ut       = AdS5_3_1.LocalVEVsTimeSeries(dirname, :ut)
@@ -125,15 +157,15 @@ ux       = AdS5_3_1.LocalVEVsTimeSeries(dirname, :ux)
 uy       = AdS5_3_1.LocalVEVsTimeSeries(dirname, :uy)
 =#
 
-px       = VEVTimeSeries(dirname, :px)
-pxy      = VEVTimeSeries(dirname, :pxy)
-py       = VEVTimeSeries(dirname, :py)
-pz       = VEVTimeSeries(dirname, :pz)
+p        = VEVTimeSeries(dirname, :pxy)
+#pxy      = VEVTimeSeries(dirname, :pxy)
+#py       = VEVTimeSeries(dirname, :py)
+#pz       = VEVTimeSeries(dirname, :pz)
 
-Nt, Nx, Ny = size(px)
-t, x, y    = get_coords(px, :, :, :)
+Nt, Nx, Ny = size(p)
+t, x, y    = get_coords(p, :, :, :)
 idt        = Nt
-idx0       = floor(Int(Nx/2))
+idx        = floor(Int(Nx/2))
 idy        = Int(floor(Ny/2))
 
 
@@ -160,7 +192,7 @@ ylabel!(p4, "Pz/Λ⁴")
 
 pfinal = plot(p1, p2, p3, p4, size=(2000,1000))
 savefig(pfinal, out_file*"Ideal_Hydro.pdf")
-=#
+
 
 
 
@@ -206,8 +238,36 @@ ylabel!(p4, "Pz-PzHydro/Λ^4")
 
 pfinal = plot(p1, p2, p3, p4, size=(2000,1000))
 savefig(pfinal, out_file*"dP_IdealHydro.pdf")
+=#
 
+lim1 = minimum(p[:,idx-1:end,idy])
+lim2 = maximum(p[:,idx-1:end,idy])
+Δlim = 1e-1*(lim2-lim1)
+if p.vev == :pxy ss = -1 else ss = 1 end
 
+#Animation of hydro
+anim = @animate for n in 1:Nt
+    println("progress = $(n/Nt*100)%")
+    p1 = plot(x[idx-1:end], p[n,idx-1:end,idy], lw=2, legend_pos=:bottomright, title="tΛ=$(t[n])")
+    nothing
+    plot!(p1, x[idx-1:end], ss*pIdeal[n,idx-1:end,idy], lw=2, ls=:dash, label="Ideal Hydro", legend_pos=:bottomright)
+    nothing
+    xlabel!(p1, "xΛ")
+    ylabel!(p1, String(p.vev)*"/Λ⁴")
+    ylims!(p1, lim1-Δlim, lim2+Δlim)
+    nothing
+    plot(p1, size=(2000,1000))
+    nothing
+end
+
+gif(anim, out_file*name*".gif", fps=15)
+try
+    run(`rm $(out_file*name*".mp4")`)
+catch
+end
+run(`ffmpeg -i $(out_file*name*".gif") -pix_fmt yuv420p $(out_file*name*".mp4")`)
+run(`rm $(out_file*name*".gif")`)
+=#
 
 #=
 #FOURIER MODES PLOTS
