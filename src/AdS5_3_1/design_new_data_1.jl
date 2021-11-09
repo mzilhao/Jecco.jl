@@ -363,6 +363,8 @@ function same_grid_spacing!(f_new::Array{T,3}, f::Array{T,3}, x_indices::Tuple{I
 
     if ilast-ifirst+1 != Nx || jlast-jfirst+1 != Ny
         @warn "Something is wrong with the x and y indices"
+        println("Nxp = $(ilast-ifirst+1), Nx = $(Nx)")
+        println("Nyp = $(jlast-jfirst+1), Ny = $(Ny)")
         return
     end
 
@@ -370,20 +372,20 @@ function same_grid_spacing!(f_new::Array{T,3}, f::Array{T,3}, x_indices::Tuple{I
     @fastmath @inbounds @threads for i in 1:ifirst
         f_new[:,i,jfirst:jlast]       .= @view f[:,1,:]
     end
-    f_new[:,1:ifirst,jlast:end]       .= f[:,1,end]
+    f_new[:,1:ifirst,jlast+1:end]     .= f[:,1,1]
 
     @fastmath @inbounds @threads for i in ifirst:ilast
         n = i-ifirst+1
         f_new[:,i,1:jfirst]           .= f[:,n,1]
-        f_new[:,i,jlast:end]          .= f[:,n,end]
+        f_new[:,i,jlast+1:end]        .= f[:,n,1]
     end
     f_new[:,ifirst:ilast,jfirst:jlast] = @view f[:,:,:]
 
-    f_new[:,ilast:end,1:jfirst]       .= f[:,end,1]
+    f_new[:,ilast+1:end,1:jfirst]       .= f[:,1,1]
     @fastmath @inbounds @threads for i in ilast:Nx_new
-        f_new[:,i,jfirst:jlast]       .= @view f[:,end,:]
+        f_new[:,i,jfirst:jlast]       .= @view f[:,1,:]
     end
-    f_new[:,ilast:end,jlast:end]      .= f[:,end,end]
+    f_new[:,ilast+1:end,jlast+1:end]      .= f[:,end,1]
 
     nothing
 end
@@ -407,9 +409,9 @@ function same_grid_spacing(grid::SpecCartGrid3D, boundary::Boundary , bulkevols:
     bulkevols_new = BulkEvolvedPartition(grid)
 
     ifirst = findfirst(x_new .>= x[1])
-    jfirst = findfirst(y_new .>= y[1])
-    ilast  = findfirst(x_new .>= x[end])
-    jlast  = findfirst(y_new .>= y[end])
+    jfirst = findlast(y_new .<= y[1])
+    ilast  = findlast(x_new .<= x[end])
+    jlast  = findlast(y_new .<= y[end])
 
     x_indices = (ifirst, ilast)
     y_indices = (jfirst, jlast)
@@ -466,26 +468,26 @@ function different_grid_spacing!(boundary_new::Boundary, boundary::Boundary, cha
     fx2[1,1:ifirst,1:jfirst] .= fx2_inter(x_new[ifirst], y_new[jfirst])
     fy2[1,1:ifirst,1:jfirst] .= fy2_inter(x_new[ifirst], y_new[jfirst])
 
-    a4[1,1:ifirst,jlast:end]  .= a4_inter(x_new[ifirst], y_new[jlast])
-    fx2[1,1:ifirst,jlast:end] .= fx2_inter(x_new[ifirst], y_new[jlast])
-    fy2[1,1:ifirst,jlast:end] .= fy2_inter(x_new[ifirst], y_new[jlast])
+    a4[1,1:ifirst,jlast+1:end]  .= a4_inter(x_new[ifirst], y_new[jfirst])
+    fx2[1,1:ifirst,jlast+1:end] .= fx2_inter(x_new[ifirst], y_new[jfirst])
+    fy2[1,1:ifirst,jlast+1:end] .= fy2_inter(x_new[ifirst], y_new[jfirst])
 
-    a4[1,ilast:end,1:jfirst]  .= a4_inter(x_new[ilast], y_new[jfirst])
-    fx2[1,ilast:end,1:jfirst] .= fx2_inter(x_new[ilast], y_new[jfirst])
-    fy2[1,ilast:end,1:jfirst] .= fy2_inter(x_new[ilast], y_new[jfirst])
+    a4[1,ilast+1:end,1:jfirst]  .= a4_inter(x_new[ifirst], y_new[jfirst])
+    fx2[1,ilast+1:end,1:jfirst] .= fx2_inter(x_new[ifirst], y_new[jfirst])
+    fy2[1,ilast+1:end,1:jfirst] .= fy2_inter(x_new[ifirst], y_new[jfirst])
 
-    a4[1,ilast:end,jlast:end]  .= a4_inter(x_new[ilast], y_new[jlast])
-    fx2[1,ilast:end,jlast:end] .= fx2_inter(x_new[ilast], y_new[jlast])
-    fy2[1,ilast:end,jlast:end] .= fy2_inter(x_new[ilast], y_new[jlast])
+    a4[1,ilast+1:end,jlast+1:end]  .= a4_inter(x_new[ifirst], y_new[jfirst])
+    fx2[1,ilast+1:end,jlast+1:end] .= fx2_inter(x_new[ifirst], y_new[jfirst])
+    fy2[1,ilast+1:end,jlast+1:end] .= fy2_inter(x_new[ifirst], y_new[jfirst])
 
     @fastmath @inbounds @threads for i in ifirst:ilast
         a4[1,i,1:jfirst]  .= a4_inter(x_new[i], y_new[jfirst])
         fx2[1,i,1:jfirst] .= fx2_inter(x_new[i], y_new[jfirst])
         fy2[1,i,1:jfirst] .= fy2_inter(x_new[i], y_new[jfirst])
 
-        a4[1,i,jlast:end]  .= a4_inter(x_new[i], y_new[jlast])
-        fx2[1,i,jlast:end] .= fx2_inter(x_new[i], y_new[jlast])
-        fy2[1,i,jlast:end] .= fy2_inter(x_new[i], y_new[jlast])
+        a4[1,i,jlast+1:end]  .= a4_inter(x_new[i], y_new[jfirst])
+        fx2[1,i,jlast+1:end] .= fx2_inter(x_new[i], y_new[jfirst])
+        fy2[1,i,jlast+1:end] .= fy2_inter(x_new[i], y_new[jfirst])
     end
 
     @fastmath @inbounds @threads for j in jfirst:jlast
@@ -493,9 +495,9 @@ function different_grid_spacing!(boundary_new::Boundary, boundary::Boundary, cha
         fx2[1,1:ifirst,j] .= fx2_inter(x_new[ifirst], y_new[j])
         fy2[1,1:ifirst,j] .= fy2_inter(x_new[ifirst], y_new[j])
 
-        a4[1,ilast:end,j]  .= a4_inter(x_new[ilast], y_new[j])
-        fx2[1,ilast:end,j] .= fx2_inter(x_new[ilast], y_new[j])
-        fy2[1,ilast:end,j] .= fy2_inter(x_new[ilast], y_new[j])
+        a4[1,ilast+1:end,j]  .= a4_inter(x_new[ifirst], y_new[j])
+        fx2[1,ilast+1:end,j] .= fx2_inter(x_new[ifirst], y_new[j])
+        fy2[1,ilast+1:end,j] .= fy2_inter(x_new[ifirst], y_new[j])
 
         for i in ifirst:ilast
             a4[1,i,j]  = a4_inter(x_new[i], y_new[j])
@@ -516,18 +518,18 @@ function different_grid_spacing!(gauge_new::Gauge, gauge::Gauge, chart2D::Chart,
     xi_inter      = interp(gauge.xi[1,:,:])
 
     xi[1,1:ifirst,1:jfirst]   .= xi_inter(x_new[ifirst], y_new[jfirst])
-    xi[1,1:ifirst,jlast:end]  .= xi_inter(x_new[ifirst], y_new[jlast])
-    xi[1,ilast:end,1:jfirst]  .= xi_inter(x_new[ilast], y_new[jfirst])
-    xi[1,ilast:end,jlast:end] .= xi_inter(x_new[ilast], y_new[jlast])
+    xi[1,1:ifirst,jlast+1:end]  .= xi_inter(x_new[ifirst], y_new[jfirst])
+    xi[1,ilast+1:end,1:jfirst]  .= xi_inter(x_new[ifirst], y_new[jfirst])
+    xi[1,ilast+1:end,jlast+1:end] .= xi_inter(x_new[ifirst], y_new[jfirst])
 
     @fastmath @inbounds @threads for i in ifirst:ilast
         xi[1,i,1:jfirst]  .= xi_inter(x_new[i], y_new[jfirst])
-        xi[1,i,jlast:end] .= xi_inter(x_new[i], y_new[jlast])
+        xi[1,i,jlast+1:end] .= xi_inter(x_new[i], y_new[jfirst])
     end
 
     @fastmath @inbounds @threads for j in jfirst:jlast
         xi[1,1:ifirst,j]  .= xi_inter(x_new[ifirst], y_new[j])
-        xi[1,ilast:end,j] .= xi_inter(x_new[ilast], y_new[j])
+        xi[1,ilast+1:end,j] .= xi_inter(x_new[ifirst], y_new[j])
 
         for i in ifirst:ilast
             xi[1,i,j]  = xi_inter(x_new[i], y_new[j])
@@ -568,20 +570,20 @@ function different_grid_spacing!(bulkevols_new::BulkPartition, bulkevols::BulkPa
             G_new[n,1:ifirst,1:jfirst]   .= G_inter(x_new[ifirst], y_new[jfirst])
             phi_new[n,1:ifirst,1:jfirst] .= phi_inter(x_new[ifirst], y_new[jfirst])
 
-            B1_new[n,1:ifirst,jlast:end]  .= B1_inter(x_new[ifirst], y_new[jlast])
-            B2_new[n,1:ifirst,jlast:end]  .= B2_inter(x_new[ifirst], y_new[jlast])
-            G_new[n,1:ifirst,jlast:end]   .= G_inter(x_new[ifirst], y_new[jlast])
-            phi_new[n,1:ifirst,jlast:end] .= phi_inter(x_new[ifirst], y_new[jlast])
+            B1_new[n,1:ifirst,jlast+1:end]  .= B1_inter(x_new[ifirst], y_new[jfirst])
+            B2_new[n,1:ifirst,jlast+1:end]  .= B2_inter(x_new[ifirst], y_new[jfirst])
+            G_new[n,1:ifirst,jlast+1:end]   .= G_inter(x_new[ifirst], y_new[jfirst])
+            phi_new[n,1:ifirst,jlast+1:end] .= phi_inter(x_new[ifirst], y_new[jfirst])
 
-            B1_new[n,ilast:end,1:jfirst]  .= B1_inter(x_new[ilast], y_new[jfirst])
-            B2_new[n,ilast:end,1:jfirst]  .= B2_inter(x_new[ilast], y_new[jfirst])
-            G_new[n,ilast:end,1:jfirst]   .= G_inter(x_new[ilast], y_new[jfirst])
-            phi_new[n,ilast:end,1:jfirst] .= phi_inter(x_new[ilast], y_new[jfirst])
+            B1_new[n,ilast+1:end,1:jfirst]  .= B1_inter(x_new[ifirst], y_new[jfirst])
+            B2_new[n,ilast+1:end,1:jfirst]  .= B2_inter(x_new[ifirst], y_new[jfirst])
+            G_new[n,ilast+1:end,1:jfirst]   .= G_inter(x_new[ifirst], y_new[jfirst])
+            phi_new[n,ilast+1:end,1:jfirst] .= phi_inter(x_new[ifirst], y_new[jfirst])
 
-            B1_new[n,ilast:end,jlast:end]  .= B1_inter(x_new[ilast], y_new[jlast])
-            B2_new[n,ilast:end,jlast:end]  .= B2_inter(x_new[ilast], y_new[jlast])
-            G_new[n,ilast:end,jlast:end]   .= G_inter(x_new[ilast], y_new[jlast])
-            phi_new[n,ilast:end,jlast:end] .= phi_inter(x_new[ilast], y_new[jlast])
+            B1_new[n,ilast+1:end,jlast+1:end]  .= B1_inter(x_new[ifirst], y_new[jfirst])
+            B2_new[n,ilast+1:end,jlast+1:end]  .= B2_inter(x_new[ifirst], y_new[jfirst])
+            G_new[n,ilast+1:end,jlast+1:end]   .= G_inter(x_new[ifirst], y_new[jfirst])
+            phi_new[n,ilast+1:end,jlast+1:end] .= phi_inter(x_new[ifirst], y_new[jfirst])
 
             @fastmath @inbounds for i in ifirst:ilast
                 B1_new[n,i,1:jfirst]  .= B1_inter(x_new[i], y_new[jfirst])
@@ -589,10 +591,10 @@ function different_grid_spacing!(bulkevols_new::BulkPartition, bulkevols::BulkPa
                 G_new[n,i,1:jfirst]   .= G_inter(x_new[i], y_new[jfirst])
                 phi_new[n,i,1:jfirst] .= phi_inter(x_new[i], y_new[jfirst])
 
-                B1_new[n,i,jlast:end]  .= B1_inter(x_new[i], y_new[jlast])
-                B2_new[n,i,jlast:end]  .= B2_inter(x_new[i], y_new[jlast])
-                G_new[n,i,jlast:end]   .= G_inter(x_new[i], y_new[jlast])
-                phi_new[n,i,jlast:end] .= phi_inter(x_new[i], y_new[jlast])
+                B1_new[n,i,jlast+1:end]  .= B1_inter(x_new[i], y_new[jfirst])
+                B2_new[n,i,jlast+1:end]  .= B2_inter(x_new[i], y_new[jfirst])
+                G_new[n,i,jlast+1:end]   .= G_inter(x_new[i], y_new[jfirst])
+                phi_new[n,i,jlast+1:end] .= phi_inter(x_new[i], y_new[jfirst])
             end
 
             @fastmath @inbounds for j in jfirst:jlast
@@ -608,10 +610,10 @@ function different_grid_spacing!(bulkevols_new::BulkPartition, bulkevols::BulkPa
                     phi_new[n,i,j] = phi_inter(x_new[i], y_new[j])
                 end
 
-                B1_new[n,ilast:end,j]  .= B1_inter(x_new[ilast], y_new[j])
-                B2_new[n,ilast:end,j]  .= B2_inter(x_new[ilast], y_new[j])
-                G_new[n,ilast:end,j]   .= G_inter(x_new[ilast], y_new[j])
-                phi_new[n,ilast:end,j] .= phi_inter(x_new[ilast], y_new[j])
+                B1_new[n,ilast+1:end,j]  .= B1_inter(x_new[ifirst], y_new[j])
+                B2_new[n,ilast+1:end,j]  .= B2_inter(x_new[ifirst], y_new[j])
+                G_new[n,ilast+1:end,j]   .= G_inter(x_new[ifirst], y_new[j])
+                phi_new[n,ilast+1:end,j] .= phi_inter(x_new[ifirst], y_new[j])
             end
         end
      end
@@ -650,6 +652,8 @@ function different_grid_spacing(grid::SpecCartGrid3D, boundary::Boundary , bulke
     println((y_new[jfirst], y[1]))
     println((x_new[ilast], x[end]))
     println((y_new[jlast], y[end]))
+    #println((x_new[ilast+1], x[end]))
+    #println((y_new[jlast+1], y[end]))
 
     x_indices = (ifirst, ilast)
     y_indices = (jfirst, jlast)

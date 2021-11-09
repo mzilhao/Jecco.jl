@@ -231,9 +231,9 @@ function to2plus1(boundary::Boundary, gauge::Gauge, bulkevols::BulkPartition, ch
     @fastmath @inbounds @threads for j in 1:Nx
         for i in 1:Nx
             r = sqrt(x[i]^2+y[j]^2)
-            if r > x[end] r = x[1] end
-            a4_new[1,i,j] = a4_inter(r, 0.)
-            xi_new[1,i,j] = xi_inter(r, 0.)
+            if r > abs(x[1]) r = abs(x[1]) end
+            a4_new[1,i,j] = a4_inter(-r, 0.)
+            xi_new[1,i,j] = xi_inter(-r, 0.)
         end
     end
 
@@ -261,10 +261,10 @@ function to2plus1(boundary::Boundary, gauge::Gauge, bulkevols::BulkPartition, ch
             @fastmath @inbounds @threads for k in 1:Nx
                 for j in 1:Nx
                     r = sqrt(x[j]^2+y[k]^2)
-                    if r > x[end] r = x[1] end
-                    B1_new[i,j,k]   = B1_inter(r, 0.)
-                    B2_new[i,j,k]   = B2_inter(r, 0.)
-                    phi_new[i,j,k]  = phi_inter(r, 0.)
+                    if r > abs(x[1]) r = abs(x[1]) end
+                    B1_new[i,j,k]   = B1_inter(-r, 0.)
+                    B2_new[i,j,k]   = B2_inter(-r, 0.)
+                    phi_new[i,j,k]  = phi_inter(-r, 0.)
                 end
             end
         end

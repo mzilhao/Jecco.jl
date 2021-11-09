@@ -914,6 +914,109 @@ function convert_to_mathematica_local(dirname::String; outfile::String="local_da
 
 end
 
+function convert_to_mathematica_local_y0(dirname::String; outfile::String="local_data_mathematica_y0.h5")
+    ts         = OpenPMDTimeSeries(dirname, prefix="boundary_")
+    iterations = ts.iterations
+    Nt         = length(iterations)
+    t          = zeros(Nt)
+    it         = 0
+    en0, chart = get_energy(ts, it=it)
+
+    _, x, y = chart[:]
+    Nx      = length(x)
+    Ny      = length(y)
+    idy     = Int(floor(Ny/2))
+
+    ut       = zeros(Nt,Nx)
+    ux       = zeros(Nt,Nx)
+    uy       = zeros(Nt,Nx)
+    en_local = zeros(Nt,Nx)
+    p1_local = zeros(Nt,Nx)
+    p2_local = zeros(Nt,Nx)
+
+    @inbounds for (idx,it) in enumerate(iterations)
+        en   = get_energy(ts, it=it)[1][1,:,idy]
+        Jx   = get_Jx(ts, it=it)[1][1,:,idy]
+        Jy   = get_Jy(ts, it=it)[1][1,:,idy]
+        px   = get_px(ts, it=it)[1][1,:,idy]
+        py   = get_py(ts, it=it)[1][1,:,idy]
+        pxy  = get_pxy(ts, it=it)[1][1,:,idy]
+
+        t[idx] = ts.current_t
+
+        for i in 1:Nx
+            ut[idx,i],ux[idx,i],uy[idx,i],en_local[idx,i],p1_local[idx,i],p2_local[idx,i] = AdS5_3_1.compute_local_VEVs(en[i],Jx[i],Jy[i],px[i],py[i],pxy[i])
+        end
+    end
+
+    # store in an array suitable for Mathematica
+    T_m = zeros(8, Nt*Nx*Ny)
+
+    n = 1
+    for i in 1:Nt
+        for j in 1:Nx
+            T_m[:,n] = [t[i] x[j] ut[i,j] ux[i,j] uy[i,j] en_local[i,j] p1_local[i,j] p2_local[i,j]]
+            n += 1
+        end
+    end
+
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "Local VEVs", T_m)
+    close(fid)
+end
+
+function convert_to_mathematica_local_diagonal(dirname::String; outfile::String="local_data_mathematica_diagonal.h5")
+    ts         = OpenPMDTimeSeries(dirname, prefix="boundary_")
+    iterations = ts.iterations
+    Nt         = length(iterations)
+    t          = zeros(Nt)
+    it         = 0
+    en0, chart = get_energy(ts, it=it)
+    _, x, y    = chart[:]
+    Nx         = length(x)
+    Ny         = length(y)
+    ut         = zeros(Nt,Nx)
+    ux         = zeros(Nt,Nx)
+    uy         = zeros(Nt,Nx)
+    en_local   = zeros(Nt,Nx)
+    p1_local   = zeros(Nt,Nx)
+    p2_local   = zeros(Nt,Nx)
+
+    @inbounds for (idx,it) in enumerate(iterations)
+        en     = interpolate((x,y,), get_energy(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        Jx     = interpolate((x,y,), get_Jx(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        Jy     = interpolate((x,y,), get_Jy(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        px     = interpolate((x,y,), get_px(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        py     = interpolate((x,y,), get_py(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        pz     = interpolate((x,y,), get_pz(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        pxy    = interpolate((x,y,), get_pxy(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        Ophi   = interpolate((x,y,), get_Ophi(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        t[idx] = ts.current_t
+
+        @inbounds for i in 1:Nx
+            ut[idx,i],ux[idx,i],uy[idx,i],en_local[idx,i],p1_local[idx,i],p2_local[idx,i] = AdS5_3_1.compute_local_VEVs(en(r,r),Jx(r,r),Jy(r,r),px(r,r),py(r,r),pxy(r,r))
+        end
+    end
+    # store in an array suitable for Mathematica
+    T_m = zeros(8, Nt*Nx*Ny)
+    n   = 1
+    for i in 1:Nt
+        for j in 1:Nx
+            r        = x[j]/sqrt(2)
+            T_m[:,n] = [t[i] x[j] ut[i,j] ux[i,j] uy[i,j] en_local[i,j] p1_local[i,j] p2_local[i,j]]
+            n       += 1
+        end
+    end
+
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "Local VEVs", T_m)
+    close(fid)
+end
+
 function GW_to_mathematica(dirname::String; dit::Int = 1, outfile::String="GW_mathematica.h5")
 
     ts         = OpenPMDTimeSeries(dirname, prefix="perturbation_")
