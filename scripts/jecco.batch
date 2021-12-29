@@ -1,0 +1,18 @@
+#!/bin/bash
+#SBATCH --job-name=data_Yago_2
+#SBATCH --workdir=/gpfs/home/ub48/ub48946/
+#SBATCH --output=/gpfs/home/ub48/ub48946/Jecco.jl/error/output_%j.out
+#SBATCH --error=/gpfs/home/ub48/ub48946/Jecco.jl/error/error_%j.err
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=1
+#SBATCH --ntasks=1
+#SBATCH --time=3-00:00:00
+#SBATCH --qos=class_a
+#SBATCH --mail-type=end
+#SBATCH --mail-user=msanchezg@ub.edu
+
+export JULIA_NUM_THREADS=1
+
+julia /home/ub48/ub48946/Jecco.jl/scripts/convert_to_mathematica.jl
+
+
