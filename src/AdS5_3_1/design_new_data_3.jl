@@ -101,3 +101,44 @@ function same_box_all_runs(outdir::T, directories::Array{T,1}) where {T<:String,
         end
     end
 end
+
+function new_B!(bulkevols::BulkPartition, factor::Real)
+    Nsys = length(bulkevols)
+    @inbounds for n in 1:Nsys
+        bulkevols[n].B1[:,:,:] *= factor
+        bulkevols[n].B2[:,:,:] *= factor
+    end
+end
+
+function new_B(io::InOut, potential::Potential, factor::Real)
+    read_dir          = io.recover_dir
+    ts                = OpenPMDTimeSeries(read_dir, prefix="boundary_")
+    boundary, chart2D = construct_boundary(ts, ts.iterations[end])
+    ts                = OpenPMDTimeSeries(read_dir, prefix="gauge_")
+    gauge, _          = construct_gauge(ts, ts.iterations[end])
+    ts                = OpenPMDTimeSeries(read_dir, prefix="bulk_")
+    bulkevols, charts = construct_bulkevols(ts, ts.iterations[end])
+
+    new_B!(bulkevols, factor)
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+        else
+            throw(e)
+        end
+    end
+    oophiM2 = try
+        ts.params["oophiM2"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "oophiM2" is not found in the params Dict, set oophiM2 = 0
+        else
+            throw(e)
+        end
+    end
+    evolvars = AdS5_3_1.EvolVars(boundary, gauge, bulkevols)
+    create_outputs(io.out_dir, evolvars, chart2D, Tuple(charts), io, potential, phi0)
+end

@@ -64,8 +64,9 @@ function change_energy(io::InOut, e_new::T, potential::Potential;
 
 end
 
+#If :diagonal is chosen you have to choose the correct Lnew in grid, sqrt(2)*L_old and same Nx
 function to1plus1(grid::SpecCartGrid3D, boundary::Boundary, gauge::Gauge,
-                                    bulkevols::BulkPartition)
+                                    bulkevols::BulkPartition, section::Symbol)
 
 
     atlas         = Atlas(grid)
@@ -99,35 +100,72 @@ function to1plus1(grid::SpecCartGrid3D, boundary::Boundary, gauge::Gauge,
     #For when you want to freely specify the y coordinate of the slice.
     # y_index = findfirst(ycoord .>= y_specified)
 
-    a4_new[1,:,:] .= view(a4,1,:,y_index)
-    fx2_new[1,:,:].= view(fx2,1,:,y_index)
-    xi_new[1,:,:] .= view(xi,1,:,y_index)
+    if section == :y0
+        a4_new[1,:,:] .= view(a4,1,:,y_index)
+        fx2_new[1,:,:].= view(fx2,1,:,y_index)
+        xi_new[1,:,:] .= view(xi,1,:,y_index)
 
-    fill!(fy2_new, 0.0)
+        fill!(fy2_new, 0.0)
 
-    for n in 1:Nsys
+        for n in 1:Nsys
 
-        B1      = bulkevols[n].B1
-        B2      = bulkevols[n].B2
-        G       = bulkevols[n].G
-        phi     = bulkevols[n].phi
-        B1_new  = bulkevols_new[n].B1
-        B2_new  = bulkevols_new[n].B2
-        G_new   = bulkevols_new[n].G
-        phi_new = bulkevols_new[n].phi
+            B1      = bulkevols[n].B1
+            B2      = bulkevols[n].B2
+            G       = bulkevols[n].G
+            phi     = bulkevols[n].phi
+            B1_new  = bulkevols_new[n].B1
+            B2_new  = bulkevols_new[n].B2
+            G_new   = bulkevols_new[n].G
+            phi_new = bulkevols_new[n].phi
 
-        B1_new  .= view(B1,:,:,y_index)
-        B2_new  .= view(B2,:,:,y_index)
-        G_new   .= view(G,:,:,y_index)
-        phi_new .= view(phi,:,:,y_index)
-        #fill!(G_new, 0.0)
+            B1_new  .= view(B1,:,:,y_index)
+            B2_new  .= view(B2,:,:,y_index)
+            G_new   .= view(G,:,:,y_index)
+            phi_new .= view(phi,:,:,y_index)
+        end
+    elseif section == :diagonal
+        if Nx != Ny
+            println("Diagonal section only for square boxes with grid along the diagonal")
+            return
+        elseif Nx_new != Nx
+            println("Nx_new must be equal to Nx")
+            return
+        end
+        fill!(fy2_new, 0.0)
+        @inbounds for i in 1:Nx
+            a4_new[1,i,:]  .= a4[1,i,i]
+            xi_new[1,i,:]  .= xi[1,i,i]
+            fx2_new[1,i,:] .= fx2[1,i,i]
+            #fy2_new[1,i,:] .= fy2[1,i,i]
+        end
+        for n in 1:Nsys
+            B1      = bulkevols[n].B1
+            B2      = bulkevols[n].B2
+            G       = bulkevols[n].G
+            phi     = bulkevols[n].phi
+            B1_new  = bulkevols_new[n].B1
+            B2_new  = bulkevols_new[n].B2
+            G_new   = bulkevols_new[n].G
+            phi_new = bulkevols_new[n].phi
+            #fill!(B1_new, 0.0)
+            #fill!(G_new, 0.0)
+            @inbounds @threads for i in 1:Nx
+                B1_new[n,i,:]  .= B1[n,i,i]
+                B2_new[n,i,:]  .= B2[n,i,i]
+                G_new[n,i,:]   .= G[n,i,i]
+                phi_new[n,i,:] .= phi[n,i,i]
+            end
+        end
+    else
+        println("No such section")
+        return
     end
 
     boundary_new, gauge_new, bulkevols_new, chart2D, atlas
 
 end
 
-function to1plus1(grid::SpecCartGrid3D, io::InOut, potential::Potential)
+function to1plus1(grid::SpecCartGrid3D, io::InOut, potential::Potential; section::Symbol = :y0)
 
 
     read_dir    = io.recover_dir
@@ -141,7 +179,7 @@ function to1plus1(grid::SpecCartGrid3D, io::InOut, potential::Potential)
     ts           = OpenPMDTimeSeries(read_dir, prefix="bulk_")
     bulkevols, _ = construct_bulkevols(ts, ts.iterations[end])
 
-    boundary, gauge, bulkevols, chart2D, atlas = to1plus1(grid, boundary, gauge, bulkevols)
+    boundary, gauge, bulkevols, chart2D, atlas = to1plus1(grid, boundary, gauge, bulkevols, section)
 
     phi0 = try
         ts.params["phi0"]
@@ -171,7 +209,8 @@ end
 
 #Function to create a circularly symmetric configuration from a y-independent data.
 #We are going to use the 2D linear interpolator, if you want to optimize create a 1D interpolator, as you
-#only need the x direction
+#only need the x direction.
+#TODO: Circularly symmetric should have B1=G=0 and fx2 = fr2*cos(φ), fy2= fr2*sin(φ) with tan(φ)=y/x
 function to2plus1(boundary::Boundary, gauge::Gauge, bulkevols::BulkPartition, chart2D::Chart, charts::Array{Chart, 1})
     a4        = boundary.a4
     xi        = gauge.xi
@@ -192,9 +231,9 @@ function to2plus1(boundary::Boundary, gauge::Gauge, bulkevols::BulkPartition, ch
     @fastmath @inbounds @threads for j in 1:Nx
         for i in 1:Nx
             r = sqrt(x[i]^2+y[j]^2)
-            if r > x[end] r = x[1] end
-            a4_new[1,i,j] = a4_inter(r, 0.)
-            xi_new[1,i,j] = xi_inter(r, 0.)
+            if r > abs(x[1]) r = abs(x[1]) end
+            a4_new[1,i,j] = a4_inter(-r, 0.)
+            xi_new[1,i,j] = xi_inter(-r, 0.)
         end
     end
 
@@ -222,10 +261,10 @@ function to2plus1(boundary::Boundary, gauge::Gauge, bulkevols::BulkPartition, ch
             @fastmath @inbounds @threads for k in 1:Nx
                 for j in 1:Nx
                     r = sqrt(x[j]^2+y[k]^2)
-                    if r > x[end] r = x[1] end
-                    B1_new[i,j,k]   = B1_inter(r, 0.)
-                    B2_new[i,j,k]   = B2_inter(r, 0.)
-                    phi_new[i,j,k]  = phi_inter(r, 0.)
+                    if r > abs(x[1]) r = abs(x[1]) end
+                    B1_new[i,j,k]   = B1_inter(-r, 0.)
+                    B2_new[i,j,k]   = B2_inter(-r, 0.)
+                    phi_new[i,j,k]  = phi_inter(-r, 0.)
                 end
             end
         end
@@ -273,6 +312,42 @@ function to2plus1(io::InOut, potential::Potential)
     evolvars, chart2D, charts = to2plus1(boundary, gauge, bulkevols, chart2D, charts)
     create_outputs(io.out_dir, evolvars, chart2D, Tuple(charts), io, potential, phi0)
 end
+
+function create_circular_symmetric(grid::SpecCartGrid3D, io::InOut, potential::Potential; section::Symbol = :y0)
+    read_dir          = io.recover_dir
+    ts                = OpenPMDTimeSeries(read_dir, prefix="boundary_")
+    boundary, chart2D = construct_boundary(ts, ts.iterations[end])
+    ts                = OpenPMDTimeSeries(read_dir, prefix="gauge_")
+    gauge, _          = construct_gauge(ts, ts.iterations[end])
+    ts                = OpenPMDTimeSeries(read_dir, prefix="bulk_")
+    bulkevols, charts = construct_bulkevols(ts, ts.iterations[end])
+
+    boundary, gauge, bulkevols, chart2D, atlas = to1plus1(grid, boundary, gauge, bulkevols, section)
+
+    phi0 = try
+        ts.params["phi0"]
+    catch e
+        if isa(e, KeyError)
+            0.0   # if "phi0" is not found in the params Dict, set phi0 = 0
+            @warn "phi0 not found, setting it to 0.0"
+        else
+            throw(e)
+        end
+    end
+    #=
+    Nsys = grid.u_outer_domains + 1
+    for n in 1:Nsys
+        fill!(bulkevols[n].G, 0.0)
+        fill!(bulkevols[n].B1, 0.0)
+    end
+    =#
+    fill!(boundary.fx2, 0.0)
+    fill!(boundary.fy2, 0.0)
+    evolvars, chart2D, charts = to2plus1(boundary, gauge, bulkevols, chart2D, charts)
+    create_outputs(io.out_dir, evolvars, chart2D, Tuple(charts), io, potential, phi0)
+
+end
+
 
 function cut_1D_hole(boundary::Boundary, R::T, chart2D::Chart, chart2D_new::Chart) where {T<:Real}
     a4        = boundary.a4

@@ -1,4 +1,5 @@
 using HDF5
+using Interpolations
 
 """
 Need to have method `get_data`
@@ -59,7 +60,7 @@ end
 struct AHTimeSeries{T} <: TimeSeries{2,T}
     ts            :: T
     ts_diag       :: T
-    property :: Symbol
+    property      :: Symbol
 
     function AHTimeSeries(foldername::String, property::Symbol)
         ts       = OpenPMDTimeSeries(foldername, "constrained_")
@@ -85,6 +86,26 @@ struct TTTimeSeries{T} <: TimeSeries{2,T}
     function TTTimeSeries(foldername::String, field::Symbol)
         ts = OpenPMDTimeSeries(foldername, "TT_")
         new{typeof(ts)}(ts, field)
+    end
+end
+
+struct LocalVEVsTimeSeries{T} <: TimeSeries{2,T}
+    ts    :: T
+    field :: Symbol
+    function LocalVEVsTimeSeries(foldername::String, field::Symbol)
+        ts = OpenPMDTimeSeries(foldername, "boundary_")
+        new{typeof(ts)}(ts, field)
+    end
+end
+
+struct IdealHydroTimeSeries{T} <: TimeSeries{2,T}
+    ts  :: T
+    vev :: Symbol
+    eos :: String
+
+    function IdealHydroTimeSeries(foldername::String, path_to_eos::String, vev::Symbol)
+        ts = OpenPMDTimeSeries(foldername, "boundary_")
+        new{typeof(ts)}(ts, vev, path_to_eos)
     end
 end
 
@@ -177,6 +198,38 @@ function get_data(ff::TTTimeSeries, it::Int)
         Tzz, _     = get_field(ff.ts, it=it, field="Tzz")
 
         f   = Txx.^2+Txy.^2+Tyy.^2+Tzz.^2
+    elseif String(ff.field)[2] == 'd'
+        field = split(String(ff.field), 'd')[1]*split(String(ff.field), 'd')[2]
+        if it == ff.ts.iterations[1]
+            T0, chart = get_field(ff.ts, it=it, field=field)
+            i         = ff.ts.current_i
+            t0        = ff.ts.current_t
+            it1       = ff.ts.iterations[i+1]
+            it2       = ff.ts.iterations[i+2]
+            T1, _     = get_field(ff.ts, it=it1, field=field)
+            t1        = ff.ts.current_t
+            T2, _     = get_field(ff.ts, it=it2, field=field)
+            f         = (-1.5 .*T0+2 .*T1-0.5 .*T2)./(t1-t0)
+        elseif it == ff.ts.iterations[end]
+            T0, chart = get_field(ff.ts, it=it, field=field)
+            i         = ff.ts.current_i
+            t0        = ff.ts.current_t
+            it1       = ff.ts.iterations[i-1]
+            it2       = ff.ts.iterations[i-2]
+            T1, _     = get_field(ff.ts, it=it1, field=field)
+            t1        = ff.ts.current_t
+            T2, _     = get_field(ff.ts, it=it2, field=field)
+            f         = (1.5 .*T0-2 .*T1+0.5 .*T2)./(t0-t1)
+        else
+            i         = findfirst(ff.ts.iterations .== it)
+            it1       = ff.ts.iterations[i-1]
+            it2       = ff.ts.iterations[i+1]
+            T1, chart = get_field(ff.ts, it=it1, field=field)
+            t1        = ff.ts.current_t
+            T2, _     = get_field(ff.ts, it=it2, field=field)
+            t2        = ff.ts.current_t
+            f         = (T2-T1)./(t2-t1)
+        end
     else
         f, chart = get_field(ff.ts, it=it, field=String(ff.field))
     end
@@ -185,12 +238,101 @@ function get_data(ff::TTTimeSeries, it::Int)
     f[:,:], [x, y]
 end
 
+function get_Td2(Tdxx::T, Tdxy::T, Tdyy::T, Tdzz::T, it::Int) where {T<:TTTimeSeries}
+    Tddxx, _ = get_data(Tdxx, it)
+    Tddxy, _ = get_data(Tdxy, it)
+    Tddyy, _ = get_data(Tdyy, it)
+    Tddzz, _ = get_data(Tdzz, it)
+
+    get_Td2(Tddxx, Tddxy, Tddyy, Tddzz)
+end
+
 function Base.size(ff::TimeSeries)
     Nt  = length(ff.ts.iterations)
     it0 = ff.ts.iterations[1]
     f0, = get_data(ff, it0)
     size_ = size(f0)
     Nt, size_...
+end
+
+function get_data(ff::LocalVEVsTimeSeries, it::Int)
+    e, chart  = get_energy(ff.ts, it=it)
+    Jx, _     = get_Jx(ff.ts, it=it)
+    Jy, _     = get_Jy(ff.ts, it=it)
+    px, _     = get_px(ff.ts, it=it)
+    pxy, _    = get_pxy(ff.ts, it=it)
+    py, _     = get_py(ff.ts, it=it)
+
+    ut, ux, uy, el, p1, p2 = compute_local_VEVs(e, Jx, Jy, px, pxy, py)
+
+    if ff.field == :ut
+        f = ut
+    elseif ff.field == :ux
+        f = ux
+    elseif ff.field == :uy
+        f = uy
+    elseif ff.field == :energy
+        f = el
+    elseif ff.field == :p1
+        f = p1
+    elseif ff.field == :p2
+        f = p2
+    else
+        error("Unknown local field")
+    end
+
+    x, y = chart[:]
+
+    f[:,:], [x, y]
+end
+
+function get_data(ff::IdealHydroTimeSeries, it::Int)
+    ee        = h5read(ff.eos, "Energy")
+    pp        = h5read(ff.eos, "Pressure")
+    e, chart  = get_energy(ff.ts, it=it)
+    Jx, _     = get_Jx(ff.ts, it=it)
+    Jy, _     = get_Jy(ff.ts, it=it)
+    px, _     = get_px(ff.ts, it=it)
+    pxy, _    = get_pxy(ff.ts, it=it)
+    py, _     = get_py(ff.ts, it=it  )
+    _, Nx, Ny = size(e)
+    p         = zeros(Nx, Ny)
+
+    ut, ux, uy, el, _, _ = compute_local_VEVs(e, Jx, Jy, px, pxy, py)
+
+    @inbounds @threads for j in 1:Ny
+        for i in 1:Nx
+            e1 = findlast(ee .<= el[i,j])
+            e2 = findfirst(ee .>= el[i,j])
+            if e1 != e2
+                p[i,j] = (pp[e2]-pp[e1])/(ee[e2]-ee[e1])*(el[i,j]-ee[e1])+pp[e1]
+            else
+                p[i,j] = pp[e1]
+            end
+        end
+    end
+
+    if ff.vev == :energy
+        f = e_Ideal.(ut, el, p)
+    elseif ff.vev == :Jx
+        f = Jx_Ideal.(ut, ux, el, p)
+    elseif ff.vev == :Jy
+        f = Jy_Ideal.(ut, uy, el, p)
+    elseif ff.vev == :px
+        f = px_Ideal.(ux, el, p)
+    elseif ff.vev == :pxy
+        f = pxy_Ideal.(ux, uy, el, p)
+    elseif ff.vev == :py
+        f = py_Ideal.(uy, el, p)
+    elseif ff.vev == :pz
+        f = p
+    else
+        error("Unknown VEV")
+    end
+
+    x, y = chart[:]
+
+    f[:,:], [x, y]
 end
 
 @inline Base.firstindex(ff::TimeSeries, d::Int) = 1
@@ -303,6 +445,104 @@ function convert_to_mathematica(dirname::String; outfile::String="data_mathemati
                 T_m[:,n] = [t[i] x[j] y[k] en[i,j,k] Jx[i,j,k] Jy[i,j,k] px[i,j,k] pxy[i,j,k] py[i,j,k] pz[i,j,k] Ophi[i,j,k]]
                 n += 1
             end
+        end
+    end
+
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "VEVs", T_m)
+    close(fid)
+end
+
+function convert_to_mathematica_y0(dirname::String; outfile::String="data_mathematica_y0.h5")
+    ts = OpenPMDTimeSeries(dirname, prefix="boundary_")
+
+    iterations = ts.iterations
+
+    Nt = length(iterations)
+    t  = zeros(Nt)
+
+    it = 0
+    en0, chart = get_energy(ts, it=it)
+
+    _, x, y = chart[:]
+    Nx      = length(x)
+    Ny      = length(y)
+    idy     = Int(floor(Ny/2))
+
+    en   = zeros(Nt,Nx)
+    Jx   = zeros(Nt,Nx)
+    Jy   = zeros(Nt,Nx)
+    px   = zeros(Nt,Nx)
+    py   = zeros(Nt,Nx)
+    pz   = zeros(Nt,Nx)
+    pxy  = zeros(Nt,Nx)
+    Ophi = zeros(Nt,Nx)
+
+    for (idx,it) in enumerate(iterations)
+        en[idx,:]   .= get_energy(ts, it=it)[1][1,:,idy]
+        Jx[idx,:]   .= get_Jx(ts, it=it)[1][1,:,idy]
+        Jy[idx,:]   .= get_Jy(ts, it=it)[1][1,:,idy]
+        px[idx,:]   .= get_px(ts, it=it)[1][1,:,idy]
+        py[idx,:]   .= get_py(ts, it=it)[1][1,:,idy]
+        pz[idx,:]   .= get_pz(ts, it=it)[1][1,:,idy]
+        pxy[idx,:]  .= get_pxy(ts, it=it)[1][1,:,idy]
+        Ophi[idx,:] .= get_Ophi(ts, it=it)[1][1,:,idy]
+
+        t[idx] = ts.current_t
+    end
+
+    # store in an array suitable for Mathematica
+    T_m = zeros(10, Nt*Nx)
+
+    n = 1
+    for i in 1:Nt
+        for j in 1:Nx
+            T_m[:,n] = [t[i] x[j] en[i,j] Jx[i,j] Jy[i,j] px[i,j] pxy[i,j] py[i,j] pz[i,j] Ophi[i,j]]
+            n += 1
+        end
+    end
+
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "VEVs", T_m)
+    close(fid)
+end
+
+function convert_to_mathematica_diagonal(dirname::String; outfile::String="data_mathematica_diagonal.h5")
+    ts = OpenPMDTimeSeries(dirname, prefix="boundary_")
+
+    iterations = ts.iterations
+
+    Nt = length(iterations)
+    t  = zeros(Nt)
+
+    it = 0
+    en0, chart = get_energy(ts, it=it)
+
+    _, x, y = chart[:]
+    Nx      = length(x)
+    Ny      = length(y)
+
+    # store in an array suitable for Mathematica
+    T_m = zeros(10, Nt*Nx)
+    n   = 1
+    @inbounds for (idx,it) in enumerate(iterations)
+        en    = interpolate((x,y,), get_energy(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        Jx    = interpolate((x,y,), get_Jx(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        Jy    = interpolate((x,y,), get_Jy(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        px    = interpolate((x,y,), get_px(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        py    = interpolate((x,y,), get_py(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        pz    = interpolate((x,y,), get_pz(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        pxy   = interpolate((x,y,), get_pxy(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        Ophi  = interpolate((x,y,), get_Ophi(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        t     = ts.current_t
+        for j in 1:Nx
+            r        = x[j]/sqrt(2)
+            T_m[:,n] = [t x[j] en(r,r) Jx(r,r) Jy(r,r) px(r,r) pxy(r,r) py(r,r) pz(r,r) Ophi(r,r)]
+            n       += 1
         end
     end
 
@@ -674,6 +914,109 @@ function convert_to_mathematica_local(dirname::String; outfile::String="local_da
 
 end
 
+function convert_to_mathematica_local_y0(dirname::String; outfile::String="local_data_mathematica_y0.h5")
+    ts         = OpenPMDTimeSeries(dirname, prefix="boundary_")
+    iterations = ts.iterations
+    Nt         = length(iterations)
+    t          = zeros(Nt)
+    it         = 0
+    en0, chart = get_energy(ts, it=it)
+
+    _, x, y = chart[:]
+    Nx      = length(x)
+    Ny      = length(y)
+    idy     = Int(floor(Ny/2))
+
+    ut       = zeros(Nt,Nx)
+    ux       = zeros(Nt,Nx)
+    uy       = zeros(Nt,Nx)
+    en_local = zeros(Nt,Nx)
+    p1_local = zeros(Nt,Nx)
+    p2_local = zeros(Nt,Nx)
+
+    @inbounds for (idx,it) in enumerate(iterations)
+        en   = get_energy(ts, it=it)[1][1,:,idy]
+        Jx   = get_Jx(ts, it=it)[1][1,:,idy]
+        Jy   = get_Jy(ts, it=it)[1][1,:,idy]
+        px   = get_px(ts, it=it)[1][1,:,idy]
+        py   = get_py(ts, it=it)[1][1,:,idy]
+        pxy  = get_pxy(ts, it=it)[1][1,:,idy]
+
+        t[idx] = ts.current_t
+
+        for i in 1:Nx
+            ut[idx,i],ux[idx,i],uy[idx,i],en_local[idx,i],p1_local[idx,i],p2_local[idx,i] = AdS5_3_1.compute_local_VEVs(en[i],Jx[i],Jy[i],px[i],py[i],pxy[i])
+        end
+    end
+
+    # store in an array suitable for Mathematica
+    T_m = zeros(8, Nt*Nx*Ny)
+
+    n = 1
+    for i in 1:Nt
+        for j in 1:Nx
+            T_m[:,n] = [t[i] x[j] ut[i,j] ux[i,j] uy[i,j] en_local[i,j] p1_local[i,j] p2_local[i,j]]
+            n += 1
+        end
+    end
+
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "Local VEVs", T_m)
+    close(fid)
+end
+
+function convert_to_mathematica_local_diagonal(dirname::String; outfile::String="local_data_mathematica_diagonal.h5")
+    ts         = OpenPMDTimeSeries(dirname, prefix="boundary_")
+    iterations = ts.iterations
+    Nt         = length(iterations)
+    t          = zeros(Nt)
+    it         = 0
+    en0, chart = get_energy(ts, it=it)
+    _, x, y    = chart[:]
+    Nx         = length(x)
+    Ny         = length(y)
+    ut         = zeros(Nt,Nx)
+    ux         = zeros(Nt,Nx)
+    uy         = zeros(Nt,Nx)
+    en_local   = zeros(Nt,Nx)
+    p1_local   = zeros(Nt,Nx)
+    p2_local   = zeros(Nt,Nx)
+
+    @inbounds for (idx,it) in enumerate(iterations)
+        en     = interpolate((x,y,), get_energy(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        Jx     = interpolate((x,y,), get_Jx(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        Jy     = interpolate((x,y,), get_Jy(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        px     = interpolate((x,y,), get_px(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        py     = interpolate((x,y,), get_py(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        pz     = interpolate((x,y,), get_pz(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        pxy    = interpolate((x,y,), get_pxy(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        Ophi   = interpolate((x,y,), get_Ophi(ts, it=it)[1][1,:,:],Gridded(Linear()))
+        t[idx] = ts.current_t
+
+        @inbounds for i in 1:Nx
+            ut[idx,i],ux[idx,i],uy[idx,i],en_local[idx,i],p1_local[idx,i],p2_local[idx,i] = AdS5_3_1.compute_local_VEVs(en(r,r),Jx(r,r),Jy(r,r),px(r,r),py(r,r),pxy(r,r))
+        end
+    end
+    # store in an array suitable for Mathematica
+    T_m = zeros(8, Nt*Nx*Ny)
+    n   = 1
+    for i in 1:Nt
+        for j in 1:Nx
+            r        = x[j]/sqrt(2)
+            T_m[:,n] = [t[i] x[j] ut[i,j] ux[i,j] uy[i,j] en_local[i,j] p1_local[i,j] p2_local[i,j]]
+            n       += 1
+        end
+    end
+
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "Local VEVs", T_m)
+    close(fid)
+end
+
 function GW_to_mathematica(dirname::String; dit::Int = 1, outfile::String="GW_mathematica.h5")
 
     ts         = OpenPMDTimeSeries(dirname, prefix="perturbation_")
@@ -754,4 +1097,98 @@ function TT_to_mathematica(dirname::String; dit::Int = 1, outfile::String="TTT_m
     group_st = g_create(fid, "data")
     Jecco.write_dataset(group_st, "T2", T2_m)
     close(fid)
+end
+
+
+
+#From exponential basis to cos sin one for real functions.
+function Exp_to_cos_sin(f::Array{T,2}) where {T<:Complex}
+    nkx, nky = size(f)
+    Nkx      = nkx-2
+    Nky      = Int((nky-2)/2)
+    a        = zeros(Nkx, Nky)
+    b        = zeros(Nkx, Nky)
+    c        = zeros(Nkx, Nky)
+    d        = zeros(Nkx, Nky)
+    fk       = im.*zeros(Nkx, 2*Nky)
+
+    fk[:,1:Nky] = f[2:end-1,2:Nky+1]
+    for j in 1:Nky
+        fk[:,Nky+j] = f[2:end-1,end-j+1]
+    end
+    a = real.(fk[:,1:Nky]+fk[:,Nky+1:2*Nky])
+    b = imag.(-fk[:,1:Nky]+fk[:,Nky+1:2*Nky])
+    c = imag.(-fk[:,1:Nky]-fk[:,Nky+1:2*Nky])
+    d = real.(-fk[:,1:Nky]+fk[:,Nky+1:2*Nky])
+
+    a, b, c, d
+end
+
+#Fourier decomposition in coscos, cossin, sincos and sinsin basis
+function Fourier_cos_sin(f::Array{T,2}) where {T<:Real}
+    Nx, Ny     = size(f)
+    plan       = plan_rfft(f)
+    fk         = 1/(Nx*Ny).*(plan * f)
+
+    Exp_to_cos_sin(fk)
+end
+
+function Fourier_cos_sin(dir::String, VEV::Symbol)
+    f          = VEVTimeSeries(dir, VEV)
+    t, x, y    = get_coords(f,:,:,:)
+    Nt, Nx, Ny = size(f)
+    dx         = x[2]-x[1]
+    dy         = y[2]-y[1]
+    kx         = 2*π.*(rfftfreq(Nx,1/dx)[2:end-1])
+    ky         = 2*π.*(rfftfreq(Ny,1/dy)[2:end-1])
+    Nkx        = length(kx)
+    Nky        = length(ky)
+
+    a = zeros(Nt, Nkx, Nky)
+    b = zeros(Nt, Nkx, Nky)
+    c = zeros(Nt, Nkx, Nky)
+    d = zeros(Nt, Nkx, Nky)
+
+    for n in 1:Nt
+        a[n,:,:], b[n,:,:], c[n,:,:], d[n,:,:] = Fourier_cos_sin(f[n,:,:])
+    end
+
+    a, b, c, d
+end
+
+function Fourier_ϕ(f::Array{T,2}) where {T<:Real}
+    Nr, Nϕ = size(f)
+    δϕ     = 2π/Nϕ
+    a      = zeros(Nr, Int(floor(Nϕ/2))+1)
+    b      = similar(a)
+    @inbounds for n in 1:Nr
+        plan   = plan_rfft(f[n,:])
+        fk     = 1/Nϕ .* (plan * f[n,:])
+        a[n,:] = 0.5 .*real.(fk)
+        b[n,:] = -0.5 .*imag.(fk)
+    end
+    a, b
+end
+
+function Fourier_ϕ(dir::String, VEV::Symbol; time::Real = 0.0)
+    f         = VEVTimeSeries(dir, VEV)
+    t, x, y   = get_coords(f, :, :, :)
+    δx, δy    = (x[2]-x[1], y[2]-y[1])
+    Lx, Ly    = (x[end]+δx-x[1], y[end]+δy-y[1])
+    n         = findfirst(t .>= time)
+    _, Nx, Ny = size(f)
+    rmax      = minimum((Lx/2-δx, Ly/2-δy))
+    N         = minimum((Nx, Ny))
+    r         = [(i-1)/N*rmax for i in 1:N]
+    ϕ         = [2π*(i-1)/N for i in 1:N]
+    f_inter   = interpolate((x, y, ), f[n,:,:], Gridded(Linear()))
+    f_rϕ      = zeros(N, N)
+
+    @inbounds @threads for j in 1:N
+        for i in 1:N
+            f_rϕ[i,j] = f_inter(r[i]*cos(ϕ[j]), r[i]*sin(ϕ[j]))
+        end
+    end
+
+    r, Fourier_ϕ(f_rϕ)
 end
