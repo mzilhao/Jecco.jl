@@ -1,21 +1,23 @@
 using Jecco, Jecco.AdS5_3_1
 using Plots
+using FFTW
+
 pyplot()
 
-dirname   = "/home/mikel/Dropbox/CollisionNewPotential/GW/spinodal/data/spinodal_2/"
-out_file  = "/home/mikel/Dropbox/CollisionNewPotential/GW/spinodal/initial_set_up/"
-name      = "crit_size"
+dirname   = "//home/mikel/Dropbox/CollisionNewPotential/GW/spinodal/data/spinodal_2"
+out_file  = "/home/mikel/Dropbox/CollisionNewPotential/GW/spinodal/fourier_modes/"
+name      = "E_hd2_2"
 
 
-en         = VEVTimeSeries(dirname, :energy)
+#en         = VEVTimeSeries(dirname, :energy)
 #T2         = AdS5_3_1.TTTimeSeries(dirname, :T2)
 #hd2        = GWTimeSeries(dirname, :hd2)
-t, x, y    = get_coords(en, :, :, :)
-Nt, Nx, Ny = size(en)
+#t, x, y    = get_coords(en, :, :, :)
+#Nt, Nx, Ny = size(en)
 #Nt2, _, _  = size(T2)
 #Nt3, _, _  = size(hd2)
 
-#nt = minimum((Nt, Nt2, Nt3))
+#nt = minimum((Nt, Nt3))
 #=
 Tdxx       = AdS5_3_1.TTTimeSeries(dirname, :Tdxx)
 Tdxy       = AdS5_3_1.TTTimeSeries(dirname, :Tdxy)
@@ -40,6 +42,7 @@ nt = maximum((Nt1,Nt2,Nt3,Nt4))
 t, x, y = get_coords(en1,:,:,:)
 =#
 
+#=
 #ANIMATIONS
 #Rectangle boxes
 #=
@@ -92,22 +95,23 @@ end
 
 
 #SQUARE BOXES
-n    = 1
-emax = maximum(en[n,:,:])
-emin = minimum(en[n,:,:])
-p1   = surface(x, y, en[n,:,:], size=(700,500), xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin,emax), clims=(emin,emax), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
-display(p1)
-savefig(p1, out_file*"initial.png")
+#n    = 1
+#emax = maximum(en[:,:,:])
+#emin = minimum(en[:,:,:])
+#p1   = surface(x, y, en[n,:,:], size=(700,500), xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin,emax), clims=(emin,emax), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
+#display(p1)
+#savefig(p1, out_file*"initial.png")
 #hd2max = maximum(hd2[:,:,:])
 #hd2min = minimum(hd2[:,:,:])
 #p1     = surface(x, y, en[1,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin,emax), clims=(emin,emax), camera=(50,50), legend=:none)
+nt   = findfirst(t .>= 1180.)
 
-#=
-anim = @animate for n in 1:Nt1
+anim = @animate for n in 1:nt
     @time begin
-        println("progress = $(n/Nt1*100)%")
-        p1     = surface(x, y, en1[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin1,emax1), clims=(emin3,emax3), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
+        println("progress = $(n/nt*100)%")
+        p1     = surface(x, y, en[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin,emax), clims=(emin,emax), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
         nothing
+        #=
         p2     = surface(x, y, en2[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin2,emax2), clims=(emin3,emax3), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
         nothing
         if n > 66 j = 66 else j = n end
@@ -116,6 +120,7 @@ anim = @animate for n in 1:Nt1
         if n > 65 j = 65 else j = n end
         p4     = surface(x, y, en4[j,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="ℰ/Λ⁴",color=:jet, zlim=(emin4,emax4), clims=(emin3,emax3), camera=(50,50), title="tΛ = $(t[j])", legend=:none)
         nothing
+        =#
         #=
         T2min  = minimum(T2[n,:,:])
         T2max  = maximum(T2[n,:,:])
@@ -126,10 +131,12 @@ anim = @animate for n in 1:Nt1
         Td2max = maximum(Td2[:,:])
         p3     = surface(x, y, Td2[:,:], xlabel="xΛ", ylabel="yΛ", zlabel="Td²/Λ¹⁰",color=:jet, zlim=(Td2min,Td2max), clims=(Td2min,Td2max), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
         nothing
-        p4     = surface(x, y, hd2[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="hd²/Λ⁸",color=:jet, zlim=(hd2min,hd2max), clims=(hd2min,hd2max), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
-        nothing
         =#
-        plot(p1, p2, p3, p4, size=(1500,1000))
+        hd2maxn = maximum(hd2[n,:,:])
+        hd2minn = minimum(hd2[n,:,:])
+        p4      = surface(x, y, hd2[n,:,:], xlabel="xΛ", ylabel="yΛ", zlabel="hd²/Λ²",color=:jet, zlim=(hd2min,hd2max), clims=(hd2minn,hd2maxn), camera=(50,50), title="tΛ = $(t[n])", legend=:none)
+        nothing
+        plot(p4, p1, size=(1800,900))
         nothing
     end
 end
@@ -269,24 +276,26 @@ run(`ffmpeg -i $(out_file*name*".gif") -pix_fmt yuv420p $(out_file*name*".mp4")`
 run(`rm $(out_file*name*".gif")`)
 =#
 
-#=
+
 #FOURIER MODES PLOTS
-nxmax, nymax = (3, 3)
-#=
+
+nxmax, nymax = (0, 0)
+
 @time a, b, c, d  = AdS5_3_1.Fourier_cos_sin(dirname, :energy)
-println("Max cos_cos: $(findmax(abs.(a))[2])")
-println("Max cos_sin: $(findmax(abs.(b))[2])")
-println("Max sin_cos: $(findmax(abs.(c))[2])")
-println("Max sin_sin: $(findmax(abs.(d))[2])")
-_, Nkx, Nky = size(a)
+#println("Max cos_cos: $(findmax(abs.(a))[2])")
+#println("Max cos_sin: $(findmax(abs.(b))[2])")
+#println("Max sin_cos: $(findmax(abs.(c))[2])")
+#println("Max sin_sin: $(findmax(abs.(d))[2])")
+Nt, Nkx, Nky = size(a)
 a4          = BoundaryTimeSeries(dirname, :a4)
 t, _, _     = get_coords(a4, :, 1, 1)
-=#
+
 idx         = findfirst(t .> 100)
-println("Max cos_cos: $(findmax(abs.(a[1:idx,:,:]))[2])")
-println("Max cos_sin: $(findmax(abs.(b[1:idx,:,:]))[2])")
-println("Max sin_cos: $(findmax(abs.(c[1:idx,:,:]))[2])")
-println("Max sin_sin: $(findmax(abs.(d[1:idx,:,:]))[2])")
+#idx         = Nt
+#println("Max cos_cos: $(findmax(abs.(a[1:idx,:,:]))[2])")
+#println("Max cos_sin: $(findmax(abs.(b[1:idx,:,:]))[2])")
+#println("Max sin_cos: $(findmax(abs.(c[1:idx,:,:]))[2])")
+#println("Max sin_sin: $(findmax(abs.(d[1:idx,:,:]))[2])")
 p1 = plot()
 p2 = plot()
 p3 = plot()
@@ -310,16 +319,29 @@ title!(p3, "Sin*Cos")
 title!(p4, "Sin*Sin")
 
 pfinal = plot(p1, p2, p3, p4, size=(1000, 1000))
+#pfinal = plot(p1, size=(700, 700))
 nothing
-savefig(pfinal, out_file)
+savefig(pfinal, out_file*"0mode_1.7.pdf")
 #=
 savefig(p1, out_file*"spinodal_2_cos_cos.pdf")
 savefig(p2, out_file*"spinodal_2_cos_sin.pdf")
 savefig(p3, out_file*"spinodal_2_sin_cos.pdf")
 savefig(p4, out_file*"spinodal_2_sin_sin.pdf")
 =#
-=#
 
+en         = VEVTimeSeries(dirname, :energy)
+t, x, y    = get_coords(en,:,:,:)
+Nt, Nx, Ny = size(en)
+plan       = plan_rfft(en[1,:,:])
+e0         = zeros(Nt)
+@inbounds for n in 1:Nt
+    e0[n] = 1/(Nx*Ny)*(plan * en[n,:,:])[1,1]
+end
+
+p1 = plot(t, e0, lw=2)
+xlabel!(p1, "tΛ")
+ylabel!(p1, "ℰ_0/Λ⁴")
+savefig(p1, out_file*"0mode_1.8.pdf")
 
 #=
 #FOURIER MODES IN ANGLE

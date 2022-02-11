@@ -349,7 +349,7 @@ function create_circular_symmetric(grid::SpecCartGrid3D, io::InOut, potential::P
 end
 
 
-function cut_1D_hole(boundary::Boundary, R::T, chart2D::Chart, chart2D_new::Chart) where {T<:Real}
+function cut_1D_hole(boundary::Boundary, R::T, chart2D::Chart, chart2D_new::Chart, ss::Int) where {T<:Real}
     a4        = boundary.a4
     fx2       = boundary.fx2
     fy2       = boundary.fy2
@@ -369,7 +369,7 @@ function cut_1D_hole(boundary::Boundary, R::T, chart2D::Chart, chart2D_new::Char
 
     @fastmath @inbounds @threads for j in 1:Ny
         for i in 1:Nx
-            x              = x_new[i]+sign(x_new[i])*R
+            x              = x_new[i]+ss*sign(x_new[i])*R
             y              = y_new[j]
             a4_new[1,i,j]  = a4_inter(x, y)
             fx2_new[1,i,j] = fx2_inter(x, y)
@@ -379,7 +379,7 @@ function cut_1D_hole(boundary::Boundary, R::T, chart2D::Chart, chart2D_new::Char
     Boundary{typeof(a4_new[1,1,1])}(a4_new, fx2_new, fy2_new)
 end
 
-function cut_1D_hole(gauge::Gauge, R::T, chart2D::Chart, chart2D_new::Chart) where {T<:Real}
+function cut_1D_hole(gauge::Gauge, R::T, chart2D::Chart, chart2D_new::Chart, ss::Int) where {T<:Real}
     xi        = gauge.xi
     interp    = Linear_Interpolator(chart2D)
     xi_inter  = interp(xi[1,:,:])
@@ -393,7 +393,7 @@ function cut_1D_hole(gauge::Gauge, R::T, chart2D::Chart, chart2D_new::Chart) whe
 
     @fastmath @inbounds @threads for j in 1:Ny
         for i in 1:Nx
-            x              = x_new[i]+sign(x_new[i])*R
+            x              = x_new[i]+ss*sign(x_new[i])*R
             y              = y_new[j]
             xi_new[1,i,j]  = xi_inter(x, y)
         end
@@ -401,7 +401,7 @@ function cut_1D_hole(gauge::Gauge, R::T, chart2D::Chart, chart2D_new::Chart) whe
     Gauge{typeof(xi_new[1,1,1])}(xi_new)
 end
 
-function cut_1D_hole(bulkevols::BulkPartition, R::T, chart2D::Chart, chart2D_new::Chart) where {T<:Real}
+function cut_1D_hole(bulkevols::BulkPartition, R::T, chart2D::Chart, chart2D_new::Chart, ss::Int) where {T<:Real}
     Nsys      = length(bulkevols)
     interp    = Linear_Interpolator(chart2D)
     x_old     = chart2D.coords[2][:]
@@ -429,7 +429,7 @@ function cut_1D_hole(bulkevols::BulkPartition, R::T, chart2D::Chart, chart2D_new
             phi_inter = interp(phi[i,:,:])
             @fastmath @inbounds @threads for k in 1:Ny
                 for j in 1:Nx
-                    x  = x_new[j]+sign(x_new[j])*R
+                    x  = x_new[j]+ss*sign(x_new[j])*R
                     y  = y_new[k]
                     B1_new[i,j,k]  = B1_inter(x, y)
                     B2_new[i,j,k]  = B2_inter(x, y)
@@ -444,7 +444,7 @@ function cut_1D_hole(bulkevols::BulkPartition, R::T, chart2D::Chart, chart2D_new
     AdS5_3_1.BulkPartition((bulk...))
 end
 
-function cut_1D_hole(io::InOut, potential::Potential, R::T, Nx::Int) where {T<:Real}
+function cut_1D_hole(io::InOut, potential::Potential, R::T, Nx::Int, ss::Int) where {T<:Real}
     read_dir     = io.recover_dir
 
     ts                = OpenPMDTimeSeries(read_dir, prefix="boundary_")
@@ -467,7 +467,7 @@ function cut_1D_hole(io::InOut, potential::Potential, R::T, Nx::Int) where {T<:R
     tinfo = Jecco.TimeInfo(it, t, 0.0, 0.0)
 
     empty       = Cartesian{1}("u", 0.0, 0.0, 1)
-    xcoord      = Cartesian{2}("x", chart2D.coords[2].min+R, chart2D.coords[2].max-R, Nx)
+    xcoord      = Cartesian{2}("x", chart2D.coords[2].min+ss*R, chart2D.coords[2].max-ss*R, Nx)
     ycoord      = chart2D.coords[3]
     chart2D_new = Chart(empty, xcoord, ycoord)
     Nsys        = length(bulkevols)
@@ -476,9 +476,9 @@ function cut_1D_hole(io::InOut, potential::Potential, R::T, Nx::Int) where {T<:R
         charts_new[n] = Chart(charts[n].coords[1], xcoord, ycoord)
     end
 
-    @time boundary_new  = cut_1D_hole(boundary, R, chart2D, chart2D_new)
-    @time gauge_new     = cut_1D_hole(gauge, R, chart2D, chart2D_new)
-    @time bulkevols_new = cut_1D_hole(bulkevols, R, chart2D, chart2D_new)
+    @time boundary_new  = cut_1D_hole(boundary, R, chart2D, chart2D_new, ss)
+    @time gauge_new     = cut_1D_hole(gauge, R, chart2D, chart2D_new, ss)
+    @time bulkevols_new = cut_1D_hole(bulkevols, R, chart2D, chart2D_new, ss)
 
     phi0 = try
         ts.params["phi0"]
