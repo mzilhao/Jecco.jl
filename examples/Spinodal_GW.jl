@@ -1,22 +1,24 @@
+
 using Jecco.AdS5_3_1
 
 grid = SpecCartGrid3D(
-    x_min            = -40.,
-    x_max            =  40.,
-    x_nodes          =  160,
-    y_min            = -40.,
-    y_max            =  40.,
-    y_nodes          =  160,
+    x_min            = -0.5,
+    x_max            =  0.5,
+    x_nodes          =  6,
+    y_min            = -31.8,
+    y_max            =  31.8,
+    y_nodes          =  100,
     u_outer_min      =  0.1,
     u_outer_max      =  1.005,
-    u_outer_domains  =  1,
-    u_outer_nodes    =  48,
+    u_outer_domains  =  3,
+    u_outer_nodes    =  24,
     u_inner_nodes    =  12,
     fd_order         =  4,
     sigma_diss       =  0.2,
 )
 
-phiM2 = -(0.85)^2
+
+phiM2 = -(1.0)^2
 phiQ  = 10.
 
 potential = AdS5_3_1.Phi8Potential(
@@ -27,19 +29,29 @@ potential = AdS5_3_1.Phi8Potential(
     oophiQ  = 1/phiQ,
 )
 
-id = BlackBranePert(
-    energy_dens = 1.9,
+# id = AdS5_3_1.BlackBraneGaussPert(
+#     energy_dens = 0.95,
+#     phi0        = 1.0,
+#     phi2        = 0.3,
+#     oophiM2     = potential.oophiM2,
+#     sigma       = 1e-3,
+#     AH_pos      = 1.0,
+#     recover     = :yes,
+#     recover_dir = "/home/mikel/Documents/Jecco.jl/data/end_data_2/",
+#     xmax        = grid.x_max,
+#     xmin        = grid.x_min,
+#     ymin        = grid.y_min,
+#     ymax        = grid.y_max,
+# )
+
+id = AdS5_3_1.BlackBraneNoise(
+    energy_dens = 0.95,
     phi0        = 1.0,
     phi2        = 0.3,
     oophiM2     = potential.oophiM2,
-    #phi5        = 1.1,
-    #a4_ampx     = -0.005,
-    #a4_kx       = 1,
-    #a4_ampy     = -0.005,
-    #a4_ky       = 1,
-    xi0         = 0.0,
-    #sigma       = 1e-3,
-    AH_pos      = 0.95,
+    pert        = 1e-4,
+    nx_max      = 0,
+    ny_max      = 50,
     xmax        = grid.x_max,
     xmin        = grid.x_min,
     ymin        = grid.y_min,
@@ -53,27 +65,27 @@ evoleq = AffineNull(
 )
 
 diag = DiagAH(
-    find_AH_every_t    = 0.1,
+    find_AH_every_t    = 1.,
 )
 
 outdir = "/home/mikel/Documents/Jecco.jl/data/test/"
 
 io = InOut(
-    out_boundary_every_t        = .5,
-    out_bulk_every_t            = .5,
-    out_gauge_every_t           = .5,
+    out_boundary_every_t        = 1.,
+    out_bulk_every_t            = 10.,
+    out_gauge_every_t           = 1.,
     #out_bulkconstrained_every_t = 5.0,
     checkpoint_every_walltime_hours = 1,
     out_dir                     = outdir,
-    recover                     = :yes,
-    recover_dir                 = "/home/mikel/Documents/Jecco.jl/data/bubble_B_1.7542/",
+    recover                     = :no,
+    # recover_dir                 = ,
     checkpoint_dir              = outdir,
     remove_existing             = true,
 )
 
 integration = Integration(
     #dt              = 0.0002,
-    tmax            = 20.,
+    tmax            = 2000.,
     ODE_method      = AdS5_3_1.VCABM3(),
     #ODE_method      = AdS5_3_1.AB3(),
     adaptive        = true,

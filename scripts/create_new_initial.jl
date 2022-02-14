@@ -1,18 +1,22 @@
 using Jecco, Jecco.AdS5_3_1
+using FFTW
 
-dirname   = "/home/mikel/Documents/Jecco.jl/data/end_data/"
-outdir    = "/home/mikel/Documents/Jecco.jl/data/new_data/"
-A_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_A_e_1.9/"
-B_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_B_e_0.209/"
-PS_dir    = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/phase_separated/e_1.0_AH_0.95/"
+using Plots
+pyplot()
+
+dirname   = "/home/mikel/Documents/Jecco.jl/data/new_data_3/"
+outdir    = "/home/mikel/Documents/Jecco.jl/data/bubble_r_3.725/"
+A_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_A_e_2.0/"
+B_dir     = "/home/mikel/Documents/Jecco.jl/data/bubbles/phiM_0.85_phiQ_10/state_B_e_0.162/"
+PS_dir    = "/home/mikel/Documents/Jecco.jl/data/new_data_1.798/"
 
 grid = SpecCartGrid3D(
-    x_min            = -14.14,
-    x_max            =  14.14,
-    x_nodes          =  80,
-    y_min            = -.5,
-    y_max            =  .5,
-    y_nodes          =  6,
+    x_min            = -40.,
+    x_max            =  40.,
+    x_nodes          =  320,
+    y_min            = -40.,
+    y_max            =  40.,
+    y_nodes          =  320,
     u_outer_min      =  0.1,
     u_outer_max      =  1.005,
     u_outer_domains  =  1,
@@ -33,12 +37,12 @@ potential = AdS5_3_1.Phi8Potential(
     oophiQ  = 1/phiQ,
 )
 
-
 io = InOut(recover_dir = dirname, out_dir = outdir, checkpoint_dir = outdir,
            out_boundary_every=1, out_gauge_every=1,out_bulk_every=1,remove_existing = true,)
 
 new_center = (-10., -10.)
-e_new      = 1.7
+e_new      = 1.798
+bfactor    = 7
 
 #=
 parameters = AdS5_3_1.new_parameters(
@@ -70,17 +74,18 @@ parameters_collision =AdS5_3_1.new_parameters_coll(
 #AdS5_3_1.create_checkpoint(io, potential)
 #AdS5_3_1.initial_numerical_phi(grid, io, potential)
 #AdS5_3_1.shift(io, potential, new_center=new_center)
-#AdS5_3_1.new_box(grid, io, potential, same_spacing=:no)
-#AdS5_3_1.change_energy(io, e_new, potential, fix=:no)
-AdS5_3_1.to1plus1(grid, io, potential,section=:y0)
-#AdS5_3_1.to2plus1(io, potential)
-#AdS5_3_1.create_circular_symmetric(grid, io, potential, section=:diagonal)
+AdS5_3_1.new_box(grid, io, potential, same_spacing=:no)
+# AdS5_3_1.change_energy(io, e_new, potential, fix=:no)
+# AdS5_3_1.to1plus1(grid, io, potential,section=:y0)
+# AdS5_3_1.to2plus1(io, potential)
+# AdS5_3_1.create_circular_symmetric(grid, io, potential, section=:y0)
 #AdS5_3_1.design_collision(grid, io, parameters_collision)
-#AdS5_3_1.bubble_expansion(grid, io, potential, A_dir, B_dir, PS_dir,
-#                                  same_spacing=:no, b_cold=true)
+# AdS5_3_1.bubble_expansion(grid, io, potential, A_dir, B_dir, PS_dir,
+                                  # same_spacing=:no, b_cold=true)
+#AdS5_3_1.new_B(io, potential, bfactor)
 #AdS5_3_1.join_boxes(io, potential, dirname, dirname)
-#AdS5_3_1.cut_1D_hole(io, potential, 3.0, 50)
-#AdS5_3_1.cut_circular_hole(io, potential, 1.0, 70, 70)
+# AdS5_3_1.cut_1D_hole(io, potential, 0.07, 400, -1)
+# AdS5_3_1.cut_circular_hole(io, potential, 1.0, 70, 70)
 
 #=
 phi11 = BulkTimeSeries(dirname,:phi,1)
@@ -91,28 +96,55 @@ phi22 = BulkTimeSeries(outdir,:phi,2)
 
 
 convert_to_mathematica(io.out_dir)
-#=
+
 
 e     = VEVTimeSeries(outdir, :energy)
-px    = VEVTimeSeries(outdir, :px)
+#px    = VEVTimeSeries(outdir, :px)
 #e_old = VEVTimeSeries(dirname, :energy)
 
-e_A   = VEVTimeSeries(A_dir, :energy)
-e_B   = VEVTimeSeries(B_dir, :energy)
-e_PS  = VEVTimeSeries(PS_dir, :energy)
+#e_A   = VEVTimeSeries(A_dir, :energy)
+#e_B   = VEVTimeSeries(B_dir, :energy)
+#e_PS  = VEVTimeSeries(PS_dir, :energy)
 #Jx = VEVTimeSeries(outdir,:Jx)
 #Jy = VEVTimeSeries(outdir,:Jy)
 
 t,x,y  = get_coords(e,:,:,:)
 #t_old, x_old, y_old = get_coords(e_old,:,:,:)
 plan   = plan_rfft(e[1,:,:])
-Nx     = length(x)
-Ny     = length(y)
+_, Nx, Ny = size(e)
+#_, Nx_old, Ny_old = size(e_old)
 e0     = real(1/(Nx*Ny) * (plan * e[1,:,:]))[1]
 #e0_old = real(1/(Nx*Ny) * (plan * e_old[1,:,:]))[1]
 #Jx0   = real(1/(Nx*Ny) * (plan * Jx[1,:,:]))[1]
 #Jy0   = real(1/(Nx*Ny) * (plan * Jy[1,:,:]))[1]
+#p1 = plot(x, y, e[end,:,:], st=:surface, color=:jet)
+#display(p1)
 
+#Plots
+#=
+if Nx != Ny
+    xx = zeros(Nx, Ny)
+    yy = zeros(Nx, Ny)
+    @inbounds for j in 1:Ny
+        for i in 1:Nx
+            xx[i,j] = x[i]
+            yy[i,j] = y[j]
+        end
+    end
+    xcord = reshape(xx, Nx*Ny)
+    ycord = reshape(yy, Nx*Ny)
+    ee    = reshape(e[1,:,:],Nx*Ny)
+    p1    = surface(xcord, ycord, ee, color=:jet)
+else
+    p1 = plot(x, y, e[end,:,:], st=:surface, color=:jet)
+end
+display(p1)
+
+#=
+p1 = plot(x, e[end,:,Int(floor(Ny/2))], lw=2)
+plot!(p1, x, e_old[end,:,Int(floor(Ny_old/2))], lw=2, ls=:dash)
+display(p1)
+=#
 #=
 plan = plan_fft(e_old[end,:,:]);
 Nx = length(x)
@@ -133,20 +165,21 @@ for j in 1:length(ky)
     end
 end
 =#
+=#
 println("New set up is:")
 println("(xmin, xmax) = ($(x[1]),$(x[end]+x[2]-x[1]))")
 println("(ymin, ymax) = ($(y[1]),$(y[end]+y[2]-y[1]))")
 println("Nx, Ny = $(length(x)), $(length(y))")
-println("Average Energy Density = $e0")
+#println("Average Energy Density = $e0")
 println("Maximum energy = $(maximum(e[end,:,:]))")
 println("Minimum energy = $(minimum(e[end,:,:]))")
 #println("Old Average Energy Density = $e0_old")
 #println("Old Maximum energy = $(maximum(e_old[end,:,:]))")
 #println("Old Minimum energy = $(minimum(e_old[end,:,:]))")
-println("A energy = $(e_A[end,1,1])")
-println("B energy = $(e_B[end,1,1])")
-println("Maximum px = $(maximum(px[end,:,:]))")
-println("Minimum px = $(minimum(px[end,:,:]))")
+#println("A energy = $(e_A[end,1,1])")
+#println("B energy = $(e_B[end,1,1])")
+#println("Maximum px = $(maximum(px[end,:,:]))")
+#println("Minimum px = $(minimum(px[end,:,:]))")
 #println("Average x momenta = $Jx0")
 #println("Average y momenta = $Jy0")
 #println("Maximum x momenta = $(maximum(abs.(Jx[end,:,:])))")
@@ -173,5 +206,4 @@ plot!(xPS, a4_AA, lw=3)
 plot!(xPS, a4_BB, lw=3)
 xlabel!("x")
 ylabel!("Energy")
-=#
 =#

@@ -271,6 +271,10 @@ function get_data(ff::LocalVEVsTimeSeries, it::Int)
         f = ux
     elseif ff.field == :uy
         f = uy
+    elseif ff.field == :vx
+        f = ux./ut
+    elseif ff.field == :vy
+        f = uy./ut
     elseif ff.field == :energy
         f = el
     elseif ff.field == :p1
@@ -553,304 +557,6 @@ function convert_to_mathematica_diagonal(dirname::String; outfile::String="data_
     close(fid)
 end
 
-function e_to_mathematica(ts::OpenPMDTimeSeries, group::HDF5.Group, dit::Int)
-    iterations = ts.iterations
-
-    Nt = length(iterations)
-    t  = zeros(Nt)
-
-    it = 0
-    _, chart = get_energy(ts, it=it)
-
-    _, x, y = chart[:]
-    Nx = length(x)
-    Ny = length(y)
-
-    en   = zeros(Nt,Nx,Ny)
-
-    for (idx,it) in enumerate(iterations)
-        en[idx,:,:] = get_energy(ts, it=it)[1][1,:,:]
-        t[idx]      = ts.current_t
-    end
-
-    T_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
-    n = 1
-    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
-        for j in 1:Nx
-            for k in 1:Ny
-                T_m[:,n] = [t[i] x[j] y[k] en[i,j,k]]
-                n += 1
-            end
-        end
-    end
-    Jecco.write_dataset(group, "energy", T_m)
-    nothing
-end
-
-function Jx_to_mathematica(ts::OpenPMDTimeSeries, group::HDF5.Group, dit::Int)
-    iterations = ts.iterations
-
-    Nt = length(iterations)
-    t  = zeros(Nt)
-
-    it = 0
-    _, chart = get_Jx(ts, it=it)
-
-    _, x, y = chart[:]
-    Nx = length(x)
-    Ny = length(y)
-
-    Jx   = zeros(Nt,Nx,Ny)
-
-    for (idx,it) in enumerate(iterations)
-        Jx[idx,:,:] = get_Jx(ts, it=it)[1][1,:,:]
-        t[idx]      = ts.current_t
-    end
-
-    T_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
-    n = 1
-    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
-        for j in 1:Nx
-            for k in 1:Ny
-                T_m[:,n] = [t[i] x[j] y[k] Jx[i,j,k]]
-                n += 1
-            end
-        end
-    end
-    Jecco.write_dataset(group, "Jx", T_m)
-    nothing
-end
-
-function Jy_to_mathematica(ts::OpenPMDTimeSeries, group::HDF5.Group, dit::Int)
-    iterations = ts.iterations
-
-    Nt = length(iterations)
-    t  = zeros(Nt)
-
-    it = 0
-    _, chart = get_Jy(ts, it=it)
-
-    _, x, y = chart[:]
-    Nx = length(x)
-    Ny = length(y)
-
-    Jy   = zeros(Nt,Nx,Ny)
-
-    for (idx,it) in enumerate(iterations)
-        Jy[idx,:,:] = get_Jy(ts, it=it)[1][1,:,:]
-        t[idx]      = ts.current_t
-    end
-
-    T_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
-    n = 1
-    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
-        for j in 1:Nx
-            for k in 1:Ny
-                T_m[:,n] = [t[i] x[j] y[k] Jy[i,j,k]]
-                n += 1
-            end
-        end
-    end
-    Jecco.write_dataset(group, "Jy", T_m)
-    nothing
-end
-
-function px_to_mathematica(ts::OpenPMDTimeSeries, group::HDF5.Group, dit::Int)
-    iterations = ts.iterations
-
-    Nt = length(iterations)
-    t  = zeros(Nt)
-
-    it = 0
-    _, chart = get_px(ts, it=it)
-
-    _, x, y = chart[:]
-    Nx = length(x)
-    Ny = length(y)
-
-    px   = zeros(Nt,Nx,Ny)
-
-    for (idx,it) in enumerate(iterations)
-        px[idx,:,:] = get_px(ts, it=it)[1][1,:,:]
-        t[idx]      = ts.current_t
-    end
-
-    T_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
-    n = 1
-    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
-        for j in 1:Nx
-            for k in 1:Ny
-                T_m[:,n] = [t[i] x[j] y[k] px[i,j,k]]
-                n += 1
-            end
-        end
-    end
-    Jecco.write_dataset(group, "px", T_m)
-    nothing
-end
-
-function pxy_to_mathematica(ts::OpenPMDTimeSeries, group::HDF5.Group, dit::Int)
-    iterations = ts.iterations
-
-    Nt = length(iterations)
-    t  = zeros(Nt)
-
-    it = 0
-    _, chart = get_pxy(ts, it=it)
-
-    _, x, y = chart[:]
-    Nx = length(x)
-    Ny = length(y)
-
-    pxy   = zeros(Nt,Nx,Ny)
-
-    for (idx,it) in enumerate(iterations)
-        pxy[idx,:,:] = get_pxy(ts, it=it)[1][1,:,:]
-        t[idx]      = ts.current_t
-    end
-
-    T_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
-    n = 1
-    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
-        for j in 1:Nx
-            for k in 1:Ny
-                T_m[:,n] = [t[i] x[j] y[k] pxy[i,j,k]]
-                n += 1
-            end
-        end
-    end
-    Jecco.write_dataset(group, "pxy", T_m)
-    nothing
-end
-
-function py_to_mathematica(ts::OpenPMDTimeSeries, group::HDF5.Group, dit::Int)
-    iterations = ts.iterations
-
-    Nt = length(iterations)
-    t  = zeros(Nt)
-
-    it = 0
-    _, chart = get_py(ts, it=it)
-
-    _, x, y = chart[:]
-    Nx = length(x)
-    Ny = length(y)
-
-    py   = zeros(Nt,Nx,Ny)
-
-    for (idx,it) in enumerate(iterations)
-        py[idx,:,:] = get_py(ts, it=it)[1][1,:,:]
-        t[idx]      = ts.current_t
-    end
-
-    T_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
-    n = 1
-    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
-        for j in 1:Nx
-            for k in 1:Ny
-                T_m[:,n] = [t[i] x[j] y[k] py[i,j,k]]
-                n += 1
-            end
-        end
-    end
-    Jecco.write_dataset(group, "py", T_m)
-    nothing
-end
-
-function pz_to_mathematica(ts::OpenPMDTimeSeries, group::HDF5.Group, dit::Int)
-    iterations = ts.iterations
-
-    Nt = length(iterations)
-    t  = zeros(Nt)
-
-    it = 0
-    _, chart = get_pz(ts, it=it)
-
-    _, x, y = chart[:]
-    Nx = length(x)
-    Ny = length(y)
-
-    pz   = zeros(Nt,Nx,Ny)
-
-    for (idx,it) in enumerate(iterations)
-        pz[idx,:,:] = get_pz(ts, it=it)[1][1,:,:]
-        t[idx]      = ts.current_t
-    end
-
-    T_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
-    n = 1
-    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
-        for j in 1:Nx
-            for k in 1:Ny
-                T_m[:,n] = [t[i] x[j] y[k] pz[i,j,k]]
-                n += 1
-            end
-        end
-    end
-    Jecco.write_dataset(group, "pz", T_m)
-    nothing
-end
-
-function convert_to_mathematica_2(dirname::String; dit::Int = 1, outfile::String="data_mathematica.h5")
-    output     = abspath(dirname, outfile)
-    fid        = h5open(output, "w")
-    group_st   = g_create(fid, "data")
-    ts         = OpenPMDTimeSeries(dirname, prefix="boundary_")
-
-    e_to_mathematica(ts, group_st, dit)
-    Jx_to_mathematica(ts, group_st, dit)
-    Jy_to_mathematica(ts, group_st, dit)
-    px_to_mathematica(ts, group_st, dit)
-    pxy_to_mathematica(ts, group_st, dit)
-    py_to_mathematica(ts, group_st, dit)
-    pz_to_mathematica(ts, group_st, dit)
-
-    close(fid)
-end
-
-#If you have memory issues for big datasets run this routine for the different VEVs you want. it does not load that much.
-function Energy_to_mathematica(dirname::String; dit::Int = 1, outfile::String="energy_mathematica.h5")
-    ts = OpenPMDTimeSeries(dirname, prefix="boundary_")
-
-    iterations = ts.iterations
-
-    Nt = length(iterations)
-    t  = zeros(Nt)
-
-    it = 0
-    _, chart = get_energy(ts, it=it)
-
-    _, x, y = chart[:]
-    Nx = length(x)
-    Ny = length(y)
-
-    en   = zeros(Nt,Nx,Ny)
-
-    for (idx,it) in enumerate(iterations)
-        en[idx,:,:] = get_energy(ts, it=it)[1][1,:,:]
-        t[idx]      = ts.current_t
-    end
-
-    # store in an array suitable for Mathematica
-    T_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
-
-    n = 1
-    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
-        for j in 1:Nx
-            for k in 1:Ny
-                T_m[:,n] = [t[i] x[j] y[k] en[i,j,k]]
-                n += 1
-            end
-        end
-    end
-
-    output   = abspath(dirname, outfile)
-    fid      = h5open(output, "w")
-    group_st = g_create(fid, "data")
-    Jecco.write_dataset(group_st, "VEVs", T_m)
-    close(fid)
-end
-
 function convert_to_mathematica_local(dirname::String; outfile::String="local_data_mathematica.h5")#,
                                 #phi0, oophiM2)
 
@@ -1027,25 +733,28 @@ function GW_to_mathematica(dirname::String; dit::Int = 1, outfile::String="GW_ma
     _, chart   = get_field(ts, it=it, field="hxx")
     x, y       = chart[:]
     Nx, Ny     = size(chart)
-    hdot2      = zeros(Nt, Nx, Ny)
-
+    # hdot2      = zeros(Nt, Nx, Ny)
+    hdxx      = zeros(Nt, Nx, Ny)
+    hdxy      = zeros(Nt, Nx, Ny)
+    hdyy      = zeros(Nt, Nx, Ny)
+    hdzz      = zeros(Nt, Nx, Ny)
     for (idx,it) in enumerate(iterations)
-        hdxx           = get_field(ts, it=it, field="hdxx")[1]
-        hdxy           = get_field(ts, it=it, field="hdxy")[1]
-        hdyy           = get_field(ts, it=it, field="hdyy")[1]
-        hdzz           = get_field(ts, it=it, field="hdzz")[1]
+        hdxx[idx,:,:]  = get_field(ts, it=it, field="hdxx")[1]
+        hdxy[idx,:,:]  = get_field(ts, it=it, field="hdxy")[1]
+        hdyy[idx,:,:]  = get_field(ts, it=it, field="hdyy")[1]
+        hdzz[idx,:,:]  = get_field(ts, it=it, field="hdzz")[1]
         t[idx]         = ts.current_t
-        hdot2[idx,:,:] = hdxx.^2+hdxy.^2+hdyy.^2+hdzz.^2
+        # hdot2[idx,:,:] = hdxx.^2+hdxy.^2+hdyy.^2+hdzz.^2
     end
 
     # store in an array suitable for Mathematica
-    hdot2_m = zeros(4, Int(floor(Nt/dit))*Nx*Ny)
+    hdij = zeros(7, Int(floor(Nt/dit))*Nx*Ny)
 
     n = 1
-    @fastmath @inbounds for i in 1:dit:Nt-Nt%dit
+    @inbounds for i in 1:dit:Nt-Nt%dit
         for j in 1:Nx
             for k in 1:Ny
-                hdot2_m[:,n] = [t[i] x[j] y[k] hdot2[i,j,k]]
+                hdij[:,n] = [t[i] x[j] y[k] hdxx[i,j,k] hdxy[i,j,k] hdyy[i,j,k] hdzz[i,j,k]]
                 n += 1
             end
         end
@@ -1054,7 +763,7 @@ function GW_to_mathematica(dirname::String; dit::Int = 1, outfile::String="GW_ma
     output   = abspath(dirname, outfile)
     fid      = h5open(output, "w")
     group_st = g_create(fid, "data")
-    Jecco.write_dataset(group_st, "hdot2", hdot2_m)
+    Jecco.write_dataset(group_st, "hdij", hdij)
     close(fid)
 end
 
@@ -1099,27 +808,408 @@ function TT_to_mathematica(dirname::String; dit::Int = 1, outfile::String="TTT_m
     close(fid)
 end
 
+function Pk_to_mathematica(dirname::String; outfile::String="Pk_mathematica.h5")
+
+    ts         = OpenPMDTimeSeries(dirname, prefix="boundary_")
+    iterations = ts.iterations
+    Nt         = length(iterations)
+    t          = zeros(Nt)
+    aux, chart = get_energy(ts, it=iterations[1])
+    _, δx, δy     = Jecco.delta(chart)
+    _, Nx, Ny  = size(aux)
+    plan       = 1/(Nx*Ny)*plan_rfft(aux[1,:,:])
+    kx         = 2*π.*rfftfreq(Nx, 1/δx)
+    ky         = 2*π.*fftfreq(Ny, 1/δy)
+    Nkx, Nky   = (length(kx),length(ky))
+    px         = im.*zeros(Nt,Nkx,Nky)
+    pxy        = im.*zeros(Nt,Nkx,Nky)
+    py         = im.*zeros(Nt,Nkx,Nky)
+    pz         = im.*zeros(Nt,Nkx,Nky)
+    for (idx,it) in enumerate(iterations)
+        px[idx,:,:]  .= (plan * get_px(ts, it=it)[1][1,:,:])
+        pxy[idx,:,:] .= (plan * get_pxy(ts, it=it)[1][1,:,:])
+        py[idx,:,:]  .= (plan * get_py(ts, it=it)[1][1,:,:])
+        pz[idx,:,:]  .= (plan * get_pz(ts, it=it)[1][1,:,:])
+        t[idx]        = ts.current_t
+    end
+
+    # store in an array suitable for Mathematica
+    T_m = zeros(11, Nt*Nkx*Nky)
+
+    n = 1
+    @fastmath @inbounds for i in 1:Nt
+        for j in 1:Nkx
+            for k in 1:Nky
+                T_m[:,n] = [t[i] kx[j] ky[k] real(px[i,j,k]) imag(px[i,j,k]) real(pxy[i,j,k]) imag(pxy[i,j,k]) real(py[i,j,k]) imag(py[i,j,k]) real(pz[i,j,k]) imag(pz[i,j,k])]
+                n += 1
+            end
+        end
+    end
+
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "Pk", T_m)
+    close(fid)
+end
+
+function IdealPk_to_mathematica(dirname::String, dir_eos::String; outfile::String="Pk_Ideal_mathematica.h5")
+    pxIdeal    = IdealHydroTimeSeries(dirname, dir_eos, :px)
+    pxyIdeal   = IdealHydroTimeSeries(dirname, dir_eos, :pxy)
+    pyIdeal    = IdealHydroTimeSeries(dirname, dir_eos, :py)
+    pzIdeal    = IdealHydroTimeSeries(dirname, dir_eos, :pz)
+    ts         = pxIdeal.ts
+    iterations = ts.iterations
+    Nt         = length(iterations)
+    t          = zeros(Nt)
+    aux, chart = get_energy(ts, it=iterations[1])
+    _, δx, δy  = Jecco.delta(chart)
+    _, Nx, Ny  = size(aux)
+    plan       = 1/(Nx*Ny)*plan_rfft(aux[1,:,:])
+    kx         = 2*π.*rfftfreq(Nx, 1/δx)
+    ky         = 2*π.*fftfreq(Ny, 1/δy)
+    Nkx, Nky   = (length(kx),length(ky))
+    px         = im.*zeros(Nt,Nkx,Nky)
+    pxy        = im.*zeros(Nt,Nkx,Nky)
+    py         = im.*zeros(Nt,Nkx,Nky)
+    pz         = im.*zeros(Nt,Nkx,Nky)
+    for (idx,it) in enumerate(iterations)
+        px[idx,:,:]  = (plan * pxIdeal[idx,:,:])
+        pxy[idx,:,:] = (plan * pxyIdeal[idx,:,:])
+        py[idx,:,:]  = (plan * pyIdeal[idx,:,:])
+        pz[idx,:,:]  = (plan * pzIdeal[idx,:,:])
+        t[idx]        = ts.current_t
+    end
+
+    # store in an array suitable for Mathematica
+    T_m = zeros(11, Nt*Nkx*Nky)
+
+    n = 1
+    @inbounds for i in 1:Nt
+        for j in 1:Nkx
+            for k in 1:Nky
+                T_m[:,n] = [t[i] kx[j] ky[k] real(px[i,j,k]) imag(px[i,j,k]) real(pxy[i,j,k]) imag(pxy[i,j,k]) real(py[i,j,k]) imag(py[i,j,k]) real(pz[i,j,k]) imag(pz[i,j,k])]
+                n += 1
+            end
+        end
+    end
+
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "PIdealk", T_m)
+    close(fid)
+end
+
+function Tk_to_mathematica(dirname::String; outfile::String="Tk_mathematica.h5")
+
+    ts         = OpenPMDTimeSeries(dirname, prefix="TT_")
+    iterations = ts.iterations
+    Nt         = length(iterations)
+    t          = zeros(Nt)
+    aux, chart = get_field(ts, it=iterations[1], field="Txx")
+    δx, δy     = Jecco.delta(chart)
+    Nx, Ny     = size(aux)
+    plan       = plan_rfft(aux)
+    kx         = 2*π.*rfftfreq(Nx, 1/δx)
+    ky         = 2*π.*fftfreq(Ny, 1/δy)
+    Nkx, Nky   = (length(kx),length(ky))
+    Txx        = zeros(Nt,Nkx,Nky)
+    Txy        = zeros(Nt,Nkx,Nky)
+    Tyy        = zeros(Nt,Nkx,Nky)
+    Tzz        = zeros(Nt,Nkx,Nky)
+
+    it         = 0
+    for (idx,it) in enumerate(iterations)
+        Txx[idx,:,:]  = 1/(Nx*Ny).*abs.(plan * get_field(ts, it=it, field="Txx")[1])
+        Txy[idx,:,:]  = 1/(Nx*Ny).*abs.(plan * get_field(ts, it=it, field="Txy")[1])
+        Tyy[idx,:,:]  = 1/(Nx*Ny).*abs.(plan * get_field(ts, it=it, field="Tyy")[1])
+        Tzz[idx,:,:]  = 1/(Nx*Ny).*abs.(plan * get_field(ts, it=it, field="Tzz")[1])
+        t[idx]        = ts.current_t
+    end
+
+    # store in an array suitable for Mathematica
+    T_m = zeros(7, Nt*Nkx*Nky)
+
+    n = 1
+    @fastmath @inbounds for i in 1:Nt
+        for j in 1:Nkx
+            for k in 1:Nky
+                if j==1 && k==1
+                    T_m[:,n] = [t[i] kx[j] ky[k] 0. 0. 0. 0.]
+                else
+                    T_m[:,n] = [t[i] kx[j] ky[k] Txx[i,j,k] Txy[i,j,k] Tyy[i,j,k] Tzz[i,j,k]]
+                end
+                n += 1
+            end
+        end
+    end
+
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "Tk", T_m)
+    close(fid)
+end
+
+function hdk_to_mathematica(dirname::String; outfile::String="hdk_mathematica.h5")
+
+    ts         = OpenPMDTimeSeries(dirname, prefix="perturbation_")
+    iterations = ts.iterations
+    Nt         = length(iterations)
+    t          = zeros(Nt)
+    aux, chart = get_field(ts, it=iterations[1], field="hdxx")
+    δx, δy     = Jecco.delta(chart)
+    Nx, Ny     = size(aux)
+    plan       = plan_rfft(aux)
+    kx         = 2*π.*rfftfreq(Nx, 1/δx)
+    ky         = 2*π.*fftfreq(Ny, 1/δy)
+    # println(kx)
+    Nkx, Nky   = (length(kx),length(ky))
+    hdxx       = zeros(Nt,Nkx,Nky)
+    hdxy       = zeros(Nt,Nkx,Nky)
+    hdyy       = zeros(Nt,Nkx,Nky)
+    hdzz       = zeros(Nt,Nkx,Nky)
+
+    it         = 0
+    for (idx,it) in enumerate(iterations)
+        hdxx[idx,:,:]  = 1/(Nx*Ny).*abs.(plan * get_field(ts, it=it, field="hdxx")[1])
+        hdxy[idx,:,:]  = 1/(Nx*Ny).*abs.(plan * get_field(ts, it=it, field="hdxy")[1])
+        hdyy[idx,:,:]  = 1/(Nx*Ny).*abs.(plan * get_field(ts, it=it, field="hdyy")[1])
+        hdzz[idx,:,:]  = 1/(Nx*Ny).*abs.(plan * get_field(ts, it=it, field="hdzz")[1])
+        t[idx]         = ts.current_t
+    end
+
+    # store in an array suitable for Mathematica
+    h_m = zeros(8, Nt*Nkx*Nky)
+
+    n = 1
+    @fastmath @inbounds for i in 1:Nt
+        for j in 1:Nkx
+            for k in 1:Nky
+                if j==1 && k==1
+                    h_m[:,n] = [t[i] kx[j] ky[k] 0. 0. 0. 0. 0.]
+                else
+                    hd2      = hdxx[i,j,k]^2+hdxy[i,j,k]^2+hdyy[i,j,k]^2+hdzz[i,j,k]^2
+                    h_m[:,n] = [t[i] kx[j] ky[k] hdxx[i,j,k] hdxy[i,j,k] hdyy[i,j,k] hdzz[i,j,k] hd2]
+                end
+                n += 1
+            end
+        end
+    end
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "hd", h_m)
+    close(fid)
+end
+
+function drhodlogk_to_mathematica_1(dirname::String, δk::Real; outfile::String="drhoGWdlogk_mathematica.h5")
+
+    ts         = OpenPMDTimeSeries(dirname, prefix="perturbation_")
+    iterations = ts.iterations
+    Nt         = length(iterations)
+    t          = zeros(Nt)
+    aux, chart = get_field(ts, it=iterations[1], field="hdxx")
+    δx, δy     = Jecco.delta(chart)
+    Nx, Ny     = size(aux)
+    plan       = 1/(Nx*Ny)*plan_rfft(aux)
+    # plan       = δx*δy*plan_rfft(aux)
+    kx         = sort(2*π.*rfftfreq(Nx, 1/δx)[1:end-1])
+    ky         = sort(2*π.*fftfreq(Ny, 1/δy)[1:end-1])
+    δkx        = kx[2]-kx[1]
+    δky        = ky[2]-ky[1]
+    Nkx, Nky   = (length(kx),length(ky))
+    k          = Array(0:δk:kx[end])
+    Nk         = length(k)
+    hdxx       = zeros(Nkx,Nky)
+    hdxy       = zeros(Nkx,Nky)
+    hdyy       = zeros(Nkx,Nky)
+    hdzz       = zeros(Nkx,Nky)
+    dρdlogk    = zeros(Nt,Nk)
+    ρ          = zeros(Nt)
+
+    for (idx,it) in enumerate(iterations)
+        hdxx[:,1:Nkx-1] = abs.(plan * get_field(ts, it=it, field="hdxx")[1])[1:end-1,Nkx+2:end]
+        hdxx[:,Nkx:end] = abs.(plan * get_field(ts, it=it, field="hdxx")[1])[1:end-1,1:Nkx]
+        hdxy[:,1:Nkx-1] = abs.(plan * get_field(ts, it=it, field="hdxy")[1])[1:end-1,Nkx+2:end]
+        hdxy[:,Nkx:end] = abs.(plan * get_field(ts, it=it, field="hdxy")[1])[1:end-1,1:Nkx]
+        hdyy[:,1:Nkx-1] = abs.(plan * get_field(ts, it=it, field="hdyy")[1])[1:end-1,Nkx+2:end]
+        hdyy[:,Nkx:end] = abs.(plan * get_field(ts, it=it, field="hdyy")[1])[1:end-1,1:Nkx]
+        hdzz[:,1:Nkx-1] = abs.(plan * get_field(ts, it=it, field="hdzz")[1])[1:end-1,Nkx+2:end]
+        hdzz[:,Nkx:end] = abs.(plan * get_field(ts, it=it, field="hdzz")[1])[1:end-1,1:Nkx]
+        dρdkxdky        = 2/π*(hdxx.^2+hdxy.^2+hdyy.^2+hdzz.^2)
+        t[idx]          = ts.current_t
+        for j in 1:Nky
+            for i in 1:Nkx
+                if kx[i] == 0.0 && ky[j] == 0.0
+                    nothing
+                else
+                    ρ[idx] += 2*dρdkxdky[i,j]*δkx*δky
+                end
+            end
+        end
+        for n in 1:Nk
+            kk = k[n]
+            for j in 1:Nky
+                for i in 1:Nkx
+                    if kk-δk/2 <= sqrt(kx[i]^2+ky[j]^2) < kk+δk/2
+                        dρdlogk[idx,n] += 2*kk*dρdkxdky[i,j]*δkx*δky/δk
+                    end
+                end
+            end
+            # GW_m[:,n,idx] = [t[idx] k[n] dρdlogk[n]]
+        end
+    end
+    # store in an array suitable for Mathematica
+    # hd2_m = zeros(3, Nky, Nkx, Nt)
+    GW_m  = zeros(3, Nk, Nt)
+    ρ_m   = zeros(2, Nt)
+    # n = 1
+    # @inbounds for i in 1:Nt
+    #     for j in 1:Nkx
+    #         for k in 1:Nky
+    #             hd2_m[:,k,j,i] = [t[i] kx[j] ky[k] dρdkxdky[]]
+    #         end
+    #     end
+    # end
+    @fastmath @inbounds for i in 1:Nt
+        for j in 1:Nk
+            GW_m[:,j,i] = [t[i] k[j] dρdlogk[i,j]]
+        end
+        ρ_m[:,i] = [t[i] ρ[i]]
+    end
+
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "drhodlogk", GW_m)
+    Jecco.write_dataset(group_st, "rho", ρ_m)
+    close(fid)
+end
+
+function ρGW(dirname::String; outfile::String="rhoGW_mathematica.h5")
+    hd2        = GWTimeSeries(dirname, :hd2)
+    t, _, _    = get_coords(hd2, :, :, :)
+    Nt, Nx, Ny = size(hd2)
+    plan       = 1/(Nx*Ny) * plan_rfft(hd2[1,:,:])
+    ρ_m        = zeros(2, Nt)
+    @inbounds for n in 1:Nt
+        f        = (plan * hd2[n,:,:])[1,1]
+        ρ_m[:,n] = [t[n] 8*π*f]
+    end
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "rho", ρ_m)
+    close(fid)
+end
+
+# function drhodlogk_to_mathematica_2(dirname::String, δk::Real; outfile::String="drhoGWdlogk_mathematica_2.h5")
+#
+#     ts         = OpenPMDTimeSeries(dirname, prefix="perturbation_")
+#     iterations = ts.iterations
+#     Nt         = length(iterations)
+#     t          = zeros(Nt)
+#     aux, chart = get_field(ts, it=iterations[1], field="hdxx")
+#     δx, δy     = Jecco.delta(chart)
+#     Nx, Ny     = size(aux)
+#     plan       = 1/(Nx*Ny)*plan_rfft(aux)
+#     kx         = sort(2*π.*rfftfreq(Nx, 1/δx)[1:end-1])
+#     ky         = sort(2*π.*fftfreq(Ny, 1/δy)[1:end-1])
+#     Nkx, Nky   = (length(kx),length(ky))
+#     k          = Array(0:δk:kx[end])
+#     Nk         = length(k)
+#     hdxx       = zeros(Nkx,Nky)
+#     hdxy       = zeros(Nkx,Nky)
+#     hdyy       = zeros(Nkx,Nky)
+#     hdzz       = zeros(Nkx,Nky)
+#     dρdlogk    = zeros(Nt,Nk)
+#
+#     for (idx,it) in enumerate(iterations)
+#         hdxx[:,1:Nkx-1] = abs.(plan * get_field(ts, it=it, field="hdxx")[1])[1:end-1,Nkx+2:end]
+#         hdxx[:,Nkx:end] = abs.(plan * get_field(ts, it=it, field="hdxx")[1])[1:end-1,1:Nkx]
+#         hdxy[:,1:Nkx-1] = abs.(plan * get_field(ts, it=it, field="hdxy")[1])[1:end-1,Nkx+2:end]
+#         hdxy[:,Nkx:end] = abs.(plan * get_field(ts, it=it, field="hdxy")[1])[1:end-1,1:Nkx]
+#         hdyy[:,1:Nkx-1] = abs.(plan * get_field(ts, it=it, field="hdyy")[1])[1:end-1,Nkx+2:end]
+#         hdyy[:,Nkx:end] = abs.(plan * get_field(ts, it=it, field="hdyy")[1])[1:end-1,1:Nkx]
+#         hdzz[:,1:Nkx-1] = abs.(plan * get_field(ts, it=it, field="hdzz")[1])[1:end-1,Nkx+2:end]
+#         hdzz[:,Nkx:end] = abs.(plan * get_field(ts, it=it, field="hdzz")[1])[1:end-1,1:Nkx]
+#         dρdkxdky        = 2/(2*π)^2 .*(hdxx.^2+hdxy.^2+hdyy.^2+hdzz.^2)
+#         t[idx]          = ts.current_t
+#         for n in 1:Nk
+#             kk = k[n]
+#             for j in 1:Nky
+#                 for i in 1:Nkx
+#                     if log(kk-δk) <= sqrt(kx[i]^2+ky[j]^2) <= log(kk+δk)
+#                         dρdlogk[idx,n] +=  dρdkxdky[i,j]
+#                     end
+#                 end
+#             end
+#         end
+#     end
+#     # store in an array suitable for Mathematica
+#     GW_m = zeros(3, Nk, Nt)
+#     # n = 1
+#     @fastmath @inbounds for i in 1:Nt
+#         for j in 1:Nk
+#             GW_m[:,j,i] = [t[i] k[j] dρdlogk[i,j]]
+#             # n += 1
+#         end
+#     end
+#
+#     output   = abspath(dirname, outfile)
+#     fid      = h5open(output, "w")
+#     group_st = g_create(fid, "data")
+#     Jecco.write_dataset(group_st, "drhodlogk", GW_m)
+#     close(fid)
+# end
+
 
 
 #From exponential basis to cos sin one for real functions.
 function Exp_to_cos_sin(f::Array{T,2}) where {T<:Complex}
     nkx, nky = size(f)
-    Nkx      = nkx-2
-    Nky      = Int((nky-2)/2)
+    Nkx      = nkx-1
+    Nky      = Int(floor(nky/2))
     a        = zeros(Nkx, Nky)
     b        = zeros(Nkx, Nky)
     c        = zeros(Nkx, Nky)
     d        = zeros(Nkx, Nky)
-    fk       = im.*zeros(Nkx, 2*Nky)
+    # fk       = im.*zeros(Nkx, 2*Nky)
 
-    fk[:,1:Nky] = f[2:end-1,2:Nky+1]
-    for j in 1:Nky
-        fk[:,Nky+j] = f[2:end-1,end-j+1]
+    # fk[:,1:Nky] = f[2:end-1,2:Nky+1]
+    # for j in 1:Nky
+    #     fk[:,Nky+j] = f[2:end-1,end-j+1]
+    # end
+    # a = real.(f[:,1:Nky]+f[:,Nky+1:2*Nky])
+    # b = imag.(-f[:,1:Nky]+f[:,Nky+1:2*Nky])
+    # c = imag.(-f[:,1:Nky]-f[:,Nky+1:2*Nky])
+    # d = real.(-f[:,1:Nky]+f[:,Nky+1:2*Nky])
+    # The (-1)^(i+j) factor compensate as the FFTW does the transform from the (-L/2,-L/2) while our modes where centered in the box.
+    # It does not really matter... the abs value will remain unchanged
+    @inbounds for j in 1:Nky
+        for i in 1:Nkx
+            if j == 1
+                a[i,1] = (-1)^(i+j)*2*real(f[i,1])
+                b[i,1] = 0.
+                c[i,1] = -(-1)^(i+j)*2*imag(f[i,1])
+                d[i,1] = 0.
+            elseif i == 1
+                a[i,j] = (-1)^(i+j)*real(f[i,j]+f[i,end-(j-2)])
+                b[i,j] = (-1)^(i+j)*imag(-f[i,j]+f[i,end-(j-2)])
+                c[i,j] = -(-1)^(i+j)*imag(f[i,j]+f[i,end-(j-2)])
+                d[i,j] = -(-1)^(i+j)*real(-f[i,j]+f[i,end-(j-2)])
+            else
+                a[i,j] = (-1)^(i+j)*2*real(f[i,j]+f[i,end-(j-2)])
+                b[i,j] = (-1)^(i+j)*2*imag(-f[i,j]+f[i,end-(j-2)])
+                c[i,j] = -(-1)^(i+j)*2*imag(f[i,j]+f[i,end-(j-2)])
+                d[i,j] = (-1)^(i+j)*2*real(-f[i,j]+f[i,end-(j-2)])
+            end
+        end
     end
-    a = real.(fk[:,1:Nky]+fk[:,Nky+1:2*Nky])
-    b = imag.(-fk[:,1:Nky]+fk[:,Nky+1:2*Nky])
-    c = imag.(-fk[:,1:Nky]-fk[:,Nky+1:2*Nky])
-    d = real.(-fk[:,1:Nky]+fk[:,Nky+1:2*Nky])
+
+    a[1,1] = real(f[1,1])
 
     a, b, c, d
 end
@@ -1133,14 +1223,38 @@ function Fourier_cos_sin(f::Array{T,2}) where {T<:Real}
     Exp_to_cos_sin(fk)
 end
 
-function Fourier_cos_sin(dir::String, VEV::Symbol)
-    f          = VEVTimeSeries(dir, VEV)
-    t, x, y    = get_coords(f,:,:,:)
+function Fourier_cos_sin(dir::String, Quantity::Symbol, path_to_eos::String)
+    if String(Quantity)[1] == 'T'
+        f = TTTimeSeries(dir, Quantity)
+    elseif String(Quantity)[1] == 'h'
+        f = GWTimeSeries(dir, Quantity)
+    elseif String(Quantity)[1] == 'v'
+        f = LocalVEVsTimeSeries(dir, Quantity)
+    elseif Quantity == :a4
+        f = BoundaryTimeSeries(dir, Quantity)
+    elseif String(Quantity)[1] == 'I'
+        if Quantity == :Ideal_Txx
+            f = IdealHydroTimeSeries(dir, path_to_eos, :px)
+        elseif Quantity == :Ideal_Txy
+            f = IdealHydroTimeSeries(dir, path_to_eos, :pxy)
+        elseif Quantity == :Ideal_Tyy
+            f = IdealHydroTimeSeries(dir, path_to_eos, :py)
+        elseif Quantity == :Ideal_Tzz
+            f = IdealHydroTimeSeries(dir, path_to_eos, :pz)
+        end
+    else
+        f = VEVTimeSeries(dir, Quantity)
+    end
+    if String(Quantity)[1] == 'I' || String(Quantity)[1] == 'v'
+        t, x, y = get_coords(BoundaryTimeSeries(dir, :a4),:, :, :)
+    else
+        t, x, y = get_coords(f, :, :, :)
+    end
     Nt, Nx, Ny = size(f)
     dx         = x[2]-x[1]
     dy         = y[2]-y[1]
-    kx         = 2*π.*(rfftfreq(Nx,1/dx)[2:end-1])
-    ky         = 2*π.*(rfftfreq(Ny,1/dy)[2:end-1])
+    kx         = 2*π.*(rfftfreq(Nx,1/dx)[1:end-1])
+    ky         = 2*π.*(rfftfreq(Ny,1/dy)[1:end-1])
     Nkx        = length(kx)
     Nky        = length(ky)
 
@@ -1153,7 +1267,140 @@ function Fourier_cos_sin(dir::String, VEV::Symbol)
         a[n,:,:], b[n,:,:], c[n,:,:], d[n,:,:] = Fourier_cos_sin(f[n,:,:])
     end
 
-    a, b, c, d
+    a, b, c, d, kx, ky
+end
+
+function Fourier_cos_sin_vivj_TT(dir::String)
+    ut         = LocalVEVsTimeSeries(dir, :ut)
+    ux         = LocalVEVsTimeSeries(dir, :ux)
+    uy         = LocalVEVsTimeSeries(dir, :uy)
+    t, x, y    = get_coords(BoundaryTimeSeries(dir,:a4),:,:,:)
+    Nt, Nx, Ny = size(ut)
+    dx         = x[2]-x[1]
+    dy         = y[2]-y[1]
+    kx         = 2*π.*(rfftfreq(Nx,1/dx)[1:end-1])
+    ky         = 2*π.*(rfftfreq(Ny,1/dy)[1:end-1])
+    Nkx        = length(kx)
+    Nky        = length(ky)
+
+    a = zeros(Nt, Nkx, Nky)
+    b = zeros(Nt, Nkx, Nky)
+    c = zeros(Nt, Nkx, Nky)
+    d = zeros(Nt, Nkx, Nky)
+
+    for n in 1:Nt
+        vx2  = ux[n,:,:].^2 ./(ut[n,:,:])
+        vy2  = uy[n,:,:].^2 ./(ut[n,:,:])
+        vxvy = ux[n,:,:].*uy[n,:,:] ./(ut[n,:,:])
+
+        avx2, bvx2, cvx2, dvx2     = Fourier_cos_sin(vx2)
+        avy2, bvy2, cvy2, dvy2     = Fourier_cos_sin(vy2)
+        avxvy, bvxvy, cvxvy, dvxvy = Fourier_cos_sin(vxvy)
+
+        @inbounds for j in 1:Nky
+            for i in 1:Nkx
+                kkx      = kx[i]
+                kky      = ky[j]
+                kx2      = kkx^2
+                ky2      = kky^2
+                kxky     = kkx*kky
+                a[n,i,j] = (ky2*avx2[i,j]+kx2*avy2[i,j]+2*kxky*avxvy[i,j])
+                b[n,i,j] = (ky2*bvx2[i,j]+kx2*bvy2[i,j]+2*kxky*bvxvy[i,j])
+                c[n,i,j] = (ky2*cvx2[i,j]+kx2*cvy2[i,j]+2*kxky*cvxvy[i,j])
+                d[n,i,j] = (ky2*dvx2[i,j]+kx2*dvy2[i,j]+2*kxky*dvxvy[i,j])
+            end
+        end
+    end
+
+    a, b, c, d, kx, ky
+end
+
+function Fourier_cos_sin_dρd2k(dir::String)
+    hdxx       = GWTimeSeries(dir, :hdxx)
+    hdxy       = GWTimeSeries(dir, :hdxy)
+    hdyy       = GWTimeSeries(dir, :hdyy)
+    hdzz       = GWTimeSeries(dir, :hdzz)
+    t, x, y    = get_coords(hdxx, :, :, :)
+    Nt, Nx, Ny = size(hdxx)
+    dx         = x[2]-x[1]
+    dy         = y[2]-y[1]
+    kx         = 2*π.*(rfftfreq(Nx,1/dx)[1:end-1])
+    ky         = 2*π.*(rfftfreq(Ny,1/dy)[1:end-1])
+    Nkx        = length(kx)
+    Nky        = length(ky)
+    plan       = 1/(Nx*Ny) * plan_rfft(hdxx[1,:,:])
+
+    a = zeros(Nt, Nkx, Nky)
+    b = zeros(Nt, Nkx, Nky)
+    c = zeros(Nt, Nkx, Nky)
+    d = zeros(Nt, Nkx, Nky)
+
+    for n in 1:Nt
+        hdkxx = abs.(plan * hdxx[n,:,:])
+        hdkxy = abs.(plan * hdxy[n,:,:])
+        hdkyy = abs.(plan * hdyy[n,:,:])
+        hdkzz = abs.(plan * hdzz[n,:,:])
+        f     = 2/π*(hdkxx.^2 + hdkxy.^2 + hdkyy.^2 + hdkzz.^2) .+ im*0
+
+        a[n,:,:], b[n,:,:], c[n,:,:], d[n,:,:] = Exp_to_cos_sin(f)
+    end
+
+    a, b, c, d, kx, ky
+end
+
+function modes_to_mathematica(dirname::String, Quantity::Symbol, outfile::String; path_to_eos::String = "a")
+    if Quantity == :drhod2k
+        a, b, c, d, _, _ = Fourier_cos_sin_dρd2k(dirname)
+    elseif Quantity == :vivj
+        a, b, c, d, _, _ = Fourier_cos_sin_vivj_TT(dirname)
+    else
+        a, b, c, d, _, _ = Fourier_cos_sin(dirname, Quantity, path_to_eos)
+    end
+    Nt, Nkx, Nky     = size(a)
+    if String(Quantity)[1] == 'h' || String(Quantity)[1] == 'd'
+        t, _, _          = get_coords(GWTimeSeries(dirname, :hxx),:,1,1)
+    else
+        t, _, _          = get_coords(BoundaryTimeSeries(dirname, :a4),:,1,1)
+    end
+
+    a_m  = zeros(7, Nt, Nky, Nkx)
+
+    n = 1
+    @fastmath @inbounds for j in 1:Nkx
+        for k in 1:Nky
+            for i in 1:Nt
+                a_m[:,i,k,j] = [j-1 k-1 t[i] abs(a[i,j,k]) abs(b[i,j,k]) abs(c[i,j,k]) abs(d[i,j,k])]
+                n += 1
+            end
+        end
+    end
+
+    output   = abspath(dirname, outfile)
+    fid      = h5open(output, "w")
+    group_st = g_create(fid, "data")
+    Jecco.write_dataset(group_st, "modes", a_m)
+    close(fid)
+end
+
+function Fourier2D(dir::String, VEV::Symbol)
+    f          = VEVTimeSeries(dir, VEV)
+    t, x, y    = get_coords(f,:,:,:)
+    Nt, Nx, Ny = size(f)
+    dx         = x[2]-x[1]
+    dy         = y[2]-y[1]
+    kx         = 2*π.*(rfftfreq(Nx,1/dx))
+    ky         = 2*π.*(fftfreq(Ny,1/dy))
+    Nkx        = length(kx)
+    Nky        = length(ky)
+
+    plan = plan_rfft(f[1,:,:])
+    fk   = im.*zeros(Nt, Nkx, Nky)
+
+    for n in 1:Nt
+        fk[n,:,:] = 1/(Nx*Ny).*(plan * f[n,:,:])
+    end
+
+    fk, kx, ky
 end
 
 function Fourier_ϕ(f::Array{T,2}) where {T<:Real}
