@@ -118,23 +118,6 @@ Base.@kwdef struct BlackBraneNoise{T} <: InitialData
     ahf           :: AHF    = AHF()
 end
 
-Base.@kwdef struct Gaussian_a4{T} <: InitialData
-    energy_dens   :: T   = 1.0
-    AH_pos        :: T   = 1.0
-    phi0          :: T   = 0.0
-    oophiM2       :: T   = 0.0
-    phi2          :: T   = 0.0
-    xi0           :: T   = 0.0
-    sigma         :: T   = 1.0
-    amp           :: T   = 0.0
-    xmax          :: T
-    xmin          :: T
-    ymax          :: T
-    ymin          :: T
-    ahf           :: AHF = AHF()
-end
-
-
 function (id::InitialData)(bulkconstrains, bulkevols, bulkderivs, boundary::Boundary,
                            gauge::Gauge, horizoncache::HorizonCache, systems::SystemPartition,
                            evoleq::EvolutionEquations)
@@ -846,73 +829,6 @@ function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBraneNoise)
 end
 
 function init_data!(ff::Gauge, sys::System, id::BlackBraneNoise)
-    a40     = -id.energy_dens/0.75
-    AH_pos  = id.AH_pos
-
-    # TODO: this guess works best for the conformal case. is there a better one?
-    if id.xi0 == 0
-        xi0 = (-a40)^0.25 - 1/AH_pos
-    else
-        xi0 = id.xi0
-    end
-
-    xi  = getxi(ff)
-
-    fill!(xi, xi0)
-
-    ff
-end
-
-
-analytic_phi(u, x, y, id::Gaussian_a4) = id.phi2 / id.phi0^3
-analytic_B1(u, x, y, id::Gaussian_a4)  = 0
-analytic_B2(u, x, y, id::Gaussian_a4)  = 0
-analytic_G(u, x, y, id::Gaussian_a4)   = 0
-
-function init_data!(ff::Boundary, sys::System{Inner}, id::Gaussian_a4)
-    epsilon = id.energy_dens
-    phi0    = id.phi0
-    phi2    = id.phi2
-    oophiM2 = id.oophiM2
-    amp     = id.amp
-    sigma   = id.sigma
-
-    xmax = id.xmax
-    xmin = id.xmin
-    xmid = (xmax + xmin) / 2
-    ymax = id.ymax
-    ymin = id.ymin
-    ymid = (ymax + ymin) / 2
-    Lx   = xmax-xmin
-    Ly   = ymax-ymin
-
-    _, Nx, Ny = size(sys)
-    xx        = sys.xcoord
-    yy        = sys.ycoord
-
-    phi04 = phi0 * phi0 * phi0 * phi0
-    a40   = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
-
-    a4  = geta4(ff)
-    fx2 = getfx2(ff)
-    fy2 = getfy2(ff)
-
-    fill!(a4, a40)
-    fill!(fx2, 0)
-    fill!(fy2, 0)
-
-    for j in 1:Ny
-        for i in 1:Nx
-            x = xx[i]
-            y = yy[j]
-            a4[1,i,j] += -4/3 * epsilon * amp * exp(-(x^2+y^2)/(2*sigma))
-        end
-    end
-
-    ff
-end
-
-function init_data!(ff::Gauge, sys::System, id::Gaussian_a4)
     a40     = -id.energy_dens/0.75
     AH_pos  = id.AH_pos
 
