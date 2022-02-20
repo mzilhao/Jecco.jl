@@ -83,20 +83,39 @@ Base.@kwdef struct QNM_1D{T} <: InitialData
 end
 
 Base.@kwdef struct BlackBraneGaussPert{T} <: InitialData
-    energy_dens   :: T   = 1.0
-    AH_pos        :: T   = 1.0
-    phi0          :: T   = 0.0
-    oophiM2       :: T   = 0.0
-    phi2          :: T   = 0.0
-    xi0           :: T   = 0.0
+    energy_dens   :: T     = 1.0
+    AH_pos        :: T     = 1.0
+    phi0          :: T     = 0.0
+    oophiM2       :: T     = 0.0
+    phi2          :: T     = 0.0
+    xi0           :: T     = 0.0
     xmax          :: T
     xmin          :: T
     ymax          :: T
     ymin          :: T
     sigma         :: T
-    ahf           :: AHF = AHF()
+    ahf           :: AHF    = AHF()
+    recover       :: Symbol = :no
+    recover_dir   :: String
+
 end
 
+Base.@kwdef struct BlackBraneNoise{T} <: InitialData
+    energy_dens   :: T      = 1.0
+    AH_pos        :: T      = 1.0
+    phi0          :: T      = 0.0
+    oophiM2       :: T      = 0.0
+    phi2          :: T      = 0.0
+    xi0           :: T      = 0.0
+    xmax          :: T
+    xmin          :: T
+    ymax          :: T
+    ymin          :: T
+    pert          :: T
+    nx_max        :: Int    = 1
+    ny_max        :: Int    = 1
+    ahf           :: AHF    = AHF()
+end
 
 function (id::InitialData)(bulkconstrains, bulkevols, bulkderivs, boundary::Boundary,
                            gauge::Gauge, horizoncache::HorizonCache, systems::SystemPartition,
@@ -635,12 +654,12 @@ function a4Perturbation(x::Real, y::Real, nx_max::Int, ny_max::Int, Lx::Real, Ly
                             a::Array{T,2}, b::Array{T,2}, c::Array{T,2}, d::Array{T,2}) where {T<:Real}
 
     sum  = 0.0
-    for ny in 1:ny_max
-        for nx in 1:nx_max
-            sum += a[nx,ny] * cos(2 * π * nx * x / Lx) * cos(2 * π * ny * y / Ly) +
-                    b[nx,ny] * cos(2 * π * nx * x / Lx) * sin(2 * π * ny * y / Ly) +
-                    c[nx,ny] * sin(2 * π * nx * x / Lx) * cos(2 * π * ny * y / Ly) +
-                    d[nx,ny] * sin(2 * π * nx * x / Lx) * sin(2 * π * ny * y / Ly)
+    for ny in 0:ny_max-1
+        for nx in 0:nx_max-1
+            sum += a[nx+1,ny+1] * cos(2 * π * nx * x / Lx) * cos(2 * π * ny * y / Ly) +
+                    b[nx+1,ny+1] * cos(2 * π * nx * x / Lx) * sin(2 * π * ny * y / Ly) +
+                    c[nx+1,ny+1] * sin(2 * π * nx * x / Lx) * cos(2 * π * ny * y / Ly) +
+                    d[nx+1,ny+1] * sin(2 * π * nx * x / Lx) * sin(2 * π * ny * y / Ly)
         end
     end
 
@@ -677,11 +696,32 @@ function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBraneGaussPert)
     fill!(fx2, 0)
     fill!(fy2, 0)
 
-    dist = Normal(0.0, id.sigma)
-    a    = reshape(rand(dist, Nx*Ny), Nx, Ny)
-    b    = reshape(rand(dist, Nx*Ny), Nx, Ny)
-    c    = reshape(rand(dist, Nx*Ny), Nx, Ny)
-    d    = reshape(rand(dist, Nx*Ny), Nx, Ny)
+    if id.recover == :no
+        dist = Normal(0.0, id.sigma)
+        a    = reshape(rand(dist, Nx*Ny), Nx, Ny)
+        b    = reshape(rand(dist, Nx*Ny), Nx, Ny)
+        c    = reshape(rand(dist, Nx*Ny), Nx, Ny)
+        d    = reshape(rand(dist, Nx*Ny), Nx, Ny)
+        Nkx  = Nx
+        Nky  = Ny
+    elseif id.recover == :yes
+        ts         = OpenPMDTimeSeries(id.recover_dir, prefix="boundary_")
+        a4old      = get_field(ts, it=ts.iterations[1], field="a4")[1][1,:,:]
+        a, b, c, d = AdS5_3_1.Fourier_cos_sin(a4old)
+        Nkx, Nky   = size(a)
+        a[1,1]     = 0.
+        if Nkx > Nx || Nky > Ny
+            @warn "Too few points for such ammount of modes"
+            return
+        end
+        a *= -3/4/epsilon
+        b *= -3/4/epsilon
+        c *= -3/4/epsilon
+        d *= -3/4/epsilon
+    else
+        @warn "No such recover option"
+        return
+    end
 
     for j in 1:Ny
         for i in 1:Nx
@@ -690,7 +730,7 @@ function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBraneGaussPert)
             # I decided to change to δε/ε following a normal, so the normal pert has to be
             #multiplied by a factor to enter in the energy correctly.
             # Going to previous means 4/3*epsilon -> a40
-            a4[1,i,j] += -4/3 * epsilon * a4Perturbation(x, y, Nx, Ny, Lx, Ly, a, b, c, d)
+            a4[1,i,j] += -4/3 * epsilon * a4Perturbation(x, y, Nkx, Nky, Lx, Ly, a, b, c, d)
         end
     end
 
@@ -698,6 +738,96 @@ function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBraneGaussPert)
 end
 
 function init_data!(ff::Gauge, sys::System, id::BlackBraneGaussPert)
+    a40     = -id.energy_dens/0.75
+    AH_pos  = id.AH_pos
+
+    # TODO: this guess works best for the conformal case. is there a better one?
+    if id.xi0 == 0
+        xi0 = (-a40)^0.25 - 1/AH_pos
+    else
+        xi0 = id.xi0
+    end
+
+    xi  = getxi(ff)
+
+    fill!(xi, xi0)
+
+    ff
+end
+
+
+#Same pert for all modes
+
+function Perturbation(x::Real, y::Real, nx_max::Int, ny_max::Int, Lx::Real, Ly::Real)
+    sum  = 0.0
+    @inbounds for ny in 0:ny_max
+        for nx in 0:nx_max
+            if nx != 0 || ny != 0
+                mode1 = cos(2 * π * nx * x / Lx) * cos(2 * π * ny * y / Ly)
+                mode2 = cos(2 * π * nx * x / Lx) * sin(2 * π * ny * y / Ly)
+                mode3 = sin(2 * π * nx * x / Lx) * cos(2 * π * ny * y / Ly)
+                mode4 = sin(2 * π * nx * x / Lx) * sin(2 * π * ny * y / Ly)
+                sum += mode1+mode2+mode3+mode4
+            end
+        end
+    end
+    sum
+end
+
+# analytic_phi(u, x, y, id::BlackBraneNoise) = id.phi2 / id.phi0^3 + id.pert * Perturbation(x, y, id.nx_max, id.ny_max, id.xmax-id.xmin, id.ymax-id.ymin)
+# analytic_B1(u, x, y, id::BlackBraneNoise)  = id.pert * Perturbation(x, y, id.nx_max, id.ny_max, id.xmax-id.xmin, id.ymax-id.ymin)
+# analytic_B2(u, x, y, id::BlackBraneNoise)  = id.pert * Perturbation(x, y, id.nx_max, id.ny_max, id.xmax-id.xmin, id.ymax-id.ymin)
+# analytic_G(u, x, y, id::BlackBraneNoise)   = id.pert * Perturbation(x, y, id.nx_max, id.ny_max, id.xmax-id.xmin, id.ymax-id.ymin)
+analytic_phi(u, x, y, id::BlackBraneNoise) = id.phi2 / id.phi0^3
+analytic_B1(u, x, y, id::BlackBraneNoise)  = 0.0
+analytic_B2(u, x, y, id::BlackBraneNoise)  = 0.0
+analytic_G(u, x, y, id::BlackBraneNoise)   = 0.0
+
+function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBraneNoise)
+    epsilon = id.energy_dens
+    phi0    = id.phi0
+    phi2    = id.phi2
+    oophiM2 = id.oophiM2
+
+    xmax = id.xmax
+    xmin = id.xmin
+    xmid = (xmax + xmin) / 2
+    ymax = id.ymax
+    ymin = id.ymin
+    ymid = (ymax + ymin) / 2
+    Lx   = xmax-xmin
+    Ly   = ymax-ymin
+
+    _, Nx, Ny = size(sys)
+    xx        = sys.xcoord
+    yy        = sys.ycoord
+
+    phi04  = phi0 * phi0 * phi0 * phi0
+    a40    = (-epsilon - phi0 * phi2 - phi04 * oophiM2 / 4 + 7 * phi04 / 36) / 0.75
+    pert   = id.pert
+    nx_max = id.nx_max
+    ny_max = id.ny_max
+
+    a4  = geta4(ff)
+    fx2 = getfx2(ff)
+    fy2 = getfy2(ff)
+
+    fill!(a4, a40)
+    fill!(fx2, 0)
+    fill!(fy2, 0)
+
+    for j in 1:Ny
+        for i in 1:Nx
+            x = xx[i]
+            y = yy[j]
+            a4[1,i,j] += -4/3*pert * Perturbation(x, y, nx_max, ny_max, Lx, Ly)
+        end
+    end
+
+    ff
+end
+
+function init_data!(ff::Gauge, sys::System, id::BlackBraneNoise)
     a40     = -id.energy_dens/0.75
     AH_pos  = id.AH_pos
 
