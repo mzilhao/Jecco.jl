@@ -1,7 +1,7 @@
 
 using HDF5
 
-@testset "Output tests:" begin
+@testset "I/O tests:" begin
 
     umin   = 0.0
     umax   = 2.0
@@ -47,11 +47,21 @@ using HDF5
     fn  = "$(prefix)00000001.h5"
 
     fid = h5open(dir * "/" * fn, "r")
-
     grp = fid["data/1"]
+
+    grp_tmp, time = Jecco.read_openpmd_file(fid, 1)
+
+    @test time == 10.0
+    @test grp["fields"].file === grp_tmp.file
+    @test Jecco.read_group_attributes(grp) == Dict( "time" => 10.0, "dt" => 0.1)
 
     @test read_attribute(grp, "time") == 10.0
     @test read_attribute(grp, "dt")   == 0.1
+
+    func0, chart0 = Jecco.read_dataset(grp["fields"], "f")
+
+    @test func0  == f
+    @test chart0 == chart
 
     dset1 = grp["fields/f"]
     data1 = read(dset1)
