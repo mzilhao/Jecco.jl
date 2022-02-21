@@ -262,15 +262,15 @@ function get_field(ts::OpenPMDTimeSeries; it::Int, field::String, verbose::Bool=
 end
 
 function read_openpmd_file(fid::HDF5.File, it::Integer)
-    basePath   = read(attrs(fid)["basePath"])
+    basePath   = read_attribute(fid, "basePath")
     basePath   = replace(basePath, "%T" => it)
-    meshesPath = read(attrs(fid)["meshesPath"])
+    meshesPath = read_attribute(fid, "meshesPath")
 
     # pointer to base group (ie, with the information for the requested time
     # level) within the given hdf5 file
     grp_base = fid[basePath]
 
-    time = read(attrs(grp_base)["time"])
+    time = read_attribute(grp_base, "time")
 
     # pointer to mesh group (with the actual chart function data)
     grp_mesh = grp_base[meshesPath]
@@ -279,15 +279,14 @@ function read_openpmd_file(fid::HDF5.File, it::Integer)
 end
 
 function read_group_attributes(grp::HDF5.Group)
-    grp_attrs = attrs(grp)
-    keys      = names(grp_attrs)
-    vals      = read.(Ref(grp_attrs), keys)
-    Dict(keys[i] => vals[i] for i in 1:length(keys))
+    grp_attrs = attributes(grp)
+    ks        = keys(grp_attrs)
+    vals      = read_attribute.(Ref(grp), ks)
+    Dict(ks[i] => vals[i] for i in 1:length(ks))
 end
 
 function read_dataset(grp::HDF5.Group, var::String)
-    dset       = grp[var]
-    dset_attrs = attrs(dset)
+    dset  = grp[var]
 
     func  = read(dset)
     nodes = size(func)
@@ -295,17 +294,17 @@ function read_dataset(grp::HDF5.Group, var::String)
     dim_  = length(nodes)
 
     if dim_ == 1
-        names         = read(dset_attrs["axisLabels"])
-        mins          = read(dset_attrs["gridGlobalOffset"])
-        maxs          = read(dset_attrs["gridMax"])
-        gridtypes     = read(dset_attrs["gridType"])
+        names         = read_attribute(dset, "axisLabels")
+        mins          = read_attribute(dset, "gridGlobalOffset")
+        maxs          = read_attribute(dset, "gridMax")
+        gridtypes     = read_attribute(dset, "gridType")
     else
         # remember to flip the order since HDF5 uses row-major order to store
         # arrays, as opposed to Julia's column-major order
-        names         = read(dset_attrs["axisLabels"])[end:-1:1]
-        mins          = read(dset_attrs["gridGlobalOffset"])[end:-1:1]
-        maxs          = read(dset_attrs["gridMax"])[end:-1:1]
-        gridtypes     = read(dset_attrs["gridType"])[end:-1:1]
+        names         = read_attribute(dset, "axisLabels")[end:-1:1]
+        mins          = read_attribute(dset, "gridGlobalOffset")[end:-1:1]
+        maxs          = read_attribute(dset, "gridMax")[end:-1:1]
+        gridtypes     = read_attribute(dset, "gridType")[end:-1:1]
     end
 
     chart = Chart(gridtypes, names, mins, maxs, nodes)
