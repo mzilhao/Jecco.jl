@@ -12,6 +12,8 @@ function setup_rhs(tmp::EvolVars, bulkconstrains::BulkPartition{Nsys},
     gauge_cache       = getgauge(diss_cache)
 
     function (ff_t::EvolVars, ff::EvolVars, evoleq::EvolutionEquations, t)
+        vprint("INFO: loading state vectors")
+
         bulkevols_t = getbulkevolvedpartition(ff_t)
         boundary_t  = getboundary(ff_t)
         gauge_t     = getgauge(ff_t)
@@ -69,6 +71,7 @@ function setup_rhs(tmp::EvolVars, bulkconstrains::BulkPartition{Nsys},
         end
         sync_bulkevolved!(bulkevols_t, bulkconstrains, gauge_t, systems, evoleq)
 
+        vprint("INFO: all done with RHS")
         nothing
     end
 end

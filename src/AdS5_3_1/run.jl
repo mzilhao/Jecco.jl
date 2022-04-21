@@ -143,6 +143,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
     tstart = time()
     # start integration
+    vprint("INFO: Starting time integration...")
     for (u,t) in tuples(integrator)
         tinfo.it     += 1
         tinfo.dt      = integrator.dt
@@ -184,6 +185,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
             end
         end
 
+        vprint("INFO: Advancing time-step...")
     end
 
     println("-------------------------------------------------------------")

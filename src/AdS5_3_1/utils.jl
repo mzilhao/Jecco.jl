@@ -1,5 +1,3 @@
-using HDF5
-using Interpolations
 
 """
 Need to have method `get_data`

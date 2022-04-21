@@ -7,9 +7,6 @@ using OrdinaryDiffEq
 using Interpolations
 using Random, Distributions
 
-
-
-
 import Base.Threads.@threads
 import Base.Threads.@spawn
 
@@ -57,7 +54,6 @@ include("VEVs.jl")
 # random utilities useful for post-processing
 include("utils.jl")
 include("recipes.jl")
-
 
 
 # always set the number of BLAS threads to 1 upon loading the module. by default

@@ -22,7 +22,7 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
     vx   = gaugecondition.xi_vx
     vy   = gaugecondition.xi_vy
 
-    @fastmath @inbounds Threads.@threads for j in 1:Ny
+    @fastmath @inbounds @threads for j in 1:Ny
         @inbounds for i in 1:Nx
             xi_x  = Dx(xiGF, 1,i,j)
             xi_y  = Dy(xiGF, 1,i,j)
@@ -142,7 +142,7 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
     end
 
     # interpolate bulk functions (and u-derivatives) to the u=uAH surface
-    @inbounds Threads.@threads for j in 1:Ny
+    @inbounds @threads for j in 1:Ny
         @inbounds for i in 1:Nx
             B1_uAH[1,i,j]       = interp(view(bulk.B1,  :,i,j))(uAH)
             B2_uAH[1,i,j]       = interp(view(bulk.B2,  :,i,j))(uAH)
@@ -184,7 +184,7 @@ function compute_xi_t!(gauge_t::Gauge, bulkconstrain::BulkConstrained,
     ind2D  = LinearIndices(B1_uAH[1,:,:])
 
     # coefficients of the derivative operators
-    @fastmath @inbounds Threads.@threads for j in 1:Ny
+    @fastmath @inbounds @threads for j in 1:Ny
         @inbounds for i in 1:Nx
             idx   = ind2D[i,j]
 
