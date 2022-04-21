@@ -58,8 +58,7 @@ function setup_rhs(tmp::EvolVars, bulkconstrains::BulkPartition{Nsys},
                       gauge, cache, systems[Nsys], evoleq.gaugecondition)
 
         vprint("INFO: bulkevolved_t")
-        # TODO: check if this loop is thread-safe
-        # @inbounds @threads for aa in 1:Nsys
+        # no need to thread here since we are parallelizing inside the function
         @inbounds for aa in 1:Nsys
             sys           = systems[aa]
             bulkevol_t    = bulkevols_t[aa]

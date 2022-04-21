@@ -34,7 +34,7 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
     B1_t, B2_t, G_t, phi_t = unpack(bulkevol_t)
 
     # u = 0
-    @fastmath @inbounds for j in 1:Ny
+    @fastmath @inbounds @threads for j in 1:Ny
         @inbounds @simd for i in 1:Nx
             xi     = gauge.xi[1,i,j]
 
@@ -57,7 +57,7 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
     end
 
     # remaining inner grid points
-    @fastmath @inbounds for j in 1:Ny
+    @fastmath @inbounds @threads for j in 1:Ny
         @inbounds for i in 1:Nx
             xi    = gauge.xi[1,i,j]
             xi_t  = gauge_t.xi[1,i,j]
@@ -108,7 +108,7 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
     # otherwise, compute phi_t
 
     # u = 0
-    @fastmath @inbounds for j in 1:Ny
+    @fastmath @inbounds @threads for j in 1:Ny
         @inbounds @simd for i in 1:Nx
             xi     = gauge.xi[1,i,j]
             xi3    = xi * xi * xi
@@ -126,7 +126,7 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
     end
 
     # remaining inner grid points
-    @fastmath @inbounds for j in 1:Ny
+    @fastmath @inbounds @threads for j in 1:Ny
         @inbounds for i in 1:Nx
             xi     = gauge.xi[1,i,j]
             xi2    = xi * xi
@@ -178,7 +178,7 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
 
     B1_t, B2_t, G_t, phi_t = unpack(bulkevol_t)
 
-    @fastmath @inbounds for j in 1:Ny
+    @fastmath @inbounds @threads for j in 1:Ny
         @inbounds for i in 1:Nx
             xi_t  = gauge_t.xi[1,i,j]
             @inbounds @simd for a in 1:Nu
@@ -209,7 +209,7 @@ function compute_bulkevolved_t!(bulkevol_t::BulkEvolved,
 
     # otherwise, compute phi_t
 
-    @fastmath @inbounds for j in 1:Ny
+    @fastmath @inbounds @threads for j in 1:Ny
         @inbounds for i in 1:Nx
             xi_t   = gauge_t.xi[1,i,j]
             @inbounds @simd for a in 1:Nu
@@ -251,7 +251,7 @@ function sync_bulkevolved!(bulkevol1_t::BulkEvolved, bulkevol2_t::BulkEvolved,
     B11_t, B21_t, G1_t, phi1_t = unpack(bulkevol1_t)
     B12_t, B22_t, G2_t, phi2_t = unpack(bulkevol2_t)
 
-    @fastmath @inbounds for j in 1:Ny
+    @fastmath @inbounds @threads for j in 1:Ny
         @inbounds for i in 1:Nx
             xi_t   = gauge_t.xi[1,i,j]
             A      = bulkconstrain2.A[1,i,j]
@@ -296,7 +296,7 @@ function sync_bulkevolved!(bulkevol1_t::BulkEvolved, bulkevol2_t::BulkEvolved,
     B11_t, B21_t, G1_t, phi1_t = unpack(bulkevol1_t)
     B12_t, B22_t, G2_t, phi2_t = unpack(bulkevol2_t)
 
-    @fastmath @inbounds for j in 1:Ny
+    @fastmath @inbounds @threads for j in 1:Ny
         @inbounds for i in 1:Nx
             xi_t   = gauge_t.xi[1,i,j]
             A      = bulkconstrain2.A[1,i,j]
@@ -324,7 +324,7 @@ function sync_bulkevolved!(bulkevol1_t::BulkEvolved, bulkevol2_t::BulkEvolved,
         return
     end
 
-    @fastmath @inbounds for j in 1:Ny
+    @fastmath @inbounds @threads for j in 1:Ny
         @inbounds for i in 1:Nx
             xi_t   = gauge_t.xi[1,i,j]
             A      = bulkconstrain2.A[1,i,j]
