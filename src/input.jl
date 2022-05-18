@@ -199,6 +199,7 @@ function list_h5_files(foldername::String; prefix::String="")
             if isa(ex, BoundsError)
                 # probably triggered by string comparison; do nothing
             else
+                println("Error reading file $file")
                 throw(ex)
             end
         end
