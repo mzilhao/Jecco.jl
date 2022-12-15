@@ -6,15 +6,33 @@ jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
+    env:
+      JULIA_NUM_THREADS: ${{ matrix.threads }}
     strategy:
+      fail-fast: false
       matrix:
-        julia-version: ['1.3'] # minimum Julia version that the package supports
-        julia-arch: [x64]
-        os: [ubuntu-latest, windows-latest, macOS-latest]
+        version:
+          - '1.7'
+          - '1.8'
+        arch:
+          - x64
+          - x86
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macOS-latest
+        threads:
+          - '1'
+          - '4'
+        exclude:
+          # MacOS not available on x86
+          - {os: 'macOS-latest', arch: 'x86'}
+
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: julia-actions/setup-julia@latest
         with:
-          version: ${{ matrix.julia-version }}
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
       - uses: julia-actions/julia-buildpkg@latest
       - uses: julia-actions/julia-runtest@latest
