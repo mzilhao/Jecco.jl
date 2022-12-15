@@ -1,16 +1,16 @@
 
 function solve_lin_system!(A_mat, b_vec)
-    # passing Val(false) to the second argument turns off pivoting. it seems to
-    # improve speed for the small matrices that we typically consider. we can
-    # revisit this (or make it a parameter) if needed.
-    A_fact = lu!(A_mat, Val(false))
+    # turning off pivoting since it seems to improve speed for the small
+    # matrices that we typically consider. we can revisit this (or make it a
+    # parameter) if needed.
+    A_fact = lu!(A_mat, NoPivot())
     ldiv!(A_fact, b_vec)        # b_vec is overwritten to store the result
     nothing
 end
 
 function solve_lin_system_pivot!(A_mat, b_vec)
     # for the larger matrices, in the coupled equations, it's better to pivot
-    A_fact = lu!(A_mat, Val(true))
+    A_fact = lu!(A_mat, RowMaximum())
     ldiv!(A_fact, b_vec)        # b_vec is overwritten to store the result
     nothing
 end
