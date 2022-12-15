@@ -418,6 +418,8 @@ struct BulkPartition{N,A} <: AbstractPartition{N,A}
 end
 BulkPartition(x...) = BulkPartition(tuple(x...))
 
+Base.similar(bulks::BulkPartition{N,A}) where {N,A} = BulkPartition{N,A}(similar.(bulks.x))
+
 
 function BulkEvolved(bulks::BulkPartition{N}) where{N}
     f = ntuple(i -> BulkEvolved(bulks[i]), N)
@@ -460,6 +462,8 @@ function EvolVars(boundary::Boundary, gauge::Gauge,
 end
 
 Base.similar(ff::EvolVars{T,N,S}) where {T,N,S} = EvolVars{T,N,S}(similar.(ff.x))
+Base.copy(ff::EvolVars{T,N,S}) where {T,N,S} = EvolVars{T,N,S}(copy.(ff.x))
+Base.zero(ff::EvolVars{T,N,S}) where {T,N,S} = EvolVars{T,N,S}(zero.(ff.x))
 
 @inline getudomains(::EvolVars{T,N}) where {T,N} = div(N-4, 4)
 
