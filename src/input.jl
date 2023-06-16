@@ -187,7 +187,7 @@ function list_h5_files(foldername::String; prefix::String="")
                 fullname = joinpath(path, file)
                 # extract all iterations from the file
                 fid      = h5open(fullname, "r")
-                its      = names(fid["/data"])
+                its      = keys(fid["/data"])
                 close(fid)
                 # for each iteration add to list of tuples with iteration and
                 # name
