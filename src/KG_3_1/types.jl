@@ -89,6 +89,16 @@ function Base.similar(ff::BulkEvolved{T}) where {T}
     x   = (phi=phi,)
     BulkEvolved{T,eltype(x),typeof(x)}(x)
 end
+function Base.copy(ff::BulkEvolved{T}) where {T}
+    phi = copy(getphi(ff))
+    x   = (phi=phi,)
+    BulkEvolved{T,eltype(x),typeof(x)}(x)
+end
+function Base.zero(ff::BulkEvolved{T}) where {T}
+    phi = zero(getphi(ff))
+    x   = (phi=phi,)
+    BulkEvolved{T,eltype(x),typeof(x)}(x)
+end
 
 
 struct BulkConstrained{T,A,S} <: FlattenedVector{T,3,A}
@@ -157,6 +167,8 @@ struct BulkPartition{N,A} <: AbstractPartition{N,A}
 end
 BulkPartition(x...) = BulkPartition(tuple(x...))
 
+Base.similar(bulks::BulkPartition{N,A}) where {N,A} = BulkPartition{N,A}(similar.(bulks.x))
+
 
 function BulkEvolved(bulks::BulkPartition{N}) where{N}
     f = ntuple(i -> BulkEvolved(bulks[i]), N)
@@ -175,6 +187,9 @@ end
 EvolVars(x::NTuple{N,A}) where {N,A} = EvolVars{eltype(A),N,A}(x)
 
 Base.similar(ff::EvolVars{T,N,S}) where {T,N,S} = EvolVars{T,N,S}(similar.(ff.x))
+Base.copy(ff::EvolVars{T,N,S}) where {T,N,S} = EvolVars{T,N,S}(copy.(ff.x))
+Base.zero(ff::EvolVars{T,N,S}) where {T,N,S} = EvolVars{T,N,S}(zero.(ff.x))
+
 
 """
     EvolVars(boundary::Boundary, gauge::Gauge, bulkevols::NTuple)
