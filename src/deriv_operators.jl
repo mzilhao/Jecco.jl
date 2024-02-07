@@ -39,6 +39,13 @@ struct SpectralDeriv{T<:Real,N,S} <: AbstractDerivOperator{T,N}
     D                       :: S
 end
 
+# operator to use when one of the directions is trivial, returning always zero
+# when applied to any function
+struct ZeroDeriv{T,N} <: AbstractDerivOperator{T,N} end
+function ZeroDeriv{N}() where{N}
+    ZeroDeriv{Float64,N}()
+end
+
 struct CenteredDiff{N} end
 
 function CenteredDiff{N}(derivative_order::Int,
@@ -202,6 +209,12 @@ function Base.getindex(A::PeriodicFD{T}, i::Int, j::Int) where {T}
     end
 end
 
+Base.getindex(A::ZeroDeriv{T}, i::Int, j::Int) where {T} = zero(T)
+
+function (A::ZeroDeriv{T})(f::AbstractArray, idx::Vararg) where {T}
+    return zero(T)
+end
+
 
 @inline Base.getindex(A::AbstractFiniteDiff, i::Int, ::Colon) =
     [A[i,j] for j in 1:A.len]
@@ -324,6 +337,21 @@ function LinearAlgebra.mul!(df::AbstractArray, A::AbstractFiniteDiff, f::Abstrac
 end
 
 
+function LinearAlgebra.mul!(df::AbstractVector, A::ZeroDeriv{T}, f::AbstractVector) where{T}
+    @fastmath @inbounds for idx in eachindex(f)
+        df[idx] = zero(T)
+    end
+    nothing
+end
+
+function LinearAlgebra.mul!(df::AbstractArray, A::ZeroDeriv{T}, f::AbstractArray) where {T}
+    @fastmath @inbounds for idx in CartesianIndices(f)
+        df[idx] = zero(T)
+    end
+    nothing
+end
+
+
 
 # mul! done by standard matrix multiplication for Chebyshev differentiation
 # matrices. This can also be done through FFT, but after some testing the FFT
@@ -406,6 +434,15 @@ end
 
 # now for cross-derivatives. we assume that A acts on the first and B on the
 # second axis of the x Matrix.
+
+function (A::AbstractDerivOperator)(B::ZeroDeriv{T}, f::AbstractArray, idx::Vararg) where{T}
+    return zero(T)
+end
+
+function (A::ZeroDeriv{T})(B::AbstractDerivOperator, f::AbstractArray, idx::Vararg) where{T}
+    return zero(T)
+end
+
 function (A::AbstractFiniteDiff{T,N1})(B::AbstractFiniteDiff{T,N2},
                                        f::AbstractArray{T,M},
                                        idx::Vararg{Int,M}) where {T<:Real,N1,N2,M}

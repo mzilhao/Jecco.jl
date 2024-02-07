@@ -124,6 +124,66 @@ end
 
 end
 
+@testset "Zero Derivative tests:" begin
+    Dx = ZeroDeriv{1}()
+
+    # 1D case
+
+    xmin   = -2.0*pi
+    xmax   =  2.0*pi
+    xnodes =  600
+    ord    =  4
+
+    hx     = (xmax - xmin) / xnodes
+
+    x  = collect(xmin:hx:xmax-hx)
+    f  = sin.(x)
+
+    df  = Dx * f
+
+    @test df  == zero(f)
+
+    # now for the callable, point-wise, methods
+    df0 = similar(df)
+    for i in eachindex(f)
+        df0[i] = Dx(f,i)
+    end
+    @test df0 == df
+
+    # 3D case
+
+    ymin   = -1.0*pi
+    ymax   =  1.0*pi
+    ynodes =  20
+    zmin   = -1.0*pi
+    zmax   =  1.0*pi
+    znodes =  300
+
+    hy     = (ymax - ymin) / ynodes
+    hz     = (zmax - zmin) / znodes
+
+    y      = collect(ymin:hy:ymax-hy)
+    z      = collect(zmin:hz:zmax-hz)
+
+    f      = [sin.(x1) .* sin.(x2) .* sin.(x3) for x1 in x, x2 in y, x3 in z]
+
+    Dz     = ZeroDeriv{2}()
+
+    dxf    = Dx * f
+    dzf    = Dz * f
+    dxzf   = Dx * (Dz * f)
+
+    @test dxf  == zero(f)
+    @test dzf  == zero(f)
+    @test dxzf == zero(f)
+
+    # now for callable, point-wise, methods
+    @test Dx(f,2,10,120)  == 0
+    @test Dx(f,42,20,300) == 0
+    @test Dz(f,2,10,120)  == 0
+    @test Dz(f,42,20,300) == 0
+end
+
 @testset "Periodic Derivative tests:" begin
 
     Dx = CenteredDiff{1}(1, 4, 1.0, 10)

@@ -21,7 +21,7 @@ export AbstractCoord, CartesianCoord, GaussLobattoCoord
 export Chart, Atlas
 export Cartesian, GaussLobatto
 
-export CenteredDiff, EqualSizeStencilFD, ChebDeriv, FourierDeriv
+export CenteredDiff, EqualSizeStencilFD, ChebDeriv, FourierDeriv, ZeroDeriv
 export ChebInterpolator
 export KO_Filter, Exp_Filter
 export KO_Centered
