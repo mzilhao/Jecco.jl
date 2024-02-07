@@ -80,23 +80,35 @@ end
 function System(gridtype::GT, ucoord::GaussLobattoCoord,
                 xcoord::CartesianCoord, ycoord::CartesianCoord, ord::Int,
                 filter_gamma::T, sigma_diss::T) where {GT<:GridType,T<:Real}
+    KO_order = ord + 1
+
     Du  = ChebDeriv{1}(1, ucoord.min, ucoord.max, ucoord.nodes)
     Duu = ChebDeriv{1}(2, ucoord.min, ucoord.max, ucoord.nodes)
 
-    Dx  = CenteredDiff{2}(1, ord, Jecco.delta(xcoord), xcoord.nodes)
-    Dxx = CenteredDiff{2}(2, ord, Jecco.delta(xcoord), xcoord.nodes)
+    if length(xcoord) > 1
+        Dx   = CenteredDiff{2}(1, ord, Jecco.delta(xcoord), xcoord.nodes)
+        Dxx  = CenteredDiff{2}(2, ord, Jecco.delta(xcoord), xcoord.nodes)
+        DKOx = KO_Centered{2}(KO_order, sigma_diss, Jecco.delta(xcoord), xcoord.nodes)
+    else # length(xcoord) == 1
+        Dx   = ZeroDeriv{2}()
+        Dxx  = ZeroDeriv{2}()
+        DKOx = ZeroDeriv{2}()
+    end
 
-    Dy  = CenteredDiff{3}(1, ord, Jecco.delta(ycoord), ycoord.nodes)
-    Dyy = CenteredDiff{3}(2, ord, Jecco.delta(ycoord), ycoord.nodes)
+    if length(ycoord) > 1
+        Dy   = CenteredDiff{3}(1, ord, Jecco.delta(ycoord), ycoord.nodes)
+        Dyy  = CenteredDiff{3}(2, ord, Jecco.delta(ycoord), ycoord.nodes)
+        DKOy = KO_Centered{3}(KO_order, sigma_diss, Jecco.delta(ycoord), ycoord.nodes)
+    else # length(ycoord) == 1
+        Dy   = ZeroDeriv{3}()
+        Dyy  = ZeroDeriv{3}()
+        DKOy = ZeroDeriv{3}()
+    end
 
     uinterp = ChebInterpolator(ucoord.min, ucoord.max, ucoord.nodes)
 
-    KO_order = ord + 1
-    filters  = Filters(filter_gamma, KO_order, sigma_diss, ucoord.nodes,
-                       xcoord.nodes, ycoord.nodes)
-
-    DKOx  = KO_Centered{2}(KO_order, sigma_diss, Jecco.delta(xcoord), xcoord.nodes)
-    DKOy  = KO_Centered{3}(KO_order, sigma_diss, Jecco.delta(ycoord), ycoord.nodes)
+    filters = Filters(filter_gamma, KO_order, sigma_diss, ucoord.nodes,
+                      xcoord.nodes, ycoord.nodes)
 
     System{GT, typeof(ucoord), typeof(xcoord), typeof(ycoord), typeof(Du),
            typeof(Dx), typeof(Dy), typeof(uinterp),
