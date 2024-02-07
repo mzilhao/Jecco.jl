@@ -422,8 +422,10 @@ function analytic_B1(u, x, y, id::BlackBranePert)
     nx       = id.B1_nx
     ny       = id.B1_ny
 
-    pert_amp * sin( 2 * π * nx * (xmax-x)/(xmax-xmin) ) *
-        sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
+    fx = sin( 2 * π * nx * (xmax-x)/(xmax-xmin) )
+    fy = sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
+
+    pert_amp * fx * fy
 end
 
 function analytic_B2(u, x, y, id::BlackBranePert)
@@ -437,8 +439,10 @@ function analytic_B2(u, x, y, id::BlackBranePert)
     nx       = id.B2_nx
     ny       = id.B2_ny
 
-    pert_amp * sin( 2 * π * nx * (xmax-x)/(xmax-xmin) ) *
-        sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
+    fx = sin( 2 * π * nx * (xmax-x)/(xmax-xmin) )
+    fy = sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
+
+    pert_amp * fx * fy
 end
 
 function analytic_G(u, x, y, id::BlackBranePert)
@@ -452,8 +456,10 @@ function analytic_G(u, x, y, id::BlackBranePert)
     nx       = id.G_nx
     ny       = id.G_ny
 
-    pert_amp * sin( 2 * π * nx * (xmax-x)/(xmax-xmin) ) *
-        sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
+    fx = sin( 2 * π * nx * (xmax-x)/(xmax-xmin) )
+    fy = sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
+
+    pert_amp * fx * fy
 end
 
 function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBranePert)
@@ -499,18 +505,21 @@ function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBranePert)
     fill!(fx2, 0)
     fill!(fy2, 0)
 
+    deltax = xmax-xmin
+    deltay = ymax-ymin
+
     for j in 1:Ny
         for i in 1:Nx
             x = xx[i]
             y = yy[j]
-            a4[1,i,j]  += -a40 * ( ampx * cos(2 * π * kx * (x-xmid)/(xmax-xmin)) +
-                                   ampy * cos(2 * π * ky * (y-ymid)/(ymax-ymin)) )
+            a4[1,i,j]  += -a40 * ( ampx * cos(2 * π * kx * (x-xmid)/deltax) +
+                                   ampy * cos(2 * π * ky * (y-ymid)/deltay) )
 
-            fx2[1,i,j] += fx2_ampx * cos(2 * π * fx2_kx * (x-xmid)/(xmax-xmin)) +
-                           fx2_ampy * cos(2 * π * fx2_ky * (y-ymid)/(ymax-ymin))
+            fx2[1,i,j] += fx2_ampx * cos(2 * π * fx2_kx * (x-xmid)/deltax) +
+                           fx2_ampy * cos(2 * π * fx2_ky * (y-ymid)/deltay)
 
-            fy2[1,i,j] += fy2_ampx * cos(2 * π * fy2_kx * (x-xmid)/(xmax-xmin)) +
-                          fy2_ampy * cos(2 * π * fy2_ky * (y-ymid)/(ymax-ymin))
+            fy2[1,i,j] += fy2_ampx * cos(2 * π * fy2_kx * (x-xmid)/deltax) +
+                          fy2_ampy * cos(2 * π * fy2_ky * (y-ymid)/deltay)
         end
     end
 
