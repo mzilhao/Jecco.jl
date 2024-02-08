@@ -41,8 +41,16 @@ function Jecco.Atlas(grid::SpecCartGrid3D{T}) where {T}
                           grid.u_outer_min + i*delta_udom, grid.u_outer_nodes)
          for i in 1:N_outer_sys]
 
-    xcoord  = Cartesian{2}("x", grid.x_min, grid.x_max, grid.x_nodes, endpoint=false)
-    ycoord  = Cartesian{3}("y", grid.y_min, grid.y_max, grid.y_nodes, endpoint=false)
+    if grid.x_nodes > 1
+        xcoord  = Cartesian{2}("x", grid.x_min, grid.x_max, grid.x_nodes, endpoint=false)
+    else
+        xcoord  = TrivialCoord{2,T}("x", grid.x_min, grid.x_max, grid.x_nodes)
+    end
+    if grid.y_nodes > 1
+        ycoord  = Cartesian{3}("y", grid.y_min, grid.y_max, grid.y_nodes, endpoint=false)
+    else
+        ycoord  = TrivialCoord{3,T}("y", grid.y_min, grid.y_max, grid.y_nodes)
+    end
 
     inner_chart  = Chart(u_inner_coord, xcoord, ycoord)
     outer_charts = [Chart(u_outer_coords[i], xcoord, ycoord)
@@ -78,7 +86,7 @@ struct System{GT,Cu,Cx,Cy,TDu,TDx,TDy,TI,TF,TDKOx,TDKOy}
 end
 
 function System(gridtype::GT, ucoord::GaussLobattoCoord,
-                xcoord::CartesianCoord, ycoord::CartesianCoord, ord::Int,
+                xcoord::AbstractCoord, ycoord::AbstractCoord, ord::Int,
                 filter_gamma::T, sigma_diss::T) where {GT<:GridType,T<:Real}
     KO_order = ord + 1
 
@@ -148,8 +156,16 @@ function SystemPartition(grid::SpecCartGrid3D{T}) where {T}
                           grid.u_outer_min + i*delta_udom, grid.u_outer_nodes)
          for i in 1:N_outer_sys]
 
-    xcoord  = Cartesian{2}("x", grid.x_min, grid.x_max, grid.x_nodes, endpoint=false)
-    ycoord  = Cartesian{3}("y", grid.y_min, grid.y_max, grid.y_nodes, endpoint=false)
+    if grid.x_nodes > 1
+        xcoord  = Cartesian{2}("x", grid.x_min, grid.x_max, grid.x_nodes, endpoint=false)
+    else
+        xcoord  = TrivialCoord{2,T}("x", grid.x_min, grid.x_max, grid.x_nodes)
+    end
+    if grid.y_nodes > 1
+        ycoord  = Cartesian{3}("y", grid.y_min, grid.y_max, grid.y_nodes, endpoint=false)
+    else
+        ycoord  = TrivialCoord{3,T}("y", grid.y_min, grid.y_max, grid.y_nodes)
+    end
 
     inner_system = System(Inner(), u_inner_coord, xcoord, ycoord, grid.fd_order,
                           grid.filter_γ, grid.sigma_diss)

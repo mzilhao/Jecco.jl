@@ -4,6 +4,19 @@ abstract type AbstractCoord{N,T} end
 coord_axis(A::AbstractCoord{N,T}) where{N,T} = N
 coord_eltype(A::AbstractCoord{N,T}) where{N,T} = T
 
+struct TrivialCoord{N,T<:Real} <: AbstractCoord{N,T}
+    name  :: String
+    min   :: T
+    max   :: T
+    nodes :: Int
+
+    function TrivialCoord{N,T}(name, min, max, nodes) where {N,T<:Real}
+        @assert min == max
+        @assert nodes == 1
+        new{N,T}(name, min, max, nodes)
+    end
+end
+
 struct CartesianCoord{N,T<:Real} <: AbstractCoord{N,T}
     name  :: String
     min   :: T
@@ -18,6 +31,7 @@ struct GaussLobattoCoord{N,T<:Real} <: AbstractCoord{N,T}
     nodes :: Int
 end
 
+coord_type(coord::TrivialCoord)      = "Trivial"
 coord_type(coord::CartesianCoord)    = "Cartesian"
 coord_type(coord::GaussLobattoCoord) = "GaussLobatto"
 
@@ -48,6 +62,8 @@ function Coord{N}(coord_type::String, name::String, min::T, max::T, nodes::Int) 
         return CartesianCoord{N,T}(name, min, max, nodes)
     elseif coord_type == "GaussLobatto"
         return GaussLobattoCoord{N,T}(name, min, max, nodes)
+    elseif coord_type == "Trivial"
+        return TrivialCoord{N,T}(name, min, max, nodes)
     else
         error("Unknown coord type")
     end
@@ -62,6 +78,10 @@ end
 # return "missing", not define the method, or just have it return NaN, as now.
 @inline delta(coord::GaussLobattoCoord) = NaN
 
+# also, for the trivial coordinate system, we only have one point, so the
+# spacing is not defined
+@inline delta(coord::TrivialCoord) = NaN
+
 @inline function Base.getindex(coord::CartesianCoord, i::Union{Int, UnitRange})
     h = delta(coord)
     coord.min .+ (i .- 1) * h
@@ -75,6 +95,8 @@ end
     xj    = -cos.( (j .- 1) * (T(pi) / M))
     0.5 * (xmax .+ xmin .+ (xmax - xmin) * xj)
 end
+
+@inline Base.getindex(coord::TrivialCoord, i::Union{Int, UnitRange}) = coord.min
 
 @inline Base.firstindex(coord::AbstractCoord) = 1
 @inline Base.lastindex(coord::AbstractCoord)  = coord.nodes

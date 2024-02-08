@@ -17,7 +17,7 @@ include("utils.jl")
 
 export AbstractPartition, FlattenedVector
 
-export AbstractCoord, CartesianCoord, GaussLobattoCoord
+export AbstractCoord, CartesianCoord, GaussLobattoCoord, TrivialCoord
 export Chart, Atlas
 export Cartesian, GaussLobatto
 

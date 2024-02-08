@@ -167,6 +167,7 @@ function setup_openpmd_file(out::Output, fid::HDF5.File)
 end
 
 openpmd_geometry(coord::CartesianCoord) = "cartesian"
+openpmd_geometry(coord::TrivialCoord) = "cartesian"
 openpmd_geometry(coord::GaussLobattoCoord) = "other"
 
 function openpmd_geometry(chart::Chart)
