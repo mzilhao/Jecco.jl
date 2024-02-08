@@ -1,7 +1,7 @@
 module Jecco
 
 using HDF5
-using LinearAlgebra
+using LinearAlgebra, SparseArrays
 using FFTW
 
 include("types.jl")
