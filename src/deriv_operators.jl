@@ -41,10 +41,14 @@ end
 
 # operator to use when one of the directions is trivial, returning always zero
 # when applied to any function
-struct ZeroDeriv{T,N} <: AbstractDerivOperator{T,N} end
-function ZeroDeriv{N}() where{N}
-    ZeroDeriv{Float64,N}()
+struct ZeroDeriv{T,N} <: AbstractDerivOperator{T,N}
+    len :: Int
 end
+function ZeroDeriv{N}(len) where{N}
+    ZeroDeriv{Float64,N}(len)
+end
+ZeroDeriv{N}() where{N} = ZeroDeriv{Float64,N}(1)
+
 
 struct CenteredDiff{N} end
 
@@ -1248,8 +1252,18 @@ function copyto!(M::AbstractMatrix{T}, A::AbstractFiniteDiff) where {T<:Real}
     M
 end
 
+function copyto!(M::AbstractMatrix{T}, A::ZeroDeriv) where {T<:Real}
+    for idx in CartesianIndices(M)
+        M[idx] = A[idx.I...]
+    end
+    M
+end
+
 LinearAlgebra.Array(A::AbstractDerivOperator{T}) where {T} =
     copyto!(zeros(T, A.len, A.len), A)
 
 SparseArrays.SparseMatrixCSC(A::AbstractFiniteDiff{T}) where {T} =
+    copyto!(spzeros(T, A.len, A.len), A)
+
+SparseArrays.SparseMatrixCSC(A::ZeroDeriv{T}) where {T} =
     copyto!(spzeros(T, A.len, A.len), A)
