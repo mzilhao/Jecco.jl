@@ -422,8 +422,16 @@ function analytic_B1(u, x, y, id::BlackBranePert)
     nx       = id.B1_nx
     ny       = id.B1_ny
 
-    fx = sin( 2 * π * nx * (xmax-x)/(xmax-xmin) )
-    fy = sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
+    if xmax ≈ xmin
+        fx = 1
+    else
+        fx = sin( 2 * π * nx * (xmax-x)/(xmax-xmin) )
+    end
+    if ymax ≈ ymin
+        fy = 1
+    else
+        fy = sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
+    end
 
     pert_amp * fx * fy
 end
@@ -439,8 +447,16 @@ function analytic_B2(u, x, y, id::BlackBranePert)
     nx       = id.B2_nx
     ny       = id.B2_ny
 
-    fx = sin( 2 * π * nx * (xmax-x)/(xmax-xmin) )
-    fy = sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
+    if xmax ≈ xmin
+        fx = 1
+    else
+        fx = sin( 2 * π * nx * (xmax-x)/(xmax-xmin) )
+    end
+    if ymax ≈ ymin
+        fy = 1
+    else
+        fy = sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
+    end
 
     pert_amp * fx * fy
 end
@@ -456,8 +472,16 @@ function analytic_G(u, x, y, id::BlackBranePert)
     nx       = id.G_nx
     ny       = id.G_ny
 
-    fx = sin( 2 * π * nx * (xmax-x)/(xmax-xmin) )
-    fy = sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
+    if xmax ≈ xmin
+        fx = 1
+    else
+        fx = sin( 2 * π * nx * (xmax-x)/(xmax-xmin) )
+    end
+    if ymax ≈ ymin
+        fy = 1
+    else
+        fy = sin( -2 * π * ny * (ymax-y)/(ymax-ymin) )
+    end
 
     pert_amp * fx * fy
 end
@@ -507,6 +531,19 @@ function init_data!(ff::Boundary, sys::System{Inner}, id::BlackBranePert)
 
     deltax = xmax-xmin
     deltay = ymax-ymin
+
+    if deltax ≈ 0
+        deltax += 1e-9
+        ampx = 0
+        fx2_ampx = 0
+        fy2_ampx = 0
+    end
+    if deltay ≈ 0
+        deltay += 1e-9
+        ampy = 0
+        fx2_ampy = 0
+        fy2_ampy = 0
+    end
 
     for j in 1:Ny
         for i in 1:Nx
