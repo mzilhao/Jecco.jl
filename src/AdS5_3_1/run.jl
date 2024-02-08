@@ -3,6 +3,14 @@ function estimate_dtmax(chart::Chart)
     ucoord, xcoord, ycoord = chart.coords
     dx = Jecco.delta(xcoord)
     dy = Jecco.delta(ycoord)
+    # when there is a trivial direction with just one point, the method delta
+    # above will return NaN. so let's safeguard against that
+    if isnan(dx)
+        dx = 1000
+    end
+    if isnan(dy)
+        dy = 1000
+    end
     # spacing in u is not uniform, so let's compute the average spacing
     du_avg = (ucoord[end] - ucoord[1]) / (ucoord.nodes - 1)
     0.8 * min(dx, dy, du_avg)

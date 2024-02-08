@@ -280,10 +280,20 @@ function HorizonCache(sys::System, ord::Int)
     cc     = Vector{T2}(undef, M)
     b_vec  = Vector{T2}(undef, M)
 
-    Dx_    = CenteredDiff{1}(1, ord, hx, Nx)
-    Dxx_   = CenteredDiff{1}(2, ord, hx, Nx)
-    Dy_    = CenteredDiff{2}(1, ord, hy, Ny)
-    Dyy_   = CenteredDiff{2}(2, ord, hy, Ny)
+    if Nx > 1
+        Dx_  = CenteredDiff{1}(1, ord, hx, Nx)
+        Dxx_ = CenteredDiff{1}(2, ord, hx, Nx)
+    else
+        Dx_  = ZeroDeriv{1}()
+        Dxx_ = ZeroDeriv{1}()
+    end
+    if Ny > 1
+        Dy_  = CenteredDiff{2}(1, ord, hy, Ny)
+        Dyy_ = CenteredDiff{2}(2, ord, hy, Ny)
+    else
+        Dy_  = ZeroDeriv{2}()
+        Dyy_ = ZeroDeriv{2}()
+    end
 
     #=
     use the Kronecker product (kron) to build 2-dimensional derivation matrices
