@@ -43,17 +43,7 @@ function startup(outdir::String; remove_existing::Bool=false)
         end
     end
 
-    num_threads = try
-        ENV["JULIA_NUM_THREADS"]
-    catch e
-        if isa(e, KeyError)
-            # no JULIA_NUM_THREADS defined; set num_threads to 1
-            1
-        else
-            # unknown error
-            throw(e)
-        end
-    end
+    num_threads = Threads.nthreads()
 
     println("-------------------------------------------------------------")
 
