@@ -147,6 +147,9 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
         integrator = init(prob, alg, save_everystep=false, dt=dt0, dtmax=dtmax, qmax=qmax,
                           adaptive=integration.adaptive, reltol=integration.reltol,
                           calck=false)
+    elseif isa(alg, Jecco.ODESolver.ODEAlgorithm)
+        println("estou a implementar...")
+        return 0
     else
         error("Unknown option for integration.ODE_method")
     end
