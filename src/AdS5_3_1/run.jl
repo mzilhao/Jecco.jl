@@ -119,6 +119,15 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     end
 
     # prepare time integrator
+
+    if isa(integration.dt, Number)
+        dt0 = integration.dt
+    elseif integration.dt == :auto
+        dt0 = 0.5 * dtmax
+    else
+        error("Unknown dt value")
+    end
+
     alg = integration.ODE_method
 
     if isa(alg, OrdinaryDiffEq.OrdinaryDiffEqAlgorithm)
@@ -130,14 +139,6 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
         dtmax = estimate_dtmax(atlas)
         qmax  = 1.2
 
-        if isa(integration.dt, Number)
-            dt0   = integration.dt
-        elseif integration.dt == :auto
-            dt0   = 0.5 * dtmax
-        else
-            error("Unknown dt value")
-        end
-
         # decide in the evolution loop when to terminate the run, so set here an
         # impossibly large value for tstop
         tspan = (0.0, 1.e20)
@@ -148,8 +149,8 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
                           adaptive=integration.adaptive, reltol=integration.reltol,
                           calck=false)
     elseif isa(alg, Jecco.ODESolver.ODEAlgorithm)
-        println("estou a implementar...")
-        return 0
+        prob = Jecco.ODESolver.ODEProblem(rhs!, evolvars, 0.0, evoleq)
+        integrator = Jecco.ODESolver.ODEIntegrator(prob, alg, dt0)
     else
         error("Unknown option for integration.ODE_method")
     end
