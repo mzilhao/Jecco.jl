@@ -14,17 +14,9 @@ function alg_cache(alg::ODEAlgorithm, u) end
 @inline alg_cache(alg::ODEAlgorithm, u::Number) = alg_cache(alg, [u])
 
 
-struct RK2{TabType} <: ODEAlgorithm
-    tableau :: TabType
+struct RK2 <: ODEAlgorithm end
 
-    function RK2(T::Type = Float64)
-        tableau = RK2Tableau(T)
-        TabType = typeof(tableau)
-        new{TabType}(tableau)
-    end
-end
-
-struct RK2Cache{A} <: AlgorithmCache
+mutable struct RK2Cache{A} <: AlgorithmCache
     k1  :: A
     k2  :: A
     tmp :: A
@@ -38,17 +30,9 @@ function alg_cache(alg::RK2, u::AbstractArray)
 end
 
 
-struct RK4{TabType} <: ODEAlgorithm
-    tableau :: TabType
+struct RK4 <: ODEAlgorithm end
 
-    function RK4(T::Type = Float64)
-        tableau = RK4Tableau(T)
-        TabType = typeof(tableau)
-        new{TabType}(tableau)
-    end
-end
-
-struct RK4Cache{A} <: AlgorithmCache
+mutable struct RK4Cache{A} <: AlgorithmCache
     k1  :: A
     k2  :: A
     k3  :: A

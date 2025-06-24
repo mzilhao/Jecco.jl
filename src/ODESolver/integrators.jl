@@ -46,12 +46,6 @@ function step!(integrator::ODEIntegrator, alg::RK2)
     dt     = integrator.dt
     cache  = integrator.cache
 
-    tab = alg.tableau
-    a21 = tab.a21
-    b1  = tab.b1
-    b2  = tab.b2
-    c2  = tab.c2
-
     k1  = cache.k1
     k2  = cache.k2
     tmp = cache.tmp
@@ -64,14 +58,14 @@ function step!(integrator::ODEIntegrator, alg::RK2)
     rhs!(k1, uprev, p, t)
 
     @inbounds @threads for i in eachindex(tmp)
-        tmp[i] = u[i] + a21 * k1[i] * dt
+        tmp[i] = u[i] + k1[i] * (dt/2)
     end
 
-    rhs!(k2, tmp, p, t + c2 * dt)
+    rhs!(k2, tmp, p, t + dt/2)
 
     # update u
     @inbounds @threads for i in eachindex(u)
-        u[i] += (b1 * k1[i] + b2 * k2[i]) * dt
+        u[i] += k2[i] * dt
     end
 
     # update t
@@ -90,21 +84,6 @@ function step!(integrator::ODEIntegrator, alg::RK4)
     dt     = integrator.dt
     cache  = integrator.cache
 
-    tab = alg.tableau
-    a21 = tab.a21
-    a31 = tab.a31
-    a32 = tab.a32
-    a41 = tab.a41
-    a42 = tab.a42
-    a43 = tab.a43
-    b1  = tab.b1
-    b2  = tab.b2
-    b3  = tab.b3
-    b4  = tab.b4
-    c2  = tab.c2
-    c3  = tab.c3
-    c4  = tab.c4
-
     k1  = cache.k1
     k2  = cache.k2
     k3  = cache.k3
@@ -118,23 +97,23 @@ function step!(integrator::ODEIntegrator, alg::RK4)
 
     rhs!(k1, uprev, p, t)
     @inbounds @threads for i in eachindex(tmp)
-        tmp[i] = u[i] + a21 * k1[i] * dt
+        tmp[i] = u[i] + k1[i] * (dt/2)
     end
-    rhs!(k2, tmp, p, t + c2 * dt)
+    rhs!(k2, tmp, p, t + dt/2)
 
     @inbounds @threads for i in eachindex(tmp)
-        tmp[i] = u[i] + (a31 * k1[i] + a32 * k2[i]) * dt
+        tmp[i] = u[i] + k2[i] * (dt/2)
     end
-    rhs!(k3, tmp, p,  t + c3 * dt)
+    rhs!(k3, tmp, p,  t + dt/2)
 
     @inbounds @threads for i in eachindex(tmp)
-        tmp[i] = u[i] + (a41 * k1[i] + a42 * k2[i] + a43 * k3[i]) * dt
+        tmp[i] = u[i] + k3[i] * dt
     end
-    rhs!(k4, tmp, p, t + c4 * dt)
+    rhs!(k4, tmp, p, t + dt)
 
     # update u
     @inbounds @threads for i in eachindex(u)
-        u[i] += (b1 * k1[i] + b2 * k2[i] + b3 * k3[i] + b4 * k4[i]) * dt
+        u[i] += (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]) * (dt/6)
     end
 
     # update t

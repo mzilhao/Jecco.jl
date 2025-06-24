@@ -24,7 +24,6 @@ ODEProblem(f::Function, u0::Number, t0, p) = ODEProblem(f, [u0], t0, p)
 
 ODEProblem(f::Function, u0, t0) = ODEProblem(f, u0, t0, nothing)
 
-include("tableaus.jl")
 include("algorithms.jl")
 include("integrators.jl")
 
