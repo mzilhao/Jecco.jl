@@ -34,17 +34,16 @@ function ODEIntegrator(prob::ODEProblem{F,uType,tType,P}, alg::algType,
                   typeof(cache)}(f, p, u, t, uprev, tprev, dt, alg, cache)
 end
 
-@inline step!(integrator::ODEIntegrator) = step!(integrator, integrator.alg)
+@inline step!(integrator::ODEIntegrator) = step!(integrator, integrator.cache)
 
 
-function step!(integrator::ODEIntegrator, alg::RK2)
+function step!(integrator::ODEIntegrator, cache::RK2Cache)
     rhs!   = integrator.f
     p      = integrator.p
     u      = integrator.u
     t      = integrator.t
     uprev  = integrator.uprev
     dt     = integrator.dt
-    cache  = integrator.cache
 
     k1  = cache.k1
     k2  = cache.k2
@@ -75,14 +74,13 @@ function step!(integrator::ODEIntegrator, alg::RK2)
     nothing
 end
 
-function step!(integrator::ODEIntegrator, alg::RK4)
+function step!(integrator::ODEIntegrator, cache::RK4Cache)
     rhs!   = integrator.f
     p      = integrator.p
     u      = integrator.u
     t      = integrator.t
     uprev  = integrator.uprev
     dt     = integrator.dt
-    cache  = integrator.cache
 
     k1  = cache.k1
     k2  = cache.k2
