@@ -48,3 +48,20 @@ function alg_cache(alg::RK4, u::AbstractArray)
     tmp = zero(u)
     RK4Cache(k1, k2, k3, k4, tmp)
 end
+
+
+struct AB3 <: ODEAlgorithm end
+
+mutable struct AB3Cache{A} <: AlgorithmCache
+    k1   :: A
+    k2   :: A
+    k3   :: A
+    init :: Bool
+end
+
+function alg_cache(alg::AB3, u::AbstractArray)
+    k1  = zero(u)
+    k2  = zero(u)
+    k3  = zero(u)
+    AB3Cache(k1, k2, k3, true)
+end
