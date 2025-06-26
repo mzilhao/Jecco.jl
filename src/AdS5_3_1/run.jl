@@ -149,6 +149,9 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
                           adaptive=integration.adaptive, reltol=integration.reltol,
                           calck=false)
     elseif isa(alg, Jecco.ODESolver.ODEAlgorithm)
+        if integration.adaptive
+            error("adaptive time step not implemented for this integrator.")
+        end
         prob = Jecco.ODESolver.ODEProblem(rhs!, evolvars, 0.0, evoleq)
         integrator = Jecco.ODESolver.ODEIntegrator(prob, alg, dt0)
     else
