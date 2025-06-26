@@ -19,19 +19,17 @@ end
 * `alg::ODEAlgorithm`
 * `dt::AbstractFloat`
 """
-function ODEIntegrator(prob::ODEProblem{F,uType,tType,P}, alg::algType,
-                       dt::tType) where {F,uType,tType,P,algType<:ODEAlgorithm}
+function ODEIntegrator(prob::ODEProblem, alg::ODEAlgorithm, dt::AbstractFloat)
     f = prob.f
     p = prob.p
     u = deepcopy(prob.u0)
-    t = prob.t0
+    t = prob.tspan[1]
 
     uprev = deepcopy(u)
     tprev = t
 
     cache = alg_cache(alg, u)
-    ODEIntegrator{F,P,uType,tType,algType,
-                  typeof(cache)}(f, p, u, t, uprev, tprev, dt, alg, cache)
+    ODEIntegrator(f, p, u, t, uprev, tprev, dt, alg, cache)
 end
 
 @inline step!(integrator::ODEIntegrator) = step!(integrator, integrator.cache)

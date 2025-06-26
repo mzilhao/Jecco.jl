@@ -130,6 +130,10 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
     alg = integration.ODE_method
 
+    # decide in the evolution loop when to terminate the run, so set here an
+    # impossibly large value for tstop
+    tspan = (0.0, 1.e20)
+
     if isa(alg, OrdinaryDiffEq.OrdinaryDiffEqAlgorithm)
         #=
         limit the default integrator dtmax and qmax values. see:
@@ -138,10 +142,6 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
         =#
         dtmax = estimate_dtmax(atlas)
         qmax  = 1.2
-
-        # decide in the evolution loop when to terminate the run, so set here an
-        # impossibly large value for tstop
-        tspan = (0.0, 1.e20)
 
         prob  = ODEProblem(rhs!, evolvars, tspan, evoleq)
         # https://diffeq.sciml.ai/stable/basics/integrator/
@@ -152,7 +152,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
         if integration.adaptive
             error("adaptive time step not implemented for this integrator.")
         end
-        prob = Jecco.ODESolver.ODEProblem(rhs!, evolvars, 0.0, evoleq)
+        prob = Jecco.ODESolver.ODEProblem(rhs!, evolvars, tspan, evoleq)
         integrator = Jecco.ODESolver.ODEIntegrator(prob, alg, dt0)
     else
         error("Unknown option for integration.ODE_method")
