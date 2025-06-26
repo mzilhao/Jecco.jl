@@ -30,5 +30,6 @@ ODEProblem(f::Function, u0, t) = ODEProblem(f, u0, t, nothing)
 
 include("algorithms.jl")
 include("integrators.jl")
+include("utils.jl")
 
 end
