@@ -1,6 +1,7 @@
 using Test
 
 using Jecco
+using Jecco.ODESolver
 using Jecco.AdS5_3_1
 
 @testset "All tests:" begin
@@ -12,6 +13,10 @@ using Jecco.AdS5_3_1
     @time @testset "I/O tests:" begin include("input_output_tests.jl") end
 
     @time @testset "filtering tests:" begin include("filtering_tests.jl") end
+
+    @time @testset "ODE integrator convergence tests" begin
+        include("ODESolver_convergence_tests.jl")
+    end
 
     @time @testset "AdS5_3_1 inner grid coefficients tests:" begin
         include("AdS5_3_1_equation_inner_coeff.jl")

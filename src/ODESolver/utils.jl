@@ -1,3 +1,6 @@
+
+import Statistics: mean
+
 function solve(integrator::ODEIntegrator, tmax::Number)
     while true
         t = integrator.t
