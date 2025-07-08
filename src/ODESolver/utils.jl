@@ -1,5 +1,8 @@
 
-import Statistics: mean
+function mean(u::AbstractVector)
+    N = length(u)
+    sum(u)/N
+end
 
 function solve(integrator::ODEIntegrator, tmax::Number)
     while true
