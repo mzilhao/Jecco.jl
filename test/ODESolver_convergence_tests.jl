@@ -26,6 +26,9 @@ end
     # simply take a log2 to check for convergence
     dts = 1 ./ 2 .^ (8:-1:4)
 
+    ord = ODE.convergence_order(prob, ODE.RK2(), dts, sol_analytic)
+    @test ord ≈ 2 atol=0.2
+
     ord = ODE.convergence_order(prob, ODE.RK4(), dts, sol_analytic)
     @test ord ≈ 4 atol=0.2
 

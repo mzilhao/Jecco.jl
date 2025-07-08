@@ -35,6 +35,8 @@ end
 @inline step!(integrator::ODEIntegrator) = step!(integrator, integrator.cache)
 
 
+# RK2
+
 function step!(integrator::ODEIntegrator, cache::RK2Cache)
     rhs!   = integrator.f
     p      = integrator.p
@@ -43,27 +45,23 @@ function step!(integrator::ODEIntegrator, cache::RK2Cache)
     uprev  = integrator.uprev
     dt     = integrator.dt
 
-    k1  = cache.k1
-    k2  = cache.k2
     tmp = cache.tmp
 
-    # store previous timelevel
-    @inbounds @threads for i in eachindex(uprev)
-        uprev[i] = u[i]
-    end
+    # rotate timelevels
+    u, uprev = uprev, u
 
-    rhs!(k1, uprev, p, t)
+    # k1
+    rhs!(tmp, uprev, p, t)
+    _RK2_update_k1!(u, uprev, tmp, dt)
 
-    @inbounds @threads for i in eachindex(tmp)
-        tmp[i] = u[i] + k1[i] * (dt/2)
-    end
-
-    rhs!(k2, tmp, p, t + dt/2)
+    # k2
+    rhs!(tmp, u, p, t + dt/2)
 
     # update u
-    @inbounds @threads for i in eachindex(u)
-        u[i] += k2[i] * dt
-    end
+    _RK2_update_u!(u, uprev, tmp, dt)
+
+    integrator.u = u
+    integrator.uprev = uprev
 
     # update t
     integrator.tprev = t
@@ -71,6 +69,21 @@ function step!(integrator::ODEIntegrator, cache::RK2Cache)
 
     nothing
 end
+function _RK2_update_k1!(u, uprev, rhs, dt)
+    @inbounds @threads for i in eachindex(u)
+        u[i] = uprev[i] + rhs[i] * (dt/2)
+    end
+    nothing
+end
+function _RK2_update_u!(u, uprev, rhs, dt)
+    @inbounds @threads for i in eachindex(u)
+        u[i] = uprev[i] + rhs[i] * dt
+    end
+    nothing
+end
+
+
+# RK 4
 
 function step!(integrator::ODEIntegrator, cache::RK4Cache)
     rhs!   = integrator.f
@@ -80,37 +93,30 @@ function step!(integrator::ODEIntegrator, cache::RK4Cache)
     uprev  = integrator.uprev
     dt     = integrator.dt
 
-    k1  = cache.k1
-    k2  = cache.k2
-    k3  = cache.k3
-    k4  = cache.k4
+    k   = cache.k
     tmp = cache.tmp
 
-    # store previous timelevel
-    @inbounds @threads for i in eachindex(uprev)
-        uprev[i] = u[i]
-    end
+    # rotate timelevels
+    u, uprev = uprev, u
 
-    rhs!(k1, uprev, p, t)
-    @inbounds @threads for i in eachindex(tmp)
-        tmp[i] = u[i] + k1[i] * (dt/2)
-    end
-    rhs!(k2, tmp, p, t + dt/2)
+    # k1
+    rhs!(tmp, uprev, p, t)
+    _RK4_update_k1!(u,k,uprev,tmp,dt)
 
-    @inbounds @threads for i in eachindex(tmp)
-        tmp[i] = u[i] + k2[i] * (dt/2)
-    end
-    rhs!(k3, tmp, p,  t + dt/2)
+    # k2
+    rhs!(tmp, u, p, t + dt/2)
+    _RK4_update_k2!(u,k,uprev,tmp,dt)
 
-    @inbounds @threads for i in eachindex(tmp)
-        tmp[i] = u[i] + k3[i] * dt
-    end
-    rhs!(k4, tmp, p, t + dt)
+    # k3
+    rhs!(tmp, u, p, t + dt/2)
+    _RK4_update_k3!(u,k,uprev,tmp,dt)
 
-    # update u
-    @inbounds @threads for i in eachindex(u)
-        u[i] += (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]) * (dt/6)
-    end
+    # k4, final update
+    rhs!(tmp, u, p, t + dt)
+    _RK4_update_k4!(u,k,uprev,tmp,dt)
+
+    integrator.u = u
+    integrator.uprev = uprev
 
     # update t
     integrator.tprev = t
@@ -118,6 +124,37 @@ function step!(integrator::ODEIntegrator, cache::RK4Cache)
 
     nothing
 end
+function _RK4_update_k1!(u, k, uprev, rhs, dt)
+    @inbounds @threads for i in eachindex(u)
+        u[i] = uprev[i] + rhs[i] * (dt/2)
+        k[i] = rhs[i]
+    end
+    nothing
+end
+function _RK4_update_k2!(u, k, uprev, rhs, dt)
+    @inbounds @threads for i in eachindex(u)
+        u[i]  = uprev[i] + rhs[i] * (dt/2)
+        k[i] += 2 * rhs[i]
+    end
+    nothing
+end
+function _RK4_update_k3!(u, k, uprev, rhs, dt)
+    @inbounds @threads for i in eachindex(u)
+        u[i]  = uprev[i] + rhs[i] * dt
+        k[i] += 2 * rhs[i]
+    end
+    nothing
+end
+function _RK4_update_k4!(u, k, uprev, rhs, dt)
+    @inbounds @threads for i in eachindex(u)
+        k[i] += rhs[i]
+        u[i]  = uprev[i] + k[i] * (dt/6)
+    end
+    nothing
+end
+
+
+# AB3
 
 function step!(integrator::ODEIntegrator, cache::AB3Cache)
     rhs! = integrator.f
@@ -177,7 +214,6 @@ function step!(integrator::ODEIntegrator, cache::AB3Cache)
 
     nothing
 end
-
 function _AB3_update_u!(u,uprev,k1,k2,k3,dt)
     @inbounds @threads for i in eachindex(u)
         u[i] = uprev[i] + (dt / 12) * (23 * k1[i] - 16 * k2[i] + 5 * k3[i])
