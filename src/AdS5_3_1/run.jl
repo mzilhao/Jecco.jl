@@ -134,7 +134,20 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
     # impossibly large value for tstop
     tspan = (0.0, 1.e20)
 
-    if isa(alg, OrdinaryDiffEq.OrdinaryDiffEqAlgorithm)
+    if isa(alg, Jecco.ODESolver.ODEAlgorithm)
+        if integration.adaptive
+            error("adaptive time step not implemented for this integrator.")
+        end
+        prob = Jecco.ODESolver.ODEProblem(rhs!, evolvars, tspan, evoleq)
+        integrator = Jecco.ODESolver.ODEIntegrator(prob, alg, dt0)
+    else
+        # there used to be a good way to check if the integrator was defined in
+        # OrdinaryDiffEq through isa(alg, OrdinaryDiffEq.OrdinaryDiffEqAlgorithm).
+        # but this functionality was undocumented and at some point was removed.
+        # so now we merely assume that, if it's not one of "our" algorithms
+        # above, it must be an OrdinaryDiffEq integrator. and if not, some error
+        # will appear.
+
         #=
         limit the default integrator dtmax and qmax values. see:
         https://diffeq.sciml.ai/latest/extras/timestepping/
@@ -148,14 +161,6 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
         integrator = init(prob, alg, save_everystep=false, dt=dt0, dtmax=dtmax, qmax=qmax,
                           adaptive=integration.adaptive, reltol=integration.reltol,
                           calck=false)
-    elseif isa(alg, Jecco.ODESolver.ODEAlgorithm)
-        if integration.adaptive
-            error("adaptive time step not implemented for this integrator.")
-        end
-        prob = Jecco.ODESolver.ODEProblem(rhs!, evolvars, tspan, evoleq)
-        integrator = Jecco.ODESolver.ODEIntegrator(prob, alg, dt0)
-    else
-        error("Unknown option for integration.ODE_method")
     end
 
 
