@@ -67,12 +67,21 @@ function solve_phid!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc::
 
     potential = evoleq.potential
 
-    @fastmath @inbounds @threads for j in 1:Ny
-        @inbounds for i in 1:Nx
-            id  = Threads.threadid()
-            aux = aux_acc[id]
+    # Use @spawn with explicit task-local storage to avoid threadid() race conditions
+    nt = length(aux_acc)
+    chunk_size = max(1, Ny ÷ nt)
 
-            @inbounds @simd for a in 1:Nu
+    @sync for task_id in 1:nt
+        @spawn begin
+            aux = aux_acc[task_id]
+
+            j_start = (task_id - 1) * chunk_size + 1
+            j_end = (task_id == nt) ? Ny : task_id * chunk_size
+
+            @fastmath @inbounds for j in j_start:j_end
+                @inbounds for i in 1:Nx
+
+                    @inbounds for a in 1:Nu
                 u      = sys.ucoord[a]
 
                 Sd     = SdGF[a,i,j]
@@ -104,6 +113,8 @@ function solve_phid!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc::
                 phidGF[aa,i,j] = aux.b_vec[aa]
             end
 
+                end
+            end
         end
     end
 
