@@ -91,8 +91,7 @@ struct KO_Filter{N} end
 
 function KO_Filter{N}(order::Int, sigma_diss::T, Nxx...) where {T<:Real,N}
     kernel = KO_kernel(order, sigma_diss)
-    nt = Threads.nthreads()
-    _cache = [Array{T}(undef, Nxx...) for _ in 1:nt]
+    _cache = Array{T}(undef, Nxx...)
     ConvFilter{T,N,typeof(_cache)}(kernel, _cache)
 end
 
@@ -105,8 +104,6 @@ struct Exp_Filter{N} end
 # for the standard choice of ϵ = 2^-52, α = 36.0437
 function Exp_Filter{N}(γ::T, α::T, Nxx...) where {T<:AbstractFloat,N}
     kernel = exp_kernel(Nxx[N], γ, α)
-    nt = Threads.nthreads()
-    _cache = [Array{T}(undef, Nxx...) for _ in 1:nt]
 
     # REDFT00 is the DCT-I, see http://www.fftw.org/fftw3_doc/Real-even_002fodd-DFTs-_0028cosine_002fsine-transforms_0029.html#Real-even_002fodd-DFTs-_0028cosine_002fsine-transforms_0029
 
@@ -115,7 +112,8 @@ function Exp_Filter{N}(γ::T, α::T, Nxx...) where {T<:AbstractFloat,N}
 
     # we want to use the DCT-I since this basis is precisely the one we have by
     # using the Gauss-Lobatto grid points
-    fft_plan = FFTW.plan_r2r(_cache[1], FFTW.REDFT00, N)
+    _cache = Array{T}(undef, Nxx...)
+    fft_plan = FFTW.plan_r2r(_cache, FFTW.REDFT00, N)
 
     FftFilter{T,N,typeof(_cache),typeof(fft_plan)}(kernel, fft_plan, _cache)
 end
@@ -189,16 +187,14 @@ function convolution!(fout::AbstractArray{T,M}, f::AbstractArray{T,M},
 end
 
 function (filter::ConvFilter)(f::AbstractVector)
-    id = Threads.threadid()
-    cache = filter._cache[id]
+    cache = filter._cache
     @assert length(cache) == length(f)
     convolution!(cache, f, filter.kernel)
     copyto!(f, cache)
 end
 
 function (filter::ConvFilter{T,M})(f::AbstractArray{T}) where {T,M}
-    id = Threads.threadid()
-    cache = filter._cache[id]
+    cache = filter._cache
     @assert length(cache) == length(f)
     convolution!(cache, f, filter.kernel, M)
     copyto!(f, cache)
@@ -210,9 +206,8 @@ end
 # or "Idempotent filtering in spectral and spectral element methods", Journal of
 # Computational Physics 220 (2006) 41-58
 function (filter::FftFilter)(f::AbstractVector)
-    M  = length(f) - 1
-    id = Threads.threadid()
-    cache = filter._cache[id]
+    M = length(f) - 1
+    cache = filter._cache
 
     copyto!(cache, f)
 
@@ -237,8 +232,7 @@ end
 function (filter::FftFilter{T,N})(f::AbstractArray{T,M}) where {T,N,M}
     # make sure axis of filtering is contained in the dimensions of f
     @assert N <= M
-    id = Threads.threadid()
-    cache = filter._cache[id]
+    cache = filter._cache
     copyto!(cache, f)
 
     Rpre  = CartesianIndices(size(f)[1:N-1])

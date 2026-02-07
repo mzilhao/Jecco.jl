@@ -94,13 +94,14 @@ function apply_dissipation!(bulkevol::BulkEvolved, cache::BulkEvolved,
     nothing
 end
 
-# exponential filtering
+# exponential filtering - run serially since there are only 4 filters
+# and the spawning overhead likely exceeds the benefit of parallelization.
+# also, if we ever revisit and want to @spawn, we need to re-visit the filter
+# cache to make sure there are no race conditions
 function (filters::Filters)(bulkevol::BulkEvolved)
-    @sync begin
-        @spawn filters.exp_filter(bulkevol.B1)
-        @spawn filters.exp_filter(bulkevol.B2)
-        @spawn filters.exp_filter(bulkevol.G)
-        @spawn filters.exp_filter(bulkevol.phi)
-    end
+    filters.exp_filter(bulkevol.B1)
+    filters.exp_filter(bulkevol.B2)
+    filters.exp_filter(bulkevol.G)
+    filters.exp_filter(bulkevol.phi)
     nothing
 end
