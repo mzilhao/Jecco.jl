@@ -152,14 +152,22 @@ function solve_S!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
 
     phi0  = evoleq.phi0
 
-    @fastmath @inbounds @threads for j in 1:Ny
-        @inbounds for i in 1:Nx
-            id  = Threads.threadid()
-            aux = aux_acc[id]
+    # Use @spawn with explicit task-local storage to avoid threadid() race conditions
+    nt = length(aux_acc)
+    chunk_size = max(1, Ny ÷ nt)
 
-            xi  = gauge.xi[1,i,j]
+    @sync for task_id in 1:nt
+        @spawn begin
+            aux = aux_acc[task_id]
 
-            @inbounds @simd for a in 1:Nu
+            j_start = (task_id - 1) * chunk_size + 1
+            j_end = (task_id == nt) ? Ny : task_id * chunk_size
+
+            @fastmath @inbounds for j in j_start:j_end
+                @inbounds for i in 1:Nx
+                    xi  = gauge.xi[1,i,j]
+
+                    @inbounds for a in 1:Nu
                 u     = sys.ucoord[a]
 
                 B1    = bulk.B1[a,i,j]
@@ -200,6 +208,8 @@ function solve_S!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                 bulk.S[aa,i,j] = aux.b_vec[aa]
             end
 
+                end
+            end
         end
     end
 
@@ -230,16 +240,24 @@ function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
 
     phi0  = evoleq.phi0
 
-    @fastmath @inbounds @threads for j in 1:Ny
-        @inbounds for i in 1:Nx
-            id  = Threads.threadid()
-            aux = aux_acc[id]
+    # Use @spawn with explicit task-local storage to avoid threadid() race conditions
+    nt = length(aux_acc)
+    chunk_size = max(1, Ny ÷ nt)
 
-            xi    = gauge.xi[1,i,j]
-            xi_x  = Dx(gauge.xi, 1,i,j)
-            xi_y  = Dy(gauge.xi, 1,i,j)
+    @sync for task_id in 1:nt
+        @spawn begin
+            aux = aux_acc[task_id]
 
-            @inbounds @simd for a in 1:Nu
+            j_start = (task_id - 1) * chunk_size + 1
+            j_end = (task_id == nt) ? Ny : task_id * chunk_size
+
+            @fastmath @inbounds for j in j_start:j_end
+                @inbounds for i in 1:Nx
+                    xi    = gauge.xi[1,i,j]
+                    xi_x  = Dx(gauge.xi, 1,i,j)
+                    xi_y  = Dy(gauge.xi, 1,i,j)
+
+                    @inbounds for a in 1:Nu
                 u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
@@ -339,6 +357,8 @@ function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                 bulk.Fy[aa,i,j] = aux.b_vec2[aa+Nu]
             end
 
+                end
+            end
         end
     end
 
@@ -374,15 +394,23 @@ function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
     potential = evoleq.potential
     phi0      = evoleq.phi0
 
-    @fastmath @inbounds @threads for j in 1:Ny
-        @inbounds for i in 1:Nx
-            id   = Threads.threadid()
-            aux  = aux_acc[id]
+    # Use @spawn with explicit task-local storage to avoid threadid() race conditions
+    nt = length(aux_acc)
+    chunk_size = max(1, Ny ÷ nt)
 
-            xi    = gauge.xi[1,i,j]
-            xi_x  = Dx(gauge.xi, 1,i,j)
-            xi_y  = Dy(gauge.xi, 1,i,j)
-            xi_xx = Dxx(gauge.xi, 1,i,j)
+    @sync for task_id in 1:nt
+        @spawn begin
+            aux = aux_acc[task_id]
+
+            j_start = (task_id - 1) * chunk_size + 1
+            j_end = (task_id == nt) ? Ny : task_id * chunk_size
+
+            @fastmath @inbounds for j in j_start:j_end
+                @inbounds for i in 1:Nx
+                    xi    = gauge.xi[1,i,j]
+                    xi_x  = Dx(gauge.xi, 1,i,j)
+                    xi_y  = Dy(gauge.xi, 1,i,j)
+                    xi_xx = Dxx(gauge.xi, 1,i,j)
             xi_yy = Dyy(gauge.xi, 1,i,j)
             xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
@@ -503,6 +531,8 @@ function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                 bulk.Sd[aa,i,j] = aux.b_vec[aa]
             end
 
+                end
+            end
         end
     end
 
@@ -537,19 +567,27 @@ function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
 
     phi0  = evoleq.phi0
 
-    @fastmath @inbounds @threads for j in 1:Ny
-        @inbounds for i in 1:Nx
-            id  = Threads.threadid()
-            aux = aux_acc[id]
+    # Use @spawn with explicit task-local storage to avoid threadid() race conditions
+    nt = length(aux_acc)
+    chunk_size = max(1, Ny ÷ nt)
 
-            xi    = gauge.xi[1,i,j]
-            xi_x  = Dx(gauge.xi, 1,i,j)
-            xi_y  = Dy(gauge.xi, 1,i,j)
-            xi_xx = Dxx(gauge.xi, 1,i,j)
-            xi_yy = Dyy(gauge.xi, 1,i,j)
-            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+    @sync for task_id in 1:nt
+        @spawn begin
+            aux = aux_acc[task_id]
 
-            @inbounds @simd for a in 1:Nu
+            j_start = (task_id - 1) * chunk_size + 1
+            j_end = (task_id == nt) ? Ny : task_id * chunk_size
+
+            @fastmath @inbounds for j in j_start:j_end
+                @inbounds for i in 1:Nx
+                    xi    = gauge.xi[1,i,j]
+                    xi_x  = Dx(gauge.xi, 1,i,j)
+                    xi_y  = Dy(gauge.xi, 1,i,j)
+                    xi_xx = Dxx(gauge.xi, 1,i,j)
+                    xi_yy = Dyy(gauge.xi, 1,i,j)
+                    xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+
+                    @inbounds for a in 1:Nu
                 u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
@@ -667,6 +705,8 @@ function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                 bulk.B2d[aa,i,j] = aux.b_vec[aa]
             end
 
+                end
+            end
         end
     end
 
@@ -701,19 +741,27 @@ function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_ac
 
     phi0  = evoleq.phi0
 
-    @fastmath @inbounds @threads for j in 1:Ny
-        @inbounds for i in 1:Nx
-            id  = Threads.threadid()
-            aux = aux_acc[id]
+    # Use @spawn with explicit task-local storage to avoid threadid() race conditions
+    nt = length(aux_acc)
+    chunk_size = max(1, Ny ÷ nt)
 
-            xi    = gauge.xi[1,i,j]
-            xi_x  = Dx(gauge.xi, 1,i,j)
-            xi_y  = Dy(gauge.xi, 1,i,j)
-            xi_xx = Dxx(gauge.xi, 1,i,j)
-            xi_yy = Dyy(gauge.xi, 1,i,j)
-            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+    @sync for task_id in 1:nt
+        @spawn begin
+            aux = aux_acc[task_id]
 
-            @inbounds @simd for a in 1:Nu
+            j_start = (task_id - 1) * chunk_size + 1
+            j_end = (task_id == nt) ? Ny : task_id * chunk_size
+
+            @fastmath @inbounds for j in j_start:j_end
+                @inbounds for i in 1:Nx
+                    xi    = gauge.xi[1,i,j]
+                    xi_x  = Dx(gauge.xi, 1,i,j)
+                    xi_y  = Dy(gauge.xi, 1,i,j)
+                    xi_xx = Dxx(gauge.xi, 1,i,j)
+                    xi_yy = Dyy(gauge.xi, 1,i,j)
+                    xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+
+                    @inbounds for a in 1:Nu
                 u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
@@ -843,6 +891,8 @@ function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_ac
                 bulk.Gd[aa,i,j]  = aux.b_vec2[aa+Nu]
             end
 
+                end
+            end
         end
     end
 
@@ -884,19 +934,27 @@ function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc
         return
     end
 
-    @fastmath @inbounds @threads for j in 1:Ny
-        @inbounds for i in 1:Nx
-            id  = Threads.threadid()
-            aux = aux_acc[id]
+    # Use @spawn with explicit task-local storage to avoid threadid() race conditions
+    nt = length(aux_acc)
+    chunk_size = max(1, Ny ÷ nt)
 
-            xi    = gauge.xi[1,i,j]
-            xi_x  = Dx(gauge.xi, 1,i,j)
-            xi_y  = Dy(gauge.xi, 1,i,j)
-            xi_xx = Dxx(gauge.xi, 1,i,j)
-            xi_yy = Dyy(gauge.xi, 1,i,j)
-            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+    @sync for task_id in 1:nt
+        @spawn begin
+            aux = aux_acc[task_id]
 
-            @inbounds @simd for a in 1:Nu
+            j_start = (task_id - 1) * chunk_size + 1
+            j_end = (task_id == nt) ? Ny : task_id * chunk_size
+
+            @fastmath @inbounds for j in j_start:j_end
+                @inbounds for i in 1:Nx
+                    xi    = gauge.xi[1,i,j]
+                    xi_x  = Dx(gauge.xi, 1,i,j)
+                    xi_y  = Dy(gauge.xi, 1,i,j)
+                    xi_xx = Dxx(gauge.xi, 1,i,j)
+                    xi_yy = Dyy(gauge.xi, 1,i,j)
+                    xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+
+                    @inbounds for a in 1:Nu
                 u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
@@ -1015,6 +1073,8 @@ function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc
                 bulk.phid[aa,i,j] = aux.b_vec[aa]
             end
 
+                end
+            end
         end
     end
 
@@ -1050,19 +1110,27 @@ function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
     potential = evoleq.potential
     phi0      = evoleq.phi0
 
-    @fastmath @inbounds @threads for j in 1:Ny
-        @inbounds for i in 1:Nx
-            id  = Threads.threadid()
-            aux = aux_acc[id]
+    # Use @spawn with explicit task-local storage to avoid threadid() race conditions
+    nt = length(aux_acc)
+    chunk_size = max(1, Ny ÷ nt)
 
-            xi    = gauge.xi[1,i,j]
-            xi_x  = Dx(gauge.xi, 1,i,j)
-            xi_y  = Dy(gauge.xi, 1,i,j)
-            xi_xx = Dxx(gauge.xi, 1,i,j)
-            xi_yy = Dyy(gauge.xi, 1,i,j)
-            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+    @sync for task_id in 1:nt
+        @spawn begin
+            aux = aux_acc[task_id]
 
-            @inbounds @simd for a in 1:Nu
+            j_start = (task_id - 1) * chunk_size + 1
+            j_end = (task_id == nt) ? Ny : task_id * chunk_size
+
+            @fastmath @inbounds for j in j_start:j_end
+                @inbounds for i in 1:Nx
+                    xi    = gauge.xi[1,i,j]
+                    xi_x  = Dx(gauge.xi, 1,i,j)
+                    xi_y  = Dy(gauge.xi, 1,i,j)
+                    xi_xx = Dxx(gauge.xi, 1,i,j)
+                    xi_yy = Dyy(gauge.xi, 1,i,j)
+                    xi_xy = Dx(Dy, gauge.xi, 1,i,j)
+
+                    @inbounds for a in 1:Nu
                 u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
@@ -1190,6 +1258,8 @@ function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                 bulk.A[aa,i,j] = aux.b_vec[aa]
             end
 
+                end
+            end
         end
     end
 
