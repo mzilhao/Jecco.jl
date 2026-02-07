@@ -120,6 +120,7 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
 
     # prepare time integrator
 
+    dtmax = estimate_dtmax(atlas)
     if isa(integration.dt, Number)
         dt0 = integration.dt
     elseif integration.dt == :auto
@@ -153,7 +154,6 @@ function run_model(grid::SpecCartGrid3D, id::InitialData, evoleq::EvolutionEquat
         https://diffeq.sciml.ai/latest/extras/timestepping/
         https://diffeq.sciml.ai/latest/basics/common_solver_opts/
         =#
-        dtmax = estimate_dtmax(atlas)
         qmax  = 1.2
 
         prob  = ODEProblem(rhs!, evolvars, tspan, evoleq)
