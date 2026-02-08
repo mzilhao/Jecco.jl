@@ -131,9 +131,8 @@ of replacing the last line of the A_mat matrix and last entry of b_vec vector.
 
 =#
 
-function solve_S!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
-                  sys::System, evoleq::AffineNull)
-    Nu, Nx, Ny = size(sys)
+function _compute_S_j_range!(aux, j_start, j_end, bulk, bc, gauge, deriv, sys, evoleq)
+    Nu, Nx, _ = size(sys)
 
     Du_B1   = deriv.Du_B1
     Du_B2   = deriv.Du_B2
@@ -152,22 +151,11 @@ function solve_S!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
 
     phi0  = evoleq.phi0
 
-    # Use @spawn with explicit task-local storage to avoid threadid() race conditions
-    nt = length(aux_acc)
-    chunk_size = max(1, Ny ÷ nt)
+    @fastmath @inbounds for j in j_start:j_end
+        @inbounds for i in 1:Nx
+            xi  = gauge.xi[1,i,j]
 
-    @sync for task_id in 1:nt
-        @spawn begin
-            aux = aux_acc[task_id]
-
-            j_start = (task_id - 1) * chunk_size + 1
-            j_end = (task_id == nt) ? Ny : task_id * chunk_size
-
-            @fastmath @inbounds for j in j_start:j_end
-                @inbounds for i in 1:Nx
-                    xi  = gauge.xi[1,i,j]
-
-                    @inbounds for a in 1:Nu
+            @inbounds for a in 1:Nu
                 u     = sys.ucoord[a]
 
                 B1    = bulk.B1[a,i,j]
@@ -207,18 +195,14 @@ function solve_S!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
             @inbounds @simd for aa in 1:Nu
                 bulk.S[aa,i,j] = aux.b_vec[aa]
             end
-
-                end
-            end
         end
     end
 
     nothing
 end
 
-function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
-                    sys::System, evoleq::AffineNull)
-    Nu, Nx, Ny = size(sys)
+function _compute_Fxy_j_range!(aux, j_start, j_end, bulk, bc, gauge, deriv, sys, evoleq)
+    Nu, Nx, _ = size(sys)
 
     Du_B1   = deriv.Du_B1
     Du_B2   = deriv.Du_B2
@@ -240,24 +224,13 @@ function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
 
     phi0  = evoleq.phi0
 
-    # Use @spawn with explicit task-local storage to avoid threadid() race conditions
-    nt = length(aux_acc)
-    chunk_size = max(1, Ny ÷ nt)
+    @fastmath @inbounds for j in j_start:j_end
+        @inbounds for i in 1:Nx
+            xi    = gauge.xi[1,i,j]
+            xi_x  = Dx(gauge.xi, 1,i,j)
+            xi_y  = Dy(gauge.xi, 1,i,j)
 
-    @sync for task_id in 1:nt
-        @spawn begin
-            aux = aux_acc[task_id]
-
-            j_start = (task_id - 1) * chunk_size + 1
-            j_end = (task_id == nt) ? Ny : task_id * chunk_size
-
-            @fastmath @inbounds for j in j_start:j_end
-                @inbounds for i in 1:Nx
-                    xi    = gauge.xi[1,i,j]
-                    xi_x  = Dx(gauge.xi, 1,i,j)
-                    xi_y  = Dy(gauge.xi, 1,i,j)
-
-                    @inbounds for a in 1:Nu
+            @inbounds for a in 1:Nu
                 u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
@@ -356,18 +329,14 @@ function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
                 bulk.Fx[aa,i,j] = aux.b_vec2[aa]
                 bulk.Fy[aa,i,j] = aux.b_vec2[aa+Nu]
             end
-
-                end
-            end
         end
     end
 
     nothing
 end
 
-function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
-                   sys::System, evoleq::AffineNull)
-    Nu, Nx, Ny = size(sys)
+function _compute_Sd_j_range!(aux, j_start, j_end, bulk, bc, gauge, deriv, sys, evoleq)
+    Nu, Nx, _ = size(sys)
 
     Du_B1   = deriv.Du_B1
     Du_B2   = deriv.Du_B2
@@ -394,23 +363,12 @@ function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
     potential = evoleq.potential
     phi0      = evoleq.phi0
 
-    # Use @spawn with explicit task-local storage to avoid threadid() race conditions
-    nt = length(aux_acc)
-    chunk_size = max(1, Ny ÷ nt)
-
-    @sync for task_id in 1:nt
-        @spawn begin
-            aux = aux_acc[task_id]
-
-            j_start = (task_id - 1) * chunk_size + 1
-            j_end = (task_id == nt) ? Ny : task_id * chunk_size
-
-            @fastmath @inbounds for j in j_start:j_end
-                @inbounds for i in 1:Nx
-                    xi    = gauge.xi[1,i,j]
-                    xi_x  = Dx(gauge.xi, 1,i,j)
-                    xi_y  = Dy(gauge.xi, 1,i,j)
-                    xi_xx = Dxx(gauge.xi, 1,i,j)
+    @fastmath @inbounds for j in j_start:j_end
+        @inbounds for i in 1:Nx
+            xi    = gauge.xi[1,i,j]
+            xi_x  = Dx(gauge.xi, 1,i,j)
+            xi_y  = Dy(gauge.xi, 1,i,j)
+            xi_xx = Dxx(gauge.xi, 1,i,j)
             xi_yy = Dyy(gauge.xi, 1,i,j)
             xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
@@ -530,18 +488,14 @@ function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
             @inbounds @simd for aa in 1:Nu
                 bulk.Sd[aa,i,j] = aux.b_vec[aa]
             end
-
-                end
-            end
         end
     end
 
     nothing
 end
 
-function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
-                    sys::System, evoleq::AffineNull)
-    Nu, Nx, Ny = size(sys)
+function _compute_B2d_j_range!(aux, j_start, j_end, bulk, bc, gauge, deriv, sys, evoleq)
+    Nu, Nx, _ = size(sys)
 
     Du_B1   = deriv.Du_B1
     Du_B2   = deriv.Du_B2
@@ -567,27 +521,16 @@ function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
 
     phi0  = evoleq.phi0
 
-    # Use @spawn with explicit task-local storage to avoid threadid() race conditions
-    nt = length(aux_acc)
-    chunk_size = max(1, Ny ÷ nt)
+    @fastmath @inbounds for j in j_start:j_end
+        @inbounds for i in 1:Nx
+            xi    = gauge.xi[1,i,j]
+            xi_x  = Dx(gauge.xi, 1,i,j)
+            xi_y  = Dy(gauge.xi, 1,i,j)
+            xi_xx = Dxx(gauge.xi, 1,i,j)
+            xi_yy = Dyy(gauge.xi, 1,i,j)
+            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
-    @sync for task_id in 1:nt
-        @spawn begin
-            aux = aux_acc[task_id]
-
-            j_start = (task_id - 1) * chunk_size + 1
-            j_end = (task_id == nt) ? Ny : task_id * chunk_size
-
-            @fastmath @inbounds for j in j_start:j_end
-                @inbounds for i in 1:Nx
-                    xi    = gauge.xi[1,i,j]
-                    xi_x  = Dx(gauge.xi, 1,i,j)
-                    xi_y  = Dy(gauge.xi, 1,i,j)
-                    xi_xx = Dxx(gauge.xi, 1,i,j)
-                    xi_yy = Dyy(gauge.xi, 1,i,j)
-                    xi_xy = Dx(Dy, gauge.xi, 1,i,j)
-
-                    @inbounds for a in 1:Nu
+            @inbounds for a in 1:Nu
                 u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
@@ -704,18 +647,14 @@ function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
             @inbounds @simd for aa in 1:Nu
                 bulk.B2d[aa,i,j] = aux.b_vec[aa]
             end
-
-                end
-            end
         end
     end
 
     nothing
 end
 
-function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
-                      sys::System, evoleq::AffineNull)
-    Nu, Nx, Ny = size(sys)
+function _compute_B1dGd_j_range!(aux, j_start, j_end, bulk, bc, gauge, deriv, sys, evoleq)
+    Nu, Nx, _ = size(sys)
 
     Du_B1   = deriv.Du_B1
     Du_B2   = deriv.Du_B2
@@ -741,27 +680,16 @@ function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_ac
 
     phi0  = evoleq.phi0
 
-    # Use @spawn with explicit task-local storage to avoid threadid() race conditions
-    nt = length(aux_acc)
-    chunk_size = max(1, Ny ÷ nt)
+    @fastmath @inbounds for j in j_start:j_end
+        @inbounds for i in 1:Nx
+            xi    = gauge.xi[1,i,j]
+            xi_x  = Dx(gauge.xi, 1,i,j)
+            xi_y  = Dy(gauge.xi, 1,i,j)
+            xi_xx = Dxx(gauge.xi, 1,i,j)
+            xi_yy = Dyy(gauge.xi, 1,i,j)
+            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
-    @sync for task_id in 1:nt
-        @spawn begin
-            aux = aux_acc[task_id]
-
-            j_start = (task_id - 1) * chunk_size + 1
-            j_end = (task_id == nt) ? Ny : task_id * chunk_size
-
-            @fastmath @inbounds for j in j_start:j_end
-                @inbounds for i in 1:Nx
-                    xi    = gauge.xi[1,i,j]
-                    xi_x  = Dx(gauge.xi, 1,i,j)
-                    xi_y  = Dy(gauge.xi, 1,i,j)
-                    xi_xx = Dxx(gauge.xi, 1,i,j)
-                    xi_yy = Dyy(gauge.xi, 1,i,j)
-                    xi_xy = Dx(Dy, gauge.xi, 1,i,j)
-
-                    @inbounds for a in 1:Nu
+            @inbounds for a in 1:Nu
                 u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
@@ -890,18 +818,14 @@ function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_ac
                 bulk.B1d[aa,i,j] = aux.b_vec2[aa]
                 bulk.Gd[aa,i,j]  = aux.b_vec2[aa+Nu]
             end
-
-                end
-            end
         end
     end
 
     nothing
 end
 
-function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
-                     sys::System, evoleq::AffineNull)
-    Nu, Nx, Ny = size(sys)
+function _compute_phid_j_range!(aux, j_start, j_end, bulk, bc, gauge, deriv, sys, evoleq)
+    Nu, Nx, _ = size(sys)
 
     Du_B1   = deriv.Du_B1
     Du_B2   = deriv.Du_B2
@@ -928,33 +852,16 @@ function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc
     potential = evoleq.potential
     phi0      = evoleq.phi0
 
-    # if phi0 = 0 set phid to zero and return
-    if abs(phi0) < 1e-9
-        fill!(bulk.phid, 0)
-        return
-    end
+    @fastmath @inbounds for j in j_start:j_end
+        @inbounds for i in 1:Nx
+            xi    = gauge.xi[1,i,j]
+            xi_x  = Dx(gauge.xi, 1,i,j)
+            xi_y  = Dy(gauge.xi, 1,i,j)
+            xi_xx = Dxx(gauge.xi, 1,i,j)
+            xi_yy = Dyy(gauge.xi, 1,i,j)
+            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
-    # Use @spawn with explicit task-local storage to avoid threadid() race conditions
-    nt = length(aux_acc)
-    chunk_size = max(1, Ny ÷ nt)
-
-    @sync for task_id in 1:nt
-        @spawn begin
-            aux = aux_acc[task_id]
-
-            j_start = (task_id - 1) * chunk_size + 1
-            j_end = (task_id == nt) ? Ny : task_id * chunk_size
-
-            @fastmath @inbounds for j in j_start:j_end
-                @inbounds for i in 1:Nx
-                    xi    = gauge.xi[1,i,j]
-                    xi_x  = Dx(gauge.xi, 1,i,j)
-                    xi_y  = Dy(gauge.xi, 1,i,j)
-                    xi_xx = Dxx(gauge.xi, 1,i,j)
-                    xi_yy = Dyy(gauge.xi, 1,i,j)
-                    xi_xy = Dx(Dy, gauge.xi, 1,i,j)
-
-                    @inbounds for a in 1:Nu
+            @inbounds for a in 1:Nu
                 u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
@@ -1072,18 +979,14 @@ function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc
             @inbounds @simd for aa in 1:Nu
                 bulk.phid[aa,i,j] = aux.b_vec[aa]
             end
-
-                end
-            end
         end
     end
 
     nothing
 end
 
-function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
-                  sys::System, evoleq::AffineNull)
-    Nu, Nx, Ny = size(sys)
+function _compute_A_j_range!(aux, j_start, j_end, bulk, bc, gauge, deriv, sys, evoleq)
+    Nu, Nx, _ = size(sys)
 
     Du_B1   = deriv.Du_B1
     Du_B2   = deriv.Du_B2
@@ -1110,27 +1013,16 @@ function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
     potential = evoleq.potential
     phi0      = evoleq.phi0
 
-    # Use @spawn with explicit task-local storage to avoid threadid() race conditions
-    nt = length(aux_acc)
-    chunk_size = max(1, Ny ÷ nt)
+    @fastmath @inbounds for j in j_start:j_end
+        @inbounds for i in 1:Nx
+            xi    = gauge.xi[1,i,j]
+            xi_x  = Dx(gauge.xi, 1,i,j)
+            xi_y  = Dy(gauge.xi, 1,i,j)
+            xi_xx = Dxx(gauge.xi, 1,i,j)
+            xi_yy = Dyy(gauge.xi, 1,i,j)
+            xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
-    @sync for task_id in 1:nt
-        @spawn begin
-            aux = aux_acc[task_id]
-
-            j_start = (task_id - 1) * chunk_size + 1
-            j_end = (task_id == nt) ? Ny : task_id * chunk_size
-
-            @fastmath @inbounds for j in j_start:j_end
-                @inbounds for i in 1:Nx
-                    xi    = gauge.xi[1,i,j]
-                    xi_x  = Dx(gauge.xi, 1,i,j)
-                    xi_y  = Dy(gauge.xi, 1,i,j)
-                    xi_xx = Dxx(gauge.xi, 1,i,j)
-                    xi_yy = Dyy(gauge.xi, 1,i,j)
-                    xi_xy = Dx(Dy, gauge.xi, 1,i,j)
-
-                    @inbounds for a in 1:Nu
+            @inbounds for a in 1:Nu
                 u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
@@ -1257,10 +1149,134 @@ function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
             @inbounds @simd for aa in 1:Nu
                 bulk.A[aa,i,j] = aux.b_vec[aa]
             end
-
-                end
-            end
         end
+    end
+
+    nothing
+end
+
+function solve_S!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
+                  sys::System, evoleq::AffineNull)
+    Nu, Nx, Ny = size(sys)
+
+    nt = length(aux_acc)
+    chunk_size = max(1, Ny ÷ nt)
+
+    @sync for task_id in 1:nt
+        j_start = (task_id - 1) * chunk_size + 1
+        j_end = (task_id == nt) ? Ny : task_id * chunk_size
+        @spawn _compute_S_j_range!(aux_acc[task_id], j_start, j_end,
+                                   bulk, bc, gauge, deriv, sys, evoleq)
+    end
+
+    nothing
+end
+
+function solve_Fxy!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
+                    sys::System, evoleq::AffineNull)
+    Nu, Nx, Ny = size(sys)
+
+    nt = length(aux_acc)
+    chunk_size = max(1, Ny ÷ nt)
+
+    @sync for task_id in 1:nt
+        j_start = (task_id - 1) * chunk_size + 1
+        j_end = (task_id == nt) ? Ny : task_id * chunk_size
+        @spawn _compute_Fxy_j_range!(aux_acc[task_id], j_start, j_end,
+                                     bulk, bc, gauge, deriv, sys, evoleq)
+    end
+
+    nothing
+end
+
+function solve_Sd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
+                   sys::System, evoleq::AffineNull)
+    Nu, Nx, Ny = size(sys)
+
+    nt = length(aux_acc)
+    chunk_size = max(1, Ny ÷ nt)
+
+    @sync for task_id in 1:nt
+        j_start = (task_id - 1) * chunk_size + 1
+        j_end = (task_id == nt) ? Ny : task_id * chunk_size
+        @spawn _compute_Sd_j_range!(aux_acc[task_id], j_start, j_end,
+                                    bulk, bc, gauge, deriv, sys, evoleq)
+    end
+
+    nothing
+end
+
+function solve_B2d!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
+                    sys::System, evoleq::AffineNull)
+    Nu, Nx, Ny = size(sys)
+
+    nt = length(aux_acc)
+    chunk_size = max(1, Ny ÷ nt)
+
+    @sync for task_id in 1:nt
+        j_start = (task_id - 1) * chunk_size + 1
+        j_end = (task_id == nt) ? Ny : task_id * chunk_size
+        @spawn _compute_B2d_j_range!(aux_acc[task_id], j_start, j_end,
+                                     bulk, bc, gauge, deriv, sys, evoleq)
+    end
+
+    nothing
+end
+
+function solve_B1dGd!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
+                      sys::System, evoleq::AffineNull)
+    Nu, Nx, Ny = size(sys)
+
+    nt = length(aux_acc)
+    chunk_size = max(1, Ny ÷ nt)
+
+    @sync for task_id in 1:nt
+        j_start = (task_id - 1) * chunk_size + 1
+        j_end = (task_id == nt) ? Ny : task_id * chunk_size
+        @spawn _compute_B1dGd_j_range!(aux_acc[task_id], j_start, j_end,
+                                       bulk, bc, gauge, deriv, sys, evoleq)
+    end
+
+    nothing
+end
+
+function solve_phid!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
+                     sys::System, evoleq::AffineNull)
+    Nu, Nx, Ny = size(sys)
+
+    phi0      = evoleq.phi0
+
+    # if phi0 = 0 set phid to zero and return
+    if abs(phi0) < 1e-9
+        fill!(bulk.phid, 0)
+        return
+    end
+
+    nt = length(aux_acc)
+    chunk_size = max(1, Ny ÷ nt)
+
+    @sync for task_id in 1:nt
+        j_start = (task_id - 1) * chunk_size + 1
+        j_end = (task_id == nt) ? Ny : task_id * chunk_size
+        @spawn _compute_phid_j_range!(aux_acc[task_id], j_start, j_end,
+                                      bulk, bc, gauge, deriv, sys, evoleq)
+    end
+
+    nothing
+end
+
+function solve_A!(bulk::Bulk, bc::BC, gauge::Gauge, deriv::BulkDeriv, aux_acc,
+                  sys::System, evoleq::AffineNull)
+    Nu, Nx, Ny = size(sys)
+
+    nt = length(aux_acc)
+    chunk_size = max(1, Ny ÷ nt)
+
+    @sync for task_id in 1:nt
+        j_start = (task_id - 1) * chunk_size + 1
+        j_end = (task_id == nt) ? Ny : task_id * chunk_size
+        @spawn _compute_A_j_range!(aux_acc[task_id], j_start, j_end,
+                                   bulk, bc, gauge, deriv, sys, evoleq)
     end
 
     nothing

@@ -47,16 +47,11 @@ function BCs(systems::SystemPartition)
 end
 
 
-function solve_phid!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc::BC,
-                     deriv::BulkDeriv, aux_acc, sys::System, evoleq::AffineNull)
-    phiGF  = getphi(bulkevol)
-    phidGF = getphid(bulkconstrain)
-    SdGF   = getSd(bulkconstrain)
-    AGF    = getA(bulkconstrain)
+function _compute_phid_j_range!(aux, j_start, j_end, phiGF, phidGF, SdGF, bc, deriv, sys, evoleq)
 
     Du_phi  = deriv.Du_phi
 
-    Nu, Nx, Ny = size(sys)
+    Nu, Nx, _ = size(sys)
 
     Du  = sys.Du
     Duu = sys.Duu
@@ -67,21 +62,10 @@ function solve_phid!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc::
 
     potential = evoleq.potential
 
-    # Use @spawn with explicit task-local storage to avoid threadid() race conditions
-    nt = length(aux_acc)
-    chunk_size = max(1, Ny ÷ nt)
+    @fastmath @inbounds for j in j_start:j_end
+        @inbounds for i in 1:Nx
 
-    @sync for task_id in 1:nt
-        @spawn begin
-            aux = aux_acc[task_id]
-
-            j_start = (task_id - 1) * chunk_size + 1
-            j_end = (task_id == nt) ? Ny : task_id * chunk_size
-
-            @fastmath @inbounds for j in j_start:j_end
-                @inbounds for i in 1:Nx
-
-                    @inbounds for a in 1:Nu
+            @inbounds for a in 1:Nu
                 u      = sys.ucoord[a]
 
                 Sd     = SdGF[a,i,j]
@@ -112,10 +96,28 @@ function solve_phid!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc::
             @inbounds @simd for aa in 1:Nu
                 phidGF[aa,i,j] = aux.b_vec[aa]
             end
-
-                end
-            end
         end
+    end
+
+    nothing
+end
+
+function solve_phid!(bulkconstrain::BulkConstrained, bulkevol::BulkEvolved, bc::BC,
+                     deriv::BulkDeriv, aux_acc, sys::System, evoleq::AffineNull)
+    phiGF  = getphi(bulkevol)
+    phidGF = getphid(bulkconstrain)
+    SdGF   = getSd(bulkconstrain)
+
+    Nu, Nx, Ny = size(sys)
+
+    nt = length(aux_acc)
+    chunk_size = max(1, Ny ÷ nt)
+
+    @sync for task_id in 1:nt
+        j_start = (task_id - 1) * chunk_size + 1
+        j_end = (task_id == nt) ? Ny : task_id * chunk_size
+        @spawn _compute_phid_j_range!(aux_acc[task_id], j_start, j_end,
+                                      phiGF, phidGF, SdGF, bc, deriv, sys, evoleq)
     end
 
     nothing
