@@ -65,7 +65,7 @@ function _compute_phid_j_range!(aux, j_start, j_end, phiGF, phidGF, SdGF, bc, de
     @fastmath @inbounds for j in j_start:j_end
         @inbounds for i in 1:Nx
 
-            @inbounds for a in 1:Nu
+            @inbounds @simd for a in 1:Nu
                 u      = sys.ucoord[a]
 
                 Sd     = SdGF[a,i,j]

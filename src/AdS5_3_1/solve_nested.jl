@@ -155,7 +155,7 @@ function _compute_S_j_range!(aux, j_start, j_end, bulk, bc, gauge, deriv, sys, e
         @inbounds for i in 1:Nx
             xi  = gauge.xi[1,i,j]
 
-            @inbounds for a in 1:Nu
+            @inbounds @simd for a in 1:Nu
                 u     = sys.ucoord[a]
 
                 B1    = bulk.B1[a,i,j]
@@ -230,7 +230,7 @@ function _compute_Fxy_j_range!(aux, j_start, j_end, bulk, bc, gauge, deriv, sys,
             xi_x  = Dx(gauge.xi, 1,i,j)
             xi_y  = Dy(gauge.xi, 1,i,j)
 
-            @inbounds for a in 1:Nu
+            @inbounds @simd for a in 1:Nu
                 u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
@@ -530,7 +530,7 @@ function _compute_B2d_j_range!(aux, j_start, j_end, bulk, bc, gauge, deriv, sys,
             xi_yy = Dyy(gauge.xi, 1,i,j)
             xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
-            @inbounds for a in 1:Nu
+            @inbounds @simd for a in 1:Nu
                 u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
@@ -689,7 +689,7 @@ function _compute_B1dGd_j_range!(aux, j_start, j_end, bulk, bc, gauge, deriv, sy
             xi_yy = Dyy(gauge.xi, 1,i,j)
             xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
-            @inbounds for a in 1:Nu
+            @inbounds @simd for a in 1:Nu
                 u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
@@ -861,7 +861,7 @@ function _compute_phid_j_range!(aux, j_start, j_end, bulk, bc, gauge, deriv, sys
             xi_yy = Dyy(gauge.xi, 1,i,j)
             xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
-            @inbounds for a in 1:Nu
+            @inbounds @simd for a in 1:Nu
                 u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
@@ -1022,7 +1022,7 @@ function _compute_A_j_range!(aux, j_start, j_end, bulk, bc, gauge, deriv, sys, e
             xi_yy = Dyy(gauge.xi, 1,i,j)
             xi_xy = Dx(Dy, gauge.xi, 1,i,j)
 
-            @inbounds for a in 1:Nu
+            @inbounds @simd for a in 1:Nu
                 u     = sys.ucoord[a]
                 u2    = u * u
                 u3    = u * u2
